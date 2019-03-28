@@ -97,7 +97,7 @@ exports.recordAction = async function (action, meta, payload){
   return await audit.save();
 }
 
-exports.runDataQuery = async function (modelType, role, query, fields, sortWarmUp, sort, skip, limit, count, preQueryPipelineSteps) {
+exports.runDataQuery = async function (modelType, role, query, fields, sortWarmUp, sort, skip, limit, count, preQueryPipelineSteps, useRoles = true) {
     return new Promise(async function (resolve, reject) {
         var theModel = mongoose.model(modelType);
         var projection = {};
@@ -122,7 +122,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
         {
             "$project": projection
         },
-        {
+        useRoles && {
             $redact: {
                 $cond: {
                     if: {
