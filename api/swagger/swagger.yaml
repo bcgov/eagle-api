@@ -4154,6 +4154,7 @@ paths:
         - Bearer: []
       x-security-scopes:
         - project-system-admin
+        - sysadmin
       parameters:
         - in: query
           name: keywords
