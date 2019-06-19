@@ -24,15 +24,15 @@ exports.up = function (db) {
     
       //mycode
  
-        p.update({ "region":  "thompson-nicola"},{$set: {"region": "Thompson-Nicola" }},{multi: true});
-        p.update({ "region":  "cariboo"},{$set: {"region": "Cariboo" }},{multi: true});
-        p.update({ "region":  "kootenay"},{$set: {"region": "Kootenay" }},{multi: true});
-        p.update({ "region":  "lower mainland"},{$set: {"region": "Lower Mainland" }},{multi: true});
-        p.update({ "region":  "okanagan"},{$set: {"region": "Okanagan" }},{multi: true});
-        p.update({ "region":  "omineca"},{$set: {"region": "Omineca" }},{multi: true});
-        p.update({ "region":  "peace"},{$set: {"region": "Peace" }},{multi: true});
-        p.update({ "region":  "skeena"},{$set: {"region": "Skeena" }},{multi: true});
-        p.update({ "region":  "vancouver island"},{$set: {"region": "Vancouver Island" }},{multi: true});
+        p.update({"_schemaName":"Project", "region":  "thompson-nicola"},{$set: {"region": "Thompson-Nicola" }},{multi: true});
+        p.update({"_schemaName":"Project", "region":  "cariboo"},{$set: {"region": "Cariboo" }},{multi: true});
+        p.update({"_schemaName":"Project","region":  "kootenay"},{$set: {"region": "Kootenay" }},{multi: true});
+        p.update({"_schemaName":"Project", "region":  "lower mainland"},{$set: {"region": "Lower Mainland" }},{multi: true});
+        p.update({"_schemaName":"Project", "region":  "okanagan"},{$set: {"region": "Okanagan" }},{multi: true});
+        p.update({"_schemaName":"Project", "region":  "omineca"},{$set: {"region": "Omineca" }},{multi: true});
+        p.update({"_schemaName":"Project", "region":  "peace"},{$set: {"region": "Peace" }},{multi: true});
+        p.update({"_schemaName":"Project", "region":  "skeena"},{$set: {"region": "Skeena" }},{multi: true});
+        p.update({"_schemaName":"Project", "region":  "vancouver island"},{$set: {"region": "Vancouver Island" }},{multi: true});
         
         // p.aggregate([
         //   {
