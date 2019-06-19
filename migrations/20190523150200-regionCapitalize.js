@@ -21,9 +21,6 @@ exports.up = function (db) {
       // mClientInst is an instance of MongoClient
       mClient = mClientInst;
       var p = mClient.collection('epic');
-    
-      //mycode
- 
         p.update({"_schemaName":"Project", "region":  "thompson-nicola"},{$set: {"region": "Thompson-Nicola" }},{multi: true});
         p.update({"_schemaName":"Project", "region":  "cariboo"},{$set: {"region": "Cariboo" }},{multi: true});
         p.update({"_schemaName":"Project","region":  "kootenay"},{$set: {"region": "Kootenay" }},{multi: true});
@@ -32,21 +29,7 @@ exports.up = function (db) {
         p.update({"_schemaName":"Project", "region":  "omineca"},{$set: {"region": "Omineca" }},{multi: true});
         p.update({"_schemaName":"Project", "region":  "peace"},{$set: {"region": "Peace" }},{multi: true});
         p.update({"_schemaName":"Project", "region":  "skeena"},{$set: {"region": "Skeena" }},{multi: true});
-        p.update({"_schemaName":"Project", "region":  "vancouver island"},{$set: {"region": "Vancouver Island" }},{multi: true});
-        
-        // p.aggregate([
-        //   {
-        //     $match: { _schemaName: "Project"}
-        //   }
-        // ]).forEach(
-        //       function(e) {
-        //         e.region = e.region.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
-        //         e.region = e.region.replace("Thompson-nicola","Thompson-Nicola");
-        //         p.save(e)
-        //       }
-        //     );
-        //idk y above code doesnt work ....always say error at p.save
-        //end of my code
+        p.update({"_schemaName":"Project", "region":  "vancouver island"},{$set: {"region": "Vancouver Island" }},{multi: true});    
         mClient.close()
     })
     .catch((e) => {
