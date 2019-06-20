@@ -4253,7 +4253,13 @@ paths:
           name: query
           collectionFormat: multi
           required: false
-          description: "Query: multiple parameter instaces is supported."
+          description: "Query: multiple parameter instaces is supported using AND."
+          type: string
+        - in: query
+          name: or
+          collectionFormat: multi
+          required: false
+          description: "Query: multiple parameter instaces is supported using OR."
           type: string
       responses:
         "200":
