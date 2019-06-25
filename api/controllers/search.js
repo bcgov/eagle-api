@@ -23,39 +23,44 @@ var generateExpArray = function (field) {
     console.log("queryString:", queryString);
     Object.keys(queryString).map(item => {
       console.log("item:", item, queryString[item]);
-      if (isNaN(queryString[item])) {
-        // String or Bool
-        if (queryString[item] === 'true') {
-          // Bool
-          var tempObj = {}
-          tempObj[item] = true;
-          tempObj.active = true;
-          expArray.push(tempObj);
-        } else if (queryString[item] === 'false') {
-          // Bool
-          expArray.push({ [item]: false });
-        } else {
-          // String
-          if (Array.isArray(queryString[item])) {
-            queryString[item].map(entry => {
-              expArray.push({ [item]: entry });
-            });
-          } else {
-            if (mongoose.Types.ObjectId.isValid(queryString[item])) {
-              queryModifier[item] = mongoose.Types.ObjectId(queryString[item]);
-              expArray.push({ [item]: mongoose.Types.ObjectId(queryString[item]) });
-            } else {
-              expArray.push({ [item]: queryString[item] });
-            }
-          }
-        }
+      if (Array.isArray(queryString[item])) {
+        queryString[item].map(entry => {
+          expArray.push(getConvertedValue(item, entry));
+        });
       } else {
-        // Number
-        expArray.push({ [item]: parseInt(queryString[item]) });
+        console.log("normal", item, queryString[item]);
+        expArray.push(getConvertedValue(item, queryString[item]));
       }
     })
   }
   return expArray;
+}
+
+var getConvertedValue = function (item, entry) {
+  if (isNaN(entry)) {
+    if (mongoose.Types.ObjectId.isValid(entry)) {
+      console.log("objectid");
+      // ObjectID
+      return { [item]: mongoose.Types.ObjectId(entry) };
+    } else if (entry === 'true') {
+      console.log("bool");
+      // Bool
+      var tempObj = {}
+      tempObj[item] = true;
+      tempObj.active = true;
+      return tempObj;
+    } else if (entry === 'false') {
+      console.log("bool");
+      // Bool
+      return { [item]: false };
+    } else {
+      console.log("string");
+      return { [item]: entry };
+    }
+  } else {
+      console.log("number");
+      return { [item]: parseInt(entry) };
+  }
 }
 
 var searchCollection = async function (roles, keywords, collection, pageNum, pageSize, project, sortField, sortDirection, caseSensitive, populate = false, and, or) {
@@ -275,6 +280,7 @@ exports.protectedGet = function (args, res, next) {
 };
 
 var executeQuery = async function (args, res, next) {
+  console.log("COCK", args.swagger.params);
   var _id = args.swagger.params._id ? args.swagger.params._id.value : null;
   var keywords = args.swagger.params.keywords.value;
   var dataset = args.swagger.params.dataset.value;
