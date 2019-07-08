@@ -2003,6 +2003,11 @@ paths:
           description: "The milestone of the file."
           required: false
           type: string
+        - name: projectPhase
+          in: formData
+          description: "The project phase of the file."
+          required: false
+          type: string
         - name: datePosted
           in: formData
           description: "The datePosted of the file."
@@ -2225,6 +2230,11 @@ paths:
         - name: milestone
           in: formData
           description: "The milestone of the file."
+          required: false
+          type: string
+        - name: projectPhase
+          in: formData
+          description: "The project phase of the file."
           required: false
           type: string
         - name: datePosted
