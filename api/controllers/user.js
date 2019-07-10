@@ -1,34 +1,70 @@
-var auth        = require("../helpers/auth");
-var _           = require('lodash');
-var defaultLog  = require('winston').loggers.get('default');
-var mongoose    = require('mongoose');
-var Actions     = require('../helpers/actions');
-var Utils       = require('../helpers/utils');
+var auth = require("../helpers/auth");
+var _ = require('lodash');
+var defaultLog = require('winston').loggers.get('default');
+var mongoose = require('mongoose');
+var Actions = require('../helpers/actions');
+var Utils = require('../helpers/utils');
+
+var getSanitizedFields = function (fields) {
+  return _.remove(fields, function (f) {
+    return (_.indexOf([
+      'firstName',
+      'middleName',
+      'lastName',
+      'displayName',
+      'email',
+      'org',
+      'title',
+      'phoneNumber',
+      'salutation',
+      'department',
+      'faxNumber',
+      'cellPhoneNumber',
+      'address1',
+      'address2',
+      'city',
+      'province',
+      'country',
+      'postalCode',
+      'notes'], f) !== -1);
+  });
+}
+
 
 exports.protectedOptions = function (args, res, rest) {
   res.status(200).send();
 }
 
-exports.protectedGet = function(args, res, next) {
-  var self        = this;
-  self.scopes     = args.swagger.params.auth_payload.realm_access.roles;
+exports.protectedGet = async function (args, res, next) {
+  defaultLog.info('Getting user(s)');
 
-  var User = mongoose.model('User');
-
-  defaultLog.info("args.swagger.params:", args.swagger.params.auth_payload.realm_access.roles);
+  var query = {}, sort = {}, skip = null, limit = null, count = false;
 
   // Build match query if on userId route
-  var query = {};
   if (args.swagger.params.userId) {
     query = Utils.buildQuery("_id", args.swagger.params.userId.value, query);
   }
 
-  console.log(args.swagger.params.fields.value);
+  // Set query type
+  _.assignIn(query, { "_schemaName": "User" });
 
-  getUsers(self.scopes, query, args.swagger.params.fields.value)
-  .then(function (data) {
+  try {
+    var data = await Utils.runDataQuery('User',
+      args.swagger.params.auth_payload.realm_access.roles,
+      query,
+      getSanitizedFields(args.swagger.params.fields.value), // Fields
+      null, // sort warmup
+      sort, // sort
+      skip, // skip
+      limit, // limit
+      count); // count
+    Utils.recordAction('get', 'user', args.swagger.params.auth_payload.preferred_username);
+    defaultLog.info('Got user(s):', data);
     return Actions.sendResponse(res, 200, data);
-  });
+  } catch (e) {
+    defaultLog.info('Error:', e);
+    return Actions.sendResponse(res, 400, e);
+  }
 };
 
 //  Create a new user
@@ -46,10 +82,10 @@ exports.protectedPost = function (args, res, next) {
   // Define security tag defaults - users not public by default.
   user.tags = [['sysadmin']];
   user.save()
-  .then(function (a) {
-    defaultLog.info("Saved new user object:", a);
-    return Actions.sendResponse(res, 200, a);
-  });
+    .then(function (a) {
+      defaultLog.info("Saved new user object:", a);
+      return Actions.sendResponse(res, 200, a);
+    });
 };
 
 // Update an existing user
@@ -57,7 +93,7 @@ exports.protectedPut = function (args, res, next) {
   var objId = args.swagger.params.userId.value;
   defaultLog.info("ObjectID:", args.swagger.params.userId.value);
 
-  this.scopes     = args.swagger.operation["x-security-scopes"];
+  this.scopes = args.swagger.operation["x-security-scopes"];
 
   var obj = args.swagger.params.user.value;
   // NB: Don't strip security tags on protectedPut.  Only sysadmins
@@ -89,11 +125,11 @@ exports.protectedPut = function (args, res, next) {
 
   if (obj.username && obj.username === 'admin' && !_.some(obj.roles, _.method('includes', 'sysadmin'))) {
     // No way, can't change admin user.
-    return Actions.sendResponse(res, 405, {message: '405: Admin user must have sysadmin role.'});
+    return Actions.sendResponse(res, 405, { message: '405: Admin user must have sysadmin role.' });
   }
 
   var User = require('mongoose').model('User');
-  User.findOneAndUpdate({_id: objId}, obj, {upsert:false, new: true}, function (err, o) {
+  User.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }, function (err, o) {
     if (o) {
       defaultLog.info("o:", o);
       return Actions.sendResponse(res, 200, o);
@@ -111,11 +147,11 @@ var getUsers = function (role, query, fields) {
 
     // Fields we always return
     var defaultFields = ['_id',
-                        'displayName',
-                        'roles',
-                        'tags'];
+      'displayName',
+      'roles',
+      'tags'];
     _.each(defaultFields, function (f) {
-        projection[f] = 1;
+      projection[f] = 1;
     });
 
     // Add requested fields - sanitize first by including only those that we can/want to return
@@ -146,9 +182,9 @@ var getUsers = function (role, query, fields) {
         "$unwind": "$org"
       }
     ]).exec()
-    .then(function (data) {
-      defaultLog.info("data:", data);
-      resolve(data);
-    });
+      .then(function (data) {
+        defaultLog.info("data:", data);
+        resolve(data);
+      });
   });
 };
