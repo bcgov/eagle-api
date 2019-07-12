@@ -1,4 +1,5 @@
 var mongoose = require('mongoose');
+var _ = require('underscore');
 var Mixed = mongoose.Schema.Types.Mixed;
 
 var definition = {
@@ -87,15 +88,37 @@ var definition = {
   */
   pinsHistory            : [{ type: Mixed, default: {} }],
 
-   groups                   : [{ type: 'ObjectId', ref: 'Group', default: null, index: true }],
+  groups                   : [{ type: 'ObjectId', ref: 'Group', default: null, index: true }],
+
   // Permissions
   read                   : [{ type: String, trim: true, default: '["project-system-admin"]' }],
   write                  : [{ type: String, trim: true, default: '["project-system-admin"]' }],
   delete                 : [{ type: String, trim: true, default: '["project-system-admin"]' }],
 };
 
-// definition.virtuals__ = [];
+var buildToNature = {};
+buildToNature.new = 'New Construction';
+buildToNature.modification = 'Modification of Existing';
+buildToNature.dismantling = 'Dismantling or Abandonment';
+buildToNature.unknown = 'Unknown nature value';
 
+// define a new mongoose virtual called nature as a basic object 
+// with a name field, and getter and setter functions
+var nature = {};
+nature.name = 'nature';
+nature.get = function () {
+  if (!(this.build in buildToNature)) return buildToNature.unknown;
+  return buildToNature[this.build];
+};
+nature.set = function (nature) {
+  try {
+    this.set('build', (_.invert(buildToNature))[nature]);
+  } catch (error) {
+    console.log('Failed to parse nature: "' + nature + '" with error: "' + error + '"')
+    this.set('build', null);
+  }
+};
+
+definition.virtuals__ = [nature];
 
 module.exports = require ('../models')('Project', definition, 'epic');
-
