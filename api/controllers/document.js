@@ -150,8 +150,8 @@ exports.unProtectedPost = async function (args, res, next) {
               doc.documentFileName = upfile.originalname;
               doc.dateUploaded = new Date();
               doc.datePosted = new Date();
-              // TODO: We should set documentAuthor to something.
-              // doc.documentAuthor = 'public';
+              doc.documentAuthor = mongoose.Types.ObjectId(args.body.documentAuthor);
+
               // Update who did this?
               console.log('unlink');
               doc.save()
