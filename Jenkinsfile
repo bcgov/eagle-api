@@ -87,9 +87,9 @@ pipeline {
     disableResume()
   }
   stages {
-    stage('Parralel Build Steps') {
+    stage('Parallel Build Steps') {
       failFast true
-      parrallel {
+      parallel {
         stage('Build') {
           agent any
           steps {
