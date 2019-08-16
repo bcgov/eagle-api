@@ -82,7 +82,7 @@ def CHANGELOG = "No new changes"
 def IMAGE_HASH = "latest"
 
 pipeline {
-  agent none
+  agent any
   options {
     disableResume()
   }
@@ -154,34 +154,34 @@ pipeline {
         //   }
         // }
       }
+    }
 
-      stage('Deploy to dev'){
-        steps {
-          script {
-            try {
-              echo "Deploying to dev..."
-              openshiftTag destStream: 'eagle-api', verbose: 'false', destTag: 'dev', srcStream: 'eagle-api', srcTag: "${IMAGE_HASH}"
-              sleep 5
-              // todo eagle-test? what depCfg?
-              openshiftVerifyDeployment depCfg: 'eagle-api', namespace: 'mem-mmti-prod', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
-              echo ">>>> Deployment Complete"
+    stage('Deploy to dev'){
+      steps {
+        script {
+          try {
+            echo "Deploying to dev..."
+            openshiftTag destStream: 'eagle-api', verbose: 'false', destTag: 'dev', srcStream: 'eagle-api', srcTag: "${IMAGE_HASH}"
+            sleep 5
+            // todo eagle-test? what depCfg?
+            openshiftVerifyDeployment depCfg: 'eagle-api', namespace: 'mem-mmti-prod', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
+            echo ">>>> Deployment Complete"
 
-              notifyRocketChat(
-                "@all A new version of eagle-api is now in Dev. \n Changes: \n ${CHANGELOG}",
-                ROCKET_DEPLOY_WEBHOOK
-              )
+            notifyRocketChat(
+              "@all A new version of eagle-api is now in Dev. \n Changes: \n ${CHANGELOG}",
+              ROCKET_DEPLOY_WEBHOOK
+            )
 
-              notifyRocketChat(
-                "@all A new version of eagle-api is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
-                ROCKET_QA_WEBHOOK
-              )
-            } catch (error) {
-              notifyRocketChat(
-                "@all The latest deployment of eagle-api to Dev seems to have failed\n Error: \n'${error.message}'",
-                ROCKET_DEPLOY_WEBHOOK
-              )
-              error('Deploy failed')
-            }
+            notifyRocketChat(
+              "@all A new version of eagle-api is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
+              ROCKET_QA_WEBHOOK
+            )
+          } catch (error) {
+            notifyRocketChat(
+              "@all The latest deployment of eagle-api to Dev seems to have failed\n Error: \n'${error.message}'",
+              ROCKET_DEPLOY_WEBHOOK
+            )
+            error('Deploy failed')
           }
         }
       }
