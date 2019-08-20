@@ -15,6 +15,7 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
   defaultLog.info("verifying token", token);
   // scopes/roles defined for the current endpoint
   var currentScopes = req.swagger.operation["x-security-scopes"];
+  console.log('current:', currentScopes);
   function sendError() {
     return req.res.status(403).json({ message: "Error: Access Denied" });
   }
@@ -51,6 +52,13 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
     }
   } else {
     defaultLog.error("Token didn't have a bearer.");
+    console.log('current:', currentScopes);
+    if (!req.swagger.apiPath.startsWith('/public')
+        && (req.swagger.operationPath[2] !== 'get' && req.swagger.operationPath[2] !== 'option' && req.swagger.operationPath[2] !== 'head')) {
+      console.log("Mismatch");
+      return callback(sendError());
+    }
+
     req.swagger.params.auth_payload = {
       realm_access: {
         roles: ['public']
