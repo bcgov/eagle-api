@@ -98,6 +98,16 @@ definitions:
         type: string
         example: "[['public']]"
         ## TODO: Add more fields here.
+  InspectionObject:
+    type: object
+    properties:
+      _id:
+        type: string
+        example: "54759eb3c090d83494e2d804"
+      tags:
+        type: string
+        example: "[['public']]"
+        ## TODO: Add more fields here.
   GroupObject:
     type: object
     properties:
@@ -2128,6 +2138,51 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
+### Inspections
+  /inspection:
+    x-swagger-router-controller: inspection
+    options:
+      tags:
+        - inspection
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Inspection Route"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    post:
+      tags:
+        - inspection
+      summary: "Add Inspection"
+      operationId: protectedPost
+      description: "Adds Inspection."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      parameters:
+        - name: inspection
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/InspectionObject"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/InspectionObject"
         "403":
           description: "Access Denied"
           schema:
