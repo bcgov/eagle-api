@@ -177,9 +177,8 @@ pipeline {
               ROCKET_QA_WEBHOOK
             )
           } catch (error) {
-            def msg = error.message
-            msg.replaceAll(/\'/,/\\\'/)
-            echo msg
+            // def msg = error.message
+            // msg.replaceAll(/\'/,/\\\'/)
             notifyRocketChat(
               "@all The latest deployment of eagle-api to Dev seems to have failed\n Error: \n ${error.message}",
               ROCKET_DEPLOY_WEBHOOK
