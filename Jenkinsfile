@@ -183,8 +183,7 @@ pipeline {
               "@all The latest deployment of eagle-api to Dev seems to have failed\n Error: \n ${error.message}",
               ROCKET_DEPLOY_WEBHOOK
             )
-            currentBuild.result = 'FAILURE'
-            // error('Deploy failed')
+            error 'Deploy failed'
           }
         }
       }
