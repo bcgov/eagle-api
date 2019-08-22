@@ -183,6 +183,7 @@ pipeline {
             )
             currentBuild.result = "FAILURE"
             throw new Exception("Deploy failed")
+          }
         }
       }
     }
