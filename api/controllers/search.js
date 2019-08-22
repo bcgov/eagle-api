@@ -195,7 +195,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
   var sortingValue = {};
   sortingValue[sortField] = sortDirection;
 
-  let searchResultAggrigation = [
+  let searchResultAggregation = [
     {
       $skip: pageNum * pageSize
     },
@@ -203,9 +203,9 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
       $limit: pageSize
     }
   ];
-  // We don't want to have sort in the aggrigation if the front end doesn't need sort.
+  // We don't want to have sort in the aggregation if the front end doesn't need sort.
   if (sortField && sortDirection) {
-    searchResultAggrigation.push(
+    searchResultAggregation.push(
       {
         $sort: sortingValue
       }
@@ -367,7 +367,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
 
   aggregation.push({
     $facet: {
-      searchResults: searchResultAggrigation,
+      searchResults: searchResultAggregation,
       meta: [
         {
           $count: "searchResultsTotal"
