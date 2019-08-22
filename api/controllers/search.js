@@ -136,7 +136,7 @@ var getPCPValue = async function (roles, entry) {
   return pcp;
 }
 
-var handleDateItem = function(expArray, item, entry) {
+var handleDateItem = function (expArray, item, entry) {
   var date = new Date(entry);
 
   // Validate: valid date?
@@ -151,7 +151,7 @@ var handleDateItem = function(expArray, item, entry) {
   }
 }
 
-var searchCollection = async function (roles, keywords, collection, pageNum, pageSize, project, sortField, sortDirection, caseSensitive, populate = false, and, or) {
+var searchCollection = async function (roles, keywords, collection, pageNum, pageSize, project, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or) {
   var properties = undefined;
   if (project) {
     properties = { project: mongoose.Types.ObjectId(project) };
@@ -195,11 +195,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
   var sortingValue = {};
   sortingValue[sortField] = sortDirection;
 
-  // We don't want to have sort in the aggrigation if the front end doesn't need sort.
   let searchResultAggrigation = [
-    {
-      $sort: sortingValue
-    },
     {
       $skip: pageNum * pageSize
     },
@@ -207,6 +203,14 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
       $limit: pageSize
     }
   ];
+  // We don't want to have sort in the aggrigation if the front end doesn't need sort.
+  if (sortField && sortDirection) {
+    searchResultAggrigation.push(
+      {
+        $sort: sortingValue
+      }
+    );
+  }
 
   var aggregation = [
     {
@@ -399,7 +403,7 @@ var executeQuery = async function (args, res, next) {
   var populate = args.swagger.params.populate ? args.swagger.params.populate.value : false;
   var pageNum = args.swagger.params.pageNum.value || 0;
   var pageSize = args.swagger.params.pageSize.value || 25;
-  var sortBy = args.swagger.params.sortBy.value || ['-score'];
+  var sortBy = args.swagger.params.sortBy.value ? args.swagger.params.sortBy.value : keywords ? ['-score'] : [];
   var caseSensitive = args.swagger.params.caseSensitive ? args.swagger.params.caseSensitive.value : false;
   var and = args.swagger.params.and ? args.swagger.params.and.value : '';
   var or = args.swagger.params.or ? args.swagger.params.or.value : '';
