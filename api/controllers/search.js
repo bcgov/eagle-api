@@ -195,14 +195,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
   var sortingValue = {};
   sortingValue[sortField] = sortDirection;
 
-  let searchResultAggregation = [
-    {
-      $skip: pageNum * pageSize
-    },
-    {
-      $limit: pageSize
-    }
-  ];
+  let searchResultAggregation = [];
   // We don't want to have sort in the aggregation if the front end doesn't need sort.
   if (sortField && sortDirection) {
     searchResultAggregation.push(
@@ -211,6 +204,15 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
       }
     );
   }
+  searchResultAggregation.push(
+    {
+      $skip: pageNum * pageSize
+    },
+    {
+      $limit: pageSize
+    }
+  );
+
 
   var aggregation = [
     {
