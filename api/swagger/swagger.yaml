@@ -5089,6 +5089,18 @@ paths:
       description: "Retreiving items relating to the given keywords."
       parameters:
         - in: query
+          name: _id
+          description: "Grab (via _id) specific document"
+          type: string
+          required: false
+          items:
+            type: string
+        - in: query
+          name: _schemaName
+          description: "Schema to search on"
+          type: string
+          required: false
+        - in: query
           name: keywords
           description: "Full Text Search based on keywords"
           type: string
