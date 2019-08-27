@@ -12,6 +12,7 @@ var FlakeIdGen = require('flake-idgen'),
 var uploadDir = process.env.UPLOAD_DIRECTORY || "./uploads/";
 var MinioController = require('../helpers/minio');
 var rp = require('request-promise-native');
+var moment = require('moment');
 
 var tagList = [
   'name',
@@ -42,6 +43,9 @@ exports.protectedPost = function (args, res, next) {
   var Inspection = mongoose.model('Inspection');
 
   var inspection = new Inspection(obj);
+  inspection.startDate = moment(obj.startDate, "DD-MM-YYYY").toDate();
+  inspection.endDate = moment(obj.endDate, "DD-MM-YYYY").toDate();
+
   inspection.proponent = mongoose.Types.ObjectId(obj.proponent)
   // Define security tag defaults
   inspection.read = ['sysadmin', 'staff'];
