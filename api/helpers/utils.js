@@ -33,6 +33,10 @@ exports.buildQuery = function (property, values, query) {
     });
 };
 
+exports.getBasePath = function (protocol, host) {
+  return protocol + '://' + host;
+}
+
 // MBL: TODO Make this event driven instead of synchronous?
 exports.avScan = function (buffer) {
     return new Promise(function (resolve, reject) {
