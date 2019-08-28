@@ -17,11 +17,13 @@ var tagList = [
   'activeStatus',
   'location',
   'name',
+  'projectLeadId',
   'projectLead',
   'projectLeadEmail',
   'projectLeadPhone',
   'proponent',
   'region',
+  'responsibleEPDId',
   'responsibleEPD',
   'responsibleEPDEmail',
   'responsibleEPDPhone',
@@ -367,6 +369,9 @@ exports.protectedPost = function (args, res, next) {
   var Project = mongoose.model('Project');
   var project = new Project(obj);
   project.proponent = mongoose.Types.ObjectId(obj.proponent)
+  project.responsibleEPDId = mongoose.Types.ObjectId(obj.responsibleEPDId)
+  project.projectLeadId = mongoose.Types.ObjectId(obj.projectLeadId)
+
   // Define security tag defaults
   project.read = ['sysadmin', 'staff'];
   project.write = ['sysadmin', 'staff'];
@@ -769,9 +774,8 @@ exports.protectedPut = async function (args, res, next) {
   obj.centroid = projectObj.centroid;
 
   // Contacts
-  obj.projLead = projectObj.projLead;
-  obj.execProjectDirector = projectObj.execProjectDirector;
-  obj.complianceLead = projectObj.complianceLead;
+  obj.projectLeadId = mongoose.Types.ObjectId(projectObj.projectLeadId);
+  obj.responsibleEPDId = mongoose.Types.ObjectId(projectObj.responsibleEPDId);
 
   obj.CEAAInvolvement = projectObj.CEAAInvolvement;
   obj.CEAALink = projectObj.CEAALink;
