@@ -58,8 +58,8 @@ def nodejsTester () {
           image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
           resourceRequestCpu: '500m',
           resourceLimitCpu: '800m',
-          resourceRequestMemory: '1Gi',
-          resourceLimitMemory: '2Gi',
+          resourceRequestMemory: '2Gi',
+          resourceLimitMemory: '4Gi',
           workingDir: '/tmp',
           command: '',
         )
@@ -101,8 +101,9 @@ pipeline {
               echo ">>>>>>Changelog: \n ${CHANGELOG}"
 
               try {
-                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat /var/rocket/rocket-deploy-webhook')
-                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat /var/rocket/rocket-qa-webhook')
+                sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
                 echo "Building eagle-api develop branch"
                 openshiftBuild bldCfg: 'eagle-api', showBuildLogs: 'true'
