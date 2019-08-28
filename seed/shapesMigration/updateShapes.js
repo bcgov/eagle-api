@@ -1,3 +1,4 @@
+//TODO: revise for EPIC
 //
 // Example: node updateShapes.js admin admin https eagle-dev.pathfinder.gov.bc.ca 443
 //

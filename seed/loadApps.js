@@ -1,3 +1,4 @@
+//TODO: revise for EPIC
 'use strict';
 
 var applist = require('./applist.json');

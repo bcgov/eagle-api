@@ -1,5 +1,6 @@
-const factory = require('factory-girl').factory;
-const Document = require('../../helpers/models/document');
+//TODO: revise for EPIC
+import { factory } from '@types/factory-girl';
+import Document from '../../helpers/models/document';
 
 factory.define('document', Document, buildOptions => {
   let attrs = {
@@ -17,4 +18,5 @@ factory.define('document', Document, buildOptions => {
   return attrs;
 });
 
-exports.factory = factory;
+const _factory = factory;
+export { _factory as factory };

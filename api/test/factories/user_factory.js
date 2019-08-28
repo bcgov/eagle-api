@@ -1,5 +1,6 @@
-const factory = require('factory-girl').factory;
-const User = require('../../helpers/models/user');
+//TODO: revise for EPIC
+import { factory } from '@types/factory-girl';
+import User from '../../helpers/models/user';
 
 factory.define('user', User, {
   displayName: factory.chance('name'),
@@ -10,4 +11,5 @@ factory.define('user', User, {
   roles: [['public']]
 });
 
-exports.factory = factory;
+const _factory = factory;
+export { _factory as factory };

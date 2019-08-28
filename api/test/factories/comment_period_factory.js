@@ -1,5 +1,6 @@
-const factory = require('factory-girl').factory;
-const CommentPeriod = require('../../helpers/models/commentperiod');
+//TODO: revise for EPIC
+import { factory } from '@types/factory-girl';
+import CommentPeriod from '../../helpers/models/commentperiod';
 
 factory.define('commentperiod', CommentPeriod, buildOptions => {
   let attrs = {
@@ -19,4 +20,5 @@ factory.define('commentperiod', CommentPeriod, buildOptions => {
   return attrs;
 });
 
-exports.factory = factory;
+const _factory = factory;
+export { _factory as factory };

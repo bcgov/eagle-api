@@ -1,71 +1,71 @@
-const test_helper = require('./test_helper');
-const applicationFactory = require('./factories/application_factory').factory;
-const app = test_helper.app;
-const mongoose = require('mongoose');
-const request = require('supertest');
-const nock = require('nock');
-const tantalisResponse = require('./fixtures/tantalis_response.json');
+import { app as _app, buildParams, createSwaggerParams, createPublicSwaggerParams } from './test_helper';
+import { factory as applicationFactory } from './factories/application_factory';
+const app = _app;
+import { model } from 'mongoose';
+import request from 'supertest';
+import nock from 'nock';
+import tantalisResponse from './fixtures/tantalis_response.json';
 const fieldNames = ['description', 'tantalisID'];
-const _ = require('lodash');
+import { find } from 'lodash';
 
 
-const applicationController = require('../controllers/application.js');
-require('../helpers/models/application');
-require('../helpers/models/feature');
-const Application = mongoose.model('Application');
-const Feature = mongoose.model('Feature');
+import { protectedGet, publicGet, protectedPost, protectedDelete, protectedPut, protectedPublish, protectedUnPublish } from '../controllers/application.js';
+import '../helpers/models/application';
+import '../helpers/models/feature';
+const Application = model('Application');
+const Feature = model('Feature');
 const idirUsername = 'idir/i_am_a_bot';
 
 function paramsWithAppId(req) {
-  let params = test_helper.buildParams({'appId': req.params.id});
-  return test_helper.createSwaggerParams(fieldNames, params);
+  let params = buildParams({'appId': req.params.id});
+  return createSwaggerParams(fieldNames, params);
 }
 
 function publicParamsWithAppId(req) {
-  let params = test_helper.buildParams({'appId': req.params.id});
-  return test_helper.createPublicSwaggerParams(fieldNames, params);
+  let params = buildParams({'appId': req.params.id});
+  return createPublicSwaggerParams(fieldNames, params);
 }
 
 app.get('/api/application', function(req, res) {
-  let swaggerParams = test_helper.createSwaggerParams(fieldNames);
-  return applicationController.protectedGet(swaggerParams, res);
+  let swaggerParams = createSwaggerParams(fieldNames);
+  return protectedGet(swaggerParams, res);
 });
 
 app.get('/api/application/:id', function(req, res) {
-  return applicationController.protectedGet(paramsWithAppId(req), res);
+  return protectedGet(paramsWithAppId(req), res);
 });
 
 app.get('/api/public/application', function(req, res) {
-  let publicSwaggerParams = test_helper.createPublicSwaggerParams(fieldNames);
-  return applicationController.publicGet(publicSwaggerParams, res);
+  let publicSwaggerParams = createPublicSwaggerParams(fieldNames);
+  return publicGet(publicSwaggerParams, res);
 });
 
 app.get('/api/public/application/:id', function(req, res) {
-  return applicationController.publicGet(publicParamsWithAppId(req), res);
+  return publicGet(publicParamsWithAppId(req), res);
 });
 
 app.post('/api/application/', function(req, res) {
-  let extraFields = test_helper.buildParams({'app': req.body});
-  let params = test_helper.createSwaggerParams(fieldNames, extraFields, idirUsername);
-  return applicationController.protectedPost(params, res);
+  let extraFields = buildParams({'app': req.body});
+  let params = createSwaggerParams(fieldNames, extraFields, idirUsername);
+  return protectedPost(params, res);
 });
 
 app.delete('/api/application/:id', function(req, res) {
-  return applicationController.protectedDelete(paramsWithAppId(req), res);
+  return protectedDelete(paramsWithAppId(req), res);
 });
 
 app.put('/api/application/:id', function(req, res) {
-  let extraFields = test_helper.buildParams({'appId': req.params.id, 'ProjObject': req.body});
-  let params = test_helper.createSwaggerParams(fieldNames, extraFields);
-  return applicationController.protectedPut(params, res);
+  let extraFields = buildParams({'appId': req.params.id, 'ProjObject': req.body});
+  let params = createSwaggerParams(fieldNames, extraFields);
+  return protectedPut(params, res);
 });
 
 app.put('/api/application/:id/publish', function(req, res) {
-  return applicationController.protectedPublish(paramsWithAppId(req), res);
+  return protectedPublish(paramsWithAppId(req), res);
 });
 
 app.put('/api/application/:id/unpublish', function(req, res) {
-  return applicationController.protectedUnPublish(paramsWithAppId(req), res);
+  return protectedUnPublish(paramsWithAppId(req), res);
 });
 
 const applicationsData = [
@@ -94,15 +94,15 @@ describe('GET /application', () => {
         .then(response => {
           expect(response.body.length).toEqual(3);
           
-          let firstApplication = _.find(response.body, {description: 'SPECIAL'});
+          let firstApplication = find(response.body, {description: 'SPECIAL'});
           expect(firstApplication).toHaveProperty('_id');
           expect(firstApplication['tags']).toEqual(expect.arrayContaining([["public"], ["sysadmin"]]));
 
-          let secondApplication = _.find(response.body, {description: 'VANILLA'});
+          let secondApplication = find(response.body, {description: 'VANILLA'});
           expect(secondApplication).toHaveProperty('_id');
           expect(secondApplication['tags']).toEqual(expect.arrayContaining([["public"]]));
 
-          let secretApplication = _.find(response.body, {description: 'TOP_SECRET'});
+          let secretApplication = find(response.body, {description: 'TOP_SECRET'});
           expect(secretApplication).toHaveProperty('_id');
           expect(secretApplication['tags']).toEqual(expect.arrayContaining([["sysadmin"]]));
           done()
@@ -159,11 +159,11 @@ describe('GET /public/application', () => {
         .then(response => {
           expect(response.body.length).toEqual(2);
 
-          let firstApplication = _.find(response.body, {description: 'SPECIAL'});
+          let firstApplication = find(response.body, {description: 'SPECIAL'});
           expect(firstApplication).toHaveProperty('_id');
           expect(firstApplication['tags']).toEqual(expect.arrayContaining([["public"], ["sysadmin"]]));
 
-          let secondApplication = _.find(response.body, {description: 'VANILLA'});
+          let secondApplication = find(response.body, {description: 'VANILLA'});
           expect(secondApplication).toHaveProperty('_id');
           expect(secondApplication.description).toBe('VANILLA');
           expect(secondApplication['tags']).toEqual(expect.arrayContaining([["public"]]));

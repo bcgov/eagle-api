@@ -1,5 +1,6 @@
-const factory = require('factory-girl').factory;
-const Application = require('../../helpers/models/application');
+//TODO: revise for EPIC
+import { factory } from '@types/factory-girl';
+import Application from '../../helpers/models/application';
 
 factory.define('application', Application, {
   code: factory.seq('Application.code', (n) => `app-code-${n}`),
@@ -15,4 +16,5 @@ factory.define('application', Application, {
   ], 
 });
 
-exports.factory = factory;
+const _factory = factory;
+export { _factory as factory };

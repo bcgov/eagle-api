@@ -1,5 +1,6 @@
-const factory = require('factory-girl').factory;
-const Feature = require('../../helpers/models/feature');
+//TODO: revise for EPIC
+import { factory } from '@types/factory-girl';
+import Feature from '../../helpers/models/feature';
 
 factory.define('feature', Feature, {
   tags: [
@@ -13,4 +14,5 @@ factory.define('feature', Feature, {
   isDeleted: false,
 });
 
-exports.factory = factory;
+const _factory = factory;
+export { _factory as factory };
