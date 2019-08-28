@@ -151,6 +151,7 @@ definitions:
       - responsibleEPDEmail
       - responsibleEPDPhone
       - type
+      - legislation
       - read
       - build
       - nature
@@ -1905,6 +1906,11 @@ paths:
           description: "Type of the project"
           type: string
         - in: query
+          name: legislation
+          required: false
+          description: "Legislation of the project"
+          type: string
+        - in: query
           name: read
           required: false
           description: "The read permissions of the project"
@@ -2050,6 +2056,11 @@ paths:
           name: type
           required: false
           description: "Type of the project"
+          type: string
+        - in: query
+          name: legislation
+          required: false
+          description: "Legislation of the project"
           type: string
         - in: query
           name: read

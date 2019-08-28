@@ -29,6 +29,7 @@ var tagList = [
   'responsibleEPDPhone',
   'subtype',
   'type',
+  'legislation',
   'addedBy',
   'build',
   'intake',
