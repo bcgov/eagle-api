@@ -37,6 +37,8 @@ debug.log
 Thumbs.db
 
 # Installer Files
+/developer_install_helper.sh
+/vscodeextensions.txt
 /developer_install_prerequisites.sh
-/project_installer.sh
 /setup_helper.sh
+/project_installer.sh
