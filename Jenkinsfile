@@ -78,6 +78,42 @@ def nodejsTester () {
   }
 }
 
+// todo templates can be pulled from a repository, instead of declared here
+def nodejsSonarqube () {
+  openshift.withCluster() {
+    openshift.withProject() {
+      podTemplate(label: 'node-sonarqube', name: 'node-sonarqube', serviceAccount: 'jenkins', cloud: 'openshift', containers: [
+        containerTemplate(
+          name: 'jnlp',
+          image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
+          resourceRequestCpu: '500m',
+          resourceLimitCpu: '1000m',
+          resourceRequestMemory: '2Gi',
+          resourceLimitMemory: '4Gi',
+          workingDir: '/tmp',
+          command: '',
+          args: '${computer.jnlpmac} ${computer.name}',
+        )
+      ]) {
+        node("node-sonarqube") {
+          checkout scm
+          dir('sonar-runner') {
+            try {
+              sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
+              SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
+
+              sh "npm install typescript && ./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info"
+            } finally {
+              echo "Scan Complete"
+            }
+          }
+        }
+      }
+      return true
+    }
+  }
+}
+
 def CHANGELOG = "No new changes"
 def IMAGE_HASH = "latest"
 
@@ -135,24 +171,14 @@ pipeline {
         //   }
         // }
 
-        // stage('exeucte sonar') {
-        //   agent { label 'sonarqubePodLabel' }
-        //   environment {
-        //     // set to whatever the secret name is
-        //     SONARQUBE_URL = credentials('url')
-        //   }
-        //   steps {
-        //     checkout scm
-        //     dir('sonar-runner') {
-        //       try {
-        //         // todo update url
-        //         sh './gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info'
-        //       } finally {
-        //         echo "Scan complete"
-        //       }
-        //     }
-        //   }
-        // }
+        stage('Sonarqube') {
+          steps {
+            script {
+              echo "Running Sonarqube"
+              def result = nodejsSonarqube()
+            }
+          }
+        }
       }
     }
 
