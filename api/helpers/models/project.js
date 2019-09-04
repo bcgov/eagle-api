@@ -25,6 +25,8 @@ var definition = {
   responsibleEPDEmail     : { type: String, default: '' },
   responsibleEPDPhone     : { type: String, default: '' },
   type                    : { type: String, default: '' },
+  legislation             : { type: String, default: '' },
+
 
   //Everything else
   addedBy                 : { type: String, default: '' },
@@ -104,7 +106,7 @@ buildToNature.modification = 'Modification of Existing';
 buildToNature.dismantling = 'Dismantling or Abandonment';
 buildToNature.unknown = 'Unknown nature value';
 
-// define a new mongoose virtual called nature as a basic object 
+// define a new mongoose virtual called nature as a basic object
 // with a name field, and getter and setter functions
 var nature = {};
 nature.name = 'nature';
