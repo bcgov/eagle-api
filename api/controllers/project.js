@@ -694,7 +694,7 @@ exports.protectedAddGroup = async function (args, res, next) {
 
   var Group = mongoose.model('Group');
   var doc = new Group({ project: mongoose.Types.ObjectId(objId), name: groupName.group });
-  ['project-system-admin', 'sysadmin', 'staff'].map(item => {
+  ['project-system-admin', 'sysadmin', 'staff'].forEach(item => {
     doc.read.push(item), doc.write.push(item), doc.delete.push(item)
   });
   // Update who did this?
