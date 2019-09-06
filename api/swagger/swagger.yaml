@@ -4020,7 +4020,7 @@ paths:
           schema:
             $ref: "#/definitions/Error"
 
-  /comment/export/{periodId}/{format}:
+  /comment/export/{periodId}:
     x-swagger-router-controller: comment
     options:
       tags:
@@ -4034,9 +4034,9 @@ paths:
           description: "ID of comment to get"
           required: true
           type: string
-        - name: format
-          in: path
-          description: "format of exported csv, either proponent or staff"
+        - in: query
+          name: format
+          description: "Format of exported csv, either proponent or staff."
           required: true
           type: string
       responses:
@@ -4065,9 +4065,9 @@ paths:
           description: "ID of comment to get"
           required: true
           type: string
-        - name: format
-          in: path
-          description: "format of exported csv, either proponent or staff"
+        - in: query
+          name: format
+          description: "Format of exported csv, either proponent or staff."
           required: true
           type: string
       responses:
