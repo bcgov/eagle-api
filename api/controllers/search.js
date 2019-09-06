@@ -18,10 +18,10 @@ function isEmpty(obj) {
 
 var generateExpArray = async function (field, roles) {
   var expArray = [];
-  if (field && field !== undefined) {
+  if (field && field != undefined) {
     var queryString = qs.parse(field);
     console.log("queryString:", queryString);
-    await Promise.all(Object.keys(queryString).map(async item => {
+    await Promise.all(Object.keys(queryString).forEach(async item => {
       console.log("item:", item, queryString[item]);
       if (item === 'pcp') {
         await handlePCPItem(roles, expArray, queryString[item]);
@@ -74,7 +74,7 @@ var handlePCPItem = async function (roles, expArray, value) {
   if (Array.isArray(value)) {
     // Arrays are a list of options so will always be ors
     var orArray = [];
-    await Promise.all(value.map(async entry => {
+    await Promise.all(value.forEach(async entry => {
       orArray.push(await getPCPValue(roles, entry));
     }));
     expArray.push({ $or: orArray });

@@ -93,7 +93,7 @@ describe('GET /application', () => {
         .expect(200)
         .then(response => {
           expect(response.body.length).toEqual(3);
-          
+
           let firstApplication = _.find(response.body, {description: 'SPECIAL'});
           expect(firstApplication).toHaveProperty('_id');
           expect(firstApplication['tags']).toEqual(expect.arrayContaining([["public"], ["sysadmin"]]));
@@ -500,7 +500,6 @@ describe('PUT /application/:id/unpublish', () => {
 
   test('handles feature unpublish', done => {
     let applicationFeature = new Feature({
-      tags: [],
       applicationID: existingApplication._id,
       tags: [['public']]
     });
