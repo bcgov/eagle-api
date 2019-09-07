@@ -21,21 +21,38 @@ var generateExpArray = async function (field, roles) {
   if (field && field != undefined) {
     var queryString = qs.parse(field);
     console.log("queryString:", queryString);
-    await Promise.all(Object.keys(queryString).forEach(async item => {
-      console.log("item:", item, queryString[item]);
+    // Note that we need map and not forEach here because Promise.all uses
+    // the returned array!
+    await Promise.all(Object.keys(queryString).map(async item => {
+      var entry = queryString[item];
+      console.log("item:", item, entry);
       if (item === 'pcp') {
-        await handlePCPItem(roles, expArray, queryString[item]);
-      } else if (item === 'decisionDateStart' || item === 'decisionDateEnd') {
-        handleDateItem(expArray, item, queryString[item]);
-      } else if (Array.isArray(queryString[item])) {
+        await handlePCPItem(roles, expArray, entry);
+      } else if (Array.isArray(entry)) {
         // Arrays are a list of options so will always be ors
         var orArray = [];
-        queryString[item].map(entry => {
-          orArray.push(getConvertedValue(item, entry));
+        entry.map(element => {
+          orArray.push(getConvertedValue(item, element));
         });
         expArray.push({ $or: orArray });
       } else {
-        expArray.push(getConvertedValue(item, queryString[item]));
+        switch (item) {
+          case 'decisionDateStart':
+            handleDateStartItem(expArray, 'decisionDate', entry);
+            break;
+          case 'decisionDateEnd':
+            handleDateEndItem(expArray, 'decisionDate', entry);
+            break;
+          case 'datePostedStart':
+            handleDateStartItem(expArray, 'datePosted', entry);
+            break;
+          case 'datePostedEnd':
+            handleDateEndItem(expArray, 'datePosted', entry);
+            break;
+          default:
+            expArray.push(getConvertedValue(item, entry));
+            break;
+        }
       }
     }));
   }
@@ -74,7 +91,9 @@ var handlePCPItem = async function (roles, expArray, value) {
   if (Array.isArray(value)) {
     // Arrays are a list of options so will always be ors
     var orArray = [];
-    await Promise.all(value.forEach(async entry => {
+    // Note that we need map and not forEach here because Promise.all uses
+    // the returned array!
+    await Promise.all(value.map(async entry => {
       orArray.push(await getPCPValue(roles, entry));
     }));
     expArray.push({ $or: orArray });
@@ -136,18 +155,23 @@ var getPCPValue = async function (roles, entry) {
   return pcp;
 }
 
-var handleDateItem = function (expArray, item, entry) {
+var handleDateStartItem = function (expArray, field, entry) {
   var date = new Date(entry);
 
   // Validate: valid date?
   if (!isNaN(date)) {
-    if (item === 'decisionDateStart') {
-      var start = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-      expArray.push({ decisionDate: { $gte: start } });
-    } else if (item === 'decisionDateEnd') {
-      var end = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1);
-      expArray.push({ decisionDate: { $lt: end } });
-    }
+    var start = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    expArray.push({ [field]: { $gte: start } });
+  }
+}
+
+var handleDateEndItem = function (expArray, field, entry) {
+  var date = new Date(entry);
+
+  // Validate: valid date?
+  if (!isNaN(date)) {
+    var end = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1);
+    expArray.push({ [field]: { $lt: end } });
   }
 }
 
