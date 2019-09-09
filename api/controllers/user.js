@@ -36,7 +36,7 @@ exports.protectedPost = async function (args, res, next) {
     country: obj.country,
     postalCode: obj.postalCode,
     notes: obj.notes,
-    read: ['staff', 'sysadmin'],
+    read: obj.orgName === 'Environmental Assessment Office' ? ['staff', 'sysadmin', 'public'] : ['staff', 'sysadmin'],
     write: ['staff', 'sysadmin'],
     delete: ['staff', 'sysadmin']
   });
@@ -85,6 +85,8 @@ exports.protectedPut = async function (args, res, next) {
     postalCode: obj.postalCode ? obj.postalCode : '',
     notes: obj.notes ? obj.notes : ''
   }
+
+  user.read = user.orgName === 'Environmental Assessment Office' ? ['staff', 'sysadmin', 'public'] : ['staff', 'sysadmin'];
 
   defaultLog.info("Incoming updated object:", user);
 

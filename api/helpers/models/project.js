@@ -14,15 +14,19 @@ var definition = {
   eacDecision             : { type: String, default: '' },
   location                : { type: String, default: '' },
   name                    : { type: String, trim: true },
+  projectLeadId           : { type:'ObjectId', default: null },
   projectLead             : { type: String, default: '' },
   projectLeadEmail        : { type: String, default: '' },
   projectLeadPhone        : { type: String, default: '' },
-  proponent               : { type:'ObjectId', default:null },
+  proponent               : { type:'ObjectId', default: null },
   region                  : { type: String, default: '' },
+  responsibleEPDId        : { type:'ObjectId', default: null },
   responsibleEPD          : { type: String, default: '' },
   responsibleEPDEmail     : { type: String, default: '' },
   responsibleEPDPhone     : { type: String, default: '' },
   type                    : { type: String, default: '' },
+  legislation             : { type: String, default: '' },
+
 
   //Everything else
   addedBy                 : { type: String, default: '' },
@@ -102,7 +106,7 @@ buildToNature.modification = 'Modification of Existing';
 buildToNature.dismantling = 'Dismantling or Abandonment';
 buildToNature.unknown = 'Unknown nature value';
 
-// define a new mongoose virtual called nature as a basic object 
+// define a new mongoose virtual called nature as a basic object
 // with a name field, and getter and setter functions
 var nature = {};
 nature.name = 'nature';
