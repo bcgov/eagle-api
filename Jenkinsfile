@@ -113,6 +113,8 @@ def nodejsSonarqube () {
               // check if sonarqube passed, and quit build if it didnt.
               sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
               SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-api')
+
+              sh("npm install jq")
               SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}' | jq -r '.projectStatus.status'")
 
               // test
