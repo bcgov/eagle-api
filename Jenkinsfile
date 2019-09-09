@@ -103,6 +103,13 @@ def nodejsSonarqube () {
               SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
 
               sh "npm install typescript && ./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info"
+            } catch (error) {
+              echo "[FAILURE] sonarqube didn't pass quality check"
+              // notifyRocketChat(
+              //   "@all The latest build of eagle-api seems to be broken. \n Error: \n ${error}",
+              //   ROCKET_QA_WEBHOOK
+              // )
+              throw error
             } finally {
               echo "Scan Complete"
             }
