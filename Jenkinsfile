@@ -118,7 +118,7 @@ def nodejsSonarqube () {
               SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
 
               echo "$SONARQUBE_STATUS_JSON"
-
+              import groovy.json.JsonSlurper
               SONARQUBE_STATUS = new JsonSlurper().parseText(SONARQUBE_STATUS_JSON).projectStatus.status
 
               // test
