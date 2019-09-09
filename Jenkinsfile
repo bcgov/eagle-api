@@ -117,7 +117,7 @@ def nodejsSonarqube () {
                 echo "Scan Failed"
                 currentBuild.result = 'FAILURE'
               } else {
-                echo "Scan Passed"f
+                echo "Scan Passed"
               }
             }
           }
