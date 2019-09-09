@@ -3,7 +3,7 @@ def sonarqubePodLabel = "eagle-api-${UUID.randomUUID().toString()}"
 // podTemplate(label: sonarqubePodLabel, name: sonarqubePodLabel, serviceAccount: 'jenkins', cloud: 'openshift', containers: [])
 
 @NonCPS
-import groovy.json.JsonOutput
+import groovy.json.*
 /*
  * Sends a rocket chat notification
  */
@@ -16,6 +16,11 @@ def notifyRocketChat(text, url) {
     ])
 
     sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
+}
+
+def sonarGetStatus (jsonPayload) {
+  def jsonSlurper = new JsonSlurper()
+  return jsonSlurper.parseText(jsonPayload).projectStatus.status
 }
 
 /*
@@ -103,7 +108,7 @@ def nodejsSonarqube () {
               SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
 
               sh "npm install typescript"
-              sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info"
+              sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar. -Dsonar.verbose=true --stacktrace --info"
             } catch (error) {
               // notifyRocketChat(
               //   "@all The latest build of eagle-api seems to be broken. \n Error: \n ${error}",
@@ -112,23 +117,24 @@ def nodejsSonarqube () {
               throw error
             } finally {
               // check if sonarqube passed, and quit build if it didnt.
+              sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
+              SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-api')
+              SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
 
+              // test
+              echo ${SONARQUBE_STATUS_JSON}
 
-              // sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
-              // SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-api')
-              // sh("brew install autoconf automake libtool")
-              // sh("npm install node-jq")
-              // SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}' | jq -r '.projectStatus.status'")
+              SONARQUBE_STATUS = sonarGetStatus (SONARQUBE_STATUS_JSON)
 
-              // // test
-              // echo ${SONARQUBE_STATUS_JSON}
+              // test
+              echo ${SONARQUBE_STATUS}
 
-              // if ( ${SONARQUBE_STATUS_JSON} == "ERROR"){
-              //   echo "Scan Failed"
-              //   currentBuild.result = 'FAILURE'
-              // } else {
-              //   echo "Scan Passed"
-              // }
+              if ( ${SONARQUBE_STATUS_JSON} == "ERROR"){
+                echo "Scan Failed"
+                currentBuild.result = 'FAILURE'
+              } else {
+                echo "Scan Passed"
+              }
             }
           }
         }
