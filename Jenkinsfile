@@ -109,6 +109,28 @@ def nodejsSonarqube () {
 
               sh "npm install typescript"
               sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar. -Dsonar.verbose=true --stacktrace --info"
+
+
+              // check if sonarqube passed, and quit build if it didnt.
+              sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
+              SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-api')
+              SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
+
+              // test
+              echo "the current status is ${SONARQUBE_STATUS_JSON}, running json parser"
+
+              SONARQUBE_STATUS = sonarGetStatus (SONARQUBE_STATUS_JSON)
+
+              // test
+              echo "the current status is ${SONARQUBE_STATUS}"
+
+              if ( ${SONARQUBE_STATUS} == "ERROR"){
+                echo "Scan Failed"
+                currentBuild.result = 'FAILURE'
+              } else {
+                echo "Scan Passed"
+              }
+
             } catch (error) {
               // notifyRocketChat(
               //   "@all The latest build of eagle-api seems to be broken. \n Error: \n ${error}",
@@ -116,25 +138,7 @@ def nodejsSonarqube () {
               // )
               throw error
             } finally {
-              // check if sonarqube passed, and quit build if it didnt.
-              sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
-              SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-api')
-              SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
-
-              // test
-              echo ${SONARQUBE_STATUS_JSON}
-
-              SONARQUBE_STATUS = sonarGetStatus (SONARQUBE_STATUS_JSON)
-
-              // test
-              echo ${SONARQUBE_STATUS}
-
-              if ( ${SONARQUBE_STATUS_JSON} == "ERROR"){
-                echo "Scan Failed"
-                currentBuild.result = 'FAILURE'
-              } else {
-                echo "Scan Passed"
-              }
+              echo "Scan Complete"
             }
           }
         }
