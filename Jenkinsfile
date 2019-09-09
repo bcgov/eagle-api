@@ -113,7 +113,7 @@ def nodejsSonarqube () {
               sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
               SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-api')
 
-              if ( sh( "curl -sL -w %{http_code} ${SONARQUBE_STATUS_URL} -o /dev/null -S --quiet 2>&1 | jsawk -a 'return this.status'") == "ERROR"){
+              if ( sh("npm install typescript && curl -sL -w %{http_code} ${SONARQUBE_STATUS_URL} -o /dev/null -S --quiet 2>&1 | jsawk -a 'return this.status'") == "ERROR"){
                 echo "Scan Failed"
                 currentBuild.result = 'FAILURE'
               } else {
