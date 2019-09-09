@@ -783,7 +783,7 @@ exports.protectedPut = async function (args, res, next) {
   obj.eacDecision = projectObj.eacDecision;
   if (projectObj.decisionDate) {
     obj.decisionDate = new Date(projectObj.decisionDate);
-  }
+  } else obj.decisionDate = null;
 
   try {
     obj.intake = {};
