@@ -128,7 +128,7 @@ def nodejsSonarqube () {
               //   currentBuild.result = 'FAILURE'
               // } else {
               //   echo "Scan Passed"
-              }
+              // }
             }
           }
         }
