@@ -124,7 +124,7 @@ def nodejsSonarqube () {
               // test
               echo "the current status is ${SONARQUBE_STATUS}"
 
-              if ( ${SONARQUBE_STATUS} == "ERROR"){
+              if ( "${SONARQUBE_STATUS}" == "ERROR") {
                 echo "Scan Failed"
                 currentBuild.result = 'FAILURE'
               } else {
