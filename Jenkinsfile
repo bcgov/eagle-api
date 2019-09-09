@@ -110,14 +110,15 @@ def nodejsSonarqube () {
               // )
               throw error
             } finally {
+              // check if sonarqube passed, and quit build if it didnt.
               sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
               SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-api')
+              SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}' | jq -r '.projectStatus.status'")
 
-              SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w %{http_code} ${SONARQUBE_STATUS_URL}")
-
+              // test
               echo ${SONARQUBE_STATUS_JSON}
 
-              if ( sh("curl -sL -w %{http_code} ${SONARQUBE_STATUS_URL} -o /dev/null -S --quiet 2>&1 | jsawk -a 'return this.status'") == "ERROR"){
+              if ( ${SONARQUBE_STATUS_JSON} == "ERROR"){
                 echo "Scan Failed"
                 currentBuild.result = 'FAILURE'
               } else {
