@@ -108,6 +108,16 @@ definitions:
         type: string
         example: "[['public']]"
         ## TODO: Add more fields here.
+  InspectionElementObject:
+    type: object
+    properties:
+      _id:
+        type: string
+        example: "54759eb3c090d83494e2d804"
+      tags:
+        type: string
+        example: "[['public']]"
+        ## TODO: Add more fields here.
   GroupObject:
     type: object
     properties:
@@ -141,6 +151,7 @@ definitions:
       - responsibleEPDEmail
       - responsibleEPDPhone
       - type
+      - legislation
       - read
       - build
       - nature
@@ -1895,6 +1906,11 @@ paths:
           description: "Type of the project"
           type: string
         - in: query
+          name: legislation
+          required: false
+          description: "Legislation of the project"
+          type: string
+        - in: query
           name: read
           required: false
           description: "The read permissions of the project"
@@ -2042,6 +2058,11 @@ paths:
           description: "Type of the project"
           type: string
         - in: query
+          name: legislation
+          required: false
+          description: "Legislation of the project"
+          type: string
+        - in: query
           name: read
           required: false
           description: "The read permissions of the project"
@@ -2183,6 +2204,153 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/InspectionObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /inspection/element/{elemId}:
+    x-swagger-router-controller: inspection
+    options:
+      tags:
+        - inspection
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Inspection Route"
+      parameters:
+        - name: elemId
+          in: path
+          description: "ID of element to get"
+          required: true
+          type: string
+        - in: query
+          name: thumbnail
+          description: "Get image thumbnail option"
+          type: string
+          required: false
+        - in: query
+          name: filename
+          description: "Get image as filename"
+          type: string
+          required: false
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/InspectionElementObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - document
+      summary: "Download an element"
+      operationId: protectedElementGet
+      description: "Authenticated access to retreiving an element binary."
+      security:
+        - Bearer: []
+      parameters:
+        - name: elemId
+          in: path
+          description: "ID of element to download"
+          required: true
+          type: string
+        - in: query
+          name: thumbnail
+          description: "Get image thumbnail option"
+          type: string
+          required: false
+        - in: query
+          name: filename
+          description: "Get image as filename"
+          type: string
+          required: false
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /inspection/{projId}/{inspId}/element:
+    x-swagger-router-controller: inspection
+    options:
+      tags:
+        - inspection
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Inspection Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+        - name: inspId
+          in: path
+          description: "ID of inspection to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/InspectionElementObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    post:
+      tags:
+        - inspection
+      summary: "Add Inspection Element"
+      operationId: protectedPostElement
+      description: "Adds element to an inspection."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      consumes:
+        - multipart/form-data
+      parameters:
+        - name: inspId
+          in: path
+          type: string
+          required: true
+          description: "Inspection this element relates to."
+        - name: projId
+          in: path
+          type: string
+          required: true
+          description: "Project this inspection element relates to."
+        - name: upfile
+          in: formData
+          description: "The file to upload."
+          required: false
+          type: file
+        - name: type
+          in: formData
+          required: false
+          type: string
+          description: "Type"
+        - name: text
+          in: formData
+          required: false
+          type: string
+          description: "Text Object"
+        - name: geo
+          in: formData
+          required: true
+          type: string
+          description: "Geo Object"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/InspectionElementObject"
         "403":
           description: "Access Denied"
           schema:
@@ -3877,6 +4045,11 @@ paths:
           description: "ID of comment to get"
           required: true
           type: string
+        - in: query
+          name: format
+          description: "Format of exported csv, either proponent or staff."
+          required: true
+          type: string
       responses:
         "200":
           description: "Success"
@@ -3901,6 +4074,11 @@ paths:
         - name: periodId
           in: path
           description: "ID of comment to get"
+          required: true
+          type: string
+        - in: query
+          name: format
+          description: "Format of exported csv, either proponent or staff."
           required: true
           type: string
       responses:
@@ -4931,6 +5109,18 @@ paths:
       operationId: publicGet
       description: "Retreiving items relating to the given keywords."
       parameters:
+        - in: query
+          name: _id
+          description: "Grab (via _id) specific document"
+          type: string
+          required: false
+          items:
+            type: string
+        - in: query
+          name: _schemaName
+          description: "Schema to search on"
+          type: string
+          required: false
         - in: query
           name: keywords
           description: "Full Text Search based on keywords"

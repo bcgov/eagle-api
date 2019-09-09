@@ -35,3 +35,10 @@ debug.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# Installer Files
+/developer_install_helper.sh
+/vscodeextensions.txt
+/developer_install_prerequisites.sh
+/setup_helper.sh
+/project_installer.sh

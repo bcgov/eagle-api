@@ -58,8 +58,8 @@ def nodejsTester () {
           image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
           resourceRequestCpu: '500m',
           resourceLimitCpu: '800m',
-          resourceRequestMemory: '1Gi',
-          resourceLimitMemory: '2Gi',
+          resourceRequestMemory: '2Gi',
+          resourceLimitMemory: '4Gi',
           workingDir: '/tmp',
           command: '',
         )
@@ -70,6 +70,49 @@ def nodejsTester () {
             sh 'npm run tests'
           } finally {
             echo "Unit Tests Passed"
+          }
+        }
+      }
+      return true
+    }
+  }
+}
+
+// todo templates can be pulled from a repository, instead of declared here
+def nodejsSonarqube () {
+  openshift.withCluster() {
+    openshift.withProject() {
+      podTemplate(label: 'node-sonarqube', name: 'node-sonarqube', serviceAccount: 'jenkins', cloud: 'openshift', containers: [
+        containerTemplate(
+          name: 'jnlp',
+          image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
+          resourceRequestCpu: '500m',
+          resourceLimitCpu: '1000m',
+          resourceRequestMemory: '2Gi',
+          resourceLimitMemory: '4Gi',
+          workingDir: '/tmp',
+          command: '',
+          args: '${computer.jnlpmac} ${computer.name}',
+        )
+      ]) {
+        node("node-sonarqube") {
+          checkout scm
+          dir('sonar-runner') {
+            try {
+              sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
+              SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
+
+              sh "npm install typescript && ./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info"
+            } catch (error) {
+              echo "[FAILURE] sonarqube didn't pass quality check"
+              // notifyRocketChat(
+              //   "@all The latest build of eagle-api seems to be broken. \n Error: \n ${error}",
+              //   ROCKET_QA_WEBHOOK
+              // )
+              throw error
+            } finally {
+              echo "Scan Complete"
+            }
           }
         }
       }
@@ -101,8 +144,9 @@ pipeline {
               echo ">>>>>>Changelog: \n ${CHANGELOG}"
 
               try {
-                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat /var/rocket/rocket-deploy-webhook')
-                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat /var/rocket/rocket-qa-webhook')
+                sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
                 echo "Building eagle-api develop branch"
                 openshiftBuild bldCfg: 'eagle-api', showBuildLogs: 'true'
@@ -135,24 +179,14 @@ pipeline {
         //   }
         // }
 
-        // stage('exeucte sonar') {
-        //   agent { label 'sonarqubePodLabel' }
-        //   environment {
-        //     // set to whatever the secret name is
-        //     SONARQUBE_URL = credentials('url')
-        //   }
-        //   steps {
-        //     checkout scm
-        //     dir('sonar-runner') {
-        //       try {
-        //         // todo update url
-        //         sh './gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.verbose=true --stacktrace --info'
-        //       } finally {
-        //         echo "Scan complete"
-        //       }
-        //     }
-        //   }
-        // }
+        stage('Sonarqube') {
+          steps {
+            script {
+              echo "Running Sonarqube"
+              def result = nodejsSonarqube()
+            }
+          }
+        }
       }
     }
 

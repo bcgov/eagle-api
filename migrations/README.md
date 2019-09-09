@@ -2,10 +2,10 @@
 
 ### Create migration boilerplate
 
-`./node_modules/db-migrate/bin/db-migrate/create myMigrationName`
+`./node_modules/db-migrate/bin/db-migrate create myMigrationName`
 
-This will create a date stamped **boilerplate* migration file for you in the `./migrations` directory, such as  *20190625114200-myMigrationName.js* . 
-Modify this file to implement your migration. 
+This will create a date stamped **boilerplate* migration file for you in the `./migrations` directory, such as  *20190625114200-myMigrationName.js* .
+Modify this file to implement your migration.
 
 ### Run a migration
 
@@ -15,7 +15,7 @@ Modify this file to implement your migration.
 ### Load dump into db and run migrations (optional)
 
 
-1. Move your newly generated migration file out of the migrations folder(ie. *20190625114200-myMigrationName.js*). This is to ensure a 
+1. Move your newly generated migration file out of the migrations folder(ie. *20190625114200-myMigrationName.js*). This is to ensure a
 clean state to test your new migration against.
 
 2. Run the following command to load a dump file and apply all existing migrations:
@@ -30,7 +30,7 @@ clean state to test your new migration against.
 
 ### Re-run migration (local testing)
 
-** This won't unclobber data, just allow a rerun of a migration. You may 
+** This won't unclobber data, just allow a rerun of a migration. You may
 need to dump and restore if the last migration attempt mangled data. **
 
 1. View all migrations applied, in mongo shell

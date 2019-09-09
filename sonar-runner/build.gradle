@@ -15,7 +15,7 @@ def env = System.env
 // in .bashrc or equivalent
 //   export SONAR_PROJECT_NAME_EXTENSION
 // ensure that the file is sourced to populate your environment
-// verify with 
+// verify with
 //   printenv |  grep SONAR
 //then ./gradlew sonarQube
 
@@ -34,7 +34,7 @@ if ( project.hasProperty('project_name_extension') ) {
 // in .bashrc or equivalent
 //   export SONAR_PROJECT_KEY_EXTENSION
 // ensure that the file is sourced to populate your environment
-// verify with 
+// verify with
 //   printenv |  grep SONAR
 //then ./gradlew sonarqube
 
@@ -48,9 +48,8 @@ if ( project.hasProperty('project_key_extension') ) {
 
 sonarqube {
     properties {
-        property "sonar.host.url", "https://sonarqube-eagle-tools.pathfinder.gov.bc.ca"        
-        property "sonar.projectName", "eagle-api$pne"
-        property "sonar.projectKey", "org.sonarqube:eagle-api$pke"
+        property "sonar.projectName", "eagle-api"
+        property "sonar.projectKey", "org.sonarqube:eagle-api"
         property "sonar.projectBaseDir", "../"
         property "sonar.sources", "./api"
         //property "sonar.tests", "test"

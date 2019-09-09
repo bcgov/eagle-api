@@ -425,7 +425,7 @@ exports.protectedPut = async function (args, res, next) {
 
   var comment = {
     isAnonymous: obj.isAnonymous,
-    dateUpdated: obj.dateAdded,
+    dateAdded: obj.dateAdded,
     datePosted: obj.datePosted,
     dateUpdated: new Date(),
     eaoNotes: obj.eaoNotes,
@@ -478,10 +478,42 @@ exports.protectedStatus = async function (args, res, next) {
   }
 };
 
+function formatDate(date) {
+  if (date){
+      var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [year, month, day].join('-');
+  } else {
+    return null;
+  }
+}
+
 // Export all comments
 exports.protectedExport = async function (args, res, next) {
   var period = args.swagger.params.periodId.value;
+  var format = args.swagger.params.format.value;
   var roles = args.swagger.params.auth_payload.realm_access.roles;
+
+  // get api's base path
+  var basePath = Utils.getBasePath(args.protocol, args.host);
+
+  // get period title
+  var commentPeriodModel = mongoose.model('CommentPeriod');
+  var commentPeriod = await commentPeriodModel.findOne({ _id: period })
+  commentPeriodName = commentPeriod.instructions;
+
+  // get project name
+  var projectModel = mongoose.model('Project');
+  var project = await projectModel.findOne({ _id: commentPeriod.project })
+  var projectName = project.name;
+
+  var publishedCommentNumber = 1;
 
   var match = {
     _schemaName: 'Comment',
@@ -536,45 +568,64 @@ exports.protectedExport = async function (args, res, next) {
   const transform = require('stream-transform');
   data.stream()
     .pipe(transform(function (d) {
-      let read = d.read;
-      delete d.userCan;
-      delete d._schemaName;
-      delete d.isPublished;
-      delete d.delete;
-      delete d.read;
-      delete d.write;
-      delete d.dateUpdated;
-      delete d.dateAdded;
-      delete d.resolvedBy;
-      delete d.isResolved;
-      delete d.isAnonymous;
-      delete d.original;
-      delete d.ancestor;
-      delete d.parent;
-      delete d.period;
-      delete d.project;
-      delete d.__v;
-      delete d.updatedBy;
-      delete d.datePosted;
-
-      // todo: translate valuedComponents
-      delete d.valuedComponents;
 
       // Translate documents into links.
       let docLinks = [];
-      if (d.documents) {
+      if (d.documents && d.documents.length > 0) {
         d.documents.map((theDoc) => {
-          docLinks.push('https://projects.eao.gov.bc.ca/api/document/' + theDoc + '/fetch');
+          docLinks.push(basePath + '/api/document/' + theDoc + '/fetch');
         });
       }
 
-      delete d.documents;
+      //Remove anonymous users
+      let sanitizedAuthor = 'Anonymous'
+      if (!d.isAnonymous) {
+        sanitizedAuthor = d.author;
+      }
 
-      if (d.isAnonymous) {
-        delete d.author;
-        return { author: 'Anonymous', isPublished: read.includes('public'), documents: docLinks, ...d };
-      } else {
-        return { isPublished: read.includes('public'), documents: docLinks, ...d };
+      // Populate csv with fields relevant to staff
+      if (format == 'staff'){
+
+        return {
+          Comment_No: d.commentId,
+          Submitted: formatDate(d.dateAdded),
+          Author: sanitizedAuthor,
+          Location: d.location,
+          Comment: d.comment,
+          Attachments: docLinks,
+          Published: formatDate(d.datePosted),
+          Status: d.eaoStatus,
+          Rejected_Reason: d.rejectedReason,
+          Rejected_Notes: d.rejectedNotes,
+          EAO_Notes: d.eaoNotes,
+          Project: projectName,
+          PCP_Title: commentPeriodName,
+          Export_Date: formatDate(new Date())
+        };
+
+      // Populate csv with fields relevant to proponents
+      } else if (format == 'proponent') {
+        let read = d.read;
+        if (read.includes('public')) {
+
+          // todo: translate valuedComponents
+
+          return {
+            Comment_No: publishedCommentNumber++,
+            Submitted: formatDate(d.dateAdded),
+            Author: sanitizedAuthor,
+            Location: d.location,
+            Comment: d.comment,
+            Attachments: docLinks,
+            Published: formatDate(d.datePosted),
+            Pillar: d.pillars,
+            Project: projectName,
+            PCP_Title: commentPeriodName,
+            Export_Date: formatDate(new Date())
+          };
+        } else {
+          return null;
+        }
       }
     }))
     .pipe(csv.stringify({ header: true }))

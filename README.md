@@ -1,42 +1,44 @@
-<!-- ## EAGLE API (master)
+# bcgov / eagle-api
 
-Minimal API for the EAGLE [Public](https://github.com/bcgov/eagle-public) and [Admin](https://github.com/bcgov/eagle-admin) apps -->
+API for acting as a central authenticated data service for all EPIC front-ends
 
-## How to run this
+## Related projects
 
-Before running the api, you must set some environment variables:
-1) MINIO_HOST='foo.pathfinder.gov.bc.ca'
-2) MINIO_ACCESS_KEY='xxxx'
-3) MINIO_SECRET_KEY='xxxx'
-4) KEYCLOAK_ENABLED=true
-5) MONGODB_DATABASE='epic'
+Eagle is a revision name of the EAO EPIC application suite.
 
-One way to do this is to edit your ~/.bash_profile file to contain:
+These projects comprise EAO EPIC:
 
-```
-export MONGODB_DATABASE="epic"
-export MINIO_HOST="foo.pathfinder.gov.bc.ca"
-export MINIO_ACCESS_KEY="xxxx"
-export MINIO_SECRET_KEY="xxxx"
-export KEYCLOAK_ENABLED=true
-```
+* <https://github.com/bcgov/eagle-api>
+* <https://github.com/bcgov/eagle-public>
+* <https://github.com/bcgov/eagle-admin>
+* <https://github.com/bcgov/eagle-common-components>
+* <https://github.com/bcgov/eagle-reports>
+* <https://github.com/bcgov/eagle-helper-pods>
+* <https://github.com/bcgov/eagle-dev-guides>
 
-Please note that these values are case sensitive so don't use upper-case TRUE for example.
+## Pre-requisites
 
-Don't forget to reload your .bash_profile file so that your terminal environment is up to date with the correct values
-```
-source ~/.bash_profile
-env
+Run the following two scripts to create your environment
+
+```bash
+#!/bin/bash
+.\install_prerequisites.sh
 ```
 
-The above `env` command will show you your environment variables and allow you to check that the correct values are present.
+```bash
+#!/bin/bash
+.\setup_project.sh
+```
+
+## Fork, Build and Run
 
 Start the server by running `npm start`
 
 Check the swagger-ui on `http://localhost:3000/api/docs/`
 
-1) POST `http://localhost:3000/api/login/token` with the following body
-```
+1. POST `http://localhost:3000/api/login/token` with the following body
+
+```json
 {
 "username": #{username},
 "password": #{password}
@@ -44,34 +46,33 @@ Check the swagger-ui on `http://localhost:3000/api/docs/`
 ```
 
  and take the token that you get in the response
- 
- 2) GET `http://localhost:3000/api/application` again with the following header
- ``Authorization: Bearer _TOKEN_``, replacing `_TOKEN_ ` with the value you got from that request
 
-## Initial Setup
+ 1. GET `http://localhost:3000/api/application` again with the following header
+ ``Authorization: Bearer _TOKEN_``, replacing `_TOKEN_` with the value you got from that request
 
-### Node and NPM 
-
-We use a version manager so as to allow concurrent versions of node and other software.  [asdf](https://github.com/asdf-vm/asdf) is recommended.  Installation of *asdf* and required node packages is covered [here](https://github.com/bcgov/eagle-dev-guides/blob/master/dev_guides/node_npm_requirements.md)
-
-### Database 
+### Database
 
 If possible, acquire a dump of the database from one of the live environments.  
 
 To make sure you don't have an existing old copy (careful, this is destructive):
 
-```
+```bash
+#!/bin/bash
 mongo
+```
+
+```mongo
 use epic
 db.dropDatabase()
 ```
 
-#### Load database dump:
+#### Load database dump
 
 1. Download and unzip archived dump file.
 2. Restore the dump into your local mongo:
 
-```
+```bash
+#!/bin/bash
 mongorestore -d epic epic/
 ```
 
@@ -79,15 +80,15 @@ mongorestore -d epic epic/
 
 Described in [seed README](seed/README.md)
 
-#### Loading legacy data:
+#### Loading legacy data
 To restore the database dump you have from the old epic system (ie ESM):
 
-```
+```bash
+#!/bin/bash
 mongorestore -d epic dump/[old_database_name_most_likely_esm]
 ```
 
 Then run the contents of [dataload](prod-load-db/esm_prod_april_1/dataload.sh) against that database.  You may need to edit the commands slightly to match your db name or to remove the ".gz --gzip" portion if your dump unpacks as straight ".bson" files.
-
 
 ### Database Conversions
 
@@ -96,20 +97,20 @@ NB: These are useless once they are run on an environments' database, and are on
 In the process of developing this application, we have database conversion scripts that must be run in order to update the db model so that the newest codebase can work properly.  There are currently two methods of doing the database conversion depending on how long-lived and memory intensive the conversion is.
 
 ### Method 1: db-migrate
+
 ### Method 2: node scripts named migration* in the root folder
 
 ### Method 1
 
-See https://www.npmjs.com/package/db-migrate for documentation on running the db migrate command.  General use case for local development at the root folder:
+See <https://www.npmjs.com/package/db-migrate> for documentation on running the db migrate command.  General use case for local development at the root folder:
 
 ```./node_modules/db-migrate/bin/db-migrate up```
 
-For dev/test/prod environments, you will need to change the database.json file in the root folder accordingly and run with the --env param.  See https://www.npmjs.com/package/db-migrate for more information.
+For dev/test/prod environments, you will need to change the database.json file in the root folder accordingly and run with the --env param.  See <https://www.npmjs.com/package/db-migrate> for more information.
 
 ### Method 2
 
 In the root folder, there are files named migrateDocuments*.js.  These are large, long-running, memory intensive scripts that operated on the vast majority of the EPIC documents.  As a result, db-migrate was slow and unreliable given the nature of the connection to our database.  As a result, these nodejs scripts operate using the mongodb driver in nodejs and can handle a more complicated, robust approach to doing the database conversion.  They can be run from your local machine as long as there is a ```oc port-forward``` tunnel from your machine to the openshift mongdb database.  Change the user/pass/port/host/authenticationDatabase params and the script will execute against the mongodb pod directly. 
-
 
 ## Developing
 
@@ -169,13 +170,14 @@ This code will stand in for the swagger-tools router, and help build the objects
 
 Unfortunately, this results in a lot of boilerplate code in each of the controller tests. There are some helpers to reduce the amount you need to write, but you will still need to check the parameter field names sent by your middleware router match what the controller(and swagger router) expect. However, this method results in  pretty effective integration tests as they exercise the controller code and save objects in the database. 
 
-
 ## Test Database
+
 The tests run on an in-memory MongoDB server, using the [mongodb-memory-server](https://github.com/nodkz/mongodb-memory-server) package. The setup can be viewed at [test_helper.js](api/test/test_helper.js), and additional config in [config/mongoose_options.js]. It is currently configured to wipe out the database after each test run to prevent database pollution. 
 
 [Factory-Girl](https://github.com/aexmachina/factory-girl) is used to easily create models(persisted to db) for testing purposes. 
 
 ## Mocking http requests
+
 External http calls (such as GETs to BCGW) are mocked with a tool called [nock](https://github.com/nock/nock). Currently sample JSON responses are stored in the [test/fixtures](test/fixtures) directory. This allows you to intercept a call to an external service such as bcgw, and respond with your own sample data. 
 
 ```javascript
@@ -205,15 +207,17 @@ External http calls (such as GETs to BCGW) are mocked with a tool called [nock](
 ## Configuring Environment Variables
 
 Recall the environment variables we need for local dev:
-1) MINIO_HOST='foo.pathfinder.gov.bc.ca'
-2) MINIO_ACCESS_KEY='xxxx'
-3) MINIO_SECRET_KEY='xxxx'
-4) KEYCLOAK_ENABLED=true
-5) MONGODB_DATABASE='epic'
+
+1. MINIO_HOST='foo.pathfinder.gov.bc.ca'
+1. MINIO_ACCESS_KEY='xxxx'
+1. MINIO_SECRET_KEY='xxxx'
+1. KEYCLOAK_ENABLED=true
+1. MONGODB_DATABASE='epic'
 
 To get actual values for the above fields in the deployed environments, examine the openshift environment you wish to target:
 
-```
+```bash
+#!/bin/bash
 oc project [projectname]
 oc get routes | grep 'minio'
 oc get secrets | grep 'minio'

@@ -18,24 +18,41 @@ function isEmpty(obj) {
 
 var generateExpArray = async function (field, roles) {
   var expArray = [];
-  if (field && field !== undefined) {
+  if (field && field != undefined) {
     var queryString = qs.parse(field);
     console.log("queryString:", queryString);
+    // Note that we need map and not forEach here because Promise.all uses
+    // the returned array!
     await Promise.all(Object.keys(queryString).map(async item => {
-      console.log("item:", item, queryString[item]);
+      var entry = queryString[item];
+      console.log("item:", item, entry);
       if (item === 'pcp') {
-        await handlePCPItem(roles, expArray, queryString[item]);
-      } else if (item === 'decisionDateStart' || item === 'decisionDateEnd') {
-        handleDateItem(expArray, item, queryString[item]);
-      } else if (Array.isArray(queryString[item])) {
+        await handlePCPItem(roles, expArray, entry);
+      } else if (Array.isArray(entry)) {
         // Arrays are a list of options so will always be ors
         var orArray = [];
-        queryString[item].map(entry => {
-          orArray.push(getConvertedValue(item, entry));
+        entry.map(element => {
+          orArray.push(getConvertedValue(item, element));
         });
         expArray.push({ $or: orArray });
       } else {
-        expArray.push(getConvertedValue(item, queryString[item]));
+        switch (item) {
+          case 'decisionDateStart':
+            handleDateStartItem(expArray, 'decisionDate', entry);
+            break;
+          case 'decisionDateEnd':
+            handleDateEndItem(expArray, 'decisionDate', entry);
+            break;
+          case 'datePostedStart':
+            handleDateStartItem(expArray, 'datePosted', entry);
+            break;
+          case 'datePostedEnd':
+            handleDateEndItem(expArray, 'datePosted', entry);
+            break;
+          default:
+            expArray.push(getConvertedValue(item, entry));
+            break;
+        }
       }
     }));
   }
@@ -74,6 +91,8 @@ var handlePCPItem = async function (roles, expArray, value) {
   if (Array.isArray(value)) {
     // Arrays are a list of options so will always be ors
     var orArray = [];
+    // Note that we need map and not forEach here because Promise.all uses
+    // the returned array!
     await Promise.all(value.map(async entry => {
       orArray.push(await getPCPValue(roles, entry));
     }));
@@ -136,22 +155,27 @@ var getPCPValue = async function (roles, entry) {
   return pcp;
 }
 
-var handleDateItem = function(expArray, item, entry) {
+var handleDateStartItem = function (expArray, field, entry) {
   var date = new Date(entry);
 
   // Validate: valid date?
   if (!isNaN(date)) {
-    if (item === 'decisionDateStart') {
-      var start = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-      expArray.push({ decisionDate: { $gte: start } });
-    } else if (item === 'decisionDateEnd') {
-      var end = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1);
-      expArray.push({ decisionDate: { $lt: end } });
-    }
+    var start = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    expArray.push({ [field]: { $gte: start } });
   }
 }
 
-var searchCollection = async function (roles, keywords, collection, pageNum, pageSize, project, sortField, sortDirection, caseSensitive, populate = false, and, or) {
+var handleDateEndItem = function (expArray, field, entry) {
+  var date = new Date(entry);
+
+  // Validate: valid date?
+  if (!isNaN(date)) {
+    var end = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1);
+    expArray.push({ [field]: { $lt: end } });
+  }
+}
+
+var searchCollection = async function (roles, keywords, collection, pageNum, pageSize, project, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or) {
   var properties = undefined;
   if (project) {
     properties = { project: mongoose.Types.ObjectId(project) };
@@ -195,18 +219,24 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
   var sortingValue = {};
   sortingValue[sortField] = sortDirection;
 
-  // We don't want to have sort in the aggrigation if the front end doesn't need sort.
-  let searchResultAggrigation = [
-    {
-      $sort: sortingValue
-    },
+  let searchResultAggregation = [];
+  // We don't want to have sort in the aggregation if the front end doesn't need sort.
+  if (sortField && sortDirection) {
+    searchResultAggregation.push(
+      {
+        $sort: sortingValue
+      }
+    );
+  }
+  searchResultAggregation.push(
     {
       $skip: pageNum * pageSize
     },
     {
       $limit: pageSize
     }
-  ];
+  );
+
 
   var aggregation = [
     {
@@ -363,7 +393,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
 
   aggregation.push({
     $facet: {
-      searchResults: searchResultAggrigation,
+      searchResults: searchResultAggregation,
       meta: [
         {
           $count: "searchResultsTotal"
@@ -399,7 +429,7 @@ var executeQuery = async function (args, res, next) {
   var populate = args.swagger.params.populate ? args.swagger.params.populate.value : false;
   var pageNum = args.swagger.params.pageNum.value || 0;
   var pageSize = args.swagger.params.pageSize.value || 25;
-  var sortBy = args.swagger.params.sortBy.value || ['-score'];
+  var sortBy = args.swagger.params.sortBy.value ? args.swagger.params.sortBy.value : keywords ? ['-score'] : [];
   var caseSensitive = args.swagger.params.caseSensitive ? args.swagger.params.caseSensitive.value : false;
   var and = args.swagger.params.and ? args.swagger.params.and.value : '';
   var or = args.swagger.params.or ? args.swagger.params.or.value : '';
