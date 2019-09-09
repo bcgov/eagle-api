@@ -113,7 +113,7 @@ def nodejsSonarqube () {
               sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
               SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-api')
 
-              SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -sL -w %{http_code} ${SONARQUBE_STATUS_URL} -o /dev/null -S --quiet 2>&1")
+              SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w %{http_code} ${SONARQUBE_STATUS_URL}")
 
               echo ${SONARQUBE_STATUS_JSON}
 
