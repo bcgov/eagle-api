@@ -115,10 +115,14 @@ def nodejsSonarqube () {
               SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-api')
 
               sh("npm install jq")
-              SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}' | jq -r '.projectStatus.status'")
+              SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
+
+              echo "$SONARQUBE_STATUS_JSON"
+
+              SONARQUBE_STATUS = new JsonSlurper().parseText(SONARQUBE_STATUS_JSON).projectStatus.status
 
               // test
-              echo ${SONARQUBE_STATUS_JSON}
+              echo "$SONARQUBE_STATUS_JSON"
 
               if ( ${SONARQUBE_STATUS_JSON} == "ERROR"){
                 echo "Scan Failed"
