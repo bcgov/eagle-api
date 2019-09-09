@@ -73,7 +73,7 @@ allprojects {
 }
 
 test {
-  ignoreFailures = true
+  // ignoreFailures = true
 }
 
 dependencies {
