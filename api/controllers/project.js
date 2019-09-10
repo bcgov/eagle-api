@@ -766,10 +766,12 @@ exports.protectedPut = async function (args, res, next) {
   obj.status = projectObj.status;
   obj.eaStatus = projectObj.eaStatus;
   obj.name = projectObj.name;
-  // obj.eaStatusDate = new Date(projectObj.eaStatusDate);
-  // obj.projectStatusDate = new Date(projectObj.projectStatusDate);
-  // obj.substantiallyDate = new Date(projectObj.substantiallyDate);
-  // obj.activeDate = new Date(projectObj.activeDate);
+
+  // obj.eaStatusDate = projectObj.eaStatusDate ? new Date(projectObj.eaStatusDate) : null;
+  // obj.projectStatusDate = projectObj.projectStatusDate ? new Date(projectObj.projectStatusDate) : null;
+  // obj.substantiallyDate = projectObj.substantiallyDate ? new Date(projectObj.substantiallyDate) : null;
+  // obj.activeDate = projectObj.activeDate ? new Date(projectObj.activeDate) : null;
+
   obj.substantially = projectObj.substantially;
 
   obj.centroid = projectObj.centroid;
@@ -781,9 +783,7 @@ exports.protectedPut = async function (args, res, next) {
   obj.CEAAInvolvement = projectObj.CEAAInvolvement;
   obj.CEAALink = projectObj.CEAALink;
   obj.eacDecision = projectObj.eacDecision;
-  if (projectObj.decisionDate) {
-    obj.decisionDate = new Date(projectObj.decisionDate);
-  } else obj.decisionDate = null;
+  obj.decisionDate = projectObj.decisionDate ? new Date(projectObj.decisionDate) : null;
 
   try {
     obj.intake = {};
