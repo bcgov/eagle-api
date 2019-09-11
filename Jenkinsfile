@@ -126,10 +126,10 @@ def nodejsSonarqube () {
               if ( "${SONARQUBE_STATUS}" == "ERROR") {
                 echo "Scan Failed"
 
-                notifyRocketChat(
-                  "@all The latest build of eagle-api seems to be broken. \n Error: \n Sonarqube scan failed",
-                  ROCKET_QA_WEBHOOK
-                )
+                // notifyRocketChat(
+                //   "@all The latest build of eagle-api seems to be broken. \n Error: \n Sonarqube scan failed",
+                //   ROCKET_QA_WEBHOOK
+                // )
 
                 exit 1
               } else {
@@ -137,10 +137,11 @@ def nodejsSonarqube () {
               }
 
             } catch (error) {
-              notifyRocketChat(
-                "@all The latest build of eagle-api seems to be broken. \n Error: \n ${error}",
-                ROCKET_QA_WEBHOOK
-              )
+              echo "in sonar catch"
+              // notifyRocketChat(
+              //   "@all The latest build of eagle-api seems to be broken. \n Error: \n ${error}",
+              //   ROCKET_QA_WEBHOOK
+              // )
               throw error
             } finally {
               echo "Scan Complete"
@@ -192,10 +193,12 @@ pipeline {
                   returnStdout: true).trim()
                 echo ">> IMAGE_HASH: ${IMAGE_HASH}"
               } catch (error) {
-                notifyRocketChat(
-                  "@all The latest build of eagle-api seems to be broken. \n Error: \n ${error}",
-                  ROCKET_QA_WEBHOOK
-                )
+
+                echo "in build catch"
+                // notifyRocketChat(
+                //   "@all The latest build of eagle-api seems to be broken. \n Error: \n ${error}",
+                //   ROCKET_QA_WEBHOOK
+                // )
                 throw error
               }
             }
