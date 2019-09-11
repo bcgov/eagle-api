@@ -14,6 +14,15 @@ setupAppServer();
 
 jest.setTimeout(10000);
 
+async function mongooseConnect() {
+  if (mongoServer && !(mongoose.connection && mongoose.connection.db)) {
+    const mongoUri = await mongoServer.getConnectionString();
+    await mongoose.connect(mongoUri, mongooseOpts, (err) => {
+      if (err) console.error(err);
+    });
+  }
+};
+
 beforeAll(async () => {
   mongoServer = new mongoDbMemoryServer.default({
     instance: {},
@@ -21,16 +30,17 @@ beforeAll(async () => {
       version: '3.2.21', // Mongo Version
     },
   });
-  const mongoUri = await mongoServer.getConnectionString();
-  await mongoose.connect(mongoUri, mongooseOpts, (err) => {
-    if (err) console.error(err);
-  });
+  await mongooseConnect();
+});
+
+beforeEach(async () => {
+  await mongooseConnect();
 });
 
 afterEach(done => {
   if (mongoose.connection && mongoose.connection.db) {
     dbCleaner.clean(mongoose.connection.db, () => {
-      done()
+      done();
     });
   } else {
     done();
@@ -38,7 +48,7 @@ afterEach(done => {
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
+  if (mongoose.connection) await mongoose.disconnect();
   await mongoServer.stop();
 });
 

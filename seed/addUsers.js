@@ -1,3 +1,4 @@
+//TODO: revise for EPIC
 //
 // Example: node addUsers.js username password http localhost 3000
 //

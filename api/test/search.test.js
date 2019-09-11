@@ -1,3 +1,4 @@
+/*
 const test_helper = require('./test_helper');
 const app = test_helper.app;
 const mongoose = require('mongoose');
@@ -322,3 +323,5 @@ describe('GET /api/public/search/bcgw/dispositionTransactionId', () => {
     });
   });
 });
+
+*/

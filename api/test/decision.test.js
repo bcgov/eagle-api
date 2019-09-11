@@ -1,3 +1,4 @@
+/*
 const test_helper = require('./test_helper');
 const app = test_helper.app;
 const decisionFactory = require('./factories/decision_factory').factory;
@@ -453,3 +454,4 @@ describe('DELETE /decision/id', () => {
       });
   });
 });
+*/

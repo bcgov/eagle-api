@@ -1,3 +1,4 @@
+//TODO: revise for EPIC
 const factory = require('factory-girl').factory;
 const Decision = require('../../helpers/models/decision');
 
