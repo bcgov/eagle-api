@@ -20,6 +20,11 @@ def notifyRocketChat(text, url) {
     sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
 }
 
+def sonarGetStatus (jsonPayload) {
+  def jsonSlurper = new JsonSlurper()
+  return jsonSlurper.parseText(jsonPayload).projectStatus.status
+}
+
 /*
  * takes in a sonarqube status json payload
  * and returns the status string
@@ -244,6 +249,8 @@ pipeline {
               ROCKET_QA_WEBHOOK
             )
           } catch (error) {
+            // def msg = error.message
+            // msg.replaceAll(/\'/,/\\\'/)
             notifyRocketChat(
               "@all The latest deployment of eagle-api to Dev seems to have failed\n Error: \n ${error.message}",
               ROCKET_DEPLOY_WEBHOOK
