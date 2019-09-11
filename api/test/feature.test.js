@@ -1,3 +1,4 @@
+/*
 const test_helper = require('./test_helper');
 const app = test_helper.app;
 const applicationFactory = require('./factories/application_factory').factory;
@@ -692,3 +693,4 @@ describe('PUT /feature/:id/unpublish', () => {
       });
   });
 });
+*/
