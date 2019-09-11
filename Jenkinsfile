@@ -2,6 +2,7 @@
 def sonarqubePodLabel = "eagle-api-${UUID.randomUUID().toString()}"
 // podTemplate(label: sonarqubePodLabel, name: sonarqubePodLabel, serviceAccount: 'jenkins', cloud: 'openshift', containers: [])
 
+@NonCPS
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
