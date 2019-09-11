@@ -2,6 +2,7 @@
 def sonarqubePodLabel = "eagle-api-${UUID.randomUUID().toString()}"
 // podTemplate(label: sonarqubePodLabel, name: sonarqubePodLabel, serviceAccount: 'jenkins', cloud: 'openshift', containers: [])
 
+
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
@@ -17,6 +18,11 @@ def notifyRocketChat(text, url) {
     ])
 
     sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
+}
+
+def sonarGetStatus (jsonPayload) {
+  def jsonSlurper = new JsonSlurper()
+  return jsonSlurper.parseText(jsonPayload).projectStatus.status
 }
 
 /*
@@ -243,6 +249,8 @@ pipeline {
               ROCKET_QA_WEBHOOK
             )
           } catch (error) {
+            // def msg = error.message
+            // msg.replaceAll(/\'/,/\\\'/)
             notifyRocketChat(
               "@all The latest deployment of eagle-api to Dev seems to have failed\n Error: \n ${error.message}",
               ROCKET_DEPLOY_WEBHOOK
