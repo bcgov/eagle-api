@@ -56,6 +56,40 @@ exports.publicGet = async function (args, res, next) {
   return Actions.sendResponse(res, 200, data);
 };
 
+exports.protectedGet = async function (args, res, next) {
+  var sort = {};
+  var query = {};
+
+  if (args.swagger.params.orgId && args.swagger.params.orgId.value) {
+    query = Utils.buildQuery("_id", args.swagger.params.orgId.value, query);
+  }
+  if (args.swagger.params.companyType && args.swagger.params.companyType.value) {
+    _.assignIn(query, { companyType: args.swagger.params.companyType.value });
+  }
+  if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
+    args.swagger.params.sortBy.value.forEach(function (value) {
+      var order_by = value.charAt(0) == '-' ? -1 : 1;
+      var sort_by = value.slice(1);
+      sort[sort_by] = order_by;
+    }, this);
+  }
+
+  // Set query type
+  _.assignIn(query, { "_schemaName": "Organization" });
+
+  var data = await Utils.runDataQuery('Organization',
+      args.swagger.params.auth_payload.realm_access.roles,
+      query,
+      getSanitizedFields(args.swagger.params.fields.value), // Fields
+      null, // sort warmup
+      sort, // sort
+      null, // skip
+      null, // limit
+      false) // count
+  Utils.recordAction('Get', 'Organization', args.swagger.params.auth_payload.preferred_username, args.swagger.params.orgId && args.swagger.params.orgId.value ? args.swagger.params.orgId.value : null);
+  return Actions.sendResponse(res, 200, data);
+};
+
 //  Create a new organization
 exports.protectedPost = async function (args, res, next) {
   var obj = args.swagger.params.org.value;
