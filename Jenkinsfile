@@ -2,9 +2,9 @@
 def sonarqubePodLabel = "eagle-api-${UUID.randomUUID().toString()}"
 // podTemplate(label: sonarqubePodLabel, name: sonarqubePodLabel, serviceAccount: 'jenkins', cloud: 'openshift', containers: [])
 
-@NonCPS
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+
 /*
  * Sends a rocket chat notification
  */
@@ -131,7 +131,7 @@ def nodejsSonarqube () {
                   ROCKET_QA_WEBHOOK
                 )
 
-                currentBuild.result = 'FAILURE'
+                exit 1
               } else {
                 echo "Scan Passed"
               }
