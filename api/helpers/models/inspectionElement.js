@@ -16,18 +16,12 @@ module.exports = require ('../models')('InspectionElement', {
     write            : [{ type: String, trim: true, default: 'sysadmin' }],
     delete           : [{ type: String, trim: true, default: 'sysadmin' }],
 
-    // Not editable
-    type : { type:String, default:'' },
-    uri  : { type:String, default:'' },
-    geo  : { type: Mixed, default: {} },
-
-    // Only used for text elements
-    text : { type: Mixed, default: {} },
-
-    // Minio handler
-    internalURL      : { type:String, default:'' },
-    internalExt      : { type:String, default:'' },
-    internalSize     : { type:String, default:'' },
-    internalMime     : { type:String, default:'' },
+    // Meta
+    title       : { type: String, default: '' },
+    requirement : { type: String, default: '' },
+    description : { type: String, default: '' },
+    timestamp   : { type: Date, default: Date.now() },
+    // Items
+    items: [{ type:'ObjectId', ref:'InspectionItems', default:null }],
 
 }, 'epic');

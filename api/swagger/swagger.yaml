@@ -108,7 +108,7 @@ definitions:
         type: string
         example: "[['public']]"
         ## TODO: Add more fields here.
-  InspectionElementObject:
+  InspectionElementItemObject:
     type: object
     properties:
       _id:
@@ -2185,9 +2185,9 @@ paths:
     post:
       tags:
         - inspection
-      summary: "Add Inspection"
-      operationId: protectedPost
-      description: "Adds Inspection."
+      summary: "Adds a new Inspection"
+      operationId: protectedPostInspection
+      description: "Adds a new Inspection."
       security:
         - Bearer: []
       x-security-scopes:
@@ -2208,7 +2208,7 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-  /inspection/element/{elemId}:
+  /inspection/{inspId}:
     x-swagger-router-controller: inspection
     options:
       tags:
@@ -2217,64 +2217,48 @@ paths:
       operationId: protectedOptions
       description: "Options on Inspection Route"
       parameters:
-        - name: elemId
+        - name: inspId
           in: path
-          description: "ID of element to get"
+          description: "ID of inspection"
           required: true
           type: string
-        - in: query
-          name: thumbnail
-          description: "Get image thumbnail option"
-          type: string
-          required: false
-        - in: query
-          name: filename
-          description: "Get image as filename"
-          type: string
-          required: false
       responses:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/InspectionElementObject"
+            $ref: "#/definitions/ProjObject"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
     get:
       tags:
-        - document
-      summary: "Download an element"
-      operationId: protectedElementGet
-      description: "Authenticated access to retreiving an element binary."
+        - inspection
+      summary: "Get Inspection"
+      operationId: protectedGetInspection
+      description: "Get Inspection"
       security:
         - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
       parameters:
-        - name: elemId
+        - name: inspId
           in: path
-          description: "ID of element to download"
+          description: "ID of inspection"
           required: true
           type: string
-        - in: query
-          name: thumbnail
-          description: "Get image thumbnail option"
-          type: string
-          required: false
-        - in: query
-          name: filename
-          description: "Get image as filename"
-          type: string
-          required: false
       responses:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/DocObject"
+            $ref: "#/definitions/InspectionObject"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-  /inspection/{projId}/{inspId}/element:
+
+  /inspection/{inspId}/element:
     x-swagger-router-controller: inspection
     options:
       tags:
@@ -2283,21 +2267,16 @@ paths:
       operationId: protectedOptions
       description: "Options on Inspection Route"
       parameters:
-        - name: projId
-          in: path
-          description: "ID of project to get"
-          required: true
-          type: string
         - name: inspId
           in: path
-          description: "ID of inspection to get"
+          description: "ID of inspection to bind this element to"
           required: true
           type: string
       responses:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/InspectionElementObject"
+            $ref: "#/definitions/ProjObject"
         "403":
           description: "Access Denied"
           schema:
@@ -2305,9 +2284,127 @@ paths:
     post:
       tags:
         - inspection
-      summary: "Add Inspection Element"
+      summary: "Adds a new Element to an Inspection"
       operationId: protectedPostElement
-      description: "Adds element to an inspection."
+      description: "Adds a new Element to an inspection."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      parameters:
+        - name: inspId
+          in: path
+          description: "ID of inspection to bind this element to"
+          required: true
+          type: string
+        - name: inspection
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/InspectionObject"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/InspectionObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /inspection/{inspId}/{elementId}:
+    x-swagger-router-controller: inspection
+    options:
+      tags:
+        - inspection
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Inspection Route"
+      parameters:
+        - name: inspId
+          in: path
+          description: "ID of inspection"
+          required: true
+          type: string
+        - name: elementId
+          in: path
+          description: "ID of Element"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - inspection
+      summary: "Get Element related to an Inspection"
+      operationId: protectedGetElement
+      description: "Get Element related to an Inspection."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      parameters:
+        - name: inspId
+          in: path
+          description: "ID of inspection"
+          required: true
+          type: string
+        - name: elementId
+          in: path
+          description: "ID of element"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/InspectionObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /inspection/{inspId}/{elementId}/item:
+    x-swagger-router-controller: inspection
+    options:
+      tags:
+        - inspection
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Inspection Route"
+      parameters:
+        - name: inspId
+          in: path
+          type: string
+          required: true
+          description: "Inspection this Item relates to."
+        - name: elementId
+          in: path
+          type: string
+          required: true
+          description: "Inspection Element this Item relates to."
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/InspectionElementItemObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    post:
+      tags:
+        - inspection
+      summary: "Add Inspection item to an existing element"
+      operationId: protectedPostElementItem
+      description: "Add Inspection item to an existing element"
       security:
         - Bearer: []
       x-security-scopes:
@@ -2320,12 +2417,17 @@ paths:
           in: path
           type: string
           required: true
-          description: "Inspection this element relates to."
-        - name: projId
+          description: "Inspection Element this Item relates to."
+        - name: elementId
           in: path
           type: string
           required: true
-          description: "Project this inspection element relates to."
+          description: "Inspection Element this Element Item relates to."
+        - name: project
+          in: formData
+          type: string
+          required: true
+          description: "Project this Inspection Element Item relates to."
         - name: upfile
           in: formData
           description: "The file to upload."
@@ -2336,6 +2438,16 @@ paths:
           required: false
           type: string
           description: "Type"
+        - name: caption
+          in: formData
+          required: false
+          type: string
+          description: "Caption"
+        - name: timestamp
+          in: formData
+          required: false
+          type: string
+          description: "Timestamp"
         - name: text
           in: formData
           required: false
@@ -2350,7 +2462,76 @@ paths:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/InspectionElementObject"
+            $ref: "#/definitions/InspectionElementItemObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /inspection/{inspId}/{elementId}/{itemId}:
+    x-swagger-router-controller: inspection
+    options:
+      tags:
+        - inspection
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Inspection Route"
+      parameters:
+        - name: inspId
+          in: path
+          description: "ID of inspection"
+          required: true
+          type: string
+        - name: elementId
+          in: path
+          description: "ID of Element"
+          required: true
+          type: string
+        - name: itemId
+          in: path
+          description: "ID of Item"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - inspection
+      summary: "Get Item related to an Inspection Element"
+      operationId: protectedElementItemGet
+      description: "Get Item related to an Inspection Element."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      parameters:
+        - name: inspId
+          in: path
+          description: "ID of inspection"
+          required: true
+          type: string
+        - name: elementId
+          in: path
+          description: "ID of element"
+          required: true
+          type: string
+        - name: itemId
+          in: path
+          description: "ID of Item"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/InspectionObject"
         "403":
           description: "Access Denied"
           schema:
