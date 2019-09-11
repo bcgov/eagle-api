@@ -5,7 +5,6 @@ def sonarqubePodLabel = "eagle-api-${UUID.randomUUID().toString()}"
 @NonCPS
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
-
 /*
  * Sends a rocket chat notification
  */
