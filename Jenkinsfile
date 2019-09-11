@@ -2,8 +2,10 @@
 def sonarqubePodLabel = "eagle-api-${UUID.randomUUID().toString()}"
 // podTemplate(label: sonarqubePodLabel, name: sonarqubePodLabel, serviceAccount: 'jenkins', cloud: 'openshift', containers: [])
 
-@NonCPS
-import groovy.json.*
+
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
 /*
  * Sends a rocket chat notification
  */
@@ -18,6 +20,15 @@ def notifyRocketChat(text, url) {
     sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
 }
 
+def sonarGetStatus (jsonPayload) {
+  def jsonSlurper = new JsonSlurper()
+  return jsonSlurper.parseText(jsonPayload).projectStatus.status
+}
+
+/*
+ * takes in a sonarqube status json payload
+ * and returns the status string
+ */
 def sonarGetStatus (jsonPayload) {
   def jsonSlurper = new JsonSlurper()
   return jsonSlurper.parseText(jsonPayload).projectStatus.status
@@ -104,7 +115,7 @@ def nodejsSonarqube () {
           checkout scm
           dir('sonar-runner') {
             try {
-              // run test
+              // run scan
               sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
               SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
 
@@ -120,12 +131,13 @@ def nodejsSonarqube () {
 
               if ( "${SONARQUBE_STATUS}" == "ERROR") {
                 echo "Scan Failed"
+
                 notifyRocketChat(
                   "@all The latest build of eagle-api seems to be broken. \n Error: \n Sonarqube scan failed",
                   ROCKET_QA_WEBHOOK
                 )
 
-                currentBuild.result = 'FAILURE'
+                exit 1
               } else {
                 echo "Scan Passed"
               }
