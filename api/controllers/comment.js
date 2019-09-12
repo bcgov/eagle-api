@@ -176,8 +176,7 @@ exports.publicGet = async function (args, res, next) {
 };
 
 exports.protectedHead = async function (args, res, next) {
-  var skip = null, limit = null;
-  var sort = {}, query = {};
+  var query = {};
 
   if (args.swagger.params.commentId && args.swagger.params.commentId.value) {
     query = Utils.buildQuery('_id', args.swagger.params.commentId.value, query);
@@ -368,8 +367,8 @@ exports.protectedPost = async function (args, res, next) {
 
 async function getNextCommentIdCount(period) {
   var CommentPeriod = mongoose.model('CommentPeriod');
-  var period = await CommentPeriod.findOneAndUpdate({ _id: period }, { $inc: { commentIdCount: 1 } }, { new: true });
-  return period.commentIdCount;
+  var periodUpdated = await CommentPeriod.findOneAndUpdate({ _id: period }, { $inc: { commentIdCount: 1 } }, { new: true });
+  return periodUpdated.commentIdCount;
 }
 
 //  Create a new Comment

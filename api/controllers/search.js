@@ -1,11 +1,8 @@
-var auth = require("../helpers/auth");
 var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
-var request = require('request');
-var _accessToken = null;
 var qs = require('qs');
 
 function isEmpty(obj) {
@@ -473,16 +470,16 @@ var executeQuery = async function (args, res, next) {
 
     console.log("Searching Collection:", dataset);
     console.log("sortField:", sortField);
-    var data = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, sortField, sortDirection, caseSensitive, populate, and, or)
+    var itemData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, sortField, sortDirection, caseSensitive, populate, and, or)
     if (dataset === 'Comment') {
       // Filter
-      _.each(data[0].searchResults, function (item) {
+      _.each(itemData[0].searchResults, function (item) {
         if (item.isAnonymous === true) {
           delete item.author;
         }
       });
     }
-    return Actions.sendResponse(res, 200, data);
+    return Actions.sendResponse(res, 200, itemData);
 
   } else if (dataset === 'Item') {
     var collectionObj = mongoose.model(args.swagger.params._schemaName.value);

@@ -183,8 +183,6 @@ exports.unProtectedPost = async function (args, res, next) {
 };
 
 exports.protectedHead = function (args, res, next) {
-  var Document = mongoose.model('Document');
-
   defaultLog.info("args.swagger.params:", args.swagger.params.auth_payload.realm_access.roles);
 
   // Build match query if on docId route
@@ -268,9 +266,6 @@ exports.protectedGet = async function (args, res, next) {
 };
 
 exports.publicDownload = function (args, res, next) {
-  var self = this;
-  var Document = mongoose.model('Document');
-
   // Build match query if on docId route
   var query = {};
   if (args.swagger.params.docId && args.swagger.params.docId.value) {
@@ -328,8 +323,6 @@ exports.protectedDownload = function (args, res, next) {
   var self = this;
   self.scopes = args.swagger.params.auth_payload.realm_access.roles;
 
-  var Document = mongoose.model('Document');
-
   defaultLog.info("args.swagger.params:", args.swagger.params.auth_payload.realm_access.roles);
 
   // Build match query if on docId route
@@ -386,8 +379,6 @@ exports.protectedDownload = function (args, res, next) {
 exports.protectedOpen = function (args, res, next) {
   var self = this;
   self.scopes = args.swagger.params.auth_payload.realm_access.roles;
-
-  var Document = mongoose.model('Document');
 
   defaultLog.info("args.swagger.params:", args.swagger.params.auth_payload.realm_access.roles);
 

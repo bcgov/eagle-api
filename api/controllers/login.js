@@ -6,7 +6,6 @@ exports.loginOptions = function(args, res, next) {
   res.status(200).send();
 };
 exports.loginPost = function(args, res, next) {
-  var User = require('mongoose').model('User');
   var username = args.body.username;
   var password = args.body.password;
 
