@@ -1,9 +1,9 @@
 var mongoose = require('mongoose');
 var Mixed = mongoose.Schema.Types.Mixed;
 
-module.exports = require ('../models')('Inspection', {
+module.exports = require ('../models')('InspectionItem', {
     // Tracking
-    _schemaName: { type: String, default: 'Inspection' },
+    _schemaName: { type: String, default: 'InspectionItem' },
     _createdDate    : { type: Date, default: Date.now() },
     _updatedDate    : { type: Date, default: Date.now() },
     _addedBy        : { type:String, default:'system' },
@@ -17,13 +17,16 @@ module.exports = require ('../models')('Inspection', {
     delete           : [{ type: String, trim: true, default: 'sysadmin' }],
 
     // Not editable
-    name      : { type:String, default:'' },
-    label     : { type:String, default:'' },
-    case      : { type:String, default:'' },
-    email     : { type:String, default:'' },
-    startDate : { type: Date, default: Date.now() },
-    endDate   : { type: Date, default: Date.now() },
-    elements  : [{ type: 'ObjectId', ref:'InspectionElement', default:null }],
-    project   : { type:'ObjectId', ref:'Project', default:null }
+    type : { type:String, default:'' },
+    uri  : { type:String, default:'' },
+    geo  : { type: Mixed, default: {} },
+    caption : { type: String, default: '' },
+    timestamp : { type: Date, default: Date.now() },
+
+    // Minio handler
+    internalURL      : { type:String, default:'' },
+    internalExt      : { type:String, default:'' },
+    internalSize     : { type:String, default:'' },
+    internalMime     : { type:String, default:'' },
 
 }, 'epic');

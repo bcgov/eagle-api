@@ -34,8 +34,13 @@ exports.protectedOptions = function (args, res, rest) {
   res.status(200).send();
 }
 
+// Get an inspection
+exports.protectedGetInspection = function (args, res, next) {
+  // TODO
+}
+
 //  Create a new inspection
-exports.protectedPost = function (args, res, next) {
+exports.protectedPostInspection = function (args, res, next) {
   var obj = args.swagger.params.inspection.value;
 
   defaultLog.info("Incoming new object:", obj);
@@ -48,11 +53,11 @@ exports.protectedPost = function (args, res, next) {
 
   inspection.proponent = mongoose.Types.ObjectId(obj.proponent)
   // Define security tag defaults
-  inspection.read = ['sysadmin', 'staff'];
-  inspection.write = ['sysadmin', 'staff'];
-  inspection.delete = ['sysadmin', 'staff'];
+  inspection.read = ['sysadmin', 'inspector'];
+  inspection.write = ['sysadmin', 'inspector'];
+  inspection.delete = ['sysadmin', 'inspector'];
   inspection._createdBy = args.swagger.params.auth_payload.preferred_username;
-  inspection.createdDate = Date.now();
+  inspection._createdDate = Date.now();
   inspection.save()
     .then(function (theInspection) {
       Utils.recordAction('Post', 'Inspection', args.swagger.params.auth_payload.preferred_username, theInspection._id);
@@ -65,12 +70,68 @@ exports.protectedPost = function (args, res, next) {
     });
 };
 
+// Get an inspection element
+exports.protectedGetElement = function (args, res, next) {
+  // TODO
+}
+
+//  Create a new inspection element
 exports.protectedPostElement = function (args, res, next) {
+  var obj = args.swagger.params.inspection.value;
+  var inspId = args.swagger.params.inspId.value;
+
+  defaultLog.info("Incoming new object:", obj);
+
+  var InspectionElement = mongoose.model('InspectionElement');
+
+  var inspectionElement = new InspectionElement(obj);
+
+  // Define security tag defaults
+  inspectionElement.read = ['sysadmin', 'inspector'];
+  inspectionElement.write = ['sysadmin', 'inspector'];
+  inspectionElement.delete = ['sysadmin', 'inspector'];
+  inspectionElement._createdBy = args.swagger.params.auth_payload.preferred_username;
+  inspectionElement._createdDate = Date.now();
+
+  // inspectionElement.title = args.swagger.params.auth_payload.preferred_username;
+  // inspectionElement.requirement = args.swagger.params.auth_payload.preferred_username;
+  // inspectionElement.description = args.swagger.params.auth_payload.preferred_username;
+  // inspectionElement.timestamp = args.swagger.params.auth_payload.preferred_username;
+
+  let theDoc = null;
+  inspectionElement.save()
+    .then(function (doc) {
+      theDoc = doc;
+      var Inspection = mongoose.model('Inspection');
+        return Inspection.update(
+          { _id: mongoose.Types.ObjectId(inspId) },
+          {
+            $push: {
+              elements: doc._id
+            }
+          },
+          { new: true }
+        );
+    })
+    .then(function (theInspection) {
+      Utils.recordAction('Post', 'InspectionElement', args.swagger.params.auth_payload.preferred_username, theDoc._id);
+      return Actions.sendResponse(res, 200, theDoc);
+    })
+    .catch(function (err) {
+      console.log("Error in API:", err);
+      return Actions.sendResponse(res, 400, err);
+    });
+};
+
+// Create element item
+exports.protectedPostElementItem = function (args, res, next) {
   var upfile = args.swagger.params.upfile.value;
   var guid = intformat(generator.next(), 'dec');
-  var project = args.swagger.params.projId.value;
-  var inspId = args.swagger.params.inspId.value;
+  var project = args.swagger.params.project.value;
+  var elementId = args.swagger.params.elementId.value;
   var type = args.swagger.params.type.value;
+  var timestamp = args.swagger.params.timestamp.value;
+  var caption = args.swagger.params.caption.value;
   var text = args.swagger.params.text.value;
   var geo = args.swagger.params.geo.value;
 
@@ -81,12 +142,12 @@ exports.protectedPostElement = function (args, res, next) {
 
     var fs = require('fs');
     fs.writeFileSync(tempFilePath, args.swagger.params.upfile.value.buffer);
-    console.log('wrote file successfully.');
+    console.log('wrote file successfully.', tempFilePath);
 
     console.log(MinioController.BUCKETS.DOCUMENTS_BUCKET,
-      mongoose.Types.ObjectId(project),
+      project,
       upfile.originalname,
-      tempFilePath)
+      tempFilePath);
 
     MinioController.putDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET,
       project,
@@ -100,17 +161,19 @@ exports.protectedPostElement = function (args, res, next) {
 
         console.log('unlink');
 
-        var InspectionElement = mongoose.model('InspectionElement');
-        var doc = new InspectionElement();
+        var InspectionItem = mongoose.model('InspectionItem');
+        var doc = new InspectionItem();
         // Define security tag defaults
         doc.project = mongoose.Types.ObjectId(project);
         doc._addedBy = args.swagger.params.auth_payload.preferred_username;
         doc._createdDate = new Date();
-        doc.read = ['sysadmin', 'staff'];
-        doc.write = ['sysadmin', 'staff'];
-        doc.delete = ['sysadmin', 'staff'];
+        doc.read = ['sysadmin', 'inspector'];
+        doc.write = ['sysadmin', 'inspector'];
+        doc.delete = ['sysadmin', 'inspector'];
 
         doc.type = type;
+        doc.caption = caption;
+        doc.timestamp = timestamp;
         doc.geo = JSON.parse(geo);
 
         doc.internalURL = minioFile.path;
@@ -124,17 +187,17 @@ exports.protectedPostElement = function (args, res, next) {
         doc.save()
           .then(function (d) {
             defaultLog.info("Saved new document object:", d._id);
-            Utils.recordAction('Post', 'InspectionElement', args.swagger.params.auth_payload.preferred_username, d._id);
+            Utils.recordAction('Post', 'InspectionItem', args.swagger.params.auth_payload.preferred_username, d._id);
             savedDocument = d;
             return;
           }).then(function () {
-            // Push this into the inspection elements' array for things.
-            var Inspection = mongoose.model('Inspection');
-            return Inspection.update(
-              { _id: mongoose.Types.ObjectId(inspId) },
+            // Push this into the inspection elements' items' array for things.
+            var InspectionElement = mongoose.model('InspectionElement');
+            return InspectionElement.update(
+              { _id: mongoose.Types.ObjectId(elementId) },
               {
                 $push: {
-                  elements: doc
+                  items: doc
                 }
               },
               { new: true }
@@ -154,15 +217,15 @@ exports.protectedPostElement = function (args, res, next) {
       })
     } else {
       // Just a text element.
-      var InspectionElement = mongoose.model('InspectionElement');
-      var doc = new InspectionElement();
+      var InspectionItem = mongoose.model('InspectionItem');
+      var doc = new InspectionItem();
       // Define security tag defaults
       doc.project = mongoose.Types.ObjectId(project);
       doc._addedBy = args.swagger.params.auth_payload.preferred_username;
       doc._createdDate = new Date();
-      doc.read = ['sysadmin', 'staff'];
-      doc.write = ['sysadmin', 'staff'];
-      doc.delete = ['sysadmin', 'staff'];
+      doc.read = ['sysadmin', 'inspector'];
+      doc.write = ['sysadmin', 'inspector'];
+      doc.delete = ['sysadmin', 'inspector'];
 
       doc.text = JSON.parse(text);
       doc.markModified('text');
@@ -174,17 +237,17 @@ exports.protectedPostElement = function (args, res, next) {
       doc.save()
       .then(function (d) {
         defaultLog.info("Saved new document object:", d._id);
-        Utils.recordAction('Post', 'InspectionElement', args.swagger.params.auth_payload.preferred_username, d._id);
+        Utils.recordAction('Post', 'InspectionItem', args.swagger.params.auth_payload.preferred_username, d._id);
         savedDocument = d;
         return;
       }).then(function () {
         // Push this into the inspection elements' array for things.
-        var Inspection = mongoose.model('Inspection');
-        return Inspection.update(
-          { _id: mongoose.Types.ObjectId(inspId) },
+        var InspectionElement = mongoose.model('InspectionElement');
+        return InspectionElement.update(
+          { _id: mongoose.Types.ObjectId(elementId) },
           {
             $push: {
-              elements: doc
+              items: doc
             }
           },
           { new: true }
@@ -204,7 +267,7 @@ exports.protectedPostElement = function (args, res, next) {
     }
 }
 
-exports.protectedElementGet = function(args, res, next) {
+exports.protectedElementItemGet = function(args, res, next) {
   var self = this;
   self.scopes = args.swagger.params.auth_payload.realm_access.roles;
 
@@ -223,11 +286,11 @@ exports.protectedElementGet = function(args, res, next) {
     query = Utils.buildQuery("_id", args.swagger.params.elemId.value, query);
   }
   // Set query type
-  _.assignIn(query, { "_schemaName": "InspectionElement" });
+  _.assignIn(query, { "_schemaName": "InspectionItem" });
 
   console.log("QE:", query);
 
-  Utils.runDataQuery('InspectionElement',
+  Utils.runDataQuery('InspectionItem',
     args.swagger.params.auth_payload.realm_access.roles,
     query,
     ["internalURL", "documentFileName", "internalMime", 'internalExt'], // Fields
@@ -254,7 +317,7 @@ exports.protectedElementGet = function(args, res, next) {
             return Actions.sendResponse(res, 404, {});
           })
           .then(function (docURL) {
-            Utils.recordAction('Download', 'InspectionElement', args.swagger.params.auth_payload.preferred_username, args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
+            Utils.recordAction('Download', 'InspectionItem', args.swagger.params.auth_payload.preferred_username, args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
             // stream file from Minio to client
             // res.setHeader('Content-Length', fileMeta.size);
             res.setHeader('Content-Type', fileMeta.metaData['content-type']);
