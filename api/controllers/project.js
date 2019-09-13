@@ -1,11 +1,9 @@
-var auth = require("../helpers/auth");
 var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var qs = require('qs');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
-var request = require('request');
 var tagList = [
   'CEAAInvolvement',
   'CELead',
@@ -412,7 +410,6 @@ exports.protectedPinDelete = async function (args, res, next) {
 
 handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, username, res) {
   var skip = null, limit = null, sort = null;
-  var count = false;
   var query = {};
 
   _.assignIn(query, { "_schemaName": "Project" });

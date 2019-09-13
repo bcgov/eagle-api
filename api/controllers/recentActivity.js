@@ -1,4 +1,3 @@
-var auth = require("../helpers/auth");
 var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
@@ -40,7 +39,6 @@ exports.publicGet = async function (args, res, next) {
     'project',
     'content',
     'headline'];
-  var RecentActivity = mongoose.model('RecentActivity');
   var query = {};
   var sort = {
     dateAdded: -1
