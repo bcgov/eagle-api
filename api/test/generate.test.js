@@ -82,10 +82,11 @@ describe('Generate Test Data', () => {
     test('Generator', done => {
       setupProjects(usersData).then(generatedData =>{
         let projects = generatedData[2];
-        asyncForEach(projects, async (project) =>{
+        asyncForEach(projects, async (project, i, projects) =>{
           console.log('Project [id, name]: [' + project._id + ', ' + project.name + ']');
           expect(project._id).toEqual(jasmine.any(Object));
           expect(project.name).toEqual("test");
+          i++;
           done();
         });
       });
