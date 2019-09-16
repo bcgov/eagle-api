@@ -528,13 +528,14 @@ var executeQuery = async function (args, res, next) {
           }
         }
       );
+    } else if (args.swagger.params._schemaName.value === 'InspectionElement') {
       aggregation.push(
         {
           '$lookup': {
             "from": "epic",
-            "localField": "elements.items",
+            "localField": "items",
             "foreignField": "_id",
-            "as": "elements.items"
+            "as": "items"
           }
         }
       );
