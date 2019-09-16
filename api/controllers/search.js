@@ -484,7 +484,8 @@ var executeQuery = async function (args, res, next) {
   } else if (dataset === 'Item') {
     var collectionObj = mongoose.model(args.swagger.params._schemaName.value);
     console.log("ITEM GET", { _id: args.swagger.params._id.value })
-    var data = await collectionObj.aggregate([
+
+    let aggregation = [
       {
         "$match": { _id: mongoose.Types.ObjectId(args.swagger.params._id.value) }
       },
@@ -513,7 +514,33 @@ var executeQuery = async function (args, res, next) {
           }
         }
       }
-    ]);
+    ];
+
+    if (args.swagger.params._schemaName.value === 'Inspection') {
+      // pop elements and their items.
+      aggregation.push(
+        {
+          '$lookup': {
+            "from": "epic",
+            "localField": "elements",
+            "foreignField": "_id",
+            "as": "elements"
+          }
+        }
+      );
+      aggregation.push(
+        {
+          '$lookup': {
+            "from": "epic",
+            "localField": "elements.items",
+            "foreignField": "_id",
+            "as": "elements.items"
+          }
+        }
+      );
+    }
+    var data = await collectionObj.aggregate(aggregation);
+
     if (args.swagger.params._schemaName.value === 'Comment') {
       // Filter
       _.each(data, function (item) {
