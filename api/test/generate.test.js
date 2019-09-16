@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 mongoose.Promise = require('bluebird'); // for extra debugging capabilities
 //mongoose.Promise = global.Promise;  // without debugging extras
 require('../helpers/models/audit');
+const faker = require('faker');
 const request = require('supertest');
 const nock = require('nock');
 const _ = require('lodash');
@@ -20,6 +21,10 @@ const Project = mongoose.model('Project');
 const readline = require('readline');
 const fs = require('fs');
 const defaultNumberOfProjects = 1;
+const deterministicSeed = 123;
+
+let generateConsistentData = true;
+if (generateConsistentData) faker.seed(deterministicSeed);
 
 async function asyncForEach(array, callback) {
   for (let index = 0; index < array.length; index++) {
@@ -85,7 +90,7 @@ describe('Generate Test Data', () => {
         asyncForEach(projects, async (project, i, projects) =>{
           console.log('Project [id, name]: [' + project._id + ', ' + project.name + ']');
           expect(project._id).toEqual(jasmine.any(Object));
-          expect(project.name).toEqual("test");
+          expect(project.CELeadEmail).toEqual("eao.compliance@gov.bc.ca");
           i++;
           done();
         });
