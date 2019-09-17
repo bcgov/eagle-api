@@ -517,7 +517,7 @@ exports.protectedPost = async function (args, res, next) {
               doc.milestone = mongoose.Types.ObjectId(args.swagger.params.milestone.value);
               doc.type = mongoose.Types.ObjectId(args.swagger.params.type.value);
               doc.documentAuthor = args.swagger.params.documentAuthor.value;
-
+              doc.documentAuthorType = mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value);
               doc.dateUploaded = args.swagger.params.dateUploaded.value;
               doc.datePosted = args.swagger.params.datePosted.value;
               doc.description = args.swagger.params.description.value;
