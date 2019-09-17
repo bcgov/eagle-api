@@ -29,7 +29,6 @@ exports.up = function(db) {
       var p = mClient.collection('epic');
       p.insertOne(item)
         .then(function (arr) {
-          console.log("arr:", arr)
         for(let item of arr.ops) {
           p.update(
           {
