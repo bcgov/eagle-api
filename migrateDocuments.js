@@ -7,6 +7,8 @@ var projects = [];
 // Dev
 // MongoClient.connect("mongodb://user7DW:KKmTLpYBBvbUKAVD@localhost:5555/epic", async function(err, client) {
 // Test
+
+//DUMMY PASSWORD IN URL BELOW AS AN EXAMPLE
 MongoClient.connect("mongodb://userS1J:lD8w0UKaYcGaFtW4@localhost:5555/epic", async function(err, client) {
 // Local
 //MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
