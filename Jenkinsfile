@@ -1,18 +1,22 @@
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import java.util.regex.Pattern
+
 /*
  * Sends a rocket chat notification
  */
 def notifyRocketChat(text, url) {
     def rocketChatURL = url
+    def message = text.replaceAll(~/\'/, "")
     def payload = JsonOutput.toJson([
       "username":"Jenkins",
       "icon_url":"https://wiki.jenkins.io/download/attachments/2916393/headshot.png",
-      "text": text
+      "text": message
     ])
 
     sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
 }
+
 
 /*
  * takes in a sonarqube status json payload
