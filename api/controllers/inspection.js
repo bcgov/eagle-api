@@ -101,15 +101,15 @@ exports.protectedPostElement = function (args, res, next) {
     .then(function (doc) {
       theDoc = doc;
       var Inspection = mongoose.model('Inspection');
-        return Inspection.update(
-          { _id: mongoose.Types.ObjectId(inspId) },
-          {
-            $push: {
-              elements: doc._id
-            }
-          },
-          { new: true }
-        );
+      return Inspection.update(
+        { _id: mongoose.Types.ObjectId(inspId) },
+        {
+          $push: {
+            elements: doc._id
+          }
+        },
+        { new: true }
+      );
     })
     .then(function (theInspection) {
       Utils.recordAction('Post', 'InspectionElement', args.swagger.params.auth_payload.preferred_username, theDoc._id);
@@ -213,26 +213,26 @@ exports.protectedPostElementItem = function (args, res, next) {
             return Actions.sendResponse(res, 400, error);
           });
       })
-    } else {
-      // Just a text element.
-      var InspectionItem = mongoose.model('InspectionItem');
-      var doc = new InspectionItem();
-      // Define security tag defaults
-      doc.project = mongoose.Types.ObjectId(project);
-      doc._addedBy = args.swagger.params.auth_payload.preferred_username;
-      doc._createdDate = new Date();
-      doc.read = ['sysadmin', 'inspector'];
-      doc.write = ['sysadmin', 'inspector'];
-      doc.delete = ['sysadmin', 'inspector'];
+  } else {
+    // Just a text element.
+    var InspectionItem = mongoose.model('InspectionItem');
+    var doc = new InspectionItem();
+    // Define security tag defaults
+    doc.project = mongoose.Types.ObjectId(project);
+    doc._addedBy = args.swagger.params.auth_payload.preferred_username;
+    doc._createdDate = new Date();
+    doc.read = ['sysadmin', 'inspector'];
+    doc.write = ['sysadmin', 'inspector'];
+    doc.delete = ['sysadmin', 'inspector'];
 
-      doc.text = JSON.parse(text);
-      doc.markModified('text');
-      doc.type = type;
-      doc.geo = JSON.parse(geo);
-      doc.markModified('geo');
+    doc.text = JSON.parse(text);
+    doc.markModified('text');
+    doc.type = type;
+    doc.geo = JSON.parse(geo);
+    doc.markModified('geo');
 
-      var savedDocument = null;
-      doc.save()
+    var savedDocument = null;
+    doc.save()
       .then(function (d) {
         defaultLog.info("Saved new document object:", d._id);
         Utils.recordAction('Post', 'InspectionItem', args.swagger.params.auth_payload.preferred_username, d._id);
@@ -262,14 +262,14 @@ exports.protectedPostElementItem = function (args, res, next) {
         MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
         return Actions.sendResponse(res, 400, error);
       });
-    }
+  }
 }
 
-exports.protectedElementItemGet = function(args, res, next) {
+exports.protectedElementItemGet = function (args, res, next) {
   var self = this;
   self.scopes = args.swagger.params.auth_payload.realm_access.roles;
 
-  self.thumbnail = args.swagger.params.thumbnail && args.swagger.params.thumbnail.value === 'true'  ? true : false
+  self.thumbnail = args.swagger.params.thumbnail && args.swagger.params.thumbnail.value === 'true' ? true : false
   if (args.swagger.params.filename && args.swagger.params.filename.value) {
     self.filename = args.swagger.params.filename.value;
   }
@@ -280,8 +280,8 @@ exports.protectedElementItemGet = function(args, res, next) {
 
   // Build match query if on elemId route
   var query = {};
-  if (args.swagger.params.elemId && args.swagger.params.elemId.value) {
-    query = Utils.buildQuery("_id", args.swagger.params.elemId.value, query);
+  if (args.swagger.params.itemId && args.swagger.params.itemId.value) {
+    query = Utils.buildQuery("_id", args.swagger.params.itemId.value, query);
   }
   // Set query type
   _.assignIn(query, { "_schemaName": "InspectionItem" });
@@ -335,15 +335,15 @@ exports.protectedElementItemGet = function(args, res, next) {
               // Download the file and pipe the generated thumbnail to it, streaming to the client.
               // TODO: Doesn't take into account orientation.
               return download(docURL)
-              .then(response => response.pipe(transform({
-                height: parseInt(100, 10),
-                // quality: q && parseInt(q, 10),
-                width: parseInt(100, 10),
-              })).pipe(res))
-              .catch(err => {
-                console.log("ERR:", err);
-                res.status(404).send();
-              });
+                .then(response => response.pipe(transform({
+                  height: parseInt(100, 10),
+                  // quality: q && parseInt(q, 10),
+                  width: parseInt(100, 10),
+                })).pipe(res))
+                .catch(err => {
+                  console.log("ERR:", err);
+                  res.status(404).send();
+                });
             };
           });
       } else {
@@ -367,12 +367,12 @@ const transform = ({
   if (Number.isInteger(height) && Number.isInteger(width)) {
     sharpObj.resize(width, height);
 
-  // Only width set...
+    // Only width set...
   } else if (isNumeric(width)) {
     sharpObj.resize(width);
 
-  // Only height set...
-  } else if (isNumeric(height)){
+    // Only height set...
+  } else if (isNumeric(height)) {
     sharpObj.resize(null, height);
   }
 
