@@ -348,7 +348,7 @@ exports.protectedPost = async function (args, res, next) {
   comment.rejectedReason = obj.rejectedReason;
   comment.valuedComponents = vcs;
   comment.commentId = commentIdCount;
-
+  comment.datePosted = obj.eaoStatus == 'Published' ? obj.datePosted : undefined;
   comment.write = ['staff', 'sysadmin'];
   comment.delete = ['staff', 'sysadmin'];
 
@@ -393,6 +393,7 @@ exports.unProtectedPost = async function (args, res, next) {
   comment.period = mongoose.Types.ObjectId(obj.period);
   comment.commentId = commentIdCount;
   comment.documents = [];
+  comment.datePosted = undefined;
 
   comment.read = ['staff', 'sysadmin'];
   comment.write = ['staff', 'sysadmin'];
