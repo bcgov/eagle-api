@@ -356,6 +356,31 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
     });
   }
 
+  if (populate === true && collection === 'Inspection') {
+    // pop elements and their items.
+    aggregation.push(
+      {
+        '$lookup': {
+          "from": "epic",
+          "localField": "elements",
+          "foreignField": "_id",
+          "as": "elements"
+        }
+      }
+    );
+  } else if (populate === true && collection === 'InspectionElement') {
+    aggregation.push(
+      {
+        '$lookup': {
+          "from": "epic",
+          "localField": "items",
+          "foreignField": "_id",
+          "as": "items"
+        }
+      }
+    );
+  }
+
   aggregation.push({
     $redact: {
       $cond: {
@@ -528,6 +553,25 @@ var executeQuery = async function (args, res, next) {
           }
         }
       );
+      aggregation.push({
+        "$lookup": {
+          "from": "epic",
+          "localField": "project",
+          "foreignField": "_id",
+          "as": "project"
+        }
+      });
+      aggregation.push({
+        "$addFields": {
+          project: "$project",
+        }
+      });
+      aggregation.push({
+        "$unwind": {
+          "path": "$project",
+          "preserveNullAndEmptyArrays": true
+        }
+      });
     } else if (args.swagger.params._schemaName.value === 'InspectionElement') {
       aggregation.push(
         {
