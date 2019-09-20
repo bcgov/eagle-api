@@ -499,6 +499,8 @@ exports.protectedExport = async function (args, res, next) {
   var format = args.swagger.params.format.value;
   var roles = args.swagger.params.auth_payload.realm_access.roles;
 
+  var documentModel = mongoose.model('Document');
+
   // get api's base path
   var basePath = Utils.getBasePath(args.protocol, args.host);
 
@@ -512,7 +514,7 @@ exports.protectedExport = async function (args, res, next) {
   var project = await projectModel.findOne({ _id: commentPeriod.project })
   var projectName = project.name;
 
-  var publishedCommentNumber = 1;
+  var exportDate = formatDate(new Date());
 
   var match = {
     _schemaName: 'Comment',
@@ -551,11 +553,7 @@ exports.protectedExport = async function (args, res, next) {
     }
   });
 
-  var data = mongoose.model('Comment')
-    .aggregate(aggregation)
-    .cursor()
-    .exec()
-    .stream();
+  var data = await mongoose.model('Comment').aggregate(aggregation)
 
   const filename = 'export.csv';
   res.setHeader('Content-disposition', `attachment; filename=${filename}`);
@@ -565,11 +563,31 @@ exports.protectedExport = async function (args, res, next) {
 
   var csv = require('csv');
   const transform = require('stream-transform');
-  data.stream()
-    .pipe(transform(function (d) {
+
+  // if exporting for proponent, prune rejected documents for each comment
+  // must be outside of the transform below due to database calls
+  if (format == 'proponent') {
+
+    // todo: translate valuedComponents
+
+    for (let c=0; c<data.length; c++){
+      if (data[c].documents && data[c].documents.length > 0) {
+        for (let i=0; i<data[c].documents.length; i++){
+          var doc = await documentModel.findOne({ _id : data[c].documents[i] });
+
+          if (doc.eaoStatus !== 'Published'){
+            delete data[c].documents[i];
+          }
+        }
+      }
+    }
+  }
+
+  transform(data, function (d) {
 
       // Translate documents into links.
       let docLinks = [];
+
       if (d.documents && d.documents.length > 0) {
         d.documents.map((theDoc) => {
           docLinks.push(basePath + '/api/document/' + theDoc + '/fetch');
@@ -599,7 +617,7 @@ exports.protectedExport = async function (args, res, next) {
           EAO_Notes: d.eaoNotes,
           Project: projectName,
           PCP_Title: commentPeriodName,
-          Export_Date: formatDate(new Date())
+          Export_Date: exportDate
         };
 
       // Populate csv with fields relevant to proponents
@@ -607,10 +625,8 @@ exports.protectedExport = async function (args, res, next) {
         let read = d.read;
         if (read.includes('public')) {
 
-          // todo: translate valuedComponents
-
           return {
-            Comment_No: publishedCommentNumber++,
+            Comment_No: d.commentId,
             Submitted: formatDate(d.dateAdded),
             Author: sanitizedAuthor,
             Location: d.location,
@@ -620,13 +636,13 @@ exports.protectedExport = async function (args, res, next) {
             Pillar: d.pillars,
             Project: projectName,
             PCP_Title: commentPeriodName,
-            Export_Date: formatDate(new Date())
+            Export_Date: exportDate
           };
         } else {
           return null;
         }
       }
-    }))
+    })
     .pipe(csv.stringify({ header: true }))
     .pipe(res);
 }
