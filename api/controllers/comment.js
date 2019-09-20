@@ -505,10 +505,10 @@ exports.protectedExport = async function (args, res, next) {
   // get api's base path
   var basePath = Utils.getBasePath(args.protocol, args.host);
 
-  // get period title
+  // get period link
   var commentPeriodModel = mongoose.model('CommentPeriod');
   var commentPeriod = await commentPeriodModel.findOne({ _id: period })
-  commentPeriodName = commentPeriod.instructions;
+  var commentPeriodLink = basePath + '/p/' + commentPeriod.project + '/cp/' + period + '/details';
 
   // get project name
   var projectModel = mongoose.model('Project');
@@ -617,7 +617,7 @@ exports.protectedExport = async function (args, res, next) {
           Rejected_Notes: d.rejectedNotes,
           EAO_Notes: d.eaoNotes,
           Project: projectName,
-          PCP_Title: commentPeriodName,
+          PCP: commentPeriodLink,
           Export_Date: exportDate
         };
 
@@ -636,7 +636,7 @@ exports.protectedExport = async function (args, res, next) {
             Published: formatDate(d.datePosted),
             Pillar: d.pillars,
             Project: projectName,
-            PCP_Title: commentPeriodName,
+            PCP: commentPeriodLink,
             Export_Date: exportDate
           };
         } else {
