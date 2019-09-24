@@ -55,17 +55,23 @@ function getGenNumFromFile() {
 function generateAll(usersData) {
   return generateProjects(usersData)
   .then(generatedData => { 
-    let users = generatedData[0];
-    let audit = generatedData[1];
     let projects = generatedData[2];
     return new Promise(function(resolve, reject) {
       generateCommentPeriods(projects).then(commentPeriods => {
-        let genData = [users, audit, projects, commentPeriods];
-        resolve(genData);
+        generatedData.push(commentPeriods);
+        resolve(generatedData);
       });
     });
   })
-  //.then(generateComments(generatedData));
+  .then(generatedData => { 
+    let commentPeriods = generatedData[3];
+    return new Promise(function(resolve, reject) {
+      generateComments(commentPeriods).then(comments => {
+        generatedData.push(comments);
+        resolve(generatedData);
+      });
+    });
+  });
 };
 
 function generateCommentPeriods(projects) {
@@ -74,7 +80,7 @@ function generateCommentPeriods(projects) {
       resolve(generateCommentPeriod(project));
     });
   }).catch(error => {
-    console.log("comment periods error:" + error);
+    console.log("Comment periods error:" + error);
     reject(error);
   }).finally(function(){
     console.log('Generated comment periods.');
@@ -95,34 +101,43 @@ function generateCommentPeriod(project) {
         resolve([]);
       }
     }).catch(error => {
-      console.log("comment period error:" + error);
+      console.log("Comment period error:" + error);
       reject(error);
     }).finally(function(){
       console.log('Generated comment period.');
     });
 };
 
-// function generateComments(generatedData) {
-//   let users = generatedData[0];
-//   let audit = generatedData[1];
-//   let projects = generatedData[2];
-//   let commentPeriods = generatedData[3];
-//   return commentPeriods.map((commentPeriod) => {
-//     return new Promise(function(resolve, reject) {
-//       let commentsToGen = faker.random.number(300).valueOf();
-//       if (0 < commentsToGen) {
-//         commentPeriodFactory.createMany('commentPeriod', commentsToGen, { commentPeriod: commentPeriod._id }).then(commentsArray => {
-//           resolve([users, audit, projects, commentPeriods, commentsArray]);
-//         });
-//       }
-//     }).catch(error => {
-//       console.log("comment error:" + error);
-//       reject(error);
-//     }).finally(function(){
-//       console.log('Generated comments.');
-//     });
-//   });
-// };
+function generateComments(commentPeriods) {
+  return new Promise(function(resolve, reject) {
+    commentPeriods.map((commentPeriod) => {
+      resolve(generateComment(commentPeriod));
+    });
+  }).catch(error => {
+    console.log("Comments error:" + error);
+    reject(error);
+  }).finally(function(){
+    console.log('Generated comments.');
+  });
+};
+
+function generateComment(commentPeriod) {
+  return new Promise(function(resolve, reject) {
+    let commentsToGen = faker.random.number(300).valueOf();
+    if (0 < commentsToGen) {
+      commentFactory.createMany('comment', commentsToGen, { commentPeriod: commentPeriod._id }).then(commentsArray => {
+        resolve(commentsArray);
+      });
+    } else {
+      resolve([]);
+    }
+  }).catch(error => {
+    console.log("Comment error:" + error);
+    reject(error);
+  }).finally(function(){
+    console.log('Generated comment.');
+  });
+};
 
 function generateProjects(usersData) {
   let projectGenerator = new Promise(function(resolve, reject) {
@@ -138,7 +153,7 @@ function generateProjects(usersData) {
             let genData = [usersArray, audit, projectsArray];
             resolve(genData);
           }).catch(error => {
-            console.log("project error:" + error);
+            console.log("Project error:" + error);
             reject(error);
           }).finally(function(){
             console.log('Generated ' + numOfProjsGenned + ' projects.');

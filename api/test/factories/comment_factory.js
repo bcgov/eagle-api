@@ -1,5 +1,6 @@
 const factory = require('factory-girl').factory;
 const Comment = require('../../helpers/models/comment');
+const faker = require('faker');
 const moment = require('moment');
 
 const eaoStatuses = [
@@ -34,7 +35,7 @@ factory.define('comment', Comment, function (buildOptions) {
     , valuedComponents    : [require('mongoose').Types.ObjectId(),require('mongoose').Types.ObjectId(), require('mongoose').Types.ObjectId()]
 
     // Number auto-incremented.  Do not set manually.
-    , commentId           : factory.seq('Comment.code', (n) => '${n}')
+    , commentId           : factory.seq('Comment.commentId', (n) => Number(`${n}`))
 
     // Permissions
     , write               : '["project-system-admin"]'
