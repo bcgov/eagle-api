@@ -2527,6 +2527,11 @@ paths:
           description: "ID of Item"
           required: true
           type: string
+        - name: thumbnail
+          in: query
+          description: "Get thumbnail"
+          required: true
+          type: string
         - in: query
           name: filename
           description: "The filename of the item"
