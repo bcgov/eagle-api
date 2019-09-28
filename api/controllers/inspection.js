@@ -46,8 +46,8 @@ exports.protectedPostInspection = function (args, res, next) {
   var Inspection = mongoose.model('Inspection');
 
   var inspection = new Inspection(obj);
-  inspection.startDate = moment(obj.startDate, "DD-MM-YYYY").toDate();
-  inspection.endDate = moment(obj.endDate, "DD-MM-YYYY").toDate();
+  inspection.startDate = obj.startDate;
+  inspection.endDate = obj.endDate;
 
   inspection.proponent = mongoose.Types.ObjectId(obj.proponent)
   // Define security tag defaults
