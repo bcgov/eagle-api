@@ -65,6 +65,7 @@
     "@types/nock": "^10.0.3",
     "@types/supertest": "^2.0.8",
     "bluebird": "^3.5.5",
+    "canada": "^0.1.0",
     "database-cleaner": "^1.2.0",
     "factory-girl": "^5.0.4",
     "faker": "^4.1.0",

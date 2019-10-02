@@ -1,5 +1,6 @@
 const factory = require('factory-girl').factory;
 const Comment = require('../../helpers/models/comment');
+const factory_helper = require('./factory_helper');
 const faker = require('faker');
 const moment = require('moment');
 
@@ -25,7 +26,7 @@ factory.define('comment', Comment, function (buildOptions) {
     , eaoNotes            : faker.lorem.paragraph()
     , eaoStatus           : faker.random.arrayElement(eaoStatuses)
     , isAnonymous         : faker.random.boolean()
-    , location            : faker.random.number(200) + "km " + faker.random.arrayElement(["", "N", "S"]) + faker.random.arrayElement(["", "E", "W"]) + " of " + faker.address.city()
+    , location            : factory_helper.generateFakeLocationString()
     , period              : require('mongoose').Types.ObjectId()
     , proponentNotes      : faker.lorem.paragraph()
     , proponentStatus     : ""
