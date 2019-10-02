@@ -1,5 +1,6 @@
 const factory = require('factory-girl').factory;
 const CommentPeriod = require('../../helpers/models/commentperiod');
+const factory_helper = require('./factory_helper');
 const faker = require('faker');
 const moment = require('moment');
 
@@ -103,7 +104,7 @@ factory.define('commentPeriod', CommentPeriod, function (buildOptions) {
     , isResolved           : faker.random.boolean()
     , isVetted             : faker.random.arrayElement(["", "false"])
     , milestone            : require('mongoose').Types.ObjectId()
-    , openHouses           : ((faker.random.boolean() ? [] : [{"description":"Moose Hall\n" + faker.address.streetAddress() + ", " + faker.address.city() + "\n" + dateOpenHoused.toString('dddd, MMMM ,yyyy') + "\n8:00 - 9:30pm","eventDate":dateOpenHoused}]))
+    , openHouses           : ((faker.random.boolean() ? [] : [{"description": chance.animal() + " Hall\n" + faker.address.streetAddress() + ", " + faker.random.arrayElement(factory_helper.getBcCities()) + "\n" + dateOpenHoused.toString('dddd, MMMM ,yyyy') + "\n8:00 - 9:30pm","eventDate":dateOpenHoused}]))
     , periodType           : faker.random.arrayElement(["", "Public"])
     , phase                : (faker.random.boolean() ? "" : require('mongoose').Types.ObjectId())
     , phaseName            : faker.random.arrayElement(phaseNames)

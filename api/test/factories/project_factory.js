@@ -1,7 +1,8 @@
 const factory = require('factory-girl').factory;
-const Project = require('../../helpers/models/project');
 const faker = require('faker');
 const moment = require('moment');
+const factory_helper = require('./factory_helper');
+const Project = require('../../helpers/models/project');
 
 const ceaaInvolvements = [
     "Comp Study"
@@ -141,10 +142,8 @@ factory.define('project', Project, function (buildOptions) {
     // order dependent chain backwards in time so that the dates make sense
     let activeDate = substantiallyDate.clone().subtract(faker.random.number(45), 'days'); // company or staff is doing work, 'active' is a state
     let dateAdded = activeDate.clone().subtract(faker.random.number(45), 'days');
-    let projectLeadFirstName = faker.name.firstName();
-    let projectLeadLastName = faker.name.lastName();
-    let responsibleEPDFirstName = faker.name.firstName();
-    let responsibleEPDLastName = faker.name.lastName();
+    let projectLead = factory_helper.generateFakePerson();
+    let responsibleEpd = factory_helper.generateFakePerson();
 
     let attrs = {
     //Needed for default view
@@ -155,17 +154,17 @@ factory.define('project', Project, function (buildOptions) {
     , centroid                : 0.00
     , description             : faker.lorem.paragraph()
     , eacDecision             : faker.random.arrayElement(eacDecision)
-    , location                : faker.random.number(200) + "km " + faker.random.arrayElement(["", "N", "S"]) + faker.random.arrayElement(["", "E", "W"]) + " of " + faker.address.city()
+    , location                : factory_helper.generateFakeLocationString()
     , name                    : projectName
     //, projectLeadId           : { type:'ObjectId', default: null }
-    , projectLead             : projectLeadFirstName + " " + projectLeadLastName
-    , projectLeadEmail        : projectLeadFirstName.toLowerCase() + (faker.random.boolean() ? "." : "") + projectLeadLastName.toLowerCase() + "@" + faker.internet.email().split("@").pop()
+    , projectLead             : projectLead.fullName
+    , projectLeadEmail        : projectLead.emailAddress
     , projectLeadPhone        : faker.phone.phoneNumber()
     //, proponent               : { type:'ObjectId', default: null }
     , region                  : faker.random.arrayElement(regions)
     //, responsibleEPDId        : { type:'ObjectId', default: null }
-    , responsibleEPD          : responsibleEPDFirstName + " " + responsibleEPDLastName
-    , responsibleEPDEmail     : responsibleEPDFirstName.toLowerCase() + (faker.random.boolean() ? "." : "") + responsibleEPDLastName.toLowerCase() + "@" + faker.internet.email().split("@").pop()
+    , responsibleEPD          : responsibleEpd.fullName
+    , responsibleEPDEmail     : responsibleEpd.emailAddress
     , responsibleEPDPhone     : faker.phone.phoneNumber()
     , type                    : faker.random.arrayElement(projectTypes)
     , legislation             : ""

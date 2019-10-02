@@ -5,32 +5,32 @@ const dbCleaner = new DatabaseCleaner('mongodb');
 const mongoose = require('mongoose');
 const mongooseOpts = require('../../config/mongoose_options').mongooseOptions;
 const mongoDbMemoryServer = require('mongodb-memory-server');
+const MongoClient = require('mongodb').MongoClient;
+const exec = require('child_process').exec;
 const _ = require('lodash');
 
 const app = express();
+
+let usePersistentMongoInstance = false;
+
 let mongoServer;
+let mongoUri = "";  // not initializing to localhost here on purpose - would rather error out than corrupt a persistent db
 mongoose.Promise = global.Promise;
 setupAppServer();
 
 jest.setTimeout(10000);
 
-async function mongooseConnect() {
-  if (mongoServer && !(mongoose.connection && mongoose.connection.db)) {
-    const mongoUri = await mongoServer.getConnectionString();
-    await mongoose.connect(mongoUri, mongooseOpts, (err) => {
-      if (err) console.error(err);
-    });
-  }
-};
 
 beforeAll(async () => {
-  mongoServer = new mongoDbMemoryServer.default({
-    instance: {},
-    binary: {
-      version: '3.2.21', // Mongo Version
-    },
-  });
+  if (!usePersistentMongoInstance)
+    mongoServer = new mongoDbMemoryServer.default({
+      instance: {},
+      binary: {
+        version: '3.2.21', // Mongo Version
+      },
+    });
   await mongooseConnect();
+  //await checkMigrations(runMigrations);
 });
 
 beforeEach(async () => {
@@ -57,6 +57,10 @@ function setupAppServer() {
     extended: true
   }));
   app.use(bodyParser.json());
+}
+
+function checkMongoUri() {
+  if ("" == mongoUri) throw "Mongo URI is not set";
 }
 
 function createSwaggerParams(fieldNames, additionalValues = {}, username = null) {
@@ -111,6 +115,46 @@ function buildParams(nameValueMapping) {
   return paramObj;
 }
 
+async function mongooseConnect() {
+  if (!(mongoose.connection && mongoose.connection.db)) {
+    if (usePersistentMongoInstance) {
+      mongoUri = "mongodb://localhost/epic";
+    } else {
+      if (mongoServer) {
+        mongoUri = await mongoServer.getConnectionString()
+      };
+    }
+    checkMongoUri();
+    await mongoose.connect(mongoUri, mongooseOpts, (err) => {
+      if (err) console.error(err);
+    });
+    console.log(mongoUri);
+  }
+};
+
+async function checkMigrations(callback) {
+  checkMongoUri();
+  MongoClient.connect(mongoUri, function(err, db) {
+    if (err) throw err;
+    var dbo = db.db("epic");
+    dbo.collection("migrations").count({}, function(err, numOfDocs){
+      if (err) throw err;
+      db.close();
+      callback(numOfDocs);
+    });
+  });
+}
+
+async function runMigrations(migrationCount) {
+  if (0 < migrationCount) return;
+  checkMongoUri();
+  await exec("./node_modules/db-migrate/bin/db-migrate up", function(err, stdout, stderr) {
+    if (err) throw err;
+    console.log(stdout);
+  });
+}
+
+exports.usePersistentMongoInstance = usePersistentMongoInstance;
 exports.createSwaggerParams = createSwaggerParams;
 exports.createPublicSwaggerParams = createPublicSwaggerParams;
 exports.buildParams = buildParams;
