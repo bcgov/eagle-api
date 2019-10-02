@@ -69,8 +69,8 @@ function generateFakeBcLatLong() {
 function generateFakeLocationString() {
     let nsAxis = faker.random.arrayElement(["", "N", "S"]);
     let ewAxis = faker.random.arrayElement(["", "E", "W"]);
-    let spacer = ((0 == nsAxis.length) || (0 == nsAxis.length)) ? "" : " ";
-    let filler = ((0 == nsAxis.length) && (0 == nsAxis.length)) ? faker.random.arrayElement(["N", "S", "E", "W"]) : "";
+    let spacer = ((0 == nsAxis.length) || (0 == ewAxis.length)) ? "" : " ";
+    let filler = ((0 == nsAxis.length) && (0 == ewAxis.length)) ? faker.random.arrayElement(["N", "S", "E", "W"]) : "";
     let location = faker.random.number(200) + "km " + nsAxis + spacer + ewAxis + filler + " of " + faker.random.arrayElement(getBcCities());
     return location;
 }
