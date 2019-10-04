@@ -1,4 +1,5 @@
 const factory = require('factory-girl').factory;
+const faker = require('faker/locale/en');
 const factory_helper = require('./factory_helper');
 const InspectionItem = require('../../helpers/models/inspectionItem');
 
@@ -9,6 +10,8 @@ const inspectionItemTypes = [
 ]
 
 factory.define('inspectionItem', InspectionItem, buildOptions => {
+  if (buildOptions.faker) faker = buildOptions.faker;
+  
   let author = factory_helper.generateFakePerson();
   let updator = faker.random.arrayElement([null, author, factory_helper.generateFakePerson()]);
   let deletor = faker.random.arrayElement([null, author, updator, factory_helper.generateFakePerson()]);

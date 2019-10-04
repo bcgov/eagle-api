@@ -1,7 +1,10 @@
 const factory = require('factory-girl').factory;
+const faker = require('faker/locale/en');
 const Group = require('../../helpers/models/group');
 
 factory.define('group', Group, buildOptions => {
+  if (buildOptions.faker) faker = buildOptions.faker;
+
   let attrs = {
       name                    : factory.seq('Group.name', (n) => `Group-${n}`)
     , project                 : require('mongoose').Types.ObjectId()
@@ -12,11 +15,6 @@ factory.define('group', Group, buildOptions => {
     , delete           : faker.random.arrayElement(['["public"]', '["sysadmin"]'])
 
   };
-  if (buildOptions.public) { 
-    attrs.tags = [['public'], ['sysadmin']];
-  } else if (buildOptions.public === false) {
-    attrs.tags = [['sysadmin']];
-  }
   return attrs;
 });
 

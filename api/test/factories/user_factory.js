@@ -1,9 +1,11 @@
 const factory = require('factory-girl').factory;
-const faker = require('faker');
+const faker = require('faker/locale/en');
 const factory_helper = require('./factory_helper');
 const User = require('../../helpers/models/user');
 
-factory.define('user', User, function (buildOptions) {
+factory.define('user', User, buildOptions => {
+  if (buildOptions.faker) faker = buildOptions.faker;
+
   let person = factory_helper.generateFakePerson();
   let attrs = {
       firstName               : person.firstName

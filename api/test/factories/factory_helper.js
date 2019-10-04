@@ -1,4 +1,4 @@
-const faker = require('faker');
+const faker = require('faker/locale/en');
 const canada = require('canada');
 const _ = require('lodash');
 
@@ -54,6 +54,7 @@ function generateFakeBcLatLong() {
     return {
           lat: gennedLat
         , long: gennedLong
+        , centroid: [gennedLong, gennedLat]
         , geo: {
               speed : -1
             , heading : -1

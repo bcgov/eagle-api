@@ -1,4 +1,5 @@
 const factory = require('factory-girl').factory;
+const faker = require('faker/locale/en');
 const factory_helper = require('./factory_helper');
 const Organization = require('../../helpers/models/organization');
 
@@ -14,6 +15,8 @@ const companyTypes = [
 ];
 
 factory.define('organization', Organization, buildOptions => {
+  if (buildOptions.faker) faker = buildOptions.faker;
+
   let author = factory_helper.generateFakePerson();
   let updator = faker.random.arrayElement([null, author, factory_helper.generateFakePerson()]);
 

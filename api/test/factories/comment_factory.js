@@ -1,7 +1,7 @@
 const factory = require('factory-girl').factory;
 const Comment = require('../../helpers/models/comment');
 const factory_helper = require('./factory_helper');
-const faker = require('faker');
+const faker = require('faker/locale/en');
 const moment = require('moment');
 
 const eaoStatuses = [
@@ -11,13 +11,16 @@ const eaoStatuses = [
   , "Unvetted"
 ];
 
-factory.define('comment', Comment, function (buildOptions) {
+factory.define('comment', Comment, buildOptions => {
+  if (buildOptions.faker) faker = buildOptions.faker;
+
+  let author = factory_helper.generateFakePerson();
   let dateAdded = moment(faker.date.past(10, new Date()));
   let datePosted = dateAdded.clone().subtract(faker.random.number(7), 'days');
   let dateUpdated = datePosted.clone().subtract(faker.random.number(7), 'days');
 
   let attrs = {
-      author              : faker.fake("{{name.firstName}} {{name.lastName}}")
+      author              : author.fullName
     , comment             : faker.lorem.paragraph()
     , dateAdded           : dateAdded
     , datePosted          : datePosted

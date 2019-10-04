@@ -1,17 +1,8 @@
 const factory = require('factory-girl').factory;
 const CommentPeriod = require('../../helpers/models/commentperiod');
 const factory_helper = require('./factory_helper');
-const faker = require('faker');
+const faker = require('faker/locale/en');
 const moment = require('moment');
-
-const eaoStatuses = [
-  '["project-proponent"]'
-  , '["project-proponent","project-system-admin"]'
-  , '["project-proponent","project-team","project-system-admin"]'
-  , '["project-team","project-proponent","project-system-admin"]'
-  , '["project-system-admin"]'
-  , '["project-team","project-system-admin"]'
-];
 
 const informationLabels = [
     ""
@@ -72,7 +63,9 @@ const vettingRoles = [
   , ["project-team"]
 ];
 
-factory.define('commentPeriod', CommentPeriod, function (buildOptions) {
+factory.define('commentPeriod', CommentPeriod, buildOptions => {
+  if (buildOptions.faker) faker = buildOptions.faker;
+
   // order dependent chain backwards in time so that the dates make sense
   let dateUpdated = moment(faker.date.past(10, new Date()));
   let dateCompleted = dateUpdated.clone().subtract(faker.random.number(10), 'days'); // company or staff is doing work, 'active' is a state

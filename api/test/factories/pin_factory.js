@@ -1,9 +1,11 @@
 const factory = require('factory-girl').factory;
-const faker = require('faker');
+const faker = require('faker/locale/en');
 const factory_helper = require('./factory_helper');
 const Pin = require('../../helpers/models/pin');
 
 factory.define('pin', Pin, buildOptions => {
+  if (buildOptions.faker) faker = buildOptions.faker;
+
   let pinNum = factory.seq('Pin.number', (n) => `${n}`);
   let attrs = {
       name               : "pin-" + pinNum
