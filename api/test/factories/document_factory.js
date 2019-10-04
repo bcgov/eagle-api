@@ -1,7 +1,7 @@
 const factory = require('factory-girl').factory;
-const faker = require('faker/locale/en');
 const factory_helper = require('./factory_helper');
 const Document = require('../../helpers/models/document');
+let faker = require('faker/locale/en');
 
 const docProps = [
     { ext: "jpg", mime: "image/jpeg" }

@@ -1,6 +1,6 @@
 const factory = require('factory-girl').factory;
-const faker = require('faker/locale/en');
 const List = require('../../helpers/models/list');
+let faker = require('faker/locale/en');
 
 factory.define('list', List, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;

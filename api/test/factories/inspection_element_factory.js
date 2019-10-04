@@ -1,7 +1,7 @@
 const factory = require('factory-girl').factory;
-const faker = require('faker/locale/en');
 const factory_helper = require('./factory_helper');
 const InspectionElement = require('../../helpers/models/inspectionElement');
+let faker = require('faker/locale/en');
 
 factory.define('inspectionElement', InspectionElement, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
