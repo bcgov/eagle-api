@@ -20,6 +20,14 @@ const fs = require('fs');
 const defaultNumberOfProjects = 1;
 let genSettings = {};
 
+const uniqueStaticSeeds = {
+    audit: 123
+  , user: 234
+  , project: 345
+  , commentPeriod: 101
+  , comment: 102
+};
+
 // Data generation violates the single purpose principle on purpose.
 // It generates data, saves model to db (mem or real), and outputs the data we generated
 // so we can check that it got saved properly later and manipulate the data for tests.
@@ -75,7 +83,7 @@ function generateCommentPeriods(projects) {
 function generateCommentPeriod(project) {
     return new Promise(function(resolve, reject) {
       getGenSettingsFromFile().then(genSettings => {
-        (genSettings.generate_consistent_data) ? faker.seed(101) : faker.seed();
+        (genSettings.generate_consistent_data) ? faker.seed(uniqueStaticSeeds.commentPeriod) : faker.seed();
         let commentPeriodsToGen = faker.random.number(2).valueOf();
         if (0 < commentPeriodsToGen) {
           commentPeriodFactory.createMany('commentPeriod', commentPeriodsToGen, { project: project._id }).then(commentPeriodsArray => {
@@ -110,7 +118,7 @@ function generateComments(commentPeriods) {
 function generateComment(commentPeriod) {
   return new Promise(function(resolve, reject) {
     getGenSettingsFromFile().then(genSettings => {
-      (genSettings.generate_consistent_data) ? faker.seed(102) : faker.seed();
+      (genSettings.generate_consistent_data) ? faker.seed(uniqueStaticSeeds.comment) : faker.seed();
       let commentsToGen = faker.random.number(300).valueOf();
       if (0 < commentsToGen) {
         commentFactory.createMany('comment', commentsToGen, { commentPeriod: commentPeriod._id }).then(commentsArray => {
@@ -135,9 +143,9 @@ function generateProjects(usersData) {
       let numOfProjsGenned = 0;
       if (isNaN(numOfProjsToGen)) numOfProjsToGen = defaultNumberOfProjects;
       console.log('Generating ' + numOfProjsToGen + ' projects.');
-      auditFactory.create('audit', {}, {faker: getSeeded(genSettings.generate_consistent_data, 123)}).then(audit =>{
-        userFactory.createMany('user', usersData, {faker: getSeeded(genSettings.generate_consistent_data, 234)}).then(usersArray => {
-          projectFactory.createMany('project', numOfProjsToGen, {}, {faker: getSeeded(genSettings.generate_consistent_data, 345)}).then(projectsArray => {
+      auditFactory.create('audit', {}, {faker: getSeeded(genSettings.generate_consistent_data, uniqueStaticSeeds.audit)}).then(audit =>{
+        userFactory.createMany('user', usersData, {faker: getSeeded(genSettings.generate_consistent_data, uniqueStaticSeeds.user)}).then(usersArray => {
+          projectFactory.createMany('project', numOfProjsToGen, {}, {faker: getSeeded(genSettings.generate_consistent_data, uniqueStaticSeeds.project)}).then(projectsArray => {
             numOfProjsGenned = projectsArray.length;
             let genData = [usersArray, audit, projectsArray];
             resolve(genData);
@@ -158,6 +166,7 @@ function getSeeded(setConstant, seed) {
   return (setConstant) ? (require('faker/locale/en')).seed(seed) : (require('faker/locale/en')).seed();
 }
 
+exports.uniqueStaticSeeds = uniqueStaticSeeds;
 exports.generateAll = generateAll;
 exports.getGenSettingsFromFile = getGenSettingsFromFile;
 exports.genSettings = genSettings;

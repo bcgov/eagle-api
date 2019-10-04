@@ -1,8 +1,8 @@
 const factory = require('factory-girl').factory;
-const faker = require('faker/locale/en');
 const moment = require('moment');
 const factory_helper = require('./factory_helper');
 const Project = require('../../helpers/models/project');
+let faker = require('faker/locale/en');
 
 const ceaaInvolvements = [
     "Comp Study"

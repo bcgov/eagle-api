@@ -1,8 +1,8 @@
 const factory = require('factory-girl').factory;
 const Comment = require('../../helpers/models/comment');
 const factory_helper = require('./factory_helper');
-const faker = require('faker/locale/en');
 const moment = require('moment');
+let faker = require('faker/locale/en');
 
 const eaoStatuses = [
   "Deferred"

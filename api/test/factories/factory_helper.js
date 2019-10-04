@@ -1,6 +1,6 @@
-const faker = require('faker/locale/en');
 const canada = require('canada');
 const _ = require('lodash');
+let faker = require('faker/locale/en');
 
 let bcCities = [];
 loadBcCities();

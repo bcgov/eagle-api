@@ -1,7 +1,7 @@
 const factory = require('factory-girl').factory;
-const faker = require('faker/locale/en');
 const moment = require('moment');
 const RecentActivity = require('../../helpers/models/recentActivity');
+let faker = require('faker/locale/en');
 
 factory.define('recentActivity', RecentActivity, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
