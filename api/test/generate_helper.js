@@ -1,5 +1,6 @@
 'use strict';
 const Promise = require("bluebird");
+const faker = require('faker/locale/en');
 Promise.longStackTraces();
 const test_helper = require('./test_helper');
 const app = test_helper.app;
@@ -7,7 +8,6 @@ const mongoose = require('mongoose');
 mongoose.Promise = require('bluebird'); // for extra debugging capabilities
 //mongoose.Promise = global.Promise;  // without debugging extras
 require('../helpers/models/audit');
-const faker = require('faker');
 const auditFactory = require("./factories/audit_factory").factory;
 const userFactory = require("./factories/user_factory").factory;
 const projectFactory = require("./factories/project_factory").factory;
@@ -15,10 +15,10 @@ const commentPeriodFactory = require("./factories/comment_period_factory").facto
 const commentFactory = require("./factories/comment_factory").factory;
 require('../helpers/models/user');
 require('../helpers/models/project');
-const readline = require('readline');
 const fs = require('fs');
 
 const defaultNumberOfProjects = 1;
+let genSettings = {};
 
 // Data generation violates the single purpose principle on purpose.
 // It generates data, saves model to db (mem or real), and outputs the data we generated
@@ -46,19 +46,15 @@ function generateAll(usersData) {
   });
 };
 
-function getGenNumFromFile() {
+function getGenSettingsFromFile() {
   return new Promise(resolve => {
-    let filename = './generate_num.config';
-    
-    const readInterface = readline.createInterface({
-      input: fs.createReadStream(filename),
-      output: null,
-      console: false
-    });
-    readInterface.on('line', (line) => {
-      resolve(line);
-      readInterface.close();
-    });
+    let filename = './generate.config';
+    let fileContents = "";
+    fs.readFileSync(filename).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; })
+    let jsonObj = JSON.parse(fileContents);
+    jsonObj.save_to_persistent_mongo = ("Saved" == jsonObj.data_mode);
+    jsonObj.generate_consistent_data = ("Same" == jsonObj.seed_mode);
+    resolve(jsonObj);
   });   
 };
 
@@ -78,14 +74,17 @@ function generateCommentPeriods(projects) {
 
 function generateCommentPeriod(project) {
     return new Promise(function(resolve, reject) {
-      let commentPeriodsToGen = faker.random.number(2).valueOf();
-      if (0 < commentPeriodsToGen) {
-        commentPeriodFactory.createMany('commentPeriod', commentPeriodsToGen, { project: project._id }).then(commentPeriodsArray => {
-          resolve(commentPeriodsArray);
-        });
-      } else {
-        resolve([]);
-      }
+      getGenSettingsFromFile().then(genSettings => {
+        (genSettings.generate_consistent_data) ? faker.seed(101) : faker.seed();
+        let commentPeriodsToGen = faker.random.number(2).valueOf();
+        if (0 < commentPeriodsToGen) {
+          commentPeriodFactory.createMany('commentPeriod', commentPeriodsToGen, { project: project._id }).then(commentPeriodsArray => {
+            resolve(commentPeriodsArray);
+          });
+        } else {
+          resolve([]);
+        }
+      });
     }).catch(error => {
       console.log("Comment period error:" + error);
       reject(error);
@@ -110,14 +109,17 @@ function generateComments(commentPeriods) {
 
 function generateComment(commentPeriod) {
   return new Promise(function(resolve, reject) {
-    let commentsToGen = faker.random.number(300).valueOf();
-    if (0 < commentsToGen) {
-      commentFactory.createMany('comment', commentsToGen, { commentPeriod: commentPeriod._id }).then(commentsArray => {
-        resolve(commentsArray);
-      });
-    } else {
-      resolve([]);
-    }
+    getGenSettingsFromFile().then(genSettings => {
+      (genSettings.generate_consistent_data) ? faker.seed(102) : faker.seed();
+      let commentsToGen = faker.random.number(300).valueOf();
+      if (0 < commentsToGen) {
+        commentFactory.createMany('comment', commentsToGen, { commentPeriod: commentPeriod._id }).then(commentsArray => {
+          resolve(commentsArray);
+        });
+      } else {
+        resolve([]);
+      }
+    });
   }).catch(error => {
     console.log("Comment error:" + error);
     reject(error);
@@ -128,14 +130,14 @@ function generateComment(commentPeriod) {
 
 function generateProjects(usersData) {
   let projectGenerator = new Promise(function(resolve, reject) {
-    getGenNumFromFile().then(num => {
-      let numOfProjsToGen = Number(num);
+    getGenSettingsFromFile().then(genSettings => {
+      let numOfProjsToGen = Number(genSettings.projects);
       let numOfProjsGenned = 0;
       if (isNaN(numOfProjsToGen)) numOfProjsToGen = defaultNumberOfProjects;
       console.log('Generating ' + numOfProjsToGen + ' projects.');
-      auditFactory.create('audit').then(audit =>{
-        userFactory.createMany('user', usersData).then(usersArray => {
-          projectFactory.createMany('project', numOfProjsToGen).then(projectsArray => {
+      auditFactory.create('audit', {}, {faker: getSeeded(genSettings.generate_consistent_data, 123)}).then(audit =>{
+        userFactory.createMany('user', usersData, {faker: getSeeded(genSettings.generate_consistent_data, 234)}).then(usersArray => {
+          projectFactory.createMany('project', numOfProjsToGen, {}, {faker: getSeeded(genSettings.generate_consistent_data, 345)}).then(projectsArray => {
             numOfProjsGenned = projectsArray.length;
             let genData = [usersArray, audit, projectsArray];
             resolve(genData);
@@ -152,8 +154,13 @@ function generateProjects(usersData) {
   return projectGenerator;
 };
 
+function getSeeded(setConstant, seed) {
+  return (setConstant) ? (require('faker/locale/en')).seed(seed) : (require('faker/locale/en')).seed();
+}
+
 exports.generateAll = generateAll;
-exports.getGenNumFromFile = getGenNumFromFile;
+exports.getGenSettingsFromFile = getGenSettingsFromFile;
+exports.genSettings = genSettings;
 exports.generateCommentPeriods = generateCommentPeriods;
 exports.generateCommentPeriod = generateCommentPeriod;
 exports.generateComments = generateComments;

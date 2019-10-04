@@ -8,21 +8,17 @@ const mongoose = require('mongoose');
 mongoose.Promise = require('bluebird'); // for extra debugging capabilities
 //mongoose.Promise = global.Promise;  // without debugging extras
 require('../helpers/models/audit');
-const faker = require('faker');
-const Chance = require('chance');
 const request = require('supertest');
 const nock = require('nock');
 const _ = require('lodash');
 
 const generate_helper = require("./generate_helper");
 
-const deterministicSeed = 123;
-
-let generateConsistentData = true;
-if (generateConsistentData) {
-  faker.seed(deterministicSeed);  // faker for input arrays and moustache notation
-  Chance(deterministicSeed);  // chance for the breadth of available generators
-}
+generate_helper.getGenSettingsFromFile().then(genSettingsFromFile => {
+  generate_helper.genSettings = genSettingsFromFile;
+  test_helper.usePersistentMongoInstance = generate_helper.genSettings.save_to_persistent_mongo;
+  // console.log(generate_helper.genSettings);
+});
 
 describe('Generate Test Data', () => {
   let adminUser = factory_helper.generateFakePerson('Stanley', '', 'Adminington');
@@ -32,11 +28,10 @@ describe('Generate Test Data', () => {
     , {firstName: publicUser.firstName, middleName: publicUser.middleName, lastName: publicUser.lastName, displayName: publicUser.fullName, email: publicUser.emailAddress, read: publicUser.read, write: publicUser.write, delete: publicUser.delete}
   ];
 
-  // Trigger the data generation, then use the variable we made as we generated the data
-  // to double check the data in the (in-memory or real) database
   describe('Generate Projects', () => {
     test('Generator', done => {
       generate_helper.generateAll(usersData).then(generatedData =>{
+        console.log(((generate_helper.genSettings.generate_consistent_data) ? "Consistent" : "Random") + " data generation " + ((generate_helper.genSettings.save_to_persistent_mongo) ? "saved" : "unsaved"));
         //console.log('generatedData: [' + generatedData + ']');
         let projects = generatedData[2];
         console.log('projects: [' + projects + ']');

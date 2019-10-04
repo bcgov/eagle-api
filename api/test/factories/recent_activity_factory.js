@@ -1,9 +1,11 @@
 const factory = require('factory-girl').factory;
-const faker = require('faker');
+const faker = require('faker/locale/en');
 const moment = require('moment');
 const RecentActivity = require('../../helpers/models/recentActivity');
 
 factory.define('recentActivity', RecentActivity, buildOptions => {
+  if (buildOptions.faker) faker = buildOptions.faker;
+  
   let raType = faker.random.arrayElement(["News", "Public Comment Period"]);
   let dateUpdated = moment(faker.date.past(10, new Date()));
   let dateAdded = dateUpdated.clone().subtract(faker.random.number(45), 'days');

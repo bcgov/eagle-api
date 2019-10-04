@@ -30,7 +30,7 @@ beforeAll(async () => {
       },
     });
   await mongooseConnect();
-  //await checkMigrations(runMigrations);
+  await checkMigrations(runMigrations);
 });
 
 beforeEach(async () => {
@@ -91,7 +91,7 @@ function defaultProtectedParams(fieldNames, username = null) {
     auth_payload: {
       scopes: ['sysadmin', 'public'],
       // This value in the real world is pulled from the keycloak user. It will look something like
-      // idir/arwhilla
+      // idir/someusername
       preferred_username: username
     },
     fields: {
@@ -99,6 +99,7 @@ function defaultProtectedParams(fieldNames, username = null) {
     }
   };
 }
+
 function defaultPublicParams(fieldNames) {
   return {
     fields: {
