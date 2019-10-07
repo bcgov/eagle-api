@@ -49,7 +49,11 @@ exports.protectedPostInspection = function (args, res, next) {
   inspection.startDate = obj.startDate;
   inspection.endDate = obj.endDate;
 
-  inspection.proponent = mongoose.Types.ObjectId(obj.proponent)
+  if (obj.project) {
+    inspection.project = mongoose.Types.ObjectId(obj.project);
+  } else {
+    inspection.customInspectionName = obj.customInspectionName;
+  }
   // Define security tag defaults
   inspection.read = ['sysadmin', 'inspector'];
   inspection.write = ['sysadmin', 'inspector'];
@@ -125,7 +129,10 @@ exports.protectedPostElement = function (args, res, next) {
 exports.protectedPostElementItem = function (args, res, next) {
   var upfile = args.swagger.params.upfile.value;
   var guid = intformat(generator.next(), 'dec');
-  var project = args.swagger.params.project.value;
+  var project = null
+  if (args.swagger.params.project.value) {
+    project = args.swagger.params.project.value;
+  }
   var elementId = args.swagger.params.elementId.value;
   var type = args.swagger.params.type.value;
   var timestamp = args.swagger.params.timestamp.value;
@@ -162,7 +169,9 @@ exports.protectedPostElementItem = function (args, res, next) {
         var InspectionItem = mongoose.model('InspectionItem');
         var doc = new InspectionItem();
         // Define security tag defaults
-        doc.project = mongoose.Types.ObjectId(project);
+        if (project) {
+          doc.project = mongoose.Types.ObjectId(project);
+        }
         doc._addedBy = args.swagger.params.auth_payload.preferred_username;
         doc._createdDate = new Date();
         doc.read = ['sysadmin', 'inspector'];
@@ -218,7 +227,9 @@ exports.protectedPostElementItem = function (args, res, next) {
     var InspectionItem = mongoose.model('InspectionItem');
     var doc = new InspectionItem();
     // Define security tag defaults
-    doc.project = mongoose.Types.ObjectId(project);
+    if (project) {
+      doc.project = mongoose.Types.ObjectId(project);
+    }
     doc._addedBy = args.swagger.params.auth_payload.preferred_username;
     doc._createdDate = new Date();
     doc.read = ['sysadmin', 'inspector'];
