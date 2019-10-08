@@ -2426,7 +2426,7 @@ paths:
         - name: project
           in: formData
           type: string
-          required: true
+          required: false
           description: "Project this Inspection Element Item relates to."
         - name: upfile
           in: formData
