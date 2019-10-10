@@ -80,16 +80,17 @@ describe('Catch Model Changes not done in Factories', () => {
                 hashElement('./api', options).then(currentApiFolderHashset => {
                     
                     currentApiFolderHashset = filterRelevantFolders(currentApiFolderHashset);
+
                     console.log("************** Start snip **************");
                     console.log(currentApiFolderHashset);
                     console.log("************** End snip **************");
-                    expect(currentApiFolderHashset.models).toEqual(lastGoodApiFolderHashset.models);
-                    expect(currentApiFolderHashset.factories).toEqual(lastGoodApiFolderHashset.factories);
+                    
+                    let currentHashset = JSON.parse(currentApiFolderHashset);
+                    let lastGoodHashset = JSON.parse(lastGoodApiFolderHashset);
+                    expect(currentHashset.models).toEqual(lastGoodHashset.models);
+                    expect(currentHashset.factories).toEqual(lastGoodHashset.factories);
                     done();
-                })
-                .catch(error => {
-                    return console.error('hashing failed:', error);
-                });            
+                })       
             });
         });
     });
