@@ -52,7 +52,7 @@
   },
   "scripts": {
     "start": "node app",
-    "test": "echo 'Test suite should be run with \"`npm run tests` or npm `run tests-debug`\"'",
+    "test": "echo 'Test suite should be run with \"`npm run tests` or `npm run tests-debug`\"'",
     "tests": "UPLOAD_DIRECTORY='./api/test/uploads/' jest api --runInBand",
     "tests-debug": "node --inspect node_modules/.bin/jest --runInBand",
     "coverage": "jest --collectCoverageFrom=api/**.js --coverage api"
