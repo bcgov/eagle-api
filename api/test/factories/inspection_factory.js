@@ -39,6 +39,7 @@ factory.define('inspection', Inspection, buildOptions => {
     , startDate : startDate
     , endDate   : endDate
     , elements  : [require('mongoose').Types.ObjectId(), require('mongoose').Types.ObjectId(), require('mongoose').Types.ObjectId()]
+    , customProjectName: ''
     , project   : require('mongoose').Types.ObjectId()
   };
   return attrs;
