@@ -52,7 +52,7 @@
   },
   "scripts": {
     "start": "node app",
-    "test": "echo 'Test suite should be run with \"`npm run tests` or npm `run tests-debug`\"'",
+    "test": "echo 'Test suite should be run with \"`npm run tests` or `npm run tests-debug`\"'",
     "tests": "UPLOAD_DIRECTORY='./api/test/uploads/' jest api --runInBand",
     "tests-debug": "node --inspect node_modules/.bin/jest --runInBand",
     "coverage": "jest --collectCoverageFrom=api/**.js --coverage api"
@@ -69,6 +69,7 @@
     "database-cleaner": "^1.2.0",
     "factory-girl": "^5.0.4",
     "faker": "^4.1.0",
+    "folder-hash": "^3.3.0",
     "jest": "^23.6.0",
     "jest-cli": "^24.9.0",
     "mongodb-memory-server": "^5.2.0",

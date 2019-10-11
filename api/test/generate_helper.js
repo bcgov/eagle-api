@@ -56,12 +56,12 @@ function generateAll(usersData) {
 
 function getGenSettingsFromFile() {
   return new Promise(resolve => {
-    let filename = './generate.config';
+    let filename = '/tmp/generate.config';
     let fileContents = "";
     fs.readFileSync(filename).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; })
     let jsonObj = JSON.parse(fileContents);
     jsonObj.save_to_persistent_mongo = ("Saved" == jsonObj.data_mode);
-    jsonObj.generate_consistent_data = ("Same" == jsonObj.seed_mode);
+    jsonObj.generate_consistent_data = ("Static" == jsonObj.seed_mode);
     resolve(jsonObj);
   });   
 };

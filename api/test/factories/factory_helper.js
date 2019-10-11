@@ -5,6 +5,8 @@ let faker = require('faker/locale/en');
 let bcCities = [];
 loadBcCities();
 
+const idirMaxAllowedChars = 8;
+
 function generateFakePerson(firstName, middleName, lastName) {
     let first = (firstName) ? firstName : faker.name.firstName();
     let middle = (middleName) ? middleName : faker.random.arrayElement(["", faker.name.firstName()]);
@@ -13,7 +15,7 @@ function generateFakePerson(firstName, middleName, lastName) {
     let full = first + " " + (("" == middle) ? "" : faker.random.arrayElement(["", middle.charAt(0) + ". "])) + last;
     let email = first.toLowerCase() + (faker.random.boolean() ? "." : "") + last.toLowerCase() + "@" + faker.internet.email().split("@").pop();
     // Active Directory Username, is stored in db as "idir\\sampleidir"
-    let idir = "idir\\\\" + (first.charAt(0) + last).toLowerCase();
+    let idir = "idir\\\\" + ((first.charAt(0) + last).toLowerCase()).substring(0,idirMaxAllowedChars);
 
     return {
           "firstName": first
