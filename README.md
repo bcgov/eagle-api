@@ -121,9 +121,9 @@ See [Code Reuse Strategy](https://github.com/bcgov/eagle-dev-guides/dev_guides/c
 An overview of the EPIC test stack can be found [here](https://github.com/bcgov/eagle-dev-guides/blob/master/dev_guides/testing_components.md).
 
 This project is using [jest](http://jestjs.io/) as a testing framework. You can run tests with
-`node_modules/.bin/jest ./api/test/yourtestfile.test.js`. Running with the `--watch` flag will re-run the tests every time a file is changed.
+`node_modules/.bin/jest`. Running with the `--watch` flag will re-run the tests every time a file is changed.
 
-To run the tests in one file, simply pass the path of the file name e.g. `node_modules/.bin/jest ./api/test/search.test.js --watch`. To run only one test in that file, chain the `.only` command e.g. `test.only("Search returns results", () => {})`.
+To run the tests in one file, simply pass the path of the file name e.g. `node_modules/.bin/jest ./api/test/yourtestfile.test.js --watch`. To run only one test in that file, chain the `.only` command e.g. `test.only("Search returns results", () => {})`.
 
 The tests that are present are called in the deployment pipeline and will fail a build if they fail.  Better to run the above tests locally as part of your development cycle.
 
