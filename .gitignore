@@ -44,3 +44,4 @@ Thumbs.db
 /project_installer.sh
 /generate_num.config
 /generate.config
+/shell_helper.sh
