@@ -283,163 +283,32 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
     var projectDataId;
 
     switch (projectLegislation) {
-      case "1996":
-        projectDataId = "allProjectData[1996]";
-        // pop most recent project data.
-        aggregation.push(
-          {
-            '$lookup': {
-              "from": "epic",
-              "localField": projectDataId,
-              "foreignField": "_id",
-              "as": projectDataId
-            }
-          });
-        aggregation.push(
-          {
-            "$unwind": "$" + projectDataId
-          },
-        );
-
-        // pop proponent if exists.
-        aggregation.push(
-          {
-            '$lookup': {
-              "from": "epic",
-              "localField": projectDataId + ".proponent",
-              "foreignField": "_id",
-              "as": projectDataId + ".proponent"
-            }
-          });
-        aggregation.push(
-          {
-            "$unwind": "$" + projectDataId + ".proponent"
-          },
-        );
+      case "1996", "2002", "2018":
+        projectDataId = "allProjectData[" + projectLegislation + "]";
         break;
-
-      case "2002":
-        projectDataId = "allProjectData[2002]";
-        // pop most recent project data.
-        aggregation.push(
-          {
-            '$lookup': {
-              "from": "epic",
-              "localField": projectDataId,
-              "foreignField": "_id",
-              "as": projectDataId
-            }
-          });
-        aggregation.push(
-          {
-            "$unwind": "$" + projectDataId
-          },
-        );
-
-        // pop proponent if exists.
-        aggregation.push(
-          {
-            '$lookup': {
-              "from": "epic",
-              "localField": projectDataId + ".proponent",
-              "foreignField": "_id",
-              "as": projectDataId + ".proponent"
-            }
-          });
-        aggregation.push(
-          {
-            "$unwind": "$" + projectDataId + ".proponent"
-          },
-        );
-        break;
-
-      case "2018":
-        projectDataId = "allProjectData[2018]";
-        // pop most recent project data.
-        aggregation.push(
-          {
-            '$lookup': {
-              "from": "epic",
-              "localField": projectDataId,
-              "foreignField": "_id",
-              "as": projectDataId
-            }
-          });
-        aggregation.push(
-          {
-            "$unwind": "$" + projectDataId
-          },
-        );
-
-        // pop proponent if exists.
-        aggregation.push(
-          {
-            '$lookup': {
-              "from": "epic",
-              "localField": projectDataId + ".proponent",
-              "foreignField": "_id",
-              "as": projectDataId + ".proponent"
-            }
-          });
-        aggregation.push(
-          {
-            "$unwind": "$" + projectDataId + ".proponent"
-          },
-        );
-        break;
-
       case "all":
         projectDataId = [ "allProjectData[1996]", "allProjectData[2002]", "allProjectData[2018]" ];
-        projectDataId.foreach ( dataId => {
-          // pop most recent project data.
-          aggregation.push(
-            {
-              '$lookup': {
-                "from": "epic",
-                "localField": dataId,
-                "foreignField": "_id",
-                "as": dataId
-              }
-            });
-          aggregation.push(
-            {
-              "$unwind": "$" + dataId
-            },
-          );
-
-          // pop proponent if exists.
-          aggregation.push(
-            {
-              '$lookup': {
-                "from": "epic",
-                "localField": dataId + ".proponent",
-                "foreignField": "_id",
-                "as": dataId + ".proponent"
-              }
-            });
-          aggregation.push(
-            {
-              "$unwind": "$" + dataId + ".proponent"
-            },
-          );
-        });
         break;
-
       default:
         projectDataId = "currentProjectData";
+        break;
+    }
+
+    if (projectLegislation === "all"){
+      projectDataId.foreach ( dataId => {
         // pop most recent project data.
         aggregation.push(
           {
             '$lookup': {
               "from": "epic",
-              "localField": projectDataId,
+              "localField": dataId,
               "foreignField": "_id",
-              "as": projectDataId
+              "as": dataId
             }
           });
         aggregation.push(
           {
-            "$unwind": "$" + projectDataId
+            "$unwind": "$" + dataId
           },
         );
 
@@ -448,17 +317,49 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
           {
             '$lookup': {
               "from": "epic",
-              "localField": projectDataId + ".proponent",
+              "localField": dataId + ".proponent",
               "foreignField": "_id",
-              "as": projectDataId + ".proponent"
+              "as": dataId + ".proponent"
             }
           });
         aggregation.push(
           {
-            "$unwind": "$" + projectDataId + ".proponent"
+            "$unwind": "$" + dataId + ".proponent"
           },
         );
-        break;
+      });
+    } else {
+      // pop most recent project data.
+      aggregation.push(
+        {
+          '$lookup': {
+            "from": "epic",
+            "localField": projectDataId,
+            "foreignField": "_id",
+            "as": projectDataId
+          }
+        });
+      aggregation.push(
+        {
+          "$unwind": "$" + projectDataId
+        },
+      );
+
+      // pop proponent if exists.
+      aggregation.push(
+        {
+          '$lookup': {
+            "from": "epic",
+            "localField": projectDataId + ".proponent",
+            "foreignField": "_id",
+            "as": projectDataId + ".proponent"
+          }
+        });
+      aggregation.push(
+        {
+          "$unwind": "$" + projectDataId + ".proponent"
+        },
+      );
     }
   }
 
