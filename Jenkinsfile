@@ -205,14 +205,14 @@ pipeline {
           }
         }
 
-        // stage('Unit Tests') {
-        //   steps {
-        //     script {
-        //       echo "Running Unit Tests"
-        //       def result = nodejsTester()
-        //     }
-        //   }
-        // }
+        stage('Unit Tests') {
+          steps {
+            script {
+              echo "Running Unit Tests"
+              def result = nodejsTester()
+            }
+          }
+        }
 
         stage('Sonarqube') {
           steps {

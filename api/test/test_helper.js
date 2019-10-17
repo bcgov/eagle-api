@@ -20,15 +20,10 @@ setupAppServer();
 
 jest.setTimeout(10000);
 
+preloadMemoryServer();
 
 beforeAll(async () => {
-  if (!usePersistentMongoInstance)
-    mongoServer = new mongoDbMemoryServer.default({
-      instance: {},
-      binary: {
-        version: '3.2.21', // Mongo Version
-      },
-    });
+  if (!usePersistentMongoInstance) mongoServer = instantiateInMemoryMongoServer();
   await mongooseConnect();
   await checkMigrations(runMigrations);
 });
@@ -151,8 +146,24 @@ async function runMigrations(migrationCount) {
   checkMongoUri();
   await exec("./node_modules/db-migrate/bin/db-migrate up", function(err, stdout, stderr) {
     if (err) throw err;
-    console.log(stdout);
   });
+}
+
+function instantiateInMemoryMongoServer() {
+  return new mongoDbMemoryServer.default({
+    instance: {},
+    binary: {
+      version: '3.6.3' // Use same Mongo Version as prod.  mongod --version
+    }
+  });
+}
+
+// initialize the in-memory server before running tests because otherwise
+// it occasionally fails the tests by exceeding the timeout.  We'd rather do 
+// an extra step and get reliable output than cause random pipeline failures.
+async function preloadMemoryServer() {
+  let cacheWarmer = instantiateInMemoryMongoServer();
+  cacheWarmer.stop();
 }
 
 exports.usePersistentMongoInstance = usePersistentMongoInstance;
