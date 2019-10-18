@@ -23,7 +23,7 @@ jest.setTimeout(10000);
 beforeAll(async () => {
   if (!usePersistentMongoInstance) mongoServer = instantiateInMemoryMongoServer();
   await mongooseConnect();
-  await checkMigrations(runMigrations);
+  if (!usePersistentMongoInstance) await checkMigrations(runMigrations);
 });
 
 beforeEach(async () => {
