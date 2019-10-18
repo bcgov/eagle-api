@@ -26,8 +26,9 @@ if [ ! -z "${1}" ]; then PROJECTS=$1; fi
 if ! [[ "${PROJECTS}" =~ $valid_numeric_pattern ]]; then printf "$usage"; exit 1; fi
 if ! [[ "${SEED_MODE}" =~ $valid_seed_mode_pattern ]]; then printf "$usage"; exit 1; fi
 if ! [[ "${DATA_MODE}" =~ $valid_data_mode_pattern ]]; then printf "$usage"; exit 1; fi
-JSON="{\"projects\":\"$PROJECTS\",\"seed_mode\":\"$SEED_MODE\",\"data_mode\":\"$DATA_MODE\"}\n";
+JSON="{\"generate\":\"true\",\"projects\":\"$PROJECTS\",\"seed_mode\":\"$SEED_MODE\",\"data_mode\":\"$DATA_MODE\"}\n";
 #printf "$JSON\n";
 rm -f /tmp/generate.config;
 printf "$JSON" > /tmp/generate.config;
-node_modules/.bin/jest ./api/test/generate.test.js
+node_modules/.bin/jest ./api/test/generate.test.js;
+rm -f /tmp/generate.config;

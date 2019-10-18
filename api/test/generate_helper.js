@@ -18,7 +18,12 @@ require('../helpers/models/project');
 const fs = require('fs');
 
 const defaultNumberOfProjects = 1;
-let genSettings = {};
+let genSettings = {
+  generate: false,
+  projects: defaultNumberOfProjects,
+  save_to_persistent_mongo: false,
+  generate_consistent_data: true,
+};
 
 const uniqueStaticSeeds = {
     audit: 123

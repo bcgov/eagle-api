@@ -20,15 +20,8 @@ setupAppServer();
 
 jest.setTimeout(10000);
 
-
 beforeAll(async () => {
-  if (!usePersistentMongoInstance)
-    mongoServer = new mongoDbMemoryServer.default({
-      instance: {},
-      binary: {
-        version: '3.2.21', // Mongo Version
-      },
-    });
+  if (!usePersistentMongoInstance) mongoServer = instantiateInMemoryMongoServer();
   await mongooseConnect();
   await checkMigrations(runMigrations);
 });
@@ -151,7 +144,15 @@ async function runMigrations(migrationCount) {
   checkMongoUri();
   await exec("./node_modules/db-migrate/bin/db-migrate up", function(err, stdout, stderr) {
     if (err) throw err;
-    console.log(stdout);
+  });
+}
+
+function instantiateInMemoryMongoServer() {
+  return new mongoDbMemoryServer.default({
+    instance: {}
+    // , binary: {
+    //   version: '3.6.3' // Use latest so that we hit warm node_module caches.  FTY prod is 3.6.3.  mongod --version
+    // }
   });
 }
 
