@@ -5,14 +5,8 @@ const test_helper = require('./test_helper');
 const factory_helper = require('./factories/factory_helper');
 const request = require('supertest');
 const nock = require('nock');
-
 const generate_helper = require("./generate_helper");
 
-generate_helper.getGenSettingsFromFile().then(genSettingsFromFile => {
-  generate_helper.genSettings = genSettingsFromFile;
-  test_helper.usePersistentMongoInstance = generate_helper.genSettings.save_to_persistent_mongo;
-  //console.log(generate_helper.genSettings);
-});
 
 describe('Generate Test Data', () => {
   let adminUser = factory_helper.generateFakePerson('Stanley', '', 'Adminington');
@@ -24,13 +18,14 @@ describe('Generate Test Data', () => {
 
   describe('Generate Projects', () => {
     test('Generator', done => {
-        //console.log(generate_helper.genSettings);
+      test_helper.dataGenerationSettings.then(genSettings => {
+        //console.log(genSettings);
 
         // Default is to not run the data generator when running global tests
-        if (generate_helper.genSettings.generate) {
+        if (genSettings.generate) {
           console.log("Data Generation is on");
           generate_helper.generateAll(usersData).then(generatedData =>{
-            console.log(((generate_helper.genSettings.generate_consistent_data) ? "Consistent" : "Random") + " data generation " + ((generate_helper.genSettings.save_to_persistent_mongo) ? "saved" : "unsaved"));
+            console.log(((genSettings.generate_consistent_data) ? "Consistent" : "Random") + " data generation " + ((genSettings.save_to_persistent_mongo) ? "saved" : "unsaved"));
             //console.log('generatedData: [' + generatedData + ']');
             let projects = generatedData[2];
            console.log('projects: [' + projects + ']');
@@ -51,6 +46,7 @@ describe('Generate Test Data', () => {
           expect(1).toEqual(1);
           done();
         }
+      });
     });
   });
 });

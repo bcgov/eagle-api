@@ -8,10 +8,10 @@ const mongoDbMemoryServer = require('mongodb-memory-server');
 const MongoClient = require('mongodb').MongoClient;
 const exec = require('child_process').exec;
 const _ = require('lodash');
+const fs = require('fs');
 
 const app = express();
-
-let usePersistentMongoInstance = false;
+const defaultNumberOfProjects = 1;
 
 let mongoServer;
 let mongoUri = "";  // not initializing to localhost here on purpose - would rather error out than corrupt a persistent db
@@ -21,9 +21,10 @@ setupAppServer();
 jest.setTimeout(10000);
 
 beforeAll(async () => {
-  if (!usePersistentMongoInstance) mongoServer = instantiateInMemoryMongoServer();
+  let genSettings = await dataGenerationSettings;
+  if (!genSettings.save_to_persistent_mongo) mongoServer = instantiateInMemoryMongoServer();
   await mongooseConnect();
-  if (!usePersistentMongoInstance) await checkMigrations(runMigrations);
+  if (genSettings.generate) await checkMigrations(runMigrations);
 });
 
 beforeEach(async () => {
@@ -31,18 +32,23 @@ beforeEach(async () => {
 });
 
 afterEach(done => {
-  if (mongoose.connection && mongoose.connection.db) {
-    dbCleaner.clean(mongoose.connection.db, () => {
+  dataGenerationSettings.then(genSettings => {
+    if (mongoose.connection && mongoose.connection.db) {
+      if (!genSettings.save_to_persistent_mongo) {
+        dbCleaner.clean(mongoose.connection.db, () => {
+          done();
+        });
+      }
+    } else {
       done();
-    });
-  } else {
-    done();
-  }
+    }
+  });
 });
 
 afterAll(async () => {
+  let genSettings = await dataGenerationSettings;
   if (mongoose.connection) await mongoose.disconnect();
-  await mongoServer.stop();
+  if ((mongoServer) && (!genSettings.save_to_persistent_mongo)) await mongoServer.stop();
 });
 
 function setupAppServer() {
@@ -55,6 +61,35 @@ function setupAppServer() {
 function checkMongoUri() {
   if ("" == mongoUri) throw "Mongo URI is not set";
 }
+
+
+function getDataGenerationSettings() {
+  let filepath = '/tmp/generate.config';
+  if (fs.existsSync(filepath)){
+    return new Promise(resolve => {
+      let fileContents = "";
+      fs.readFileSync(filepath).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; })
+      let jsonObj = JSON.parse(fileContents);
+      jsonObj.projects = Number(jsonObj.projects);
+      jsonObj.save_to_persistent_mongo = ("Saved" == jsonObj.data_mode);
+      jsonObj.generate_consistent_data = ("Static" == jsonObj.seed_mode);
+      jsonObj.generate = ("true" == jsonObj.generate);
+      resolve(jsonObj);
+    });   
+  } else {
+    return new Promise(resolve => {
+      let jsonObj = {
+        generate: false,
+        projects: defaultNumberOfProjects,
+        save_to_persistent_mongo: false,
+        generate_consistent_data: true,
+      };
+      resolve(jsonObj);
+    });   
+  }
+};
+
+let dataGenerationSettings = getDataGenerationSettings();
 
 function createSwaggerParams(fieldNames, additionalValues = {}, username = null) {
   let defaultParams = defaultProtectedParams(fieldNames, username);
@@ -111,7 +146,8 @@ function buildParams(nameValueMapping) {
 
 async function mongooseConnect() {
   if (!(mongoose.connection && mongoose.connection.db)) {
-    if (usePersistentMongoInstance) {
+    let genSettings = await dataGenerationSettings;
+    if (genSettings.save_to_persistent_mongo) {
       mongoUri = "mongodb://localhost/epic";
     } else {
       if (mongoServer) {
@@ -156,7 +192,7 @@ function instantiateInMemoryMongoServer() {
   });
 }
 
-exports.usePersistentMongoInstance = usePersistentMongoInstance;
+exports.dataGenerationSettings = dataGenerationSettings;
 exports.createSwaggerParams = createSwaggerParams;
 exports.createPublicSwaggerParams = createPublicSwaggerParams;
 exports.buildParams = buildParams;
