@@ -129,10 +129,10 @@ async function mongooseConnect() {
 async function checkMigrations(callback) {
   checkMongoUri();
   MongoClient.connect(mongoUri, function(err, db) {
-    if (err) throw err;
+    if (err) console.error(err);
     var dbo = db.db("epic");
     dbo.collection("migrations").count({}, function(err, numOfDocs){
-      if (err) throw err;
+      if (err) console.error(err);
       db.close();
       callback(numOfDocs);
     });
@@ -143,7 +143,7 @@ async function runMigrations(migrationCount) {
   if (0 < migrationCount) return;
   checkMongoUri();
   await exec("./node_modules/db-migrate/bin/db-migrate up", function(err, stdout, stderr) {
-    if (err) throw err;
+    if (err) console.error(err);
   });
 }
 
