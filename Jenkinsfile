@@ -75,6 +75,7 @@ def nodejsTester () {
       ]) {
         node("node-tester") {
           checkout scm
+          sh 'npm i'
           try {
             sh 'npm run tests'
           } finally {
