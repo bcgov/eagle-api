@@ -15,15 +15,6 @@ const commentPeriodFactory = require("./factories/comment_period_factory").facto
 const commentFactory = require("./factories/comment_factory").factory;
 require('../helpers/models/user');
 require('../helpers/models/project');
-const fs = require('fs');
-
-const defaultNumberOfProjects = 1;
-let genSettings = {
-  generate: false,
-  projects: defaultNumberOfProjects,
-  save_to_persistent_mongo: false,
-  generate_consistent_data: true,
-};
 
 const uniqueStaticSeeds = {
     audit: 123
@@ -59,17 +50,6 @@ function generateAll(usersData) {
   });
 };
 
-function getGenSettingsFromFile() {
-  return new Promise(resolve => {
-    let filename = '/tmp/generate.config';
-    let fileContents = "";
-    fs.readFileSync(filename).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; })
-    let jsonObj = JSON.parse(fileContents);
-    jsonObj.save_to_persistent_mongo = ("Saved" == jsonObj.data_mode);
-    jsonObj.generate_consistent_data = ("Static" == jsonObj.seed_mode);
-    resolve(jsonObj);
-  });   
-};
 
 function generateCommentPeriods(projects) {
   return new Promise(function(resolve, reject) {
@@ -87,7 +67,7 @@ function generateCommentPeriods(projects) {
 
 function generateCommentPeriod(project) {
     return new Promise(function(resolve, reject) {
-      getGenSettingsFromFile().then(genSettings => {
+      test_helper.dataGenerationSettings.then(genSettings => {
         (genSettings.generate_consistent_data) ? faker.seed(uniqueStaticSeeds.commentPeriod) : faker.seed();
         let commentPeriodsToGen = faker.random.number(2).valueOf();
         if (0 < commentPeriodsToGen) {
@@ -122,7 +102,7 @@ function generateComments(commentPeriods) {
 
 function generateComment(commentPeriod) {
   return new Promise(function(resolve, reject) {
-    getGenSettingsFromFile().then(genSettings => {
+    test_helper.dataGenerationSettings.then(genSettings => {
       (genSettings.generate_consistent_data) ? faker.seed(uniqueStaticSeeds.comment) : faker.seed();
       let commentsToGen = faker.random.number(300).valueOf();
       if (0 < commentsToGen) {
@@ -143,8 +123,8 @@ function generateComment(commentPeriod) {
 
 function generateProjects(usersData) {
   let projectGenerator = new Promise(function(resolve, reject) {
-    getGenSettingsFromFile().then(genSettings => {
-      let numOfProjsToGen = Number(genSettings.projects);
+    test_helper.dataGenerationSettings.then(genSettings => {
+      let numOfProjsToGen = genSettings.projects;
       let numOfProjsGenned = 0;
       if (isNaN(numOfProjsToGen)) numOfProjsToGen = defaultNumberOfProjects;
       console.log('Generating ' + numOfProjsToGen + ' projects.');
@@ -173,8 +153,6 @@ function getSeeded(setConstant, seed) {
 
 exports.uniqueStaticSeeds = uniqueStaticSeeds;
 exports.generateAll = generateAll;
-exports.getGenSettingsFromFile = getGenSettingsFromFile;
-exports.genSettings = genSettings;
 exports.generateCommentPeriods = generateCommentPeriods;
 exports.generateCommentPeriod = generateCommentPeriod;
 exports.generateComments = generateComments;
