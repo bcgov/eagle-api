@@ -20,8 +20,6 @@ setupAppServer();
 
 jest.setTimeout(10000);
 
-preloadMemoryServer();
-
 beforeAll(async () => {
   if (!usePersistentMongoInstance) mongoServer = instantiateInMemoryMongoServer();
   await mongooseConnect();
@@ -151,19 +149,11 @@ async function runMigrations(migrationCount) {
 
 function instantiateInMemoryMongoServer() {
   return new mongoDbMemoryServer.default({
-    instance: {},
-    binary: {
-      version: '3.6.3' // Use same Mongo Version as prod.  mongod --version
-    }
+    instance: {}
+    // , binary: {
+    //   version: '3.6.3' // Use latest so that we hit warm node_module caches.  FTY prod is 3.6.3.  mongod --version
+    // }
   });
-}
-
-// initialize the in-memory server before running tests because otherwise
-// it occasionally fails the tests by exceeding the timeout.  We'd rather do 
-// an extra step and get reliable output than cause random pipeline failures.
-async function preloadMemoryServer() {
-  let cacheWarmer = instantiateInMemoryMongoServer();
-  cacheWarmer.stop();
 }
 
 exports.usePersistentMongoInstance = usePersistentMongoInstance;

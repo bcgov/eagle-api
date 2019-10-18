@@ -3,21 +3,15 @@ const Promise = require("bluebird");
 Promise.longStackTraces();
 const test_helper = require('./test_helper');
 const factory_helper = require('./factories/factory_helper');
-const app = test_helper.app;
-const mongoose = require('mongoose');
-mongoose.Promise = require('bluebird'); // for extra debugging capabilities
-//mongoose.Promise = global.Promise;  // without debugging extras
-require('../helpers/models/audit');
 const request = require('supertest');
 const nock = require('nock');
-const _ = require('lodash');
 
 const generate_helper = require("./generate_helper");
 
 generate_helper.getGenSettingsFromFile().then(genSettingsFromFile => {
   generate_helper.genSettings = genSettingsFromFile;
   test_helper.usePersistentMongoInstance = generate_helper.genSettings.save_to_persistent_mongo;
-  // console.log(generate_helper.genSettings);
+  //console.log(generate_helper.genSettings);
 });
 
 describe('Generate Test Data', () => {
