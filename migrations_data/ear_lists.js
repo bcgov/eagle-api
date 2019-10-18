@@ -2,102 +2,122 @@ module.exports = [{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Project Description"
+  "name" : "Project Description",
+  "listOrder" : 0
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Letter"
+  "name" : "Letter",
+  "listOrder" : 1
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Order"
+  "name" : "Order",
+  "listOrder" : 2
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Independent Memo"
+  "name" : "Independent Memo",
+  "listOrder" : 3
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Report/Study"
+  "name" : "Report/Study",
+  "listOrder" : 4
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Management Plan"
+  "name" : "Management Plan",
+  "listOrder" : 5
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Plan"
+  "name" : "Plan",
+  "listOrder" : 6
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Tracking Table"
+  "name" : "Tracking Table",
+  "listOrder" : 7
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Ad/News Release"
+  "name" : "Ad/News Release",
+  "listOrder" : 8
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Comment/Submission"
+  "name" : "Comment/Submission",
+  "listOrder" : 9
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Comment Period"
+  "name" : "Comment Period",
+  "listOrder" : 10
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Notification"
+  "name" : "Notification",
+  "listOrder" : 11
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Application Materials"
+  "name" : "Application Materials",
+  "listOrder" : 12
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Inspection Record"
+  "name" : "Inspection Record",
+  "listOrder" : 13
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Agreement"
+  "name" : "Agreement",
+  "listOrder" : 14
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Certificate Package"
+  "name" : "Certificate Package",
+  "listOrder" : 15
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Decision Materials"
+  "name" : "Decision Materials",
+  "listOrder" : 16
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Amendment Information"
+  "name" : "Amendment Information",
+  "listOrder" : 17
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Amendment Package"
+  "name" : "Amendment Package",
+  "listOrder" : 18
 },{
   "type" : "doctype",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Other"
+  "name" : "Other",
+  "listOrder" : 19
 },
 //////////////////////////////
 {

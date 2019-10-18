@@ -46,6 +46,29 @@ exports.up = function(db) {
       ).catch((e) => {
         console.log("error: ", e);
       });
+      // apply order field
+      let docList_order = [0, 1, 2, 6, 10, 11, 14, 4, 3, 5, 13, 16, 15, 17, 18, 19, 7, 8, 9, 12];
+      p.aggregate([
+        { $match: {_schemaName:"List", type: "doctype"} }
+      ])
+        .toArray()
+        .then((arr) => {
+          let i = 0;
+          for (let item of arr) {
+            console.log("item: ", item)
+            p.update(
+              { _id: item._id },
+              {
+                $set: { listOrder: docList_order[i] }
+              }
+            )
+            i++;
+            console.log("Doctype updated: ", item)
+          }
+        }
+        ).catch((e) => {
+          console.log("error: ", e);
+      });
 
       p.updateMany(
         {
@@ -57,7 +80,7 @@ exports.up = function(db) {
       ).catch((e) => {
         console.log("error: ", e);
       });
-
+      // milestones
       p.updateMany(
         {
           _schemaName: "List", type: "label"
