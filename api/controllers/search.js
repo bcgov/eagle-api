@@ -172,7 +172,7 @@ var handleDateEndItem = function (expArray, field, entry) {
   }
 }
 
-var searchCollection = async function (roles, keywords, collection, pageNum, pageSize, project, projectLegislation = undefined, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or) {
+var searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or) {
   var properties = undefined;
   if (project) {
     properties = { project: mongoose.Types.ObjectId(project) };
@@ -200,7 +200,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
   }
 
   var match = {
-    _schemaName: collection,
+    _schemaName: schemaName,
     ...(isEmpty(modifier) ? undefined : modifier),
     ...(searchProperties ? searchProperties : undefined),
     ...(properties ? properties : undefined),
@@ -248,7 +248,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
 
   console.log('collation:', collation);
 
-  if (collection === 'Document') {
+  if (schemaName === 'Document') {
     // Allow documents to be sorted by status based on publish existence
     aggregation.push(
       {
@@ -279,7 +279,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
     );
   }
 
-  if (collection === 'Project') {
+  if (schemaName === 'Project') {
     var projectDataId;
 
     switch (projectLegislation) {
@@ -363,7 +363,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
     }
   }
 
-  if (collection === 'Group') {
+  if (schemaName === 'Group') {
     // pop project and user if exists.
     aggregation.push(
       {
@@ -381,7 +381,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
     );
   }
 
-  if (collection === 'User') {
+  if (schemaName === 'User') {
     // pop proponent if exists.
     aggregation.push(
       {
@@ -400,7 +400,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
   }
 
   console.log('populate:', populate);
-  if (populate === true && collection !== 'Project') {
+  if (populate === true && schemaName !== 'Project') {
     aggregation.push({
       "$lookup": {
         "from": "epic",
@@ -422,7 +422,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
     });
   }
 
-  if (populate === true && collection === 'Inspection') {
+  if (populate === true && schemaName === 'Inspection') {
     // pop elements and their items.
     aggregation.push(
       {
@@ -434,7 +434,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
         }
       }
     );
-  } else if (populate === true && collection === 'InspectionElement') {
+  } else if (populate === true && schemaName === 'InspectionElement') {
     aggregation.push(
       {
         '$lookup': {
@@ -489,9 +489,8 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
       ]
     }
   })
-
   return new Promise(function (resolve, reject) {
-    var collectionObj = mongoose.model(collection);
+    var collectionObj = mongoose.model(schemaName);
     collectionObj.aggregate(aggregation)
       .collation(collation)
       .exec()
@@ -517,6 +516,7 @@ var executeQuery = async function (args, res, next) {
   var populate = args.swagger.params.populate ? args.swagger.params.populate.value : false;
   var pageNum = args.swagger.params.pageNum.value || 0;
   var pageSize = args.swagger.params.pageSize.value || 25;
+  var projectLegislation = args.swagger.params.projectLegislation.value || '';
   var sortBy = args.swagger.params.sortBy.value ? args.swagger.params.sortBy.value : keywords ? ['-score'] : [];
   var caseSensitive = args.swagger.params.caseSensitive ? args.swagger.params.caseSensitive.value : false;
   var and = args.swagger.params.and ? args.swagger.params.and.value : '';
@@ -561,7 +561,7 @@ var executeQuery = async function (args, res, next) {
 
     console.log("Searching Collection:", dataset);
     console.log("sortField:", sortField);
-    var itemData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, sortField, sortDirection, caseSensitive, populate, and, or)
+    var itemData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or)
     if (dataset === 'Comment') {
       // Filter
       _.each(itemData[0].searchResults, function (item) {

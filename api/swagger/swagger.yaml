@@ -5247,6 +5247,11 @@ paths:
           type: number
           required: false
         - in: query
+          name: projectLegislation
+          description: "Legislation year of the project"
+          type: string
+          required: false
+        - in: query
           name: sortBy
           description: "Fields to sort by."
           required: false
@@ -5351,6 +5356,11 @@ paths:
           type: number
           required: false
         - in: query
+          name: projectLegislation
+          description: "Legislation year of the project"
+          type: string
+          required: false
+        - in: query
           name: sortBy
           description: "Fields to sort by."
           required: false
@@ -5446,6 +5456,11 @@ paths:
           name: pageSize
           description: "# Records to limit"
           type: number
+          required: false
+        - in: query
+          name: projectLegislation
+          description: "Legislation year of the project"
+          type: string
           required: false
         - in: query
           name: sortBy
