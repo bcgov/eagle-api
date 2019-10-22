@@ -295,7 +295,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
     }
 
     if (projectLegislation === "all"){
-      projectDataId.foreach ( dataId => {
+      projectDataId.forEach ( dataId => {
         // pop most recent project data.
         aggregation.push(
           {
