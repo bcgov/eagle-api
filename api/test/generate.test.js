@@ -6,7 +6,7 @@ const factory_helper = require('./factories/factory_helper');
 const request = require('supertest');
 const nock = require('nock');
 const generate_helper = require("./generate_helper");
-
+const gh = generate_helper; // shorthand alias for brevity
 
 describe('Generate Test Data', () => {
   let adminUser = factory_helper.generateFakePerson('Stanley', '', 'Adminington');
@@ -24,11 +24,11 @@ describe('Generate Test Data', () => {
         // Default is to not run the data generator when running global tests
         if (genSettings.generate) {
           console.log("Data Generation is on");
-          generate_helper.generateAll(usersData).then(generatedData =>{
+          gh.generateAll(usersData).then(generatedData =>{
             console.log(((genSettings.generate_consistent_data) ? "Consistent" : "Random") + " data generation " + ((genSettings.save_to_persistent_mongo) ? "saved" : "unsaved"));
             //console.log('generatedData: [' + generatedData + ']');
-            let projects = generatedData[2];
-           console.log('projects: [' + projects + ']');
+            let projects = generatedData.projects;
+            console.log('projects: [' + projects + ']');
   
             // throw projects
             projects.map((project) => {
