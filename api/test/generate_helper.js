@@ -165,7 +165,7 @@ function generateDocumentsForProjects(projects) {
 function generateDocumentForProject(project) {
   return new Promise(function(resolve, reject) {
     test_helper.dataGenerationSettings.then(genSettings => {
-      (genSettings.generate_consistent_data) ? faker.seed(uss.comment) : faker.seed();
+      (genSettings.generate_consistent_data) ? faker.seed(uss.projectDocument) : faker.seed();
       let projectDocumentsToGen = faker.random.number(gc.documentsPerProject).valueOf();
       let customDocumentSettings = { documentSource: "PROJECT", project: project._id };
       if (0 < projectDocumentsToGen) {
@@ -201,7 +201,7 @@ function generateDocumentsForCommentPeriods(commentPeriods) {
 function generateDocumentForCommentPeriod(commentPeriod) {
   return new Promise(function(resolve, reject) {
     test_helper.dataGenerationSettings.then(genSettings => {
-      (genSettings.generate_consistent_data) ? faker.seed(uss.comment) : faker.seed();
+      (genSettings.generate_consistent_data) ? faker.seed(uss.commentPeriodDocument) : faker.seed();
       let commentPeriodDocumentsToGen = faker.random.number(gc.documentsPerCommentPeriod).valueOf();
       let customDocumentSettings = { documentSource: "COMMENT", project: commentPeriod.project, _comment: commentPeriod._id };
       if (0 < commentPeriodDocumentsToGen) {

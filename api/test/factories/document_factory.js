@@ -46,7 +46,7 @@ factory.define('document', Document, buildOptions => {
     , _updatedDate    : updatedDate
     , _addedBy        : author.idir
     , _updatedBy      : (null == updator) ? null : updator.idir
-    , _deletedBy      : deletor.idir
+    , _deletedBy      : (null == deletor) ? null : deletor.idir
 
     // Note: Default on tag property is purely for display only, they have no real effect on the model
     // This must be done in the code.
