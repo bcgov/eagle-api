@@ -99,7 +99,7 @@ function generateCommentPeriod(project) {
         let commentPeriodsToGen = faker.random.number(gc.commentPeriodsPerProject).valueOf();
         if (0 < commentPeriodsToGen) {
           commentPeriodFactory.createMany('commentPeriod', commentPeriodsToGen, { project: project._id }).then(commentPeriodsArray => {
-          resolve(commentPeriodsArray);
+            resolve(commentPeriodsArray);
           });
         } else {
           resolve([]);
