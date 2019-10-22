@@ -67,6 +67,10 @@ var tagList = [
   'projLead',
   'execProjectDirector',
   'complianceLead',
+  'review180Start',
+  'review45Start',
+  'reviewSuspensions',
+  'reviewExtensions',
   'read',
   'write',
   'delete'
@@ -141,8 +145,9 @@ exports.publicGet = async function (args, res, next) {
   // Build match query if on projId route
   var query = {}, skip = null, limit = null;
   var commentPeriodPipeline = null;
-
-  var requestedFields = getSanitizedFields(args.swagger.params.fields.value);
+  let review180start = args.swagger.params.fields.value;
+  review180start.push('review180Start')
+  var requestedFields = getSanitizedFields(review180start);
   // Add in the default fields to the projection so that the incoming query will work for any selected fields.
   tagList.push('dateAdded');
   tagList.push('dateCompleted');
@@ -191,7 +196,10 @@ exports.publicGet = async function (args, res, next) {
     }
     serializeProjectVirtuals(data);
     Utils.recordAction('Get', 'Project', 'public', args.swagger.params.projId && args.swagger.params.projId.value ? args.swagger.params.projId.value : null);
-    return Actions.sendResponse(res, 200, data);
+    // Sanitize for public.
+    let sanitizedData = Utils.filterData('Project', data, ['public']);
+    console.log("DA:", JSON.stringify(sanitizedData));
+    return Actions.sendResponse(res, 200, sanitizedData);
   } catch (e) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
@@ -482,6 +490,93 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
     }
   } else {
     return Actions.sendResponse(res, 400, 'error');
+  }
+}
+
+exports.protectedExtensionAdd = async function (args, res, next) {
+  // Adds an object to the extension/suspension array
+  var projId = args.swagger.params.projId.value;
+  var extensionObj = args.swagger.params.extension.value;
+  var extensionType = extensionObj.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
+
+  var Project = mongoose.model('Project');
+  try {
+    var data = await Project.update(
+      { _id: projId },
+      { $push: { [extensionType]: extensionObj } },
+      { new: true }
+    );
+    if (data.nModified === 0) {
+      return Actions.sendResponse(res, 404, {});
+    }
+    // Fall through if successful
+    Utils.recordAction('Post', 'Extension', args.swagger.params.auth_payload.preferred_username, projId);
+    return Actions.sendResponse(res, 200, data);
+  } catch (e) {
+    defaultLog.info("Couldn't find that object!");
+    return Actions.sendResponse(res, 404, {});
+  }
+}
+
+exports.protectedExtensionDelete = async function (args, res, next) {
+  // Delete an object from the extension/suspension array
+  try {
+    var projId = args.swagger.params.projId.value;
+    var extensionObj = JSON.parse(args.swagger.params.item.value);
+    var extensionType = extensionObj.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
+
+    var Project = mongoose.model('Project');
+    var data = await Project.update(
+      { _id: projId },
+      { $pull: { [extensionType]: extensionObj } },
+      { new: true }
+    );
+    if (data.nModified === 0) {
+      return Actions.sendResponse(res, 404, {});
+    }
+    // Fall through if successful
+    Utils.recordAction('Delete', 'Extension', args.swagger.params.auth_payload.preferred_username, projId);
+    return Actions.sendResponse(res, 200, data);
+  } catch (e) {
+    defaultLog.info("Couldn't find that object!");
+    return Actions.sendResponse(res, 404, {});
+  }
+}
+
+exports.protectedExtensionUpdate = async function (args, res, next) {
+  // Edit an object to the extension/suspension array
+  // NB: We need both the old and the new in order to update accordingly
+  var projId = args.swagger.params.projId.value;
+  var extensionObj = args.swagger.params.extension.value;
+  var extensionNew = extensionObj.new;
+  var extensionOld = extensionObj.old;
+  var extensionOldType = extensionOld.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
+  var extensionNewType = extensionNew.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
+
+  var Project = mongoose.model('Project');
+  try {
+    let dataRemoved = await Project.update(
+      { _id: projId },
+      { $pull: { [extensionOldType]: extensionOld } },
+      { new: true }
+    );
+    if (dataRemoved.nModified === 0) {
+      return Actions.sendResponse(res, 404, {});
+    }
+    // Fall through if successful
+    var dataAdded = await Project.update(
+      { _id: projId },
+      { $push: { [extensionNewType]: extensionNew } },
+      { new: true }
+    );
+    if (dataAdded.nModified === 0) {
+      return Actions.sendResponse(res, 404, {});
+    }
+    Utils.recordAction('Put', 'Extension', args.swagger.params.auth_payload.preferred_username, projId);
+    return Actions.sendResponse(res, 200, dataAdded);
+  } catch (e) {
+    defaultLog.info("Couldn't find that object!");
+    return Actions.sendResponse(res, 404, {});
   }
 }
 
@@ -781,6 +876,9 @@ exports.protectedPut = async function (args, res, next) {
   obj.CEAALink = projectObj.CEAALink;
   obj.eacDecision = projectObj.eacDecision;
   obj.decisionDate = projectObj.decisionDate ? new Date(projectObj.decisionDate) : null;
+
+  obj.review45Start = projectObj.review45Start  ? new Date(projectObj.review45Start) : null;
+  obj.review180Start = projectObj.review180Start  ? new Date(projectObj.review180Start) : null;
 
   try {
     obj.intake = {};

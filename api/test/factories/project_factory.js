@@ -208,6 +208,12 @@ factory.define(factoryName, Project, buildOptions =>{
         , activeDate              : activeDate
         , activeStatus            : ""
 
+        // Project Review Data
+        , review180Start          : null
+        , review45Start           : null
+        , reviewSuspensions       : null
+        , reviewExtensions        : null
+
         /////////////////////
         // Contact references
         /////////////////////

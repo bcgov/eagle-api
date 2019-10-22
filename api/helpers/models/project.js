@@ -66,6 +66,12 @@ var definition = {
   activeDate              : { type: Date, default: '' },
   activeStatus            : { type: String, default: '' },
 
+  // Project Review Data
+  review180Start          : { type: Date, default: null },
+  review45Start           : { type: Date, default: null },
+  reviewSuspensions        : [{ type: Mixed, default: {} }],
+  reviewExtensions         : [{ type: Mixed, default: {} }],
+
   /////////////////////
   // Contact references
   /////////////////////

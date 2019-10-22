@@ -430,7 +430,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
       .collation(collation)
       .exec()
       .then(function (data) {
-        resolve(data);
+        resolve(Utils.filterData(collection, data, roles));
       }, reject);
   });
 }
@@ -593,6 +593,11 @@ var executeQuery = async function (args, res, next) {
           delete item.author;
         }
       });
+    }
+
+    if (args.swagger.params._schemaName.value === 'Project') {
+      // If we are a project, and we are not authed, we need to sanitize some fields.
+      data = Utils.filterData(args.swagger.params._schemaName.value, data, roles);
     }
     return Actions.sendResponse(res, 200, data);
   } else {
