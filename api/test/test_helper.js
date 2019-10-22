@@ -192,6 +192,7 @@ function instantiateInMemoryMongoServer() {
   });
 }
 
+exports.defaultNumberOfProjects = defaultNumberOfProjects;
 exports.dataGenerationSettings = dataGenerationSettings;
 exports.createSwaggerParams = createSwaggerParams;
 exports.createPublicSwaggerParams = createPublicSwaggerParams;

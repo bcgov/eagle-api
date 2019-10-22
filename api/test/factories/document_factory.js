@@ -1,5 +1,6 @@
 const factory = require('factory-girl').factory;
 const factory_helper = require('./factory_helper');
+const moment = require('moment');
 const Document = require('../../helpers/models/document');
 let faker = require('faker/locale/en');
 
@@ -27,14 +28,14 @@ factory.define('document', Document, buildOptions => {
   let deletor = faker.random.arrayElement([null, author, updator, factory_helper.generateFakePerson()]);
 
   let datePosted = moment(faker.date.past(10, new Date()));
-  let dateUploaded = datePosted.clone().subtract(faker.random.number(45), 'days');
+  let updatedDate = (null == updator) ? null : datePosted.clone().subtract(faker.random.number(45), 'days');
+  let dateUploaded = (null == updator) ? datePosted.clone().subtract(faker.random.number(15), 'days') : updatedDate.clone().subtract(faker.random.number(15), 'days');
+  let createdDate = dateUploaded.clone().subtract(faker.random.number(15), 'days');
 
   let docTypeSettings = faker.random.arrayElement(docProps);
   let displayName = factory.seq('Document.displayName', (n) => `Test Document ${n}`);
 
   let minioFileSystemFileName = faker.random.number({min:999999999999, max:10000000000000}) + "_" + (faker.random.alphaNumeric(60)).toLowerCase() + "." + docTypeSettings.ext;
-
-  if (0 == updator.length) updatedDate = null;
 
   let attrs = {
       project         : require('mongoose').Types.ObjectId()
@@ -44,7 +45,7 @@ factory.define('document', Document, buildOptions => {
     , _createdDate    : createdDate
     , _updatedDate    : updatedDate
     , _addedBy        : author.idir
-    , _updatedBy      : updator.idir
+    , _updatedBy      : (null == updator) ? null : updator.idir
     , _deletedBy      : deletor.idir
 
     // Note: Default on tag property is purely for display only, they have no real effect on the model
