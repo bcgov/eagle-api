@@ -283,32 +283,31 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
     var projectDataId;
 
     switch (projectLegislation) {
-      case "1996", "2002", "2018":
-        projectDataId = "allProjectData[" + projectLegislation + "]";
-        break;
-      case "all":
-        projectDataId = [ "allProjectData[1996]", "allProjectData[2002]", "allProjectData[2018]" ];
-        break;
-      default:
-        projectDataId = "currentProjectData";
-        break;
-    }
+      case "1996":
+      case "2002":
+      case "2018":
+        projectDataId = "allProjectDataByLegislation." + projectLegislation;
 
-    if (projectLegislation === "all"){
-      projectDataId.forEach ( dataId => {
-        // pop most recent project data.
+        aggregation.push(
+          {
+            "$unwind": "$allProjectDataByLegislation"
+          },
+        );
+
+        // populate the project that you want from the array of project ids
         aggregation.push(
           {
             '$lookup': {
               "from": "epic",
-              "localField": dataId,
+              "localField": projectDataId,
               "foreignField": "_id",
-              "as": dataId
+              "as": projectDataId
             }
           });
+
         aggregation.push(
           {
-            "$unwind": "$" + dataId
+            "$unwind": "$" + projectDataId
           },
         );
 
@@ -317,49 +316,91 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
           {
             '$lookup': {
               "from": "epic",
-              "localField": dataId + ".proponent",
+              "localField": projectDataId + ".proponent",
               "foreignField": "_id",
-              "as": dataId + ".proponent"
+              "as": projectDataId + ".proponent"
             }
           });
         aggregation.push(
           {
-            "$unwind": "$" + dataId + ".proponent"
+            "$unwind": "$" + projectDataId + ".proponent"
           },
         );
-      });
-    } else {
-      // pop most recent project data.
-      aggregation.push(
-        {
-          '$lookup': {
-            "from": "epic",
-            "localField": projectDataId,
-            "foreignField": "_id",
-            "as": projectDataId
-          }
-        });
-      aggregation.push(
-        {
-          "$unwind": "$" + projectDataId
-        },
-      );
+        break;
+      case "all": // TODO: fix this, currently broken
+        projectDataId = [ "allProjectDataByLegislation.1996", "allProjectDataByLegislation.2002", "allProjectDataByLegislation.2018" ];
+        aggregation.push(
+          {
+            "$unwind": "$allProjectDataByLegislation"
+          },
+        );
 
-      // pop proponent if exists.
-      aggregation.push(
-        {
-          '$lookup': {
-            "from": "epic",
-            "localField": projectDataId + ".proponent",
-            "foreignField": "_id",
-            "as": projectDataId + ".proponent"
-          }
+        projectDataId.forEach ( dataId => {
+
+          // pop most recent project data.
+          aggregation.push({
+            $cond: { // TODO: fix this conditional so the call doesn't return nothing
+              if: dataId,
+              then: {
+                '$lookup': {
+                  "from": "epic",
+                  "localField": dataId,
+                  "foreignField": "_id",
+                  "as": dataId
+                },
+
+                "$unwind": "$" + dataId
+
+                // '$lookup': {
+                //       "from": "epic",
+                //       "localField": dataId + ".proponent",
+                //       "foreignField": "_id",
+                //       "as": dataId + ".proponent"
+                //     },
+
+                // "$unwind": "$" + dataId + ".proponent"
+              }
+            },
+            else: {}
+          });
+
         });
-      aggregation.push(
-        {
-          "$unwind": "$" + projectDataId + ".proponent"
-        },
-      );
+        break;
+      default:
+        projectDataId = "currentProjectData";
+
+        // pop most recent project data.
+        aggregation.push(
+          {
+            '$lookup': {
+              "from": "epic",
+              "localField": projectDataId,
+              "foreignField": "_id",
+              "as": projectDataId
+            }
+          });
+        aggregation.push(
+          {
+            "$unwind": "$" + projectDataId
+          },
+        );
+
+        // pop proponent if exists.
+        aggregation.push(
+          {
+            '$lookup': {
+              "from": "epic",
+              "localField": projectDataId + ".proponent",
+              "foreignField": "_id",
+              "as": projectDataId + ".proponent"
+            }
+          });
+        aggregation.push(
+          {
+            "$unwind": "$" + projectDataId + ".proponent"
+          },
+        );
+        break;
     }
   }
 
