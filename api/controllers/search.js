@@ -327,7 +327,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
           },
         );
         break;
-      case "all": // TODO: fix this, currently broken
+      case "all": // TODO: fix this, currently returns nothing
         projectDataId = [ "allProjectDataByLegislation.1996", "allProjectDataByLegislation.2002", "allProjectDataByLegislation.2018" ];
         aggregation.push(
           {
@@ -351,6 +351,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
 
                 "$unwind": "$" + dataId
 
+                // TODO: re-implement the proponent unwind, should be fairly similar to below, just commented out for testing
                 // '$lookup': {
                 //       "from": "epic",
                 //       "localField": dataId + ".proponent",
@@ -367,6 +368,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
         });
         break;
       default:
+
         projectDataId = "currentProjectData";
 
         // pop most recent project data.
