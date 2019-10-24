@@ -148,7 +148,7 @@ function generateDocumentSetForProject(factoryKey, project, buildOptions, projec
 
 function generateDocumentSetForCommentPeriod(factoryKey, commentPeriod, buildOptions, commentPeriodDocumentsToGen) {
   return new Promise(function(resolve, reject) {
-  let customDocumentSettings = { documentSource: "COMMENT", project: commentPeriod.project, _comment: commentPeriod._id };
+  let customDocumentSettings = { documentSource: "COMMENT", project: commentPeriod.project, _comment: commentPeriod._id };  // note that the document._comment field actually refers to a commentPeriod id
     factory.createMany(factoryKey, commentPeriodDocumentsToGen, customDocumentSettings, buildOptions).then(documents => {
       resolve(documents);
     });
