@@ -3,6 +3,8 @@ const factory_helper = require('./factory_helper');
 const Organization = require('../../helpers/models/organization');
 let faker = require('faker/locale/en');
 
+const factoryName = Organization.modelName;
+
 const companyTypes = [
   "Consultant"
   , "Indigenous Group"
@@ -14,7 +16,7 @@ const companyTypes = [
   , "Proponent/Certificate Holder"
 ];
 
-factory.define('organization', Organization, buildOptions => {
+factory.define(factoryName, Organization, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
 
   let author = factory_helper.generateFakePerson();
@@ -51,3 +53,4 @@ factory.define('organization', Organization, buildOptions => {
 });
 
 exports.factory = factory;
+exports.name = factoryName;

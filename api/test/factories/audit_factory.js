@@ -2,7 +2,9 @@ const factory = require('factory-girl').factory;
 const Audit = require('../../helpers/models/audit');
 let faker = require('faker/locale/en');
 
-factory.define('audit', Audit, buildOptions => {
+const factoryName = Audit.modelName;
+
+factory.define(factoryName, Audit, buildOptions => {
     if (buildOptions.faker) faker = buildOptions.faker;
 
     let attrs = {
@@ -23,3 +25,4 @@ factory.define('audit', Audit, buildOptions => {
 });
 
 exports.factory = factory;
+exports.name = factoryName;

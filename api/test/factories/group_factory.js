@@ -1,14 +1,27 @@
 const factory = require('factory-girl').factory;
+const factory_helper = require('./factory_helper');
 const Group = require('../../helpers/models/group');
 let faker = require('faker/locale/en');
 
-factory.define('group', Group, buildOptions => {
+const factoryName = Group.modelName;
+
+factory.define(factoryName, Group, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
+  let usersPool = (buildOptions.usersPool) ? buildOptions.usersPool : null;
+
+  const defaultGroupSizeCeiling = 15;
+  let groupSizeCeiling = (usersPool.length < defaultGroupSizeCeiling) ? usersPool.length : defaultGroupSizeCeiling;
+  let groupRandomSize = 1 + faker.random.number(groupSizeCeiling - 1);  // 1-15 not 0-15
+  let members = [];
+  for (i = 0; i < groupRandomSize; i++) {
+    let userId = factory_helper.getRandomExistingUserId(usersPool);
+    if (-1 == members.indexOf(userId)) members.push(userId);
+  }
 
   let attrs = {
       name                    : factory.seq('Group.name', (n) => `Group-${n}`)
     , project                 : require('mongoose').Types.ObjectId()
-    , members                 : [require('mongoose').Types.ObjectId(), require('mongoose').Types.ObjectId(), require('mongoose').Types.ObjectId()]
+    , members                 : members
 
     , read             : faker.random.arrayElement(['["public"]', '["sysadmin"]'])
     , write            : faker.random.arrayElement(['["public"]', '["sysadmin"]'])
@@ -19,3 +32,4 @@ factory.define('group', Group, buildOptions => {
 });
 
 exports.factory = factory;
+exports.name = factoryName;

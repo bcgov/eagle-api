@@ -27,6 +27,10 @@ function generateFakePerson(firstName, middleName, lastName) {
     };
 }
 
+function getRandomExistingUserId(usersPool) {
+    return  (usersPool) ? faker.random.arrayElement(usersPool)._id : require('mongoose').Types.ObjectId();
+}
+
 function loadBcCities() {
     if (0 < bcCities.length) return;
     for (let i = 0; i < canada.cities.length; i++) {
@@ -78,7 +82,9 @@ function generateFakeLocationString() {
     return location;
 }
 
+exports.faker = faker;
 exports.getBcCities = getBcCities;
 exports.generateFakeBcLatLong = generateFakeBcLatLong;
 exports.generateFakePerson = generateFakePerson;
+exports.getRandomExistingUserId = getRandomExistingUserId;
 exports.generateFakeLocationString = generateFakeLocationString;
