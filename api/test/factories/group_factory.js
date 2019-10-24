@@ -7,15 +7,16 @@ const factoryName = Group.modelName;
 
 factory.define(factoryName, Group, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
-  let usersPool = (buildOptions.usersPool) ? buildOptions.usersPool : null;
-
-  const defaultGroupSizeCeiling = 15;
-  let groupSizeCeiling = (usersPool.length < defaultGroupSizeCeiling) ? usersPool.length : defaultGroupSizeCeiling;
-  let groupRandomSize = 1 + faker.random.number(groupSizeCeiling - 1);  // 1-15 not 0-15
+  let usersPool = (buildOptions.usersPool) ? buildOptions.usersPool : [];
   let members = [];
-  for (i = 0; i < groupRandomSize; i++) {
-    let userId = factory_helper.getRandomExistingUserId(usersPool);
-    if (-1 == members.indexOf(userId)) members.push(userId);
+  if (0 < usersPool.length) {
+    const defaultGroupSizeCeiling = 15;
+    let groupSizeCeiling = (usersPool.length < defaultGroupSizeCeiling) ? usersPool.length : defaultGroupSizeCeiling;
+    let groupRandomSize = 1 + faker.random.number(groupSizeCeiling - 1);  // 1-15 not 0-15
+    for (i = 0; i < groupRandomSize; i++) {
+      let userId = factory_helper.getRandomExistingUserId(usersPool);
+      if (-1 == members.indexOf(userId)) members.push(userId);
+    }
   }
 
   let attrs = {
