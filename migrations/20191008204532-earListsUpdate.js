@@ -55,7 +55,6 @@ exports.up = function(db) {
         .then((arr) => {
           let i = 0;
           for (let item of arr) {
-            console.log("item: ", item)
             p.update(
               { _id: item._id },
               {
@@ -63,7 +62,6 @@ exports.up = function(db) {
               }
             )
             i++;
-            console.log("Doctype updated: ", item)
           }
         }
         ).catch((e) => {
