@@ -119,8 +119,12 @@ exports.up = function(db) {
             { _id: item._id },
             { $set: { legislation: 2002 } }
           )
-        } else if (projectData.name) {
+        } else if (projects1996.includes(projectData.name)) {
           // console.log("project: ", projectData.name)
+          p.updateOne(
+            { _id: item._id },
+            { $set: { legislation: 1996 } }
+          )
         } else {
           // console.log("found orphan doc")
         }
