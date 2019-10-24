@@ -7,6 +7,7 @@ class GeneratedData {
         this.commentPeriods = null;
         this.commentPeriodComments = null;
         this.commentPeriodDocuments = null;
+        this.groups = null;
     }
 }
 

@@ -3,7 +3,9 @@ const factory_helper = require('./factory_helper');
 const InspectionElement = require('../../helpers/models/inspectionElement');
 let faker = require('faker/locale/en');
 
-factory.define('inspectionElement', InspectionElement, buildOptions => {
+const factoryName = InspectionElement.modelName;
+
+factory.define(factoryName, InspectionElement, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
   
   let author = factory_helper.generateFakePerson();
@@ -43,3 +45,4 @@ factory.define('inspectionElement', InspectionElement, buildOptions => {
 });
 
 exports.factory = factory;
+exports.name = factoryName;

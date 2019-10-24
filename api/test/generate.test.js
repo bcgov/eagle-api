@@ -24,7 +24,7 @@ describe('Generate Test Data', () => {
         // Default is to not run the data generator when running global tests
         if (genSettings.generate) {
           console.log("Data Generation is on");
-          gh.generateAll(usersData).then(generatedData =>{
+          gh.generateEntireDatabase(usersData).then(generatedData =>{
             console.log(((genSettings.generate_consistent_data) ? "Consistent" : "Random") + " data generation " + ((genSettings.save_to_persistent_mongo) ? "saved" : "unsaved"));
             //console.log('generatedData: [' + generatedData + ']');
             let projects = generatedData.projects;

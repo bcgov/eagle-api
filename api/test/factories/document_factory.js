@@ -4,6 +4,8 @@ const moment = require('moment');
 const Document = require('../../helpers/models/document');
 let faker = require('faker/locale/en');
 
+const factoryName = Document.modelName;
+
 const docProps = [
     { ext: "jpg", mime: "image/jpeg" }
   , { ext: "jpeg", mime: "image/jpeg" }
@@ -20,7 +22,7 @@ const docProps = [
   , { ext: "txt", mime: "text/plain" }
 ];
 
-factory.define('document', Document, buildOptions => {
+factory.define(factoryName, Document, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
   
   let author = factory_helper.generateFakePerson();
@@ -74,7 +76,7 @@ factory.define('document', Document, buildOptions => {
     , type             : require('mongoose').Types.ObjectId()
     , description      : faker.lorem.sentence()
     , documentAuthor   : author.fullName
-    , documentAuthorType   : require('mongoose').Types.ObjectId()
+    , documentAuthorType   : require('mongoose').Types.ObjectId() // list
     , projectPhase     : require('mongoose').Types.ObjectId()
     , eaoStatus        : faker.random.arrayElement(["", "Published", "Rejected"])
     , keywords         : ""
@@ -87,3 +89,4 @@ factory.define('document', Document, buildOptions => {
 });
 
 exports.factory = factory;
+exports.name = factoryName;
