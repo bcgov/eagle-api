@@ -3,13 +3,15 @@ const factory_helper = require('./factory_helper');
 const InspectionItem = require('../../helpers/models/inspectionItem');
 let faker = require('faker/locale/en');
 
+const factoryName = InspectionItem.modelName;
+
 const inspectionItemTypes = [
     "photo"
   , "audio"
   , "video"
 ]
 
-factory.define('inspectionItem', InspectionItem, buildOptions => {
+factory.define(factoryName, InspectionItem, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
   
   let author = factory_helper.generateFakePerson();
@@ -73,3 +75,4 @@ factory.define('inspectionItem', InspectionItem, buildOptions => {
 });
 
 exports.factory = factory;
+exports.name = factoryName;

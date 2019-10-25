@@ -4,6 +4,8 @@ const factory_helper = require('./factory_helper');
 const moment = require('moment');
 let faker = require('faker/locale/en');
 
+const factoryName = Comment.modelName;
+
 const eaoStatuses = [
   "Deferred"
   , "Published"
@@ -11,7 +13,7 @@ const eaoStatuses = [
   , "Unvetted"
 ];
 
-factory.define('comment', Comment, buildOptions => {
+factory.define(factoryName, Comment, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
 
   let author = factory_helper.generateFakePerson();
@@ -50,3 +52,4 @@ factory.define('comment', Comment, buildOptions => {
 });
 
 exports.factory = factory;
+exports.name = factoryName;

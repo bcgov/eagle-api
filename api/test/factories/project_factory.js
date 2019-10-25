@@ -4,6 +4,8 @@ const factory_helper = require('./factory_helper');
 const Project = require('../../helpers/models/project');
 let faker = require('faker/locale/en');
 
+const factoryName = Project.modelName;
+
 const ceaaInvolvements = [
     "Comp Study"
     , "Comp Study - Unconfirmed"
@@ -133,8 +135,9 @@ const eaStatuses = [
     , "Does not require EAC"
 ];
 
-factory.define('project', Project, buildOptions =>{
+factory.define(factoryName, Project, buildOptions =>{
     if (buildOptions.faker) faker = buildOptions.faker;
+    let usersPool = (buildOptions.usersPool) ? buildOptions.usersPool : null;
 
     let projectName = faker.company.companyName() + " " + faker.random.arrayElement(projectNameSuffixes);
     let decisionDate = moment(faker.date.past(10, new Date()));
@@ -152,7 +155,7 @@ factory.define('project', Project, buildOptions =>{
           CEAAInvolvement         : faker.random.arrayElement(ceaaInvolvements)
         , CELead                  : "Compliance & Enforcement Branch"
         , CELeadEmail             : "eao.compliance@gov.bc.ca"
-        , CELeadPhone             : faker.phone.phoneNumber()
+        , CELeadPhone             : faker.phone.phoneNumberFormat(1)
         , centroid                : factory_helper.generateFakeBcLatLong().centroid
         , description             : faker.lorem.paragraph()
         , eacDecision             : faker.random.arrayElement(eacDecision)
@@ -161,19 +164,19 @@ factory.define('project', Project, buildOptions =>{
         //, projectLeadId           : { type:'ObjectId', default: null }
         , projectLead             : projectLead.fullName
         , projectLeadEmail        : projectLead.emailAddress
-        , projectLeadPhone        : faker.phone.phoneNumber()
+        , projectLeadPhone        : faker.phone.phoneNumberFormat(1)
         //, proponent               : { type:'ObjectId', default: null }
         , region                  : faker.random.arrayElement(regions)
         //, responsibleEPDId        : { type:'ObjectId', default: null }
         , responsibleEPD          : responsibleEpd.fullName
         , responsibleEPDEmail     : responsibleEpd.emailAddress
-        , responsibleEPDPhone     : faker.phone.phoneNumber()
+        , responsibleEPDPhone     : faker.phone.phoneNumberFormat(1)
         , type                    : faker.random.arrayElement(projectTypes)
         , legislation             : ""
 
 
         //Everything else
-        , addedBy                 : require('mongoose').Types.ObjectId()
+        , addedBy                 : factory_helper.getRandomExistingUserId(usersPool)
         , build                   : faker.random.arrayElement(projectBuilds)
         , CEAALink                : "https://www.ceaa-acee.gc.ca/050/evaluations/proj/" + faker.random.number(99999) + "?culture=en-CA"
         , code                    : projectName.replace(/[^A-Z0-9]/ig, "-").replace(/(\-)(\1+)/, "-")
@@ -185,24 +188,18 @@ factory.define('project', Project, buildOptions =>{
         , dateUpdated             : dateUpdated
         , decisionDate            : decisionDate
         , duration                : "90"
-        // TODO: directoryStructure
         , eaoMember               : faker.random.arrayElement(["project-eao-staff", "system-eao"])
-
-        //, epicProjectID           : { type: Number, default: 0 }
         , fedElecDist             : faker.random.arrayElement(federalElectoralDistricts)
-        // TODO: intake
         , intake                  : ""
         , isTermsAgreed           : false
         , overallProgress         : 0
-        , primaryContact          : require('mongoose').Types.ObjectId()
+        , primaryContact          : factory_helper.getRandomExistingUserId(usersPool)
         , proMember               : "proponent-team"
         , provElecDist            : ""
         , sector                  : faker.random.arrayElement(sectors)
         , shortName               : projectName.replace(/[^A-Z0-9]/ig, "-").replace(/(\-)(\1+)/, "-")
         , status                  : faker.random.arrayElement(statuses)
         , substitution            : false
-
-        // TODO: New Stuff?
         , eaStatusDate            : ""
         , eaStatus                : faker.random.arrayElement(eaStatuses)
         , projectStatusDate       : projectStatusDate
@@ -215,26 +212,19 @@ factory.define('project', Project, buildOptions =>{
         // Contact references
         /////////////////////
         // Project Lead
-        , projLead                : require('mongoose').Types.ObjectId()
+        , projLead                : factory_helper.getRandomExistingUserId(usersPool)
 
         // Executive Project Director
-        , execProjectDirector     : require('mongoose').Types.ObjectId()
+        , execProjectDirector     : factory_helper.getRandomExistingUserId(usersPool)
 
         // Compliance & Enforcement Lead
-        , complianceLead          : require('mongoose').Types.ObjectId()
+        , complianceLead          : factory_helper.getRandomExistingUserId(usersPool)
         //////////////////////
 
         /////////////////////
         // PINs
         /////////////////////
         , pins                    : require('mongoose').Types.ObjectId()
-        /*
-        array of mixed:
-        [{
-            action: 'added' | 'removed',
-            date: new Date(now).toISOString()
-        }]
-        */
         , pinsHistory            : {} 
 
         , groups                   : require('mongoose').Types.ObjectId()
@@ -249,3 +239,4 @@ factory.define('project', Project, buildOptions =>{
 });
 
 exports.factory = factory;
+exports.name = factoryName;

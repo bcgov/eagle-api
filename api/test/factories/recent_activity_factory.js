@@ -3,8 +3,11 @@ const moment = require('moment');
 const RecentActivity = require('../../helpers/models/recentActivity');
 let faker = require('faker/locale/en');
 
-factory.define('recentActivity', RecentActivity, buildOptions => {
+const factoryName = RecentActivity.modelName;
+
+factory.define(factoryName, RecentActivity, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
+  let usersPool = (buildOptions.usersPool) ? buildOptions.usersPool : null;
   
   let raType = faker.random.arrayElement(["News", "Public Comment Period"]);
   let dateUpdated = moment(faker.date.past(10, new Date()));
@@ -12,8 +15,8 @@ factory.define('recentActivity', RecentActivity, buildOptions => {
   let attrs = {
       dateUpdated         : dateUpdated
     , dateAdded           : dateAdded
-    , _addedBy            : require('mongoose').Types.ObjectId()
-    , _updatedBy          : require('mongoose').Types.ObjectId()
+    , _addedBy            : factory_helper.getRandomExistingUserId(usersPool)
+    , _updatedBy          : factory_helper.getRandomExistingUserId(usersPool)
     , pinned              : faker.random.boolean()
     , documentUrl         : ("News" == raType) ? "/api/document/" + require('mongoose').Types.ObjectId() + "/fetch": ""
 
@@ -36,3 +39,4 @@ factory.define('recentActivity', RecentActivity, buildOptions => {
 });
 
 exports.factory = factory;
+exports.name = factoryName;
