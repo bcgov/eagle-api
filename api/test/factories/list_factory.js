@@ -2,7 +2,9 @@ const factory = require('factory-girl').factory;
 const List = require('../../helpers/models/list');
 let faker = require('faker/locale/en');
 
-factory.define('list', List, buildOptions => {
+const factoryName = List.modelName;
+
+factory.define(factoryName, List, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
 
   let attrs = {
@@ -12,3 +14,4 @@ factory.define('list', List, buildOptions => {
 });
 
 exports.factory = factory;
+exports.name = factoryName;

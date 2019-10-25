@@ -121,11 +121,13 @@ See [Code Reuse Strategy](https://github.com/bcgov/eagle-dev-guides/dev_guides/c
 An overview of the EPIC test stack can be found [here](https://github.com/bcgov/eagle-dev-guides/blob/master/dev_guides/testing_components.md).
 
 This project is using [jest](http://jestjs.io/) as a testing framework. You can run tests with
-`yarn test` or `jest`. Running either command with the `--watch` flag will re-run the tests every time a file is changed.
+`node_modules/.bin/jest`. Running with the `--watch` flag will re-run the tests every time a file is changed.
 
-To run the tests in one file, simply pass the path of the file name e.g. `jest api/test/search.test.js --watch`. To run only one test in that file, chain the `.only` command e.g. `test.only("Search returns results", () => {})`.
+To run the tests in one file, simply pass the path of the file name e.g. `node_modules/.bin/jest ./api/test/yourtestfile.test.js --watch`. To run only one test in that file, chain the `.only` command e.g. `test.only("Search returns results", () => {})`.
 
-The **_MOST IMPORTANT_** thing to know about this project's test environment is the router setup. At the time of writing this, it wasn't possible to get [swagger-tools](https://github.com/apigee-127/swagger-tools) router working in the test environment. As a result, all tests **_COMPLETELY bypass_ the real life swagger-tools router**. Instead, a middleware router called [supertest](https://github.com/visionmedia/supertest) is used to map routes to controller actions. In each controller test, you will need to add code like the following:
+The tests that are present are called in the deployment pipeline and will fail a build if they fail.  Better to run the above tests locally as part of your development cycle.
+
+This project's test environment is inherited from the [ACRFD](https://github.com/bcgov/nrts-prc-api) test suite along with most of the project code itself.  When testing the API functionality, it is important to understand the mock router setup. When ACRFD was authored, it wasn't possible to get [swagger-tools](https://github.com/apigee-127/swagger-tools) router working in the test environment. As a result, all tests **_COMPLETELY bypass_ the real life swagger-tools router**. Instead, a middleware router called [supertest](https://github.com/visionmedia/supertest) is used to map routes to controller actions. In each controller test, you will need to add code like the following:
 
 ```javascript
 const test_helper = require('./test_helper');
