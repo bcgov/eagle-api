@@ -18,12 +18,15 @@ MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
     console.log("renameData:", renameData.length);
 
     for (let z = 0; z < renameData.length; z++) {
-      objLookup = await findObject(db, ObjectId(renameData[z]._id));
+      // objLookup = await findObject(db, ObjectId(renameData[z]._id));
       updateObject(db, ObjectId(renameData[z]._id),renameData[z].displayName);
     }
-    }
+    
     console.log("ALL DONE");
     client.close();
+  } else{
+    console.log(err);
+  }
   
 });
 
