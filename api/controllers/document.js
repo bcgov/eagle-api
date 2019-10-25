@@ -40,6 +40,7 @@ var getSanitizedFields = function (fields) {
       'documentAuthorType',
       'milestone',
       'projectPhase',
+      'legislation',
       'description',
       'keywords',
       'isPublished',
