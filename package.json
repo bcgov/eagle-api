@@ -68,6 +68,7 @@
     "bluebird": "^3.5.5",
     "canada": "^0.1.0",
     "database-cleaner": "^1.2.0",
+    "eslint": "^6.5.1",
     "factory-girl": "^5.0.4",
     "faker": "^4.1.0",
     "jest": "^23.6.0",
