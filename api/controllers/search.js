@@ -381,6 +381,55 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
     );
   }
 
+  if (populate === true && collection === 'NotificationProject') {
+    aggregation.push(
+      {
+        $lookup: {
+          from: 'epic',
+          as: 'documents',
+          let: { project: "$_id", schema: 'Document' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$project', '$$project'] },
+                    { $eq: ['$_schemaName', 'Document'] }
+                  ]
+                }
+              }
+            },
+            {
+              $redact: {
+                $cond: {
+                  if: {
+                    // This way, if read isn't present, we assume public no roles array.
+                    $and: [
+                      { $cond: { if: "$read", then: true, else: false } },
+                      {
+                        $anyElementTrue: {
+                          $map: {
+                            input: "$read",
+                            as: "fieldTag",
+                            in: { $setIsSubset: [["$$fieldTag"], ['public']] }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  then: "$$KEEP",
+                  else: {
+                    $cond: { if: "$read", then: "$$PRUNE", else: "$$DESCEND" }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    );
+  }
+
   aggregation.push({
     $redact: {
       $cond: {
