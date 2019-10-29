@@ -21,6 +21,10 @@ var dbConnection  = 'mongodb://'
 var db_username = process.env.MONGODB_USERNAME || '';
 var db_password = process.env.MONGODB_PASSWORD || '';
 
+var api_default_port = 3000;
+
+var express_server;
+
 // Logging middleware
 winston.loggers.add('default', {
     console: {
@@ -88,20 +92,9 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
     defaultLog.info("Couldn't create upload folder:", e);
   }
   // Load up DB
-  var options = {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    poolSize: 10,
-    user: db_username,
-    pass: db_password,
-    reconnectTries: Number.MAX_VALUE, // Never stop trying to reconnect
-    reconnectInterval: 500, // Reconnect every 500ms
-    poolSize: 10, // Maintain up to 10 socket connections
-    // If not connected, return errors immediately rather than waiting for reconnect
-    bufferMaxEntries: 0,
-    connectTimeoutMS: 10000, // Give up initial connection after 10 seconds
-    socketTimeoutMS: 45000 // Close sockets after 45 seconds of inactivity
-  };
+  var options = require('./config/mongoose_options').mongooseOptions;
+  options.user = db_username;
+  options.pass = db_password;
   defaultLog.info("Connecting to:", dbConnection);
   mongoose.Promise  = global.Promise;
   var db = mongoose.connect(dbConnection, options).then(
@@ -128,7 +121,7 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
       require('./api/helpers/models/topic');
       defaultLog.info("db model loading done.");
 
-      app.listen(3000, '0.0.0.0', function() {
+      express_server = app.listen(api_default_port, '0.0.0.0', function() {
         defaultLog.info("Started server on port 3000");
       });
     },
@@ -137,3 +130,15 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
       return;
     });
 });
+
+async function shutdown() {
+  if (express_server) {
+    console.log('Shutting down gracefully');
+    express_server.close(() => {
+        console.log('Closed out remaining connections');
+        process.exit(0);
+    });
+  }
+}
+
+exports.shutdown = shutdown;

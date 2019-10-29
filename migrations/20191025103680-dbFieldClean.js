@@ -6,8 +6,11 @@
   *   - put the database in a state that matches the existing models on leading to more effective development, reporting, maintenance
   */
 
+const express = require('express');
 const mongoose = require('mongoose');
 const _ = require('lodash');
+// const app = require('../app');  // loads the models
+const app = require('../app');
 
 var dbm;
 var type;
@@ -27,7 +30,7 @@ async function createHotbackup(db, hotbackupName) {
   return new Promise(function(resolve, reject) {
     resolve(db.createCollection(hotbackupName));
   });
-}
+};
 
 async function applySimpleIndexes(targetCollection, indexes) {
   return new Promise(function(resolve, reject) {
@@ -46,7 +49,7 @@ async function applySimpleIndexes(targetCollection, indexes) {
     });
     resolve();
   });
-}
+};
 
 async function applyCustomFullTextSearchIndex(targetCollection) {
   return new Promise(function(resolve, reject) {
@@ -85,7 +88,7 @@ async function applyCustomFullTextSearchIndex(targetCollection) {
       }
     ));
   });
-}
+};
 
 exports.up = function(db) {
   let mongoHandle;
@@ -117,6 +120,7 @@ exports.up = function(db) {
         await applyCustomFullTextSearchIndex(hotbackup);
       }).then(async function() {
         let epic = mongoHandle.collection("epic");
+        console.log(mongoose.models);
         var models = Object.keys(mongoose.models);
         for (var i=0; i < models.length; i++) {
           console.log(models[i]);
@@ -125,11 +129,13 @@ exports.up = function(db) {
         //   console.log(model);
         // });
         mongoHandle.close();
+        app.shutdown();
       });
     })
     .catch((e) => {
       console.log("e:", e);
       mongoHandle.close();
+      app.shutdown();
     });
 };
 
