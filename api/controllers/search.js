@@ -280,84 +280,56 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
   }
 
   if (schemaName === 'Project') {
-    var projectDataId;
-
+    let projectDataKey;
     switch (projectLegislation) {
-      case "1996", "2002", "2018":
-        projectDataId = "allProjectData[" + projectLegislation + "]";
+      case "1996":
+      case "2002":
+      case "2018":
+        projectDataKey = "legislation_" + projectLegislation;
         break;
       case "all":
-        projectDataId = [ "allProjectData[1996]", "allProjectData[2002]", "allProjectData[2018]" ];
+        projectDataKey = [ "legislation_1996", "legislation_2002", "legislation_2018" ];
         break;
       default:
-        projectDataId = "currentProjectData";
+        //todo need to know current legislation, to set proper default
+        projectDataKey = "legislation_1996";
         break;
     }
 
     if (projectLegislation === "all"){
-      projectDataId.forEach ( dataId => {
-        // pop most recent project data.
-        aggregation.push(
-          {
-            '$lookup': {
-              "from": "epic",
-              "localField": dataId,
-              "foreignField": "_id",
-              "as": dataId
-            }
-          });
-        aggregation.push(
-          {
-            "$unwind": "$" + dataId
-          },
-        );
+      projectDataId.forEach ( dataKey => {
 
         // pop proponent if exists.
         aggregation.push(
           {
             '$lookup': {
               "from": "epic",
-              "localField": dataId + ".proponent",
+              "localField": dataKey + ".proponent",
               "foreignField": "_id",
-              "as": dataId + ".proponent"
+              "as": dataKey + ".proponent"
             }
           });
         aggregation.push(
           {
-            "$unwind": "$" + dataId + ".proponent"
+            "$unwind": "$" + dataKey + ".proponent"
           },
         );
       });
     } else {
-      // pop most recent project data.
-      aggregation.push(
-        {
-          '$lookup': {
-            "from": "epic",
-            "localField": projectDataId,
-            "foreignField": "_id",
-            "as": projectDataId
-          }
-        });
-      aggregation.push(
-        {
-          "$unwind": "$" + projectDataId
-        },
-      );
 
       // pop proponent if exists.
       aggregation.push(
         {
           '$lookup': {
             "from": "epic",
-            "localField": projectDataId + ".proponent",
+            "localField": projectDataKey + ".proponent",
             "foreignField": "_id",
-            "as": projectDataId + ".proponent"
+            "as": projectDataKey + ".proponent"
           }
         });
       aggregation.push(
         {
-          "$unwind": "$" + projectDataId + ".proponent"
+          "$unwind": "$" + projectDataKey + ".proponent"
         },
       );
     }
