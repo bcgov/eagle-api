@@ -4,7 +4,6 @@ var dbm;
 var type;
 var seed;
 const mongoose = require('mongoose');
-const model = require('../api/helpers/models/legislationSpecificProjectData')
 
 
 /**
@@ -26,6 +25,9 @@ exports.up = function(db) {
       mClient = mClientInst;
       var p = mClient.collection('epic');
 
+      var count1996 = 0
+      var count2002 = 0
+      var countUnknown = 0
       // get all existing projects
       p.aggregate([
         {
@@ -39,14 +41,18 @@ exports.up = function(db) {
 
 
             // get the legislation for this project
-            let legislation = item.legislation
-
+            let legislationYear = item.legislation
+            
             // change the schema name from project to projectData
             let projectId = item._id
 
+            // new projects since legislation was populated
+            if (item.name === "Giant Copper" || item.name === "Kutcho") {
+              legislationYear = '2002 Environmental Assessment Act';
+            }
+
             //   create a new LegislationSpecificProjectData object with all the same fields as in the current projects
-            var legislationSpecificProjectData = {
-              _schemaName             : "LegislationSpecificProjectData",
+            var currentProjectData = {
               CEAAInvolvement         : item.CEAAInvolvement,
               CELead                  : item.CELead,
               CELeadEmail             : item.CELeadEmail,
@@ -67,7 +73,7 @@ exports.up = function(db) {
               responsibleEPDEmail     : item.responsibleEPDEmail,
               responsibleEPDPhone     : item.responsibleEPDPhone,
               type                    : item.type,
-              legislation             : item.legislation,
+              legislation             : legislationYear,
               addedBy                 : item.addedBy,
               build                   : item.build,
               CEAALink                : item.CEAALink,
@@ -111,35 +117,42 @@ exports.up = function(db) {
               delete                  : item.delete
             };
 
-            p.insertOne(legislationSpecificProjectData);
-
-            let legislationSpecificProjectDataId = legislationSpecificProjectData._id
-
             // add new fields to project
-            if (legislation == "1996 Environmental Assessment Act"){
+            if (legislationYear === "1996 Environmental Assessment Act"){
+              // console.log("found 1996 project")
+              count1996++;
               p.update(
                 {
                   _id: projectId
                 },
                 {
                   $set: {
-                    currentProjectData: legislationSpecificProjectDataId,
-                    allProjectDataByLegislation: [{1996: legislationSpecificProjectDataId}]
+                    currentLegislationYear: 1996,
+                    legislationYearList: [ 1996 ],
+                    legislation_1996: currentProjectData
+                  }
+                }
+              );
+            } else if (legislationYear === "2002 Environmental Assessment Act") {
+              // console.log("found 2002 project")
+              count2002++;
+              p.update(
+                {
+                  _id: projectId
+                },
+                {
+                  $set: {
+                    currentLegislationYear: 2002,
+                    legislationYearList: [ 2002 ],
+                    legislation_2002: currentProjectData
                   }
                 }
               );
             } else {
-              p.update(
-                {
-                  _id: projectId
-                },
-                {
-                  $set: {
-                    currentProjectData: legislationSpecificProjectDataId,
-                    allProjectDataByLegislation: [{2002: legislationSpecificProjectDataId}]
-                  }
-                }
-              );
+              // new or unknown projects
+              countUnknown++;
+              console.log("Project with no legistlation: "+ projectId + " name " + item.name + " legis: " + item.legislation)
+
             }
 
             // delete old data
@@ -215,6 +228,7 @@ exports.up = function(db) {
               }
             );
           }
+          console.log("1996 Projects: " + count1996 + ", 2002 Projects: " + count2002, ", Unknown: ", countUnknown)
           mClient.close();
         });
     })
