@@ -75,6 +75,7 @@ def nodejsTester () {
       ]) {
         node("node-tester") {
           checkout scm
+          sh 'npm i'
           try {
             sh 'npm run tests'
           } finally {
@@ -205,14 +206,14 @@ pipeline {
           }
         }
 
-        // stage('Unit Tests') {
-        //   steps {
-        //     script {
-        //       echo "Running Unit Tests"
-        //       def result = nodejsTester()
-        //     }
-        //   }
-        // }
+        stage('Unit Tests') {
+          steps {
+            script {
+              echo "Running Unit Tests"
+              def result = nodejsTester()
+            }
+          }
+        }
 
         // stage('Sonarqube') {
         //   steps {

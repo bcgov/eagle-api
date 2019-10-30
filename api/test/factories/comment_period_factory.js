@@ -4,6 +4,8 @@ const factory_helper = require('./factory_helper');
 const moment = require('moment');
 let faker = require('faker/locale/en');
 
+const factoryName = CommentPeriod.modelName;
+
 const informationLabels = [
     ""
   , "Amendment #6 Application"
@@ -63,7 +65,7 @@ const vettingRoles = [
   , ["project-team"]
 ];
 
-factory.define('commentPeriod', CommentPeriod, buildOptions => {
+factory.define(factoryName, CommentPeriod, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
 
   // order dependent chain backwards in time so that the dates make sense
@@ -123,3 +125,4 @@ factory.define('commentPeriod', CommentPeriod, buildOptions => {
 });
 
 exports.factory = factory;
+exports.name = factoryName;
