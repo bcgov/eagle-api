@@ -282,12 +282,14 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
   if (schemaName === 'Project') {
     let projectDataKey;
     switch (projectLegislation) {
+      //TODO: Update this to work for future years
       case "1996":
       case "2002":
       case "2018":
         projectDataKey = "legislation_" + projectLegislation;
         break;
       case "all":
+        //TODO: Make this extendable. Pull from a list
         projectDataKey = [ "legislation_1996", "legislation_2002", "legislation_2018" ];
         break;
       default:
@@ -296,26 +298,43 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
         break;
     }
 
-    if (projectLegislation === "all"){
-      projectDataId.forEach ( dataKey => {
+    if (projectLegislation === "all") {
+      //TODO: Causing the all query to return nothing
+      aggregation.push(
+        {
+          '$lookup': {
+            "from": "epic",
+            "localField": projectDataKey[0] + ".proponent",
+            "foreignField": "_id",
+            "as": projectDataKey[0] + ".proponent"
+          }
+        });
+      aggregation.push(
+        {
+          "$unwind": "$" + projectDataKey[0] + ".proponent"
+        },
+      );
 
-        // pop proponent if exists.
-        aggregation.push(
-          {
-            '$lookup': {
-              "from": "epic",
-              "localField": dataKey + ".proponent",
-              "foreignField": "_id",
-              "as": dataKey + ".proponent"
-            }
-          });
-        aggregation.push(
-          {
-            "$unwind": "$" + dataKey + ".proponent"
-          },
-        );
-      });
-    } else {
+      //TODO: this forEach will null out the full query if doing a lookup on a legislation 
+      // projectDataKey.forEach ( dataKey => {
+
+      //   // pop proponent if exists.
+      //   aggregation.push(
+      //     {
+      //       '$lookup': {
+      //         "from": "epic",
+      //         "localField": dataKey + ".proponent",
+      //         "foreignField": "_id",
+      //         "as": dataKey + ".proponent"
+      //       }
+      //     });
+      //   aggregation.push(
+      //     {
+      //       "$unwind": "$" + dataKey + ".proponent"
+      //     },
+      //   );
+      // });
+    }else {
 
       // pop proponent if exists.
       aggregation.push(
