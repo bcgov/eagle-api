@@ -317,7 +317,6 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
 
       //TODO: this forEach will null out the full query if doing a lookup on a legislation 
       // projectDataKey.forEach ( dataKey => {
-
       //   // pop proponent if exists.
       //   aggregation.push(
       //     {
@@ -334,8 +333,8 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
       //     },
       //   );
       // });
-    }else {
-
+    } else {
+      let dataIdKey = projectDataKey + "._id"
       // pop proponent if exists.
       aggregation.push(
         {
@@ -351,6 +350,16 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
           "$unwind": "$" + projectDataKey + ".proponent"
         },
       );
+      aggregation.push(
+        {
+          '$addFields': { [dataIdKey]: '$_id' }
+        }
+      )
+      aggregation.push(
+        {
+          $replaceRoot: { newRoot: '$' + projectDataKey }
+        }
+      )
     }
   }
 
