@@ -299,40 +299,26 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
     }
 
     if (projectLegislation === "all") {
-      //TODO: Causing the all query to return nothing
-      aggregation.push(
-        {
-          '$lookup': {
-            "from": "epic",
-            "localField": projectDataKey[0] + ".proponent",
-            "foreignField": "_id",
-            "as": projectDataKey[0] + ".proponent"
-          }
-        });
-      aggregation.push(
-        {
-          "$unwind": "$" + projectDataKey[0] + ".proponent"
-        },
-      );
-
-      //TODO: this forEach will null out the full query if doing a lookup on a legislation 
-      // projectDataKey.forEach ( dataKey => {
-      //   // pop proponent if exists.
-      //   aggregation.push(
-      //     {
-      //       '$lookup': {
-      //         "from": "epic",
-      //         "localField": dataKey + ".proponent",
-      //         "foreignField": "_id",
-      //         "as": dataKey + ".proponent"
-      //       }
-      //     });
-      //   aggregation.push(
-      //     {
-      //       "$unwind": "$" + dataKey + ".proponent"
-      //     },
-      //   );
-      // });
+      projectDataKey.forEach ( dataKey => {
+        // pop proponent if exists.
+        aggregation.push(
+          {
+            '$lookup': {
+              "from": "epic",
+              "localField": dataKey + ".proponent",
+              "foreignField": "_id",
+              "as": dataKey + ".proponent"
+            }
+          });
+        aggregation.push(
+          {
+            "$unwind": {
+              path: "$" + dataKey + ".proponent",
+              preserveNullAndEmptyArrays: true
+            }
+          },
+        );
+      });
     } else {
       let dataIdKey = projectDataKey + "._id"
       // pop proponent if exists.
