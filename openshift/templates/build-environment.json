@@ -421,14 +421,14 @@
       "name": "DATABASE_VOLUME_CAPACITY",
       "displayName": "Database Volume Capacity",
       "description": "Volume space available for mongo database, e.g. 512Mi, 2Gi.",
-      "value": "1Gi",
+      "value": "20Gi",
       "required": true
     },
     {
       "name": "DOCUMENT_VOLUME_CAPACITY",
       "displayName": "Document Volume Capacity",
       "description": "Volume space available for Document uploads, e.g. 512Mi, 2Gi.",
-      "value": "2Gi",
+      "value": "20Gi",
       "required": true
     },
     {
