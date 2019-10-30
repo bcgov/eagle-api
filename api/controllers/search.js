@@ -280,127 +280,86 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
   }
 
   if (schemaName === 'Project') {
-    var projectDataId;
-
+    let projectDataKey;
     switch (projectLegislation) {
+      //TODO: Update this to work for future years
       case "1996":
       case "2002":
       case "2018":
-        projectDataId = "allProjectDataByLegislation." + projectLegislation;
-
-        aggregation.push(
-          {
-            "$unwind": "$allProjectDataByLegislation"
-          },
-        );
-
-        // populate the project that you want from the array of project ids
-        aggregation.push(
-          {
-            '$lookup': {
-              "from": "epic",
-              "localField": projectDataId,
-              "foreignField": "_id",
-              "as": projectDataId
-            }
-          });
-
-        aggregation.push(
-          {
-            "$unwind": "$" + projectDataId
-          },
-        );
-
-        // pop proponent if exists.
-        aggregation.push(
-          {
-            '$lookup': {
-              "from": "epic",
-              "localField": projectDataId + ".proponent",
-              "foreignField": "_id",
-              "as": projectDataId + ".proponent"
-            }
-          });
-        aggregation.push(
-          {
-            "$unwind": "$" + projectDataId + ".proponent"
-          },
-        );
+        projectDataKey = "legislation_" + projectLegislation;
         break;
-      case "all": // TODO: fix this, currently broken
-        projectDataId = [ "allProjectDataByLegislation.1996", "allProjectDataByLegislation.2002", "allProjectDataByLegislation.2018" ];
-        aggregation.push(
-          {
-            "$unwind": "$allProjectDataByLegislation"
-          },
-        );
-
-        projectDataId.forEach ( dataId => {
-
-          // pop most recent project data.
-          aggregation.push({
-            $cond: { // TODO: fix this conditional so the call doesn't return nothing
-              if: dataId,
-              then: {
-                '$lookup': {
-                  "from": "epic",
-                  "localField": dataId,
-                  "foreignField": "_id",
-                  "as": dataId
-                },
-
-                "$unwind": "$" + dataId
-
-                // '$lookup': {
-                //       "from": "epic",
-                //       "localField": dataId + ".proponent",
-                //       "foreignField": "_id",
-                //       "as": dataId + ".proponent"
-                //     },
-
-                // "$unwind": "$" + dataId + ".proponent"
-              }
-            },
-            else: {}
-          });
-
-        });
+      case "all":
+        //TODO: Make this extendable. Pull from a list
+        projectDataKey = [ "legislation_1996", "legislation_2002", "legislation_2018" ];
         break;
       default:
-        projectDataId = "currentProjectData";
-
-        // pop most recent project data.
-        aggregation.push(
-          {
-            '$lookup': {
-              "from": "epic",
-              "localField": projectDataId,
-              "foreignField": "_id",
-              "as": projectDataId
-            }
-          });
-        aggregation.push(
-          {
-            "$unwind": "$" + projectDataId
-          },
-        );
-
-        // pop proponent if exists.
-        aggregation.push(
-          {
-            '$lookup': {
-              "from": "epic",
-              "localField": projectDataId + ".proponent",
-              "foreignField": "_id",
-              "as": projectDataId + ".proponent"
-            }
-          });
-        aggregation.push(
-          {
-            "$unwind": "$" + projectDataId + ".proponent"
-          },
-        );
+        //todo need to know current legislation, to set proper default
+        projectDataKey = "legislation_1996";
         break;
+    }
+
+    if (projectLegislation === "all") {
+      //TODO: Causing the all query to return nothing
+      aggregation.push(
+        {
+          '$lookup': {
+            "from": "epic",
+            "localField": projectDataKey[0] + ".proponent",
+            "foreignField": "_id",
+            "as": projectDataKey[0] + ".proponent"
+          }
+        });
+      aggregation.push(
+        {
+          "$unwind": "$" + projectDataKey[0] + ".proponent"
+        },
+      );
+
+      //TODO: this forEach will null out the full query if doing a lookup on a legislation
+      // projectDataKey.forEach ( dataKey => {
+      //   // pop proponent if exists.
+      //   aggregation.push(
+      //     {
+      //       '$lookup': {
+      //         "from": "epic",
+      //         "localField": dataKey + ".proponent",
+      //         "foreignField": "_id",
+      //         "as": dataKey + ".proponent"
+      //       }
+      //     });
+      //   aggregation.push(
+      //     {
+      //       "$unwind": "$" + dataKey + ".proponent"
+      //     },
+      //   );
+      // });
+    } else {
+      let dataIdKey = projectDataKey + "._id"
+      // pop proponent if exists.
+      aggregation.push(
+        {
+          '$lookup': {
+            "from": "epic",
+            "localField": projectDataKey + ".proponent",
+            "foreignField": "_id",
+            "as": projectDataKey + ".proponent"
+          }
+        });
+      aggregation.push(
+        {
+          "$unwind": "$" + projectDataKey + ".proponent"
+        },
+      );
+      aggregation.push(
+        {
+          '$addFields': { [dataIdKey]: '$_id' }
+        }
+      )
+      aggregation.push(
+        {
+          $replaceRoot: { newRoot: '$' + projectDataKey }
+        }
+      )
     }
   }
 
