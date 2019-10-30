@@ -42,6 +42,7 @@ exports.up = function(db) {
       let updates = await setVettedFieldToDefault(p)
 
       // any document created before Jan 1, 2002 can be tagged as 1996 legislation
+      // many old docs have a dateposted of 1900
       p.updateMany(
         { _schemaName: "Document", datePosted: { $lt: new Date('2002-01-01'), $gt: new Date('1901-01-01') } },
         { $set: { legislation: 1996, legislationYearVetted: true } }
@@ -49,25 +50,28 @@ exports.up = function(db) {
       
       // deal with docs with creation dates around 1900
       var mislabeledDocs = await get1900Documents(p)
+      console.log("Number of mislabelled docs: ", mislabeledDocs.length)
+      let projectData;
       for (let item of mislabeledDocs) {
         let project = await findProjectById(p, item.project)
-        let rawProjectData = await findProjectDataById(p, project[0].currentProjectData)
-        let projectData = rawProjectData[0]
+        if (project[0].currentLegislationYear == 1996) {
+          projectData = project[0].legislation_1996
+        } else if (project[0].currentLegislationYear == 2002) {
+          projectData = project[0].legislation_2002
+        }
+
         // console.log("project name: ", projectData.name)
         if (projects1996.includes(projectData.name)) {
-          // console.log("found a 96 project")
           p.updateOne(
             { _id: item._id },
             { $set: { legislation: 1996, legislationYearVetted: true } }
           )
         } else if (projects2002.includes(projectData.name)) {
-          // console.log("foudn a 2002 project")
           p.updateOne(
             { _id: item._id },
             { $set: { legislation: 2002, legislationYearVetted: true } }
           )
         } else if (projectsTransition.includes(projectData.name)) {
-          // console.log("found a transition proejct")
           p.updateOne(
             { _id: item._id },
             { $set: { legislation: 2002 } }
@@ -86,9 +90,12 @@ exports.up = function(db) {
         if (project.length < 1) {
           continue;
         }
-        let rawProjectData = await findProjectDataById(p, project[0].currentProjectData)
-        let projectData = rawProjectData[0]
-        // console.log("projectData: ", projectData)
+        if (project[0].currentLegislationYear == 1996) {
+          projectData = project[0].legislation_1996
+        } else if (project[0].currentLegislationYear == 2002) {
+          projectData = project[0].legislation_2002
+        }
+
         if (projectsTransition.includes(projectData.name)) {
           // console.log("Found doc created 2005+ and is from a transition project")
           p.updateOne(
@@ -103,24 +110,25 @@ exports.up = function(db) {
       var transitionDocs = await getTransitionDocuments(p)
       for (let item of transitionDocs) {    
         let project = await findProjectById(p, item.project)
-        let rawProjectData = await findProjectDataById(p, project[0].currentProjectData)
-        let projectData = rawProjectData[0]
-        // console.log(projectData)
+
+        if (project[0].currentLegislationYear == 1996) {
+          projectData = project[0].legislation_1996
+        } else if (project[0].currentLegislationYear == 2002) {
+          projectData = project[0].legislation_2002
+        }
+
         // 2002 = any project created after jan 1, 2003
         if (projects2002.includes(projectData.name)) {
-          // console.log("found 2002 vettable doc")
           p.updateOne(
             { _id: item._id },
             { $set: { legislation: 2002, legislationYearVetted: true } }
           )
         } else if (projectsTransition.includes(projectData.name)) {
-          // console.log("found 2002 doc, needs verification")
           p.updateOne(
             { _id: item._id },
             { $set: { legislation: 2002 } }
           )
         } else if (projects1996.includes(projectData.name)) {
-          // console.log("project: ", projectData.name)
           p.updateOne(
             { _id: item._id },
             { $set: { legislation: 1996 } }
@@ -213,28 +221,6 @@ async function getAllDocuments(db) {
 async function findProjectById(db, projectId ) {
   return new Promise(function(resolve, reject) {
     db.find({ _schemaName: "Project", _id: projectId } )
-      .toArray()
-      .then(async function(data) {
-        resolve(data);
-      });
-  });
-}
-
-// get LegislationData by id, return project
-async function findProjectDataById(db, projectId ) {
-  return new Promise(function(resolve, reject) {
-    db.find({ _schemaName: "LegislationSpecificProjectData", _id: projectId } )
-      .toArray()
-      .then(async function(data) {
-        resolve(data);
-      });
-  });
-}
-
-// get LegislationData by id, return projectData
-async function findProjectDataByName(db, name ) {
-  return new Promise(function(resolve, reject) {
-    db.find({ _schemaName: "LegislationSpecificProjectData", _id: name } )
       .toArray()
       .then(async function(data) {
         resolve(data);
