@@ -339,17 +339,15 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
       );
       aggregation.push(
         {
-          '$addFields': { [dataIdKey]: '$_id' }
+          '$addFields': { 
+            [dataIdKey]: '$_id', 
+            [projectDataKey+".legislationYear"]: projectLegislationYear
+          }
         }
       )
       aggregation.push(
         {
           $replaceRoot: { newRoot: '$' + projectDataKey }
-        }
-      )
-      aggregation.push(
-        {
-          '$addFields': { legislationYear: projectLegislationYear }
         }
       )
     }
