@@ -96,7 +96,7 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
   }
   app_helper.loadMongoose(dbConnection, credentials, defaultLog).then(() => {
     express_server = app.listen(api_default_port, '0.0.0.0', function() {
-      defaultLog.info("Started server on port 3000");
+      defaultLog.info("Started server on port " + api_default_port);
     });
   }).catch(function (err) {
     defaultLog.info("err:", err);
