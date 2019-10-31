@@ -6,13 +6,12 @@ var uploadDir     = process.env.UPLOAD_DIRECTORY || "./uploads/";
 var hostname      = process.env.API_HOSTNAME || "localhost:3000";
 var swaggerTools  = require("swagger-tools");
 var YAML          = require("yamljs");
-var mongoose      = require("mongoose");
 var passport      = require("passport");
 var auth          = require("./api/helpers/auth");
-var models        = require("./api/helpers/models");
 var swaggerConfig = YAML.load("./api/swagger/swagger.yaml");
 var winston       = require('winston');
 var bodyParser    = require('body-parser');
+var app_helper    = require("./app_helper");
 
 var dbConnection  = 'mongodb://'
                     + (process.env.MONGODB_SERVICE_HOST || process.env.DB_1_PORT_27017_TCP_ADDR || 'localhost')
@@ -20,6 +19,10 @@ var dbConnection  = 'mongodb://'
                     + (process.env.MONGODB_DATABASE || 'epic');
 var db_username = process.env.MONGODB_USERNAME || '';
 var db_password = process.env.MONGODB_PASSWORD || '';
+var credentials = {
+  db_username : db_username,
+  db_password : db_password
+};
 
 var api_default_port = 3000;
 
@@ -91,47 +94,16 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
     // Fall through - uploads will continue to fail until this is resolved locally.
     defaultLog.info("Couldn't create upload folder:", e);
   }
-  // Load up DB
-  var options = require('./config/mongoose_options').mongooseOptions;
-  options.user = db_username;
-  options.pass = db_password;
-  defaultLog.info("Connecting to:", dbConnection);
-  mongoose.Promise  = global.Promise;
-  var db = mongoose.connect(dbConnection, options).then(
-    () => {
-      defaultLog.info("Database connected");
-
-      // Load database models
-      defaultLog.info("loading db models.");
-      require('./api/helpers/models/audit');
-      require('./api/helpers/models/list');
-      require('./api/helpers/models/user');
-      require('./api/helpers/models/group');
-      require('./api/helpers/models/pin');
-      require('./api/helpers/models/organization');
-      require('./api/helpers/models/vc');
-      require('./api/helpers/models/inspectionItem');
-      require('./api/helpers/models/inspection');
-      require('./api/helpers/models/inspectionElement');
-      require('./api/helpers/models/project');
-      require('./api/helpers/models/recentActivity');
-      require('./api/helpers/models/document');
-      require('./api/helpers/models/comment');
-      require('./api/helpers/models/commentperiod');
-      require('./api/helpers/models/topic');
-      defaultLog.info("db model loading done.");
-
-      express_server = app.listen(api_default_port, '0.0.0.0', function() {
-        defaultLog.info("Started server on port 3000");
-      });
-    },
-    err => {
-      defaultLog.info("err:", err);
-      return;
+  app_helper.loadMongoose(dbConnection, credentials, defaultLog).then(() => {
+    express_server = app.listen(api_default_port, '0.0.0.0', function() {
+      defaultLog.info("Started server on port 3000");
     });
+  }).catch(function (err) {
+    defaultLog.info("err:", err);
+  });
 });
 
-async function shutdown() {
+function shutdown() {
   if (express_server) {
     console.log('Shutting down gracefully');
     express_server.close(() => {
@@ -142,3 +114,5 @@ async function shutdown() {
 }
 
 exports.shutdown = shutdown;
+exports.api_default_port = api_default_port;
+exports.dbConnection = dbConnection;
