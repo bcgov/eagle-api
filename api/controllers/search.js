@@ -280,7 +280,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
   }
 
   if (schemaName === 'Project') {
-    let projectDataKey;
+    let projectDataKey, projectLegislationYear = projectLegislation;
     switch (projectLegislation) {
       //TODO: Update this to work for future years
       case "1996":
@@ -293,8 +293,9 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
         projectDataKey = [ "legislation_1996", "legislation_2002", "legislation_2018" ];
         break;
       default:
-        //todo need to know current legislation, to set proper default
-        projectDataKey = "legislation_1996";
+        //TODO: need to know current legislation, to set proper default
+        projectDataKey = "legislation_2002";
+        projectLegislationYear = 2002;
         break;
     }
 
@@ -338,7 +339,10 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
       );
       aggregation.push(
         {
-          '$addFields': { [dataIdKey]: '$_id' }
+          '$addFields': { 
+            [dataIdKey]: '$_id', 
+            [projectDataKey+".legislationYear"]: projectLegislationYear
+          }
         }
       )
       aggregation.push(
