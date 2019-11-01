@@ -45,6 +45,15 @@ function getBcCities() {
     return bcCities;
 }
 
+function generateFakePostal() {
+    let pdPool = "XVTSRPNKLMHJGECBA".split("");
+    let remPool = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+    let postalDistrict = faker.random.arrayElement(pdPool);
+    let forwardSortationArea = postalDistrict + "#" + faker.random.arrayElement(remPool);
+    let localDeliveryUnit = "#" + faker.random.arrayElement(remPool) + "#";
+    return faker.helpers.replaceSymbolWithNumber(forwardSortationArea + " " + localDeliveryUnit);
+}
+
 function generateFakeBcLatLong() {
     // 53.726669, -127.647621 centre of BC
     // We will make a rough box to mostly avoid the ocean and the jagged map bits on the Alberta side
@@ -84,6 +93,7 @@ function generateFakeLocationString() {
 
 exports.faker = faker;
 exports.getBcCities = getBcCities;
+exports.generateFakePostal = generateFakePostal;
 exports.generateFakeBcLatLong = generateFakeBcLatLong;
 exports.generateFakePerson = generateFakePerson;
 exports.getRandomExistingUserId = getRandomExistingUserId;
