@@ -167,7 +167,7 @@ async function checkMigrations(callback) {
   MongoClient.connect(mongoUri, function(err, db) {
     if (err) console.error(err);
     var dbo = db.db("epic");
-    dbo.collection("migrations").count({}, function(err, numOfDocs){
+    dbo.collection("migrations").countDocuments({}, function(err, numOfDocs){
       if (err) console.error(err);
       db.close();
       callback(numOfDocs);

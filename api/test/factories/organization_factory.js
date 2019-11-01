@@ -35,7 +35,7 @@ factory.define(factoryName, Organization, buildOptions => {
     , dateAdded: dateAdded
     , dateUpdated: dateUpdated
     , country: "Canada"
-    , postal: chance.postal()
+    , postal: factory_helper.generateFakePostal()
     , province: "BC"
     , city: faker.random.arrayElement(factory_helper.getBcCities())
     , address1: faker.address.streetAddress()
