@@ -16,7 +16,7 @@ let allLists = {};
 for (let i=0; i<allListEntries; i++) {
   let type = allListEntries[i].type;
   let name = allListEntries[i].name
-  if (!type in allLists) allLists[type] = [];
+  if (!(type in allLists)) allLists[type] = [];
   if (!allLists[type].includes(name)) allLists[type].push(name);
 }
 
