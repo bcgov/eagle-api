@@ -28,6 +28,8 @@ var projectDataDefinition = {
   type                    : { type: String, default: '' },
   legislation             : { type: String, default: '' },
   legislationDefault      : { type: Number},
+  // TODO: Look at any more legislation year data we need on this model
+  legislationYear         : { type: String, default: '' },
 
 
   //Everything else
