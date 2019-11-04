@@ -348,7 +348,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
         );
       });
       // default, need to determine currentLegislationYear
-    } else if (projectDataKey === "tbd") {
+    } else if ((!projectLegislation) || projectLegislation === "default") {
       // todo just overwrite projectDateKey?
       // todo refactor migration, make currentLegislation value match the keys for data
       // todo investigate if we can use $let
@@ -357,7 +357,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
         {
           $addFields:
           {
-            "default": {
+            "legislationDefault": {
               $switch: {
                 branches: [
                   { 
@@ -386,59 +386,9 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
       )
       // unwind proponents and move embedded data up to root
       unwindProjectData(aggregation, legislationKey)
-      // aggregation.push(
-      //   {
-      //     '$lookup': {
-      //       "from": "epic",
-      //       "localField": projectDataKey + ".proponent",
-      //       "foreignField": "_id",
-      //       "as": projectDataKey + ".proponent"
-      //     }
-      //   });
-      // aggregation.push(
-      //   {
-      //     "$unwind": "$" + projectDataKey + ".proponent"
-      //   },
-      // );
-      // aggregation.push(
-      //   {
-      //     '$addFields': { [dataIdKey]: '$_id' }
-      //   }
-      // )
-      // aggregation.push(
-      //   {
-      //     $replaceRoot: { newRoot: '$' + projectDataKey }
-      //   }
-      // )
 
     } else {
       unwindProjectData(aggregation, projectDataKey)
-      // let dataIdKey = projectDataKey + "._id"
-      // // pop proponent if exists.
-      // aggregation.push(
-      //   {
-      //     '$lookup': {
-      //       "from": "epic",
-      //       "localField": projectDataKey + ".proponent",
-      //       "foreignField": "_id",
-      //       "as": projectDataKey + ".proponent"
-      //     }
-      //   });
-      // aggregation.push(
-      //   {
-      //     "$unwind": "$" + projectDataKey + ".proponent"
-      //   },
-      // );
-      // aggregation.push(
-      //   {
-      //     '$addFields': { [dataIdKey]: '$_id' }
-      //   }
-      // )
-      // aggregation.push(
-      //   {
-      //     $replaceRoot: { newRoot: '$' + projectDataKey }
-      //   }
-      // )
     }
   }
 

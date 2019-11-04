@@ -27,6 +27,7 @@ var projectDataDefinition = {
   responsibleEPDPhone     : { type: String, default: '' },
   type                    : { type: String, default: '' },
   legislation             : { type: String, default: '' },
+  legislationDefault      : { type: Number},
 
 
   //Everything else
