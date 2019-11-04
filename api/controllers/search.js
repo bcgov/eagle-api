@@ -390,9 +390,6 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
             }
           }
         },
-        {
-
-        }
       )
       // unwind proponents and move embedded data up to root
       unwindProjectData(aggregation, legislationKey, dataIdKey)
