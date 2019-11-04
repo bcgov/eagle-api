@@ -359,30 +359,28 @@ exports.protectedDelete = function (args, res, next) {
   });
 }
 
+
+
 //  Create a new project
 exports.protectedPost = function (args, res, next) {
   var obj = args.swagger.params.project.value;
-  var projectLegislation = obj.legislation ? obj.legislation : "2018 Environmental Assessment Act";
+  var projectLegislationYear = obj.legislationYear ? obj.legislationYear : 2002;
 
   defaultLog.info("Incoming new object:", obj);
 
   var Project = mongoose.model('Project');
   var project;
   var projectData;
-  var projectLegislationYear
 
-  if (projectLegislation == "2018 Environmental Assessment Act") {
+  if (projectLegislationYear == 2018) {
     project = new Project({legislation_2018: obj});
     projectData = project.legislation_2018;
-    projectLegislationYear = 2018;
-  } else if (projectLegislation == "2002 Environmental Assessment Act") {
+  } else if (projectLegislationYear == 2002) {
     project = new Project({legislation_2002: obj});
     projectData = project.legislation_2002;
-    projectLegislationYear = 2002;
-  } else if (projectLegislation == "1996 Environmental Assessment Act") {
+  } else if (projectLegislationYear == 1996) {
     project = new Project({legislation_1996: obj});
     projectData = project.legislation_1996;
-    projectLegislationYear = 1996;
   }
 
   project.currentLegislationYear = projectLegislationYear;
@@ -399,11 +397,11 @@ exports.protectedPost = function (args, res, next) {
   projectData._createdBy = args.swagger.params.auth_payload.preferred_username;
   projectData.createdDate = Date.now();
 
-  if (projectLegislation == "2018 Environmental Assessment Act") {
+  if (projectLegislationYear == 2018) {
     project.legislation_2018 = projectData;
-  } else if (projectLegislation == "2002 Environmental Assessment Act") {
+  } else if (projectLegislationYear == 2002) {
     project.legislation_2002 = projectData;
-  } else if (projectLegislation == "1996 Environmental Assessment Act") {
+  } else if (projectLegislationYear == 1996) {
     project.legislation_1996 = projectData;
   }
 
@@ -776,19 +774,28 @@ exports.protectedPut = async function (args, res, next) {
   var Project = mongoose.model('Project');
   var obj = {};
   var projectObj = args.swagger.params.ProjObject.value;
-  var projectLegislation = projectObj.legislation;
+  var projectLegislationYear
+  // if project legislation doesn't exist then look up current legislation for the project
+  if (projectObj.legislationYear) {
+    projectLegislationYear = projectObj.legislationYear;
+  } else {
+    // look up the current project legislation
+  }
 
   var objData;
 
-  if (projectLegislation == "2018 Environmental Assessment Act") {
+  if (projectLegislationYear == 2018) {
     obj.legislation_2018 = {};
     objData = projectObj.legislation_2018;
-  } else if (projectLegislation == "2002 Environmental Assessment Act") {
+  } else if (projectLegislationYear == 2002) {
     obj.legislation_2002 = {};
     objData = projectObj.legislation_2002;
-  } else if (projectLegislation == "1996 Environmental Assessment Act") {
+  } else if (projectLegislationYear == 1996) {
     obj.legislation_1996 = {};
     objData = projectObj.legislation_1996;
+  } else {
+    //default 2002?
+    // use current legislation
   }
 
   // console.log("Incoming updated object:", projectObj);
