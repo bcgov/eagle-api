@@ -399,6 +399,14 @@ exports.protectedPost = function (args, res, next) {
   projectData._createdBy = args.swagger.params.auth_payload.preferred_username;
   projectData.createdDate = Date.now();
 
+  if (projectLegislation == "2018 Environmental Assessment Act") {
+    project.legislation_2018 = projectData;
+  } else if (projectLegislation == "2002 Environmental Assessment Act") {
+    project.legislation_2002 = projectData;
+  } else if (projectLegislation == "1996 Environmental Assessment Act") {
+    project.legislation_1996 = projectData;
+  }
+
   project.save()
     .then(function (theProject) {
       Utils.recordAction('Post', 'Project', args.swagger.params.auth_payload.preferred_username, theProject._id);
@@ -770,22 +778,17 @@ exports.protectedPut = async function (args, res, next) {
   var projectObj = args.swagger.params.ProjObject.value;
   var projectLegislation = projectObj.legislation;
 
-
   var objData;
-
-  // project = new Project({legislation_2018: obj});
-  // projectData = project.legislation_2018;
-  // projectLegislationYear = 2018;
 
   if (projectLegislation == "2018 Environmental Assessment Act") {
     obj.legislation_2018 = {};
-    objData = obj.legislation_2018;
+    objData = projectObj.legislation_2018;
   } else if (projectLegislation == "2002 Environmental Assessment Act") {
     obj.legislation_2002 = {};
-    objData = obj.legislation_2002;
+    objData = projectObj.legislation_2002;
   } else if (projectLegislation == "1996 Environmental Assessment Act") {
     obj.legislation_1996 = {};
-    objData = obj.legislation_1996;
+    objData = projectObj.legislation_1996;
   }
 
   // console.log("Incoming updated object:", projectObj);
