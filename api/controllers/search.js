@@ -173,68 +173,45 @@ var handleDateEndItem = function (expArray, field, entry) {
 };
 
 //TODO: use the legislationDefault field on the project
-var unwindProjectData = function (aggregation, projectDataKey, dataIdKey, projectLegislationYear) {
+var unwindProjectData = function (aggregation, projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation) {
   // If projectLegislationYear = "" then use the legislationDefault key on the project model
   // pop proponent if exists.
-  if (!projectLegislationYear || projectLegislationYear == "default") {
-    //TODO: Remove this hardcoding
-    projectDataKey = "legislation_2002"
-    dataIdKey = "legislation_2002._id"
+  if (!projectLegislation || projectLegislation == "default") {
 
     aggregation.push(
       {
         '$lookup': {
           "from": "epic",
-          "localField": projectDataKey + ".proponent",
+          "localField": projectLegislationDataKey + ".proponent",
           "foreignField": "_id",
-          "as": projectDataKey + ".proponent"
+          "as": projectLegislationDataKey + ".proponent"
         }
       }
     )
     aggregation.push(
       {
-        "$unwind": "$" + projectDataKey + ".proponent"
+        "$unwind": "$" + projectLegislationDataKey + ".proponent"
       },
     );
     aggregation.push(
       {
-        '$addFields': { [dataIdKey]: '$_id' }
+        '$addFields': { [projectLegislationDataIdKey]: '$_id' }
       }
     )
-    aggregation.push(
-      {
-        $replaceRoot: { newRoot: '$' + projectDataKey }
-      }
-    )
-    //Null out the projectLegislationYear
-    aggregation.push({
-      "$project": {["project.legislation_" + projectLegislationYear]: 0 }
-    });
-    //TODO: Figure out the let to pass through the default legislation to this above logic
+    //TODO: Maybe change this into a mergeObjects instead
     // aggregation.push(
     //   {
-    //     '$lookup': {
-    //       "from": "epic",
-    //       "let": {
-    //         projectDataKey: ["legislation_"+"$currentLegislationYear"],
-    //         projectDataProponentKey: ["legislation_"+"$currentLegislationYear" + ".proponent"],
-    //         dataIdKey: ["legislation_"+"$currentLegislationYear" + "._id"],
-    //       },
-    //       "pipeline": [{
-    //           '$match': {
-    //               "$expr": {
-    //                 "$in": ["$_id", "$$projectDataProponentKey"]
-    //               }
-    //           }
-    //         }
-    //       ],
-    //       "as": "defaultProponent"
-    //     }
-    //   });
+    //     $replaceRoot: { newRoot: '$' + projectLegislationDataKey }
+    //   }
+    // )
+    //Null out the legislationYear
+    // aggregation.push({
+    //   "$project": {["project.legislation_" + legislationYear]: 0 }
+    // });
     aggregation.push(
       {
         "$addFields": {
-          "project": { "$mergeObjects": ["$project", "$project.legislation_" + projectLegislationYear]},
+          "project": { "$mergeObjects": ["$project", "$project." + projectLegislationDataKey]},
        }
       });
   } else {
@@ -242,54 +219,53 @@ var unwindProjectData = function (aggregation, projectDataKey, dataIdKey, projec
       {
         '$lookup': {
           "from": "epic",
-          "localField": projectDataKey + ".proponent",
+          "localField": projectLegislationDataKey + ".proponent",
           "foreignField": "_id",
-          "as": projectDataKey + ".proponent"
+          "as": projectLegislationDataKey + ".proponent"
         }
       });
     aggregation.push(
       {
-        "$unwind": "$" + projectDataKey + ".proponent"
+        "$unwind": ["$" + projectLegislationDataKey + ".proponent"]
       },
     );
     aggregation.push(
       {
-        '$addFields': { [dataIdKey]: '$_id'  }
+        '$addFields': { [projectLegislationDataIdKey]: '$_id'  }
       }
     )
     aggregation.push(
       {
         "$addFields": {
-          "project": { "$mergeObjects": ["$project", "$project.legislation_" + projectLegislationYear]},
+          "project": { "$mergeObjects": ["$project", "$project." + projectLegislationDataKey]},
        }
       }
     )
-    //Null out the projectLegislationYear
-    aggregation.push({
-      "$project": {["project.legislation_" + projectLegislationYear]: 0 }
-    });
+    //Null out the yearDataKey
+    // aggregation.push({
+    //   "$project": {["project." + yearDataKey]: 0 }
+    // });
   }
 }
 var getProjectLegislationInfo = function(legislation) {
-  let projectDataKey, projectLegislationYear = legislation;
+  let projectLegislationDataKey;
   switch (legislation) {
     //TODO: Update this to work for future years
     case "1996":
     case "2002":
     case "2018":
-      projectDataKey = "legislation_" + legislation;
+      projectLegislationDataKey = "legislation_" + legislation;
       break;
     case "all":
       //TODO: Make this extendable. Pull from a list
-      projectDataKey = [ "legislation_1996", "legislation_2002", "legislation_2018" ];
+      projectLegislationDataKey = [ "legislation_1996", "legislation_2002", "legislation_2018" ];
       break;
     default:
       //TODO: need to know current legislation, to set proper default
-      projectDataKey = "";
-      projectLegislationYear = 0;
+      projectLegislationDataKey = "default_legislation";
       break;
     }
-    return {projectDataKey, projectLegislationYear, dataIdKey: projectDataKey + "._id"};
+    return {projectLegislationDataKey, projectLegislationDataKeyIdKey: projectLegislationDataKey + "._id"};
 
 };
 var searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or) {
@@ -369,9 +345,8 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
   console.log('collation:', collation);
   //Get our project Legislation info. Need this for other spots in the code
   const projectLegislationObj = getProjectLegislationInfo(projectLegislation);
-  const projectDataKey = projectLegislationObj.projectDataKey;
-  const projectLegislationYear = projectLegislationObj.projectLegislationYear;
-  const dataIdKey = projectLegislationObj.dataIdKey;
+  const projectLegislationDataKey = projectLegislationObj.projectLegislationDataKey;
+  const projectLegislationDataIdKey = projectLegislationObj.projectLegislationDataIdKey;
 
   if (schemaName === 'Document') {
     // Allow documents to be sorted by status based on publish existence
@@ -408,7 +383,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
 
   if (schemaName === 'Project') {
     if (projectLegislation === "all") {
-      projectDataKey.forEach ( dataKey => {
+      projectLegislationDataKey.forEach ( dataKey => {
         // pop proponent if exists.
         aggregation.push(
           {
@@ -432,42 +407,12 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
     } else if ((!projectLegislation) || projectLegislation === "default") {
       // todo just overwrite projectDateKey?
       // todo refactor migration, make currentLegislation value match the keys for data
-      // todo investigate if we can use $let
-      console.log("in legislation default")
-      aggregation.push(
-        {
-          $addFields:
-          {
-            "legislationDefault": {
-              $switch: {
-                branches: [
-                  { 
-                    case: { $eq: [ "$currentLegislationYear", 1996 ]},
-                    then: "legislation_1996"
-                  },
-                  {
-                    case: { $eq: [ "$currentLegislationYear", 2002 ]},
-                    then: "legislation_2002"
-                  },
-                  {
-                    case: { $eq: [ "$currentLegislationYear", 2018 ]},
-                    then: "legislation_2018"
-                  }
-                ]
-                // legis year = 1996
-                // legis year = 2002
-                // legis year = 2018
-              }
-            }
-          }
-        },
-      )
       // unwind proponents and move embedded data up to root
       // This case will not have anything for projectDataKey, id key or year
-      unwindProjectData(aggregation, projectDataKey, dataIdKey, projectLegislationYear)
+      unwindProjectData(aggregation, projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation)
 
     } else {
-      unwindProjectData(aggregation, projectDataKey, dataIdKey, projectLegislationYear)
+      unwindProjectData(aggregation, projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation)
     }
   }
 
@@ -534,14 +479,14 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
       //TODO: figure out how to get year for default
       aggregation.push({
         "$addFields": {
-          "project": { "$mergeObjects": ["$project", "$project.legislation_" + projectLegislationYear]},
+          "project": { "$mergeObjects": ["$project", "$project." + projectLegislationDataKey]},
        }
       });
       // Unset the legislation specific key
       // TODO: Abstract this as we will need to do this a lot
-      aggregation.push({
-        "$project": {["project.legislation_" + projectLegislationYear]: 0 }
-      });
+      // aggregation.push({
+      //   "$project": {["project." + projectLegislationDataKey]: 0 }
+      // });
       
     }
   }
