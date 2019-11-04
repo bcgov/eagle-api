@@ -30,7 +30,6 @@ exports.up = function(db) {
     .then(async function(mClientInst, callback) {
       mClient = mClientInst;
       var p = mClient.collection('epic');
-      console.log("Beginning document migration")
 
       var filedata = fs.readFileSync(process.cwd() + '/migrations_data/ProjectsByLegislation.json', "utf8");
       let projectsObj = JSON.parse(filedata);
@@ -54,13 +53,13 @@ exports.up = function(db) {
       let projectData;
       for (let item of mislabeledDocs) {
         let project = await findProjectById(p, item.project)
-        if (project[0].currentLegislationYear == 1996) {
+        if (project[0].currentLegislationYear == "legislation_1996") {
           projectData = project[0].legislation_1996
-        } else if (project[0].currentLegislationYear == 2002) {
+        } else if (project[0].currentLegislationYear == "legislation_2002") {
           projectData = project[0].legislation_2002
         }
 
-        // console.log("project name: ", projectData.name)
+        // console.log("project name: ", projectData)
         if (projects1996.includes(projectData.name)) {
           p.updateOne(
             { _id: item._id },
@@ -90,9 +89,9 @@ exports.up = function(db) {
         if (project.length < 1) {
           continue;
         }
-        if (project[0].currentLegislationYear == 1996) {
+        if (project[0].currentLegislationYear == "legislation_1996") {
           projectData = project[0].legislation_1996
-        } else if (project[0].currentLegislationYear == 2002) {
+        } else if (project[0].currentLegislationYear == "legislation_2002") {
           projectData = project[0].legislation_2002
         }
 
@@ -111,9 +110,9 @@ exports.up = function(db) {
       for (let item of transitionDocs) {    
         let project = await findProjectById(p, item.project)
 
-        if (project[0].currentLegislationYear == 1996) {
+        if (project[0].currentLegislationYear == "legislation_1996") {
           projectData = project[0].legislation_1996
-        } else if (project[0].currentLegislationYear == 2002) {
+        } else if (project[0].currentLegislationYear == "legislation_2002") {
           projectData = project[0].legislation_2002
         }
 
