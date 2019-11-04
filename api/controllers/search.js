@@ -172,6 +172,34 @@ var handleDateEndItem = function (expArray, field, entry) {
   }
 }
 
+var unwindProjectData = function (aggregation, projectDataKey) {
+  let dataIdKey = projectDataKey + "._id"
+  // pop proponent if exists.
+  aggregation.push(
+    {
+      '$lookup': {
+        "from": "epic",
+        "localField": projectDataKey + ".proponent",
+        "foreignField": "_id",
+        "as": projectDataKey + ".proponent"
+      }
+    });
+  aggregation.push(
+    {
+      "$unwind": "$" + projectDataKey + ".proponent"
+    },
+  );
+  aggregation.push(
+    {
+      '$addFields': { [dataIdKey]: '$_id' }
+    }
+  )
+  aggregation.push(
+    {
+      $replaceRoot: { newRoot: '$' + projectDataKey }
+    }
+  )
+}
 var searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or) {
   var properties = undefined;
   if (project) {
@@ -294,72 +322,123 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
         break;
       default:
         //todo need to know current legislation, to set proper default
-        projectDataKey = "legislation_1996";
+        projectDataKey = "tbd";
         break;
     }
 
     if (projectLegislation === "all") {
-      //TODO: Causing the all query to return nothing
+      projectDataKey.forEach ( dataKey => {
+        // pop proponent if exists.
+        aggregation.push(
+          {
+            '$lookup': {
+              "from": "epic",
+              "localField": dataKey + ".proponent",
+              "foreignField": "_id",
+              "as": dataKey + ".proponent"
+            }
+          });
+        aggregation.push(
+          {
+            "$unwind": {
+              path: "$" + dataKey + ".proponent",
+              preserveNullAndEmptyArrays: true
+            }
+          },
+        );
+      });
+      // default, need to determine currentLegislationYear
+    } else if (projectDataKey === "tbd") {
+      // todo just overwrite projectDateKey?
+      // todo refactor migration, make currentLegislation value match the keys for data
+      // todo investigate if we can use $let
+      let legislationKey;
       aggregation.push(
         {
-          '$lookup': {
-            "from": "epic",
-            "localField": projectDataKey[0] + ".proponent",
-            "foreignField": "_id",
-            "as": projectDataKey[0] + ".proponent"
+          $addFields:
+          {
+            "default": {
+              $switch: {
+                branches: [
+                  { 
+                    case: { $eq: [ "$currentLegislationYear", 1996 ]},
+                    then: "legislation_1996"
+                  },
+                  {
+                    case: { $eq: [ "$currentLegislationYear", 2002 ]},
+                    then: "legislation_2002"
+                  },
+                  {
+                    case: { $eq: [ "$currentLegislationYear", 2018 ]},
+                    then: "legislation_2018"
+                  }
+                ]
+                // legis year = 1996
+                // legis year = 2002
+                // legis year = 2018
+              }
+            }
           }
-        });
-      aggregation.push(
-        {
-          "$unwind": "$" + projectDataKey[0] + ".proponent"
         },
-      );
+        {
 
-      //TODO: this forEach will null out the full query if doing a lookup on a legislation 
-      // projectDataKey.forEach ( dataKey => {
-      //   // pop proponent if exists.
-      //   aggregation.push(
-      //     {
-      //       '$lookup': {
-      //         "from": "epic",
-      //         "localField": dataKey + ".proponent",
-      //         "foreignField": "_id",
-      //         "as": dataKey + ".proponent"
-      //       }
-      //     });
-      //   aggregation.push(
-      //     {
-      //       "$unwind": "$" + dataKey + ".proponent"
-      //     },
-      //   );
-      // });
+        }
+      )
+      // unwind proponents and move embedded data up to root
+      unwindProjectData(aggregation, legislationKey)
+      // aggregation.push(
+      //   {
+      //     '$lookup': {
+      //       "from": "epic",
+      //       "localField": projectDataKey + ".proponent",
+      //       "foreignField": "_id",
+      //       "as": projectDataKey + ".proponent"
+      //     }
+      //   });
+      // aggregation.push(
+      //   {
+      //     "$unwind": "$" + projectDataKey + ".proponent"
+      //   },
+      // );
+      // aggregation.push(
+      //   {
+      //     '$addFields': { [dataIdKey]: '$_id' }
+      //   }
+      // )
+      // aggregation.push(
+      //   {
+      //     $replaceRoot: { newRoot: '$' + projectDataKey }
+      //   }
+      // )
+
     } else {
-      let dataIdKey = projectDataKey + "._id"
-      // pop proponent if exists.
-      aggregation.push(
-        {
-          '$lookup': {
-            "from": "epic",
-            "localField": projectDataKey + ".proponent",
-            "foreignField": "_id",
-            "as": projectDataKey + ".proponent"
-          }
-        });
-      aggregation.push(
-        {
-          "$unwind": "$" + projectDataKey + ".proponent"
-        },
-      );
-      aggregation.push(
-        {
-          '$addFields': { [dataIdKey]: '$_id' }
-        }
-      )
-      aggregation.push(
-        {
-          $replaceRoot: { newRoot: '$' + projectDataKey }
-        }
-      )
+      unwindProjectData(aggregation, projectDataKey)
+      // let dataIdKey = projectDataKey + "._id"
+      // // pop proponent if exists.
+      // aggregation.push(
+      //   {
+      //     '$lookup': {
+      //       "from": "epic",
+      //       "localField": projectDataKey + ".proponent",
+      //       "foreignField": "_id",
+      //       "as": projectDataKey + ".proponent"
+      //     }
+      //   });
+      // aggregation.push(
+      //   {
+      //     "$unwind": "$" + projectDataKey + ".proponent"
+      //   },
+      // );
+      // aggregation.push(
+      //   {
+      //     '$addFields': { [dataIdKey]: '$_id' }
+      //   }
+      // )
+      // aggregation.push(
+      //   {
+      //     $replaceRoot: { newRoot: '$' + projectDataKey }
+      //   }
+      // )
     }
   }
 
