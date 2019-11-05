@@ -177,10 +177,6 @@ var unwindProjectData = function (aggregation, projectDataKey, dataIdKey, projec
   // If projectLegislationYear = "" then use the legislationDefault key on the project model
   // pop proponent if exists.
   if (!projectLegislationYear || projectLegislationYear == "default") {
-    //TODO: Remove this hardcoding
-    projectDataKey = "legislation_2002"
-    dataIdKey = "legislation_2002._id"
-
     aggregation.push(
       {
         '$lookup': {
@@ -203,38 +199,8 @@ var unwindProjectData = function (aggregation, projectDataKey, dataIdKey, projec
     )
     aggregation.push(
       {
-        $replaceRoot: { newRoot: '$' + projectDataKey }
-      }
-    )
-    //Null out the projectLegislationYear
-    aggregation.push({
-      "$project": {["project.legislation_" + projectLegislationYear]: 0 }
-    });
-    //TODO: Figure out the let to pass through the default legislation to this above logic
-    // aggregation.push(
-    //   {
-    //     '$lookup': {
-    //       "from": "epic",
-    //       "let": {
-    //         projectDataKey: ["legislation_"+"$currentLegislationYear"],
-    //         projectDataProponentKey: ["legislation_"+"$currentLegislationYear" + ".proponent"],
-    //         dataIdKey: ["legislation_"+"$currentLegislationYear" + "._id"],
-    //       },
-    //       "pipeline": [{
-    //           '$match': {
-    //               "$expr": {
-    //                 "$in": ["$_id", "$$projectDataProponentKey"]
-    //               }
-    //           }
-    //         }
-    //       ],
-    //       "as": "defaultProponent"
-    //     }
-    //   });
-    aggregation.push(
-      {
         "$addFields": {
-          "project": { "$mergeObjects": ["$project", "$project.legislation_" + projectLegislationYear]},
+          "project": { "$mergeObjects": ["$project", "$project." + projectDataKey]},
        }
       });
   } else {
@@ -428,43 +394,34 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
           },
         );
       });
-      // default, need to determine currentLegislationYear
     } else if ((!projectLegislation) || projectLegislation === "default") {
-      // todo just overwrite projectDateKey?
-      // todo refactor migration, make currentLegislation value match the keys for data
-      // todo investigate if we can use $let
-      console.log("in legislation default")
       aggregation.push(
         {
-          $addFields:
-          {
-            "legislationDefault": {
+          $addFields: {
+            "default": {
               $switch: {
                 branches: [
                   { 
-                    case: { $eq: [ "$currentLegislationYear", 1996 ]},
-                    then: "legislation_1996"
+                    case: { $eq: [ '$currentLegislationYear', 'legislation_1996' ]},
+                    then: "$legislation_1996"
                   },
                   {
-                    case: { $eq: [ "$currentLegislationYear", 2002 ]},
-                    then: "legislation_2002"
+                    case: { $eq: [ '$currentLegislationYear', 'legislation_2002' ]},
+                    then: "$legislation_2002"
                   },
                   {
-                    case: { $eq: [ "$currentLegislationYear", 2018 ]},
-                    then: "legislation_2018"
+                    case: { $eq: [ "$currentLegislationYear", 'legislation_2018' ]},
+                    then: "$legislation_2018"
                   }
                 ]
-                // legis year = 1996
-                // legis year = 2002
-                // legis year = 2018
               }
             }
           }
-        },
-      )
+        }
+      );
+      
       // unwind proponents and move embedded data up to root
-      // This case will not have anything for projectDataKey, id key or year
-      unwindProjectData(aggregation, projectDataKey, dataIdKey, projectLegislationYear)
+      unwindProjectData(aggregation, "default", "default._id", projectLegislationYear)
 
     } else {
       unwindProjectData(aggregation, projectDataKey, dataIdKey, projectLegislationYear)
