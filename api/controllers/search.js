@@ -270,7 +270,7 @@ var getProjectLegislationInfo = function(legislation) {
       projectLegislationDataKey = "default_legislation";
       break;
     }
-    return {projectLegislationDataKey, projectLegislationDataKeyIdKey: projectLegislationDataKey + "._id"};
+    return {projectLegislationDataKey, projectLegislationDataIdKey: projectLegislationDataKey + "._id"};
 
 };
 var searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or) {
