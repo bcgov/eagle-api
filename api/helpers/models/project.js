@@ -29,7 +29,7 @@ var projectDataDefinition = {
   legislation             : { type: String, default: '' },
   legislationDefault      : { type: Number},
   // TODO: Look at any more legislation year data we need on this model
-  legislationYear         : { type: String, default: '' },
+  legislationYear         : { type: Number, default: 0 },
 
 
   //Everything else
@@ -106,11 +106,12 @@ var projectDataDefinition = {
 
 // actual project schema
 var projectDefinition = {
-  currentLegislationYear: Number,
+  currentLegislationYear: String,
   legislationYearList: [ Number ],
   legislation_1996: projectDataDefinition,
   legislation_2002: projectDataDefinition,
-  legislation_2018: projectDataDefinition
+  legislation_2018: projectDataDefinition,
+  default_legislation: projectDataDefinition
 }
 
 var buildToNature = {};
