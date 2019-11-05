@@ -111,7 +111,6 @@ var projectDefinition = {
   legislation_1996: projectDataDefinition,
   legislation_2002: projectDataDefinition,
   legislation_2018: projectDataDefinition,
-  default_legislation: projectDataDefinition
 }
 
 var buildToNature = {};
