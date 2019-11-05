@@ -485,7 +485,8 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
         "preserveNullAndEmptyArrays": true
       }
     });
-    if (schemaName === "Document") {
+    //TODO: Might need to apply this merge to all project calls. This is to get rid of all the legislation keys
+    if (schemaName === "Document" || schemaName === "RecentActivity") {
         // Here we have documents with a nested Project and a nested legislation key
       // We need to merge the legislation key with the Project while preserving the _id and the rest of the document info
       // Something like this '$mergeObjects': [{"document.Project"}, {"document.Project.legislation_"+projectLegislationYear}]
@@ -497,11 +498,11 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
       });
       // Unset the legislation specific key
       // TODO: Abstract this as we will need to do this a lot
-      // aggregation.push({
-      //   "$project": {["project." + projectLegislationDataKey]: 0 }
-      // });
+      aggregation.push({
+        "$project": {["project." + projectLegislationDataKey]: 0 }
+      });
       
-    }
+    } 
   }
 
   if (populate === true && schemaName === 'Inspection') {
