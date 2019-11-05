@@ -197,13 +197,12 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
       {
         '$addFields': { [projectLegislationDataIdKey]: '$_id' }
       }
-    )
+    );
     aggregation.push(
       {
-        "$addFields": {
-          "project": { "$mergeObjects": ["$project", "$project." + projectLegislationDataKey]},
-       }
-      });
+        "$replaceRoot": { newRoot: "$default" }
+      }
+    );
   } else {
     aggregation.push(
       {
@@ -223,14 +222,14 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
       {
         '$addFields': { [projectLegislationDataIdKey]: '$_id'  }
       }
-    )
+    );
     aggregation.push(
       {
         "$addFields": {
           "project": { "$mergeObjects": ["$project", "$project.legislation_" + projectLegislation]},
        }
       }
-    )
+    );
     //Null out the projectLegislationYear
     aggregation.push({
       "$project": {["project.legislation_" + projectLegislation]: 0 }
