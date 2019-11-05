@@ -215,7 +215,7 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
       });
     aggregation.push(
       {
-        "$unwind": ["$" + projectLegislationDataKey + ".proponent"]
+        "$unwind": "$" + projectLegislationDataKey + ".proponent"
       },
     );
     aggregation.push(
@@ -226,13 +226,16 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
     aggregation.push(
       {
         "$addFields": {
-          "project": { "$mergeObjects": ["$project", "$project.legislation_" + projectLegislation]},
+          "project": { "$mergeObjects": ["$project",  "$" + projectLegislationDataKey]},
        }
       }
     );
     //Null out the projectLegislationYear
     aggregation.push({
       "$project": {["project.legislation_" + projectLegislation]: 0 }
+    });
+    aggregation.push({
+      "$project": {[projectLegislationDataKey]: 0 }
     });
   }
 }
