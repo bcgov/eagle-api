@@ -127,9 +127,11 @@ exports.up = function(db) {
                 },
                 {
                   $set: {
-                    currentLegislationYear: 1996,
+                    currentLegislationYear: "legislation_1996",
+                    legislationYear: 1996,
                     legislationYearList: [ 1996 ],
-                    legislation_1996: currentProjectData
+                    legislation_1996: currentProjectData,
+                    default_legislation: currentProjectData
                   }
                 }
               );
@@ -142,9 +144,11 @@ exports.up = function(db) {
                 },
                 {
                   $set: {
-                    currentLegislationYear: 2002,
+                    currentLegislationYear: "legislation_2002",
+                    legislationYear: 2002,
                     legislationYearList: [ 2002 ],
-                    legislation_2002: currentProjectData
+                    legislation_2002: currentProjectData,
+                    default_legislation: currentProjectData
                   }
                 }
               );
