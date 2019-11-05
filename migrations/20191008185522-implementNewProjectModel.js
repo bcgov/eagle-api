@@ -41,16 +41,22 @@ exports.up = function(db) {
 
 
             // get the legislation for this project
-            let legislationYear = item.legislation
+            let legislationString = item.legislation
             
             // change the schema name from project to projectData
             let projectId = item._id
 
             // new projects since legislation was populated
             if (item.name === "Giant Copper" || item.name === "Kutcho") {
-              legislationYear = '2002 Environmental Assessment Act';
+              legislationString = '2002 Environmental Assessment Act';
             }
 
+            let legislation_year;
+            if (legislationString === "1996 Environmental Assessment Act"){
+              legislation_year = 1996
+            } else if (legislationString === "2002 Environmental Assessment Act") {
+              legislation_year = 2002
+            }
             //   create a new LegislationSpecificProjectData object with all the same fields as in the current projects
             var currentProjectData = {
               CEAAInvolvement         : item.CEAAInvolvement,
@@ -73,7 +79,8 @@ exports.up = function(db) {
               responsibleEPDEmail     : item.responsibleEPDEmail,
               responsibleEPDPhone     : item.responsibleEPDPhone,
               type                    : item.type,
-              legislation             : legislationYear,
+              legislation             : legislationString,
+              legislationYear         : legislation_year,
               addedBy                 : item.addedBy,
               build                   : item.build,
               CEAALink                : item.CEAALink,
@@ -118,7 +125,7 @@ exports.up = function(db) {
             };
 
             // add new fields to project
-            if (legislationYear === "1996 Environmental Assessment Act"){
+            if (legislationString === "1996 Environmental Assessment Act"){
               // console.log("found 1996 project")
               count1996++;
               p.update(
@@ -127,13 +134,14 @@ exports.up = function(db) {
                 },
                 {
                   $set: {
-                    currentLegislationYear: 1996,
+                    currentLegislationYear: "legislation_1996",
                     legislationYearList: [ 1996 ],
-                    legislation_1996: currentProjectData
+                    legislation_1996: currentProjectData,
+                    default_legislation: currentProjectData
                   }
                 }
               );
-            } else if (legislationYear === "2002 Environmental Assessment Act") {
+            } else if (legislationString === "2002 Environmental Assessment Act") {
               // console.log("found 2002 project")
               count2002++;
               p.update(
@@ -142,9 +150,10 @@ exports.up = function(db) {
                 },
                 {
                   $set: {
-                    currentLegislationYear: 2002,
+                    currentLegislationYear: "legislation_2002",
                     legislationYearList: [ 2002 ],
-                    legislation_2002: currentProjectData
+                    legislation_2002: currentProjectData,
+                    default_legislation: currentProjectData
                   }
                 }
               );
