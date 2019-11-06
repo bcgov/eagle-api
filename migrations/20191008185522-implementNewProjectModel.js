@@ -137,7 +137,6 @@ exports.up = function(db) {
                     currentLegislationYear: "legislation_1996",
                     legislationYearList: [ 1996 ],
                     legislation_1996: currentProjectData,
-                    default_legislation: currentProjectData
                   }
                 }
               );
@@ -153,7 +152,6 @@ exports.up = function(db) {
                     currentLegislationYear: "legislation_2002",
                     legislationYearList: [ 2002 ],
                     legislation_2002: currentProjectData,
-                    default_legislation: currentProjectData
                   }
                 }
               );
