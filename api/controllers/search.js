@@ -199,7 +199,7 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
     );
     aggregation.push(
       {
-        "$replaceRoot": { newRoot: projectLegislationDataKey }
+        "$replaceRoot": { newRoot:  "$" + projectLegislationDataKey }
       }
     );
   } else {
