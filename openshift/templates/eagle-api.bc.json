@@ -2,7 +2,7 @@
   "kind": "Template",
   "apiVersion": "v1",
   "metadata": {
-    "name": "generic-node-s2i-build",
+    "name": "eagle-api",
     "annotations": {
       "description": "",
       "tags": "nodejs",
@@ -47,7 +47,7 @@
             "from": {
               "kind": "ImageStreamTag",
               "namespace": "${S2I_NAMESPACE}",
-              "name": "nodejs:6"
+              "name": "nodejs:${NODEJS_VER}"
             }
           }
         },
@@ -89,13 +89,19 @@
       "displayName": "Name",
       "description": "The name assigned to all of the frontend objects defined in this template.",
       "required": true,
-      "value": "nodejs-api"
+      "value": "eagle-api"
     },
     {
       "name": "S2I_NAMESPACE",
       "displayName": "Namespace",
       "description": "The OpenShift Namespace where the S2I ImageStream resides.",
       "value": "openshift"
+    },
+    {
+      "name": "NODEJS_VER",
+      "displayName": "Node.js Version Number",
+      "description": "The version number of Node.js that matches the version in project file .tool-versions",
+      "value": "8"
     },
     {
       "name": "SOURCE_REPOSITORY_URL",
@@ -106,7 +112,8 @@
     {
       "name": "SOURCE_REPOSITORY_REF",
       "displayName": "Git Reference",
-      "description": "Set this to a branch name, tag or other ref of your repository if you are not using the default branch."
+      "description": "Set this to a branch name, tag or other ref of your repository if you are not using the default branch.",
+      "value": "develop"
     },
     {
       "name": "CONTEXT_DIR",
