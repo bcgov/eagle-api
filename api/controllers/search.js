@@ -172,7 +172,6 @@ var handleDateEndItem = function (expArray, field, entry) {
   }
 };
 
-//TODO: use the legislationDefault field on the project
 var unwindProjectData = function (aggregation, projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation) {
   // If projectLegislationYear = "" then use the legislationDefault key on the project model
   // pop proponent if exists.
@@ -200,7 +199,7 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
     );
     aggregation.push(
       {
-        "$replaceRoot": { newRoot: "$default" }
+        "$replaceRoot": { newRoot: projectLegislationDataKey }
       }
     );
   } else {
@@ -260,6 +259,63 @@ var getProjectLegislationInfo = function(legislation) {
     return {projectLegislationDataKey, projectLegislationDataIdKey: projectLegislationDataKey + "._id"};
 
 };
+
+// TODO: make more generic
+var setProjectDefault = function(aggregation, projectOnly) {
+  if (projectOnly) {
+    // variables are tricky for fieldpaths ie. "default"
+    aggregation.push(
+      {
+        $addFields: {
+          "default": {
+            $switch: {
+              branches: [
+                { 
+                  case: { $eq: [ "$currentLegislationYear", 'legislation_1996' ]},
+                  then: "$legislation_1996"
+                },
+                {
+                  case: { $eq: [ "$currentLegislationYear", 'legislation_2002' ]},
+                  then: "$legislation_2002"
+                },
+                {
+                  case: { $eq: [ "$currentLegislationYear", 'legislation_2018' ]},
+                  then: "$legislation_2018"
+                }
+              ]
+            }
+          }
+        }
+      }
+    );
+  } else {
+    aggregation.push(
+      {
+        $addFields: {
+          'project.default': {
+            $switch: {
+              branches: [
+                { 
+                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_1996' ]},
+                  then: "$project.legislation_1996"
+                },
+                {
+                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2002' ]},
+                  then: "$project.legislation_2002"
+                },
+                {
+                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2018' ]},
+                  then: "$project.legislation_2018"
+                }
+              ]
+            }
+          }
+        }
+      }
+    );
+  }
+}
+
 var searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or) {
   var properties = undefined;
   if (project) {
@@ -396,34 +452,9 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
         );
       });
     } else if ((!projectLegislation) || projectLegislation === "default") {
-      aggregation.push(
-        {
-          $addFields: {
-            "default": {
-              $switch: {
-                branches: [
-                  { 
-                    case: { $eq: [ '$currentLegislationYear', 'legislation_1996' ]},
-                    then: "$legislation_1996"
-                  },
-                  {
-                    case: { $eq: [ '$currentLegislationYear', 'legislation_2002' ]},
-                    then: "$legislation_2002"
-                  },
-                  {
-                    case: { $eq: [ "$currentLegislationYear", 'legislation_2018' ]},
-                    then: "$legislation_2018"
-                  }
-                ]
-              }
-            }
-          }
-        }
-      );
-      
+      setProjectDefault(aggregation, true)
       // unwind proponents and move embedded data up to root
       unwindProjectData(aggregation, "default", "default._id", projectLegislation)
-
     } else {
       unwindProjectData(aggregation, projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation)
     }
@@ -488,18 +519,24 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
     //TODO: Might need to apply this merge to all project calls. This is to get rid of all the legislation keys
     if (schemaName === "Document" || schemaName === "RecentActivity") {
         // Here we have documents with a nested Project and a nested legislation key
+      setProjectDefault(aggregation, false)
+
       // We need to merge the legislation key with the Project while preserving the _id and the rest of the document info
-      // Something like this '$mergeObjects': [{"document.Project"}, {"document.Project.legislation_"+projectLegislationYear}]
-      //TODO: figure out how to get year for default
+      // TODO: Abstract these types of stages, as we will need to do this a lot")
       aggregation.push({
         "$addFields": {
-          "project": { "$mergeObjects": ["$project", "$project." + projectLegislationDataKey]},
+          "project": { "$mergeObjects": ["$project", "$project.default"] },
        }
       });
-      // Unset the legislation specific key
-      // TODO: Abstract this as we will need to do this a lot
+      // Unset the nested legislation data keys
       aggregation.push({
-        "$project": {["project." + projectLegislationDataKey]: 0 }
+        "$project": {["project.legislation_2002"]: 0 }
+      });
+      aggregation.push({
+        "$project": {["project.legislation_1996"]: 0 }
+      });
+      aggregation.push({
+        "$project": {["project.default"]: 0 }
       });
       
     } 
