@@ -27,8 +27,9 @@ var projectDataDefinition = {
   responsibleEPDPhone     : { type: String, default: '' },
   type                    : { type: String, default: '' },
   legislation             : { type: String, default: '' },
+  legislationDefault      : { type: Number},
   // TODO: Look at any more legislation year data we need on this model
-  legislationYear         : { type: Number, default: 0 },
+  legislationYear         : { type: String, default: '' },
 
 
   //Everything else
@@ -110,7 +111,6 @@ var projectDefinition = {
   legislation_1996: projectDataDefinition,
   legislation_2002: projectDataDefinition,
   legislation_2018: projectDataDefinition,
-  default_legislation: projectDataDefinition
 }
 
 var buildToNature = {};
