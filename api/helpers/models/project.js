@@ -27,9 +27,7 @@ var projectDataDefinition = {
   responsibleEPDPhone     : { type: String, default: '' },
   type                    : { type: String, default: '' },
   legislation             : { type: String, default: '' },
-  legislationDefault      : { type: Number},
-  // TODO: Look at any more legislation year data we need on this model
-  legislationYear         : { type: String, default: '' },
+  legislationYear         : { type: Number },
 
 
   //Everything else
