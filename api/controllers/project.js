@@ -775,6 +775,8 @@ exports.protectedPut = async function (args, res, next) {
 
   var Project = mongoose.model('Project');
   var projectObj = args.swagger.params.ProjObject.value;
+
+  // get full project object to retain existing data
   var fullProjectObject = await Project.findById(mongoose.Types.ObjectId(objId));
 
   var projectLegislationYear;
@@ -790,10 +792,8 @@ exports.protectedPut = async function (args, res, next) {
 
   if (projectLegislationYear == 2018) {
     filteredData = fullProjectObject.legislation_2018;
-
   } else if (projectLegislationYear == 2002) {
     filteredData = fullProjectObject.legislation_2002;
-
   } else if (projectLegislationYear == 1996) {
     filteredData = fullProjectObject.legislation_1996;
   }
@@ -850,10 +850,8 @@ exports.protectedPut = async function (args, res, next) {
 
   if (projectLegislationYear == 2018) {
     fullProjectObject.legislation_2018 = filteredData;
-
   } else if (projectLegislationYear == 2002) {
     fullProjectObject.legislation_2002 = filteredData;
-
   } else if (projectLegislationYear == 1996) {
     fullProjectObject.legislation_1996 = filteredData;
   }
