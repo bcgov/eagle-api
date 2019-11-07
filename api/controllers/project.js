@@ -407,6 +407,9 @@ exports.protectedPost = function (args, res, next) {
     project.legislation_1996 = projectData;
   }
 
+  // Currently this will save based on the entire project model.
+  // Meaning there will be three project legislation keys ( legislation_1996, legislation_2002, legislation_2018) only one of which will be populated with data.
+  // The other two keys will be full of null values, as well as any other fields that are in the project model and are not explicitly defined above.
   project.save()
     .then(function (theProject) {
       Utils.recordAction('Post', 'Project', args.swagger.params.auth_payload.preferred_username, theProject._id);
