@@ -365,7 +365,7 @@ exports.protectedDelete = function (args, res, next) {
 exports.protectedPost = function (args, res, next) {
   var obj = args.swagger.params.project.value;
 
-  // default project creation is set to 2002 right now for backwards compatibility with other apps tat use this api
+  // default project creation is set to 2002 right now for backwards compatibility with other apps that use this api
   var projectLegislationYear = obj.legislationYear ? obj.legislationYear : 2002;
 
   defaultLog.info("Incoming new object:", obj);
@@ -385,12 +385,12 @@ exports.protectedPost = function (args, res, next) {
     projectData = project.legislation_1996;
   }
 
-  project.currentLegislationYear = projectLegislationYear;
+  project.currentLegislationYear = "legislation_" + projectLegislationYear;
   project.legislationYearList.push(projectLegislationYear);
 
-  projectData.proponent = mongoose.Types.ObjectId(obj.proponent)
-  projectData.responsibleEPDId = mongoose.Types.ObjectId(obj.responsibleEPDId)
-  projectData.projectLeadId = mongoose.Types.ObjectId(obj.projectLeadId)
+  projectData.proponent = mongoose.Types.ObjectId(obj.proponent);
+  projectData.responsibleEPDId = mongoose.Types.ObjectId(obj.responsibleEPDId);
+  projectData.projectLeadId = mongoose.Types.ObjectId(obj.projectLeadId);
 
   // Define security tag defaults
   projectData.read = ['sysadmin', 'staff'];
@@ -775,15 +775,29 @@ exports.protectedPut = async function (args, res, next) {
 
   var Project = mongoose.model('Project');
   var projectObj = args.swagger.params.ProjObject.value;
-  var projectLegislationYear
+  var fullProjectObject = await Project.findById(mongoose.Types.ObjectId(objId));
+
+  var projectLegislationYear;
+  var filteredData;
+
   // if project legislation doesn't exist then look up current legislation for the project
   if (projectObj.legislationYear) {
     projectLegislationYear = projectObj.legislationYear;
   } else {
     // look up the current project legislation
+    projectLegislationYear = fullProjectObject.currentLegislationYear.split("_")[1];
   }
 
-  var filteredData = {};
+  if (projectLegislationYear == 2018) {
+    filteredData = fullProjectObject.legislation_2018;
+
+  } else if (projectLegislationYear == 2002) {
+    filteredData = fullProjectObject.legislation_2002;
+
+  } else if (projectLegislationYear == 1996) {
+    filteredData = fullProjectObject.legislation_1996;
+  }
+
 
   // console.log("Incoming updated object:", projectObj);
   console.log("*****************");
@@ -834,19 +848,17 @@ exports.protectedPut = async function (args, res, next) {
   console.log("Updating with:", filteredData);
   console.log("--------------------------");
 
-  var filteredProjectObj = {};
-
   if (projectLegislationYear == 2018) {
-    filteredProjectObj.legislation_2018 = filteredData;
+    fullProjectObject.legislation_2018 = filteredData;
+
   } else if (projectLegislationYear == 2002) {
-    filteredProjectObj.legislation_2002 = filteredData;
+    fullProjectObject.legislation_2002 = filteredData;
+
   } else if (projectLegislationYear == 1996) {
-    filteredProjectObj.legislation_1996 = filteredData;
-  } else {
-    // use the current project object
+    fullProjectObject.legislation_1996 = filteredData;
   }
 
-  var doc = await Project.findOneAndUpdate({ _id: mongoose.Types.ObjectId(objId) }, filteredProjectObj, { upsert: false, new: true });
+  var doc = await Project.findOneAndUpdate({ _id: mongoose.Types.ObjectId(objId) }, fullProjectObject, { upsert: false, new: true });
   // Project.update({ _id: mongoose.Types.ObjectId(objId) }, { $set: updateObj }, function (err, o) {
   if (doc) {
     Utils.recordAction('Put', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
