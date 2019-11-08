@@ -37,6 +37,10 @@
       "hash": "/KqbekI++Be3x8VlW74nKBPjJ8k="
     },
     {
+      "name": "notificationProject.js",
+      "hash": "xCtXM8oglu0v0tHx2M9mA+1HuOo="
+    },
+    {
       "name": "organization.js",
       "hash": "dZentKVi0ZM5unhcnyvB8ga9m08="
     },
@@ -101,6 +105,10 @@
     {
       "name": "list_factory.js",
       "hash": "wtgXVaxKci2TKRGnj1b1V/3DhJA="
+    },
+    {
+      "name": "notification_project_factory.js",
+      "hash": "c3sslj8/J6cEwGfAi4zzVb9SfHc="
     },
     {
       "name": "organization_factory.js",
