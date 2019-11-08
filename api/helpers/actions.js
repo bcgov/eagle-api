@@ -36,8 +36,7 @@ exports.unPublish = async function (o, isProject = false) {
         // Object wasn't already published?
         let newReadArray;
         if (isProject && o[o.currentLegislationYear].read.includes('public')) {
-          newReadArray = o[o.currentLegislationYear].read;
-          newReadArray.push('public');
+          newReadArray = o[o.currentLegislationYear].read.filter(perms => perms !== 'public');
           o[o.currentLegislationYear].read = newReadArray;
           resolve(o.save());
         } else if (o.read.includes('public')) {
