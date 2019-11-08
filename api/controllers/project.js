@@ -385,6 +385,11 @@ exports.protectedPost = function (args, res, next) {
     projectData = project.legislation_1996;
   }
 
+  if (!project) {
+    defaultLog.info("Couldn't find that project object!");
+    return Actions.sendResponse(res, 400, "Error loading project data");
+  }
+
   project.currentLegislationYear = "legislation_" + projectLegislationYear;
   project.legislationYearList.push(projectLegislationYear);
 
@@ -801,7 +806,10 @@ exports.protectedPut = async function (args, res, next) {
     filteredData = fullProjectObject.legislation_1996;
   }
 
-
+  if (!filteredData) {
+    defaultLog.info("Couldn't find that object!");
+    return Actions.sendResponse(res, 404, {});
+  }
   // console.log("Incoming updated object:", projectObj);
   console.log("*****************");
 
