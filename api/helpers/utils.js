@@ -229,3 +229,22 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
         .then(resolve, reject);
     });
 };
+
+exports.filterData = function (collection, data, roles) {
+  if (roles.includes('sysadmin') || roles.includes('staff')) {
+    return data;
+  }
+
+  // We don't return these fields for non-admins.
+  if (collection === 'Project') {
+    _.each(data, function (item) {
+        delete item.review180Start;
+        delete item.review45Start;
+        delete item.reviewSuspensions;
+        delete item.reviewExtensions;
+    });
+    return data;
+  } else {
+    return data;
+  }
+}
