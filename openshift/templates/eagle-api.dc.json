@@ -17,7 +17,7 @@
       "kind": "PersistentVolumeClaim",
       "apiVersion": "v1",
       "metadata": {
-        "name": "${DATABASE_SERVICE_NAME}data"
+        "name": "${DATABASE_SERVICE_NAME}-data"
       },
       "spec": {
         "accessModes": [
@@ -96,6 +96,7 @@
       "apiVersion": "v1",
       "metadata": {
         "name": "${NAME}",
+        "app": "${GROUP_NAME}",
         "annotations": {
           "description": "Defines how to deploy the application server"
         }
@@ -158,8 +159,34 @@
                     "value": "${DATABASE_NAME}"
                   },
                   {
+                    "name": "MONGODB_SERVICE_HOST",
+                    "value": "${DATABASE_SERVICE_NAME}"
+                  },
+                  {
                     "name": "API_HOSTNAME",
                     "value": "${APPLICATION_DOMAIN}"
+                  },
+                  {
+                    "name": "MINIO_HOST",
+                    "value": "${MINIO_HOST}"
+                  },
+                  {
+                    "name": "MINIO_ACCESS_KEY",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "key": "MINIO_ACCESS_KEY",
+                            "name": "${MINIO_SECRET_NAME}"
+                        }
+                    }
+                  },
+                  {
+                      "name": "MINIO_SECRET_KEY",
+                      "valueFrom": {
+                          "secretKeyRef": {
+                              "key": "MINIO_SECRET_KEY",
+                              "name": "${MINIO_SECRET_NAME}"
+                          }
+                      }
                   }
                 ],
                 "readinessProbe": {
@@ -186,7 +213,7 @@
                 "volumeMounts": [
                   {
                     "name": "${NAME}-docs",
-                    "mountPath": "${DOCUMENT_MOUNT_PATH}"
+                    "mountPath": "/opt/app-root/src/uploads"
                   }
                 ]
               }
@@ -230,6 +257,7 @@
       "apiVersion": "v1",
       "metadata": {
         "name": "${DATABASE_SERVICE_NAME}",
+        "app": "${GROUP_NAME}",
         "annotations": {
           "description": "Defines how to deploy the database"
         }
@@ -332,7 +360,7 @@
               {
                 "name": "${DATABASE_SERVICE_NAME}-data",
                 "persistentVolumeClaim": {
-                  "claimName": "${DATABASE_SERVICE_NAME}data"
+                  "claimName": "${DATABASE_SERVICE_NAME}-data"
                 }
               }
             ]
@@ -346,6 +374,13 @@
       "name": "NAME",
       "displayName": "Name",
       "description": "The name assigned to all of the frontend objects defined in this template.",
+      "required": true,
+      "value": "eagle-api"
+    },
+    {
+      "name": "GROUP_NAME",
+      "displayName": "Group Name",
+      "description": "The name to group all of the frontend objects defined in this template.",
       "required": true,
       "value": "eagle-api"
     },
@@ -384,6 +419,18 @@
       "displayName": "Application Hostname Path",
       "description": "The path for this service.",
       "value": "/api"
+    },
+    {
+      "name": "MINIO_HOST",
+      "displayName": "Minio Hostname",
+      "description": "The exposed hostname to route to the MINIO service",
+      "value": "minio-eagle-dev-esm-dev.pathfinder.gov.bc.ca"
+    },
+    {
+      "name": "MINIO_SECRET_NAME",
+      "displayName": "Name of the Minio secret",
+      "description": "The name of the secrets file for Minio",
+      "value": "minio-esm-dev"
     },
     {
       "name": "DATABASE_SERVICE_NAME",
