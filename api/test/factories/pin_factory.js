@@ -17,7 +17,7 @@ factory.define(factoryName, Pin, buildOptions => {
     , city               : faker.random.arrayElement(factory_helper.getBcCities())
     , province           : "BC"
     , country            : "Canada"
-    , postalCode         : chance.postal()
+    , postalCode         : factory_helper.generateFakePostal()
     , phone              : faker.phone.phoneNumberFormat(1)
     , fax                : faker.phone.phoneNumberFormat(1)
     , www                : faker.internet.url()

@@ -514,15 +514,22 @@ exports.protectedPost = async function (args, res, next) {
                 if (args.swagger.params.eaoStatus.value == 'Published') {
                   doc.read.push('public');
                 }
+              } else {
+                doc.eaoStatus = null;
               }
-              doc.milestone = mongoose.Types.ObjectId(args.swagger.params.milestone.value);
-              doc.type = mongoose.Types.ObjectId(args.swagger.params.type.value);
-              doc.documentAuthor = args.swagger.params.documentAuthor.value;
-              doc.documentAuthorType = mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value);
+
+              if (args.swagger.params.publish && args.swagger.params.publish.value === true) {
+                doc.read.push('public');
+              }
+
+              doc.milestone = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null;
+              doc.type = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.type.value) : null;
+              doc.documentAuthor = args.swagger.params.projectPhase.value ? args.swagger.params.documentAuthor.value : null;
+              doc.documentAuthorType = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null;
               doc.dateUploaded = args.swagger.params.dateUploaded.value;
               doc.datePosted = args.swagger.params.datePosted.value;
               doc.description = args.swagger.params.description.value;
-              doc.projectPhase = mongoose.Types.ObjectId(args.swagger.params.projectPhase.value);
+              doc.projectPhase = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null;
               // Update who did this?
               console.log('unlink');
               doc.save()
@@ -611,7 +618,8 @@ exports.protectedPut = async function (args, res, next) {
   obj.dateUploaded = args.swagger.params.dateUploaded.value;
   obj.datePosted = args.swagger.params.datePosted.value;
   obj.description = args.swagger.params.description.value;
-  obj.keywords = args.swagger.params.keywords.value;
+
+  obj.keywords = args.swagger.params.keywords ? args.swagger.params.keywords.value : null;
 
   obj.eaoStatus = args.swagger.params.eaoStatus.value;
   if (args.swagger.params.eaoStatus.value === 'Published') {
