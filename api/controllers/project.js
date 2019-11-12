@@ -887,7 +887,7 @@ exports.protectedPublish = function (args, res, next) {
   Project.findOne({ _id: objId }, function (err, o) {
     if (o) {
       defaultLog.info("o:", o);
-      return Actions.publish(o, true)
+      return Actions.publish(o)
         .then(function (published) {
           Utils.recordAction('Publish', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
           return Actions.sendResponse(res, 200, published);
@@ -909,8 +909,7 @@ exports.protectedUnPublish = function (args, res, next) {
   Project.findOne({ _id: objId }, function (err, o) {
     if (o) {
       defaultLog.info("o:", o);
-      // Here need to add in the legislation key because read is not on the root anymore
-      return Actions.unPublish(o, true)
+      return Actions.unPublish(o)
         .then(function (unpublished) {
           Utils.recordAction('Put', 'Unpublish', args.swagger.params.auth_payload.preferred_username, objId);
           return Actions.sendResponse(res, 200, unpublished);

@@ -2,17 +2,12 @@
 var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 
-exports.publish = async function (o, isProject = false) {
+exports.publish = async function (o) {
     return new Promise(function (resolve, reject) {
       // Need project specific logic to handle legislation keys
         // Object wasn't already published?
         let newReadArray;
-        if (isProject && !o[o.currentLegislationYear].read.includes('public')) {
-          newReadArray = o[o.currentLegislationYear].read;
-          newReadArray.push('public');
-          o[o.currentLegislationYear].read = newReadArray;
-          resolve(o.save());
-        } else if (!o.read.includes('public')) {
+        if (!o.read.includes('public')) {
           // Remove publish, save then return.
             newReadArray = o.read;
             newReadArray.push('public');
@@ -30,16 +25,12 @@ exports.isPublished = async function (o) {
     });
 };
 
-exports.unPublish = async function (o, isProject = false) {
+exports.unPublish = async function (o) {
     return new Promise(function (resolve, reject) {
       // Need project specific logic to handle legislation keys
         // Object wasn't already published?
         let newReadArray;
-        if (isProject && o[o.currentLegislationYear].read.includes('public')) {
-          newReadArray = o[o.currentLegislationYear].read.filter(perms => perms !== 'public');
-          o[o.currentLegislationYear].read = newReadArray;
-          resolve(o.save());
-        } else if (o.read.includes('public')) {
+        if (o.read.includes('public')) {
           newReadArray = o.read.filter(perms => perms !== 'public');
           o.read = newReadArray;
           // Remove publish, save then return.

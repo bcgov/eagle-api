@@ -214,7 +214,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
 
         !_.isEmpty(sort) ? { $sort: sort } : null,
 
-        // sort ? { $project: projection } : null, // Reset the projection just in case the sortWarmUp changed it.
+        sort ? { $project: projection } : null, // Reset the projection just in case the sortWarmUp changed it.
 
         // Do this only if they ask for it.
         count && {
