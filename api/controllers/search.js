@@ -567,7 +567,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
     );
   }
 
-  if (populate === true && collection === 'NotificationProject') {
+  if (populate === true && schemaName === 'NotificationProject') {
     aggregation.push(
       {
         $lookup: {
@@ -664,7 +664,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
       .collation(collation)
       .exec()
       .then(function (data) {
-        resolve(Utils.filterData(collection, data, roles));
+        resolve(Utils.filterData(schemaName, data, roles));
       }, reject);
   });
 };
