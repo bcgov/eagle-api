@@ -495,7 +495,7 @@
       "name": "APP_IMAGE_NAMESPACE",
       "displayName": "Namespace containing application images.",
       "description": "The tools namespace where builds occur and images are available to pull from.",
-      "value": "esm",
+      "value": "your-tools-namespace",
       "required": true
     },
     {
