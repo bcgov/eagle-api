@@ -249,7 +249,7 @@
               "from": {
                 "kind": "ImageStreamTag",
                 "namespace": "${MONGO_IMAGE_NAMESPACE}",
-                "name": "mongodb:3.2"
+                "name": "mongodb:${MONGO_VER}"
               }
             }
           },
@@ -356,6 +356,12 @@
       "value": "openshift"
     },
     {
+      "name": "MONGO_VER",
+      "displayName": "Mongo Version Number",
+      "description": "The version number of Mongo that matches the version in project file package.json",
+      "value": "3.6"
+    },
+    {
       "name": "MEMORY_LIMIT",
       "displayName": "Memory Limit",
       "description": "Maximum amount of memory the Node.js container can use.",
@@ -442,7 +448,7 @@
       "name": "APP_IMAGE_NAMESPACE",
       "displayName": "Namespace containing application images.",
       "description": "Namespace containing application images.",
-      "value": "eagle-tools",
+      "value": "esm",
       "required": true
     },
     {

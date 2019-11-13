@@ -28,7 +28,7 @@ factory.define(factoryName, User, buildOptions => {
     , city                    : faker.random.arrayElement(factory_helper.getBcCities())
     , province                : "BC"
     , country                 : "Canada"
-    , postalCode              : chance.postal()
+    , postalCode              : factory_helper.generateFakePostal()
     , notes                   : faker.random.arrayElement(["", faker.lorem.paragraph()])
     , read                    : faker.random.arrayElement(['["public"]', '["sysadmin"]'])
     , write                   : faker.random.arrayElement(['["public"]', '["sysadmin"]'])

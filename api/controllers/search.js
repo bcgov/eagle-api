@@ -567,6 +567,55 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
     );
   }
 
+  if (populate === true && schemaName === 'NotificationProject') {
+    aggregation.push(
+      {
+        $lookup: {
+          from: 'epic',
+          as: 'documents',
+          let: { project: "$_id", schema: 'Document' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$project', '$$project'] },
+                    { $eq: ['$_schemaName', 'Document'] }
+                  ]
+                }
+              }
+            },
+            {
+              $redact: {
+                $cond: {
+                  if: {
+                    // This way, if read isn't present, we assume public no roles array.
+                    $and: [
+                      { $cond: { if: "$read", then: true, else: false } },
+                      {
+                        $anyElementTrue: {
+                          $map: {
+                            input: "$read",
+                            as: "fieldTag",
+                            in: { $setIsSubset: [["$$fieldTag"], ['public']] }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  then: "$$KEEP",
+                  else: {
+                    $cond: { if: "$read", then: "$$PRUNE", else: "$$DESCEND" }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    );
+  }
+
   aggregation.push({
     $redact: {
       $cond: {
@@ -615,7 +664,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
       .collation(collation)
       .exec()
       .then(function (data) {
-        resolve(data);
+        resolve(Utils.filterData(schemaName, data, roles));
       }, reject);
   });
 };
@@ -779,6 +828,11 @@ var executeQuery = async function (args, res, next) {
           delete item.author;
         }
       });
+    }
+
+    if (args.swagger.params._schemaName.value === 'Project') {
+      // If we are a project, and we are not authed, we need to sanitize some fields.
+      data = Utils.filterData(args.swagger.params._schemaName.value, data, roles);
     }
     return Actions.sendResponse(res, 200, data);
   } else {
