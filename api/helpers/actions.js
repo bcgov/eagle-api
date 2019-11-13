@@ -4,15 +4,17 @@ var defaultLog = require('winston').loggers.get('default');
 
 exports.publish = async function (o) {
     return new Promise(function (resolve, reject) {
+      // Need project specific logic to handle legislation keys
         // Object wasn't already published?
+        let newReadArray;
         if (!o.read.includes('public')) {
-            var newReadArray = o.read;
+          // Remove publish, save then return.
+            newReadArray = o.read;
             newReadArray.push('public');
             o.read = newReadArray;
-            // Remove publish, save then return.
             resolve(o.save());
         } else {
-            resolve(o);
+          resolve(o);
         }
     });
 };
@@ -25,12 +27,14 @@ exports.isPublished = async function (o) {
 
 exports.unPublish = async function (o) {
     return new Promise(function (resolve, reject) {
+      // Need project specific logic to handle legislation keys
         // Object wasn't already published?
+        let newReadArray;
         if (o.read.includes('public')) {
-            var newReadArray = o.read.filter(perms => perms !== 'public');
-            o.read = newReadArray;
-            // Remove publish, save then return.
-            resolve(o.save());
+          newReadArray = o.read.filter(perms => perms !== 'public');
+          o.read = newReadArray;
+          // Remove publish, save then return.
+          resolve(o.save());
         } else {
             resolve(o);
         }

@@ -126,8 +126,37 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
         {
             '$match': query
         },
+        (modelType === 'Project' || populateProject) && {
+          $addFields: {
+            "default": {
+              $switch: {
+                branches: [
+                  { 
+                    case: { $eq: [ "$currentLegislationYear", 'legislation_1996' ]},
+                    then: "$legislation_1996"
+                  },
+                  {
+                    case: { $eq: [ "$currentLegislationYear", 'legislation_2002' ]},
+                    then: "$legislation_2002"
+                  },
+                  {
+                    case: { $eq: [ "$currentLegislationYear", 'legislation_2018' ]},
+                    then: "$legislation_2018"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        (modelType === 'Project' || populateProject) &&  {
+          '$addFields': { "default._id": '$_id' }
+        },
+        (modelType === 'Project' || populateProject) && {
+          "$replaceRoot": { newRoot:  "$default" }
+        },
+        // Add our projection after we have reformatted project
         {
-            '$project': projection
+          '$project': projection
         },
         populateProponent && {
           '$lookup': {
