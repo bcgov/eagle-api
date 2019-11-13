@@ -940,8 +940,8 @@ exports.protectedPut = async function (args, res, next) {
   filteredData.eacDecision = projectObj.eacDecision;
   filteredData.decisionDate = projectObj.decisionDate ? new Date(projectObj.decisionDate) : null;
 
-  obj.review45Start = projectObj.review45Start  ? new Date(projectObj.review45Start) : null;
-  obj.review180Start = projectObj.review180Start  ? new Date(projectObj.review180Start) : null;
+  filteredData.review45Start = projectObj.review45Start  ? new Date(projectObj.review45Start) : null;
+  filteredData.review180Start = projectObj.review180Start  ? new Date(projectObj.review180Start) : null;
 
   try {
     filteredData.intake = {};
