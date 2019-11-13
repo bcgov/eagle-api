@@ -511,6 +511,27 @@
       "description": "URL to watch for readiness.",
       "value": "/api/docs",
       "required": true
+    },
+    {
+      "name": "PROJECT_NAMESPACE",
+      "displayName": "Project Namespace",
+      "description": "The target deployment destination project namespace where the deployment is going to be provisioned.",
+      "value": "eagle-dev",
+      "required": true
+    },
+    {
+      "name": "MINIO_DEPLOYMENT_NAME",
+      "displayName": "Minio Deployment Name",
+      "description": "The name given to the minio instance deployment.",
+      "value": "eagle-api-minio",
+      "required": true
+    },
+    {
+      "name": "DOCUMENTS_BUCKET",
+      "displayName": "Documents Bucket",
+      "description": "Minio bucket where documents will be uploaded to.",
+      "value": "uploads",
+      "required": true
     }
   ]
 }
