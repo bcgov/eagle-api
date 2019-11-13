@@ -513,20 +513,6 @@
       "required": true
     },
     {
-      "name": "PROJECT_NAMESPACE",
-      "displayName": "Project Namespace",
-      "description": "The target deployment destination project namespace where the deployment is going to be provisioned. Eg: esm-dev",
-      "value": "your-openshift-namespace",
-      "required": true
-    },
-    {
-      "name": "MINIO_DEPLOYMENT_NAME",
-      "displayName": "Minio Deployment Name",
-      "description": "The name given to the minio instance deployment.",
-      "value": "eagle-api-minio",
-      "required": true
-    },
-    {
       "name": "DOCUMENTS_BUCKET_PATH",
       "displayName": "Documents Bucket Path",
       "description": "Minio bucket where documents will be uploaded to.",
