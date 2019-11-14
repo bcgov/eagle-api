@@ -47,8 +47,7 @@ objects:
                   value: /tmp
                 - name: MINIO_DATA_DIR
                   value: /data
-              image: >-
-                ${OPENSHIFT_REGISTRY}/${MINIO_IMAGE_NAMESPACE}/${MINIO_IMAGE_NAME}:${MINIO_IMAGE_TAG}
+              image: ${OPENSHIFT_REGISTRY}/${MINIO_IMAGE_NAMESPACE}/${MINIO_IMAGE_NAME}:${MINIO_IMAGE_TAG}
               imagePullPolicy: Always
               name: ${NAME}
               ports:
@@ -163,22 +162,22 @@ parameters:
   generate: expression
   from: "[a-zA-Z0-9]{16}"
   required: true
-  - name: OPENSHIFT_REGISTRY
+- name: OPENSHIFT_REGISTRY
   displayName: Openshift Registry
   description: The location:port where the Openshift serves images from (eg 'docker-registry.default.svc:5000').
   value: 172.50.0.2:5000
   required: true
-  - name: MINIO_IMAGE_NAME
+- name: MINIO_IMAGE_NAME
   displayName: Minio Image Name
   description: The source minio image.
   value: minio
   required: true
-  - name: MINIO_IMAGE_NAMESPACE
+- name: MINIO_IMAGE_NAMESPACE
   displayName: Minio Image Namespace
   description: The source namespace of the minio image.
   value: openshift
   required: true
-  - name: MINIO_IMAGE_TAG
+- name: MINIO_IMAGE_TAG
   displayName: Minio Image Tag
   description: The tag of the minio image.
   value: stable
