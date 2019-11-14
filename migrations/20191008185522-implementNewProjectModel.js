@@ -45,6 +45,9 @@ exports.up = function(db) {
             
             // change the schema name from project to projectData
             let projectId = item._id
+            let projectRead = item.read
+            let projectWrite = item.write
+            let projectDelete = item.delete
 
             // new projects since legislation was populated
             if (item.name === "Giant Copper" || item.name === "Kutcho") {
@@ -118,10 +121,7 @@ exports.up = function(db) {
               complianceLead          : item.complianceLead,
               pins                    : item.pins,
               pinsHistory             : item.pinsHistory,
-              groups                  : item.groups,
-              read                    : item.read,
-              write                   : item.write,
-              delete                  : item.delete
+              groups                  : item.groups
             };
 
             // add new fields to project
@@ -137,6 +137,9 @@ exports.up = function(db) {
                     currentLegislationYear: "legislation_1996",
                     legislationYearList: [ 1996 ],
                     legislation_1996: currentProjectData,
+                    read: projectRead,
+                    write: projectWrite,
+                    delete: projectDelete
                   }
                 }
               );
@@ -152,6 +155,9 @@ exports.up = function(db) {
                     currentLegislationYear: "legislation_2002",
                     legislationYearList: [ 2002 ],
                     legislation_2002: currentProjectData,
+                    read: projectRead,
+                    write: projectWrite,
+                    delete: projectDelete
                   }
                 }
               );

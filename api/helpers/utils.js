@@ -149,7 +149,10 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
           }
         },
         (modelType === 'Project' || populateProject) &&  {
-          '$addFields': { "default._id": '$_id' }
+          '$addFields': {
+            "default._id": '$_id',
+            "default.read": '$read'
+          }
         },
         (modelType === 'Project' || populateProject) && {
           "$replaceRoot": { newRoot:  "$default" }
