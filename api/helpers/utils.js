@@ -143,7 +143,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
                     case: { $eq: [ "$currentLegislationYear", 'legislation_2018' ]},
                     then: "$legislation_2018"
                   }
-                ]
+                ], default: "$legislation_2002"
               }
             }
           }
