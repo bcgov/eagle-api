@@ -288,7 +288,7 @@ var setProjectDefault = function(aggregation, projectOnly) {
                   case: { $eq: [ "$currentLegislationYear", 'legislation_2018' ]},
                   then: "$legislation_2018"
                 }
-              ]
+              ], default: "$legislation_2002"
             }
           }
         }
@@ -313,7 +313,8 @@ var setProjectDefault = function(aggregation, projectOnly) {
                   case: { $eq: [ "$project.currentLegislationYear", 'legislation_2018' ]},
                   then: "$project.legislation_2018"
                 }
-              ]
+              //TODO: watch out for the default case. If we hit this then we will have empty projects
+              ], default: "$project.legislation_2002"
             }
           }
         }
@@ -524,7 +525,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
     });
     //TODO: Might need to apply this merge to all project calls. This is to get rid of all the legislation keys
     if (schemaName === "Document" || schemaName === "RecentActivity") {
-        // Here we have documents with a nested Project and a nested legislation key
+      // Here we have documents with a nested Project and a nested legislation key
       setProjectDefault(aggregation, false)
 
       // We need to merge the legislation key with the Project while preserving the _id and the rest of the document info
