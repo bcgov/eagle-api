@@ -102,10 +102,6 @@ var projectDataDefinition = {
 
   groups                   : [{ type: 'ObjectId', ref: 'Group', default: null, index: true }],
 
-  // Permissions
-  read                   : [{ type: String, trim: true, default: '["project-system-admin"]' }],
-  write                  : [{ type: String, trim: true, default: '["project-system-admin"]' }],
-  delete                 : [{ type: String, trim: true, default: '["project-system-admin"]' }],
 };
 
 // actual project schema
@@ -115,6 +111,10 @@ var projectDefinition = {
   legislation_1996: projectDataDefinition,
   legislation_2002: projectDataDefinition,
   legislation_2018: projectDataDefinition,
+  // Permissions
+  read                   : [{ type: String, trim: true, default: '["project-system-admin"]' }],
+  write                  : [{ type: String, trim: true, default: '["project-system-admin"]' }],
+  delete                 : [{ type: String, trim: true, default: '["project-system-admin"]' }],
 }
 
 var buildToNature = {};

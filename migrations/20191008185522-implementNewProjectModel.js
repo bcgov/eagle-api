@@ -234,9 +234,6 @@ exports.up = function(db) {
                   pins                    : 1,
                   pinsHistory             : 1,
                   groups                  : 1,
-                  read                    : 1,
-                  write                   : 1,
-                  delete                  : 1
                 }
               }
             );
