@@ -213,7 +213,7 @@
                 "volumeMounts": [
                   {
                     "name": "${NAME}-docs",
-                    "mountPath": "/opt/app-root/src/uploads"
+                    "mountPath": "${DOCUMENTS_BUCKET_PATH}"
                   }
                 ]
               }
@@ -412,7 +412,7 @@
       "name": "APPLICATION_DOMAIN",
       "displayName": "Application Hostname",
       "description": "The exposed hostname that will route to the Node.js service, if left blank a value will be defaulted.",
-      "value": "eagle-dev.pathfinder.gov.bc.ca"
+      "value": "eagle-api-your-openshift-namespace.pathfinder.gov.bc.ca"
     },
     {
       "name": "APPLICATION_DOMAIN_PATH",
@@ -424,18 +424,18 @@
       "name": "MINIO_HOST",
       "displayName": "Minio Hostname",
       "description": "The exposed hostname to route to the MINIO service",
-      "value": "minio-eagle-dev-esm-dev.pathfinder.gov.bc.ca"
+      "value": "eagle-api-minio-your-openshift-namespace.pathfinder.gov.bc.ca"
     },
     {
       "name": "MINIO_SECRET_NAME",
       "displayName": "Name of the Minio secret",
       "description": "The name of the secrets file for Minio",
-      "value": "minio-esm-dev"
+      "value": "eagle-api-minio"
     },
     {
       "name": "DATABASE_SERVICE_NAME",
       "displayName": "Database Service Name",
-      "value": "mongodb"
+      "value": "eagle-api-mongodb"
     },
     {
       "name": "DATABASE_USER",
@@ -473,43 +473,50 @@
     {
       "name": "DATABASE_VOLUME_CAPACITY",
       "displayName": "Database Volume Capacity",
-      "description": "Volume space available for mongo database, e.g. 512Mi, 2Gi.",
-      "value": "20Gi",
+      "description": "Volume space available for mongo database.  3Gi or up as we need room for the log files to grow.",
+      "value": "5Gi",
       "required": true
     },
     {
       "name": "DOCUMENT_VOLUME_CAPACITY",
       "displayName": "Document Volume Capacity",
       "description": "Volume space available for Document uploads, e.g. 512Mi, 2Gi.",
-      "value": "20Gi",
+      "value": "5Gi",
       "required": true
     },
     {
       "name": "APP_IMAGE_NAME",
       "displayName": "Application image name.",
-      "description": "Application image name.",
+      "description": "The image that was built in a previous build step and is available to deploy.",
       "value": "eagle-api",
       "required": true
     },
     {
       "name": "APP_IMAGE_NAMESPACE",
       "displayName": "Namespace containing application images.",
-      "description": "Namespace containing application images.",
-      "value": "esm",
+      "description": "The tools namespace where builds occur and images are available to pull from.",
+      "value": "your-tools-namespace",
       "required": true
     },
     {
       "name": "APP_DEPLOYMENT_TAG",
       "displayName": "Image tag to watch for changes and trigger deployment.",
-      "description": "Image tag to watch for changes and trigger deployment.",
-      "value": "dev",
+      "description": "Image tag to watch for changes and trigger deployment. Eg: dev",
+      "value": "your-openshift-tag",
       "required": true
     },
     {
       "name": "READINESS_PROBE_URL",
       "displayName": "URL to watch for readiness.",
-      "description": "URL to watch for readiness.",
+      "description": "A health check will fail if after a certain time this isn't being served.",
       "value": "/api/docs",
+      "required": true
+    },
+    {
+      "name": "DOCUMENTS_BUCKET_PATH",
+      "displayName": "Documents Bucket Path",
+      "description": "Minio bucket where documents will be uploaded to.",
+      "value": "/opt/app-root/src/uploads",
       "required": true
     }
   ]
