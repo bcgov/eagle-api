@@ -10,13 +10,13 @@ objects:
         description: Defines how to deploy the minio server
       generation: 1
       labels:
-        app: ${NAME}
+        app: ${GROUP_NAME}
       name: ${NAME}
     spec:
       replicas: 1
       revisionHistoryLimit: 10
       selector:
-        app: ${NAME}
+        app: ${GROUP_NAME}
         deploymentconfig: ${NAME}
       strategy:
         activeDeadlineSeconds: 21600
@@ -28,7 +28,7 @@ objects:
         metadata:
           creationTimestamp: null
           labels:
-            app: ${NAME}
+            app: ${GROUP_NAME}
             deploymentconfig: ${NAME}
         spec:
           containers:
@@ -91,7 +91,7 @@ objects:
     metadata:
       name: ${NAME}-keys
       labels:
-        app: ${NAME}
+        app: ${GROUP_NAME}
     stringData:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
@@ -124,7 +124,7 @@ objects:
       annotations:
         description: Exposes the minio server
       labels:
-        app: ${NAME}
+        app: ${GROUP_NAME}
       name: ${NAME}
   - apiVersion: route.openshift.io/v1
     kind: Route
@@ -142,12 +142,17 @@ objects:
       annotations:
         openshift.io/host.generated: 'true'
       labels:
-        app: ${NAME}
+        app: ${GROUP_NAME}
       name: ${NAME}
 parameters:
 - name: NAME
   displayName: Name to apply to objects in the template
   value: eagle-api-minio
+  required: true
+- name: GROUP_NAME
+  displayName: Group Name
+  description: The name to group all of the frontend objects defined in this template.
+  value: eagle-api
   required: true
 - name: LOCAL_STORAGE_SIZE
   displayName: The size of the local cluster persistent volume claim (recall that minio can optionally mount outside S3)
