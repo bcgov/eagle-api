@@ -12,10 +12,6 @@
       "iconClass": "icon-nodejs"
     }
   },
-  "labels": {
-    "app": "${GROUP_NAME}",
-    "template": "${NAME}"
-  },
   "objects": [
     {
       "kind": "PersistentVolumeClaim",
@@ -113,8 +109,7 @@
       "apiVersion": "v1",
       "metadata": {
         "labels": {
-          "app": "${GROUP_NAME}",
-          "name": "${NAME}"
+          "app": "${GROUP_NAME}"
         },
         "name": "${NAME}",
         "annotations": {
@@ -147,12 +142,13 @@
         "replicas": 1,
         "selector": {
           "app": "${GROUP_NAME}",
-          "name": "${NAME}"
+          "deploymentconfig": "${NAME}"
         },
         "template": {
           "metadata": {
             "labels": {
-              "app": "${GROUP_NAME}"
+              "app": "${GROUP_NAME}",
+              "deploymentconfig": "${NAME}"
             },
             "name": "${NAME}"
           },
@@ -283,8 +279,7 @@
       "metadata": {
         "name": "${DATABASE_SERVICE_NAME}",
         "labels": {
-          "app": "${GROUP_NAME}",
-          "name": "${DATABASE_SERVICE_NAME}"
+          "app": "${GROUP_NAME}"
         },
         "annotations": {
           "description": "Defines how to deploy the database"
@@ -316,12 +311,13 @@
         "replicas": 1,
         "selector": {
           "app": "${GROUP_NAME}",
-          "name": "${DATABASE_SERVICE_NAME}"
+          "deploymentconfig": "${DATABASE_SERVICE_NAME}"
         },
         "template": {
           "metadata": {
             "labels": {
-              "app": "${GROUP_NAME}"
+              "app": "${GROUP_NAME}",
+              "deploymentconfig": "${DATABASE_SERVICE_NAME}"
             },
             "name": "${DATABASE_SERVICE_NAME}"
           },
