@@ -442,7 +442,7 @@
       "name": "MINIO_SECRET_NAME",
       "displayName": "Name of the Minio secret",
       "description": "The name of the secrets file for Minio",
-      "value": "eagle-api-minio"
+      "value": "eagle-api-minio-keys"
     },
     {
       "name": "DATABASE_SERVICE_NAME",
