@@ -77,11 +77,12 @@ objects:
       test: false
       triggers:
         - imageChangeParams:
+            automatic: true
             containerNames:
               - ${NAME}
             from:
               kind: ImageStreamTag
-              name: ${MINIO_IMAGE_NAME}:${MINIO_IMAGE_TAG}
+              name: '${MINIO_IMAGE_NAME}:${MINIO_IMAGE_TAG}'
               namespace: ${MINIO_IMAGE_NAMESPACE}
           type: ImageChange
         - type: ConfigChange
