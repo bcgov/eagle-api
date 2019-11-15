@@ -2,7 +2,7 @@
   "kind": "Template",
   "apiVersion": "v1",
   "metadata": {
-    "name": "eagle-api",
+    "name": "${NAME}",
     "annotations": {
       "description": "",
       "tags": "nodejs",
