@@ -139,7 +139,7 @@
             "containers": [
               {
                 "name": "${NAME}",
-                "image": " ",
+                "image": "${OPENSHIFT_REGISTRY}/${APP_IMAGE_NAMESPACE}/${APP_IMAGE_NAME}:${APP_DEPLOYMENT_TAG}",
                 "ports": [
                   {
                     "containerPort": 3000
@@ -242,7 +242,7 @@
       "spec": {
         "ports": [
           {
-            "name": "mongodb-${NAME}",
+            "name": "${DATABASE_SERVICE_NAME}",
             "port": 27017,
             "targetPort": 27017
           }
@@ -272,12 +272,12 @@
             "imageChangeParams": {
               "automatic": true,
               "containerNames": [
-                "mongodb"
+                "${DATABASE_SERVICE_NAME}"
               ],
               "from": {
                 "kind": "ImageStreamTag",
                 "namespace": "${MONGO_IMAGE_NAMESPACE}",
-                "name": "mongodb:${MONGO_VER}"
+                "name": "${MONGO_IMAGE_NAME}:${MONGO_VER}"
               }
             }
           },
@@ -299,8 +299,8 @@
           "spec": {
             "containers": [
               {
-                "name": "mongodb-${NAME}",
-                "image": " ",
+                "name": "${DATABASE_SERVICE_NAME}",
+                "image": "${OPENSHIFT_REGISTRY}/${MONGO_IMAGE_NAMESPACE}/${MONGO_IMAGE_NAME}:${MONGO_IMAGE_TAG}",
                 "ports": [
                   {
                     "containerPort": 27017
@@ -385,10 +385,22 @@
       "value": "eagle-api"
     },
     {
+      "name": "OPENSHIFT_REGISTRY",
+      "displayName": "Openshift Registry",
+      "description": "The location:port where the Openshift serves images from (eg 'docker-registry.default.svc:5000').",
+      "value": "172.50.0.2:5000"
+    },
+    {
       "name": "MONGO_IMAGE_NAMESPACE",
-      "displayName": "mongo image namespace",
+      "displayName": "Mongo image namespace",
       "description": "The OpenShift Namespace where the mongo ImageStream resides.",
       "value": "openshift"
+    },
+    {
+      "name": "MONGO_IMAGE_NAME",
+      "displayName": "Mongo image name",
+      "description": "The OpenShift ImageStream Name for mongo.",
+      "value": "mongodb"
     },
     {
       "name": "MONGO_VER",
