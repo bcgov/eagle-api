@@ -271,6 +271,7 @@
           }
         ],
         "selector": {
+          "app": "${GROUP_NAME}",
           "name": "${DATABASE_SERVICE_NAME}"
         }
       }
