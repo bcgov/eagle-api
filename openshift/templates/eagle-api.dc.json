@@ -13,6 +13,7 @@
     }
   },
   "labels": {
+    "app": "${GROUP_NAME}",
     "template": "${NAME}"
   },
   "objects": [
@@ -20,6 +21,9 @@
       "kind": "PersistentVolumeClaim",
       "apiVersion": "v1",
       "metadata": {
+        "labels": {
+          "app": "${GROUP_NAME}"
+        },
         "name": "${DATABASE_SERVICE_NAME}-data"
       },
       "spec": {
@@ -37,6 +41,9 @@
       "kind": "PersistentVolumeClaim",
       "apiVersion": "v1",
       "metadata": {
+        "labels": {
+          "app": "${GROUP_NAME}"
+        },
         "name": "${NAME}-docs-pvc"
       },
       "spec": {
@@ -54,6 +61,9 @@
       "kind": "Service",
       "apiVersion": "v1",
       "metadata": {
+        "labels": {
+          "app": "${GROUP_NAME}"
+        },
         "name": "${NAME}",
         "annotations": {
           "description": "Exposes and load balances the application pods"
@@ -68,6 +78,7 @@
           }
         ],
         "selector": {
+          "app": "${GROUP_NAME}",
           "name": "${NAME}"
         }
       }
@@ -76,6 +87,9 @@
       "kind": "Route",
       "apiVersion": "v1",
       "metadata": {
+        "labels": {
+          "app": "${GROUP_NAME}"
+        },
         "name": "${NAME}"
       },
       "spec": {
@@ -98,8 +112,10 @@
       "kind": "DeploymentConfig",
       "apiVersion": "v1",
       "metadata": {
+        "labels": {
+          "app": "${GROUP_NAME}"
+        },
         "name": "${NAME}",
-        "app": "${GROUP_NAME}",
         "annotations": {
           "description": "Defines how to deploy the application server"
         }
@@ -129,14 +145,15 @@
         ],
         "replicas": 1,
         "selector": {
+          "app": "${GROUP_NAME}",
           "name": "${NAME}"
         },
         "template": {
           "metadata": {
-            "name": "${NAME}",
             "labels": {
-              "name": "${NAME}"
-            }
+              "app": "${GROUP_NAME}"
+            },
+            "name": "${NAME}"
           },
           "spec": {
             "containers": [
@@ -237,6 +254,9 @@
       "kind": "Service",
       "apiVersion": "v1",
       "metadata": {
+        "labels": {
+          "app": "${GROUP_NAME}"
+        },
         "name": "${DATABASE_SERVICE_NAME}",
         "annotations": {
           "description": "Exposes the database server"
@@ -260,7 +280,9 @@
       "apiVersion": "v1",
       "metadata": {
         "name": "${DATABASE_SERVICE_NAME}",
-        "app": "${GROUP_NAME}",
+        "labels": {
+          "app": "${GROUP_NAME}"
+        },
         "annotations": {
           "description": "Defines how to deploy the database"
         }
@@ -290,14 +312,15 @@
         ],
         "replicas": 1,
         "selector": {
+          "app": "${GROUP_NAME}",
           "name": "${DATABASE_SERVICE_NAME}"
         },
         "template": {
           "metadata": {
-            "name": "${DATABASE_SERVICE_NAME}",
             "labels": {
-              "name": "${DATABASE_SERVICE_NAME}"
-            }
+              "app": "${GROUP_NAME}"
+            },
+            "name": "${DATABASE_SERVICE_NAME}"
           },
           "spec": {
             "containers": [
