@@ -81,7 +81,7 @@ objects:
               - ${NAME}
             from:
               kind: ImageStreamTag
-              name: '${MINIO_IMAGE_NAME}:${MINIO_IMAGE_TAG}'
+              name: ${MINIO_IMAGE_NAME}:${MINIO_IMAGE_TAG}
               namespace: ${MINIO_IMAGE_NAMESPACE}
           type: ImageChange
         - type: ConfigChange
@@ -90,10 +90,10 @@ objects:
     metadata:
       name: ${NAME}-keys
       labels:
-        app: "${NAME}"
+        app: ${NAME}
     stringData:
-      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY}"
-      MINIO_SECRET_KEY: "${MINIO_SECRET_KEY}"
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
   - apiVersion: v1
     kind: PersistentVolumeClaim
     metadata:
