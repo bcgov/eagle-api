@@ -398,6 +398,7 @@ exports.protectedPost = function (args, res, next) {
     return Actions.sendResponse(res, 400, "Error loading project data");
   }
 
+  //Need to add this logic to the put because we will only hit a post on a net new project
   project.currentLegislationYear = "legislation_" + projectLegislationYear;
   project.legislationYearList.push(projectLegislationYear);
 
@@ -921,6 +922,7 @@ exports.protectedPut = async function (args, res, next) {
   filteredData.status = projectObj.status;
   filteredData.eaStatus = projectObj.eaStatus;
   filteredData.name = projectObj.name;
+  filteredData.legislation = projectLegislationYear;
 
   // obj.eaStatusDate = projectObj.eaStatusDate ? new Date(projectObj.eaStatusDate) : null;
   // obj.projectStatusDate = projectObj.projectStatusDate ? new Date(projectObj.projectStatusDate) : null;
@@ -977,6 +979,7 @@ exports.protectedPut = async function (args, res, next) {
 }
 
 // Publish/Unpublish the project
+// We need to make this publish also update the current legislation year and the year list
 exports.protectedPublish = function (args, res, next) {
   var objId = args.swagger.params.projId.value;
   defaultLog.info("Publish Project:", objId);
