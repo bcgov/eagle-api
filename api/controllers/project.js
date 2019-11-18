@@ -889,6 +889,10 @@ exports.protectedPut = async function (args, res, next) {
   // if project legislation doesn't exist then look up current legislation for the project
   if (projectObj.legislationYear) {
     projectLegislationYear = projectObj.legislationYear;
+    // check if the passed in project year exists in the legislation year list
+    if ( !fullProjectObject.legislationYearList.includes(projectLegislationYear) ) {
+      fullProjectObject.legislationYearList.push(projectLegislationYear);
+    }
   } else {
     // look up the current project legislation
     projectLegislationYear = fullProjectObject.currentLegislationYear.split("_")[1];
@@ -988,8 +992,12 @@ exports.protectedPublish = function (args, res, next) {
   Project.findOne({ _id: objId }, function (err, o) {
     if (o) {
       defaultLog.info("o:", o);
-      o.currentLegislationYear = "legislation_" + args.body.legislationYear;
-      o.save();
+
+      if (args.body.legislationYear) {
+        o.currentLegislationYear = "legislation_" + args.body.legislationYear;
+        o.save();
+      }
+
       return Actions.publish(o)
         .then(function (published) {
           Utils.recordAction('Publish', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
