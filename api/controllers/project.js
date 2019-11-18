@@ -949,7 +949,6 @@ exports.protectedPut = async function (args, res, next) {
   filteredData.CEAALink = projectObj.CEAALink;
   filteredData.eacDecision = projectObj.eacDecision;
   filteredData.decisionDate = projectObj.decisionDate ? new Date(projectObj.decisionDate) : null;
-  //TODO:
   fullProjectObject.review45Start = projectObj.review45Start  ? new Date(projectObj.review45Start) : null;
   fullProjectObject.review180Start = projectObj.review180Start  ? new Date(projectObj.review180Start) : null;
 
