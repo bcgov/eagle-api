@@ -889,6 +889,10 @@ exports.protectedPut = async function (args, res, next) {
   // if project legislation doesn't exist then look up current legislation for the project
   if (projectObj.legislationYear) {
     projectLegislationYear = projectObj.legislationYear;
+    // check if the passed in project year exists in the legislation year list
+    if ( !fullProjectObject.legislationYearList.includes(projectLegislationYear) ) {
+      fullProjectObject.legislationYearList.push(projectLegislationYear);
+    }
   } else {
     // look up the current project legislation
     projectLegislationYear = fullProjectObject.currentLegislationYear.split("_")[1];
@@ -941,7 +945,7 @@ exports.protectedPut = async function (args, res, next) {
   filteredData.CEAALink = projectObj.CEAALink;
   filteredData.eacDecision = projectObj.eacDecision;
   filteredData.decisionDate = projectObj.decisionDate ? new Date(projectObj.decisionDate) : null;
-  //TODO: 
+  //TODO:
   fullProjectObject.review45Start = projectObj.review45Start  ? new Date(projectObj.review45Start) : null;
   fullProjectObject.review180Start = projectObj.review180Start  ? new Date(projectObj.review180Start) : null;
 
@@ -988,6 +992,12 @@ exports.protectedPublish = function (args, res, next) {
   Project.findOne({ _id: objId }, function (err, o) {
     if (o) {
       defaultLog.info("o:", o);
+
+      if (args.body.legislationYear) {
+        o.currentLegislationYear = "legislation_" + args.body.legislationYear;
+        o.save();
+      }
+
       return Actions.publish(o)
         .then(function (published) {
           Utils.recordAction('Publish', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
