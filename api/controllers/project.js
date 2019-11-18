@@ -941,7 +941,7 @@ exports.protectedPut = async function (args, res, next) {
   filteredData.CEAALink = projectObj.CEAALink;
   filteredData.eacDecision = projectObj.eacDecision;
   filteredData.decisionDate = projectObj.decisionDate ? new Date(projectObj.decisionDate) : null;
-  //TODO: 
+  //TODO:
   fullProjectObject.review45Start = projectObj.review45Start  ? new Date(projectObj.review45Start) : null;
   fullProjectObject.review180Start = projectObj.review180Start  ? new Date(projectObj.review180Start) : null;
 
@@ -988,6 +988,8 @@ exports.protectedPublish = function (args, res, next) {
   Project.findOne({ _id: objId }, function (err, o) {
     if (o) {
       defaultLog.info("o:", o);
+      o.currentLegislationYear = "legislation_" + args.body.legislationYear;
+      o.save();
       return Actions.publish(o)
         .then(function (published) {
           Utils.recordAction('Publish', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
