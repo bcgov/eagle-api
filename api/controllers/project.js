@@ -900,10 +900,13 @@ exports.protectedPut = async function (args, res, next) {
 
   if (projectLegislationYear == 2018) {
     filteredData = fullProjectObject.legislation_2018;
+    filteredData.legislation = "2018 Environmental Assessment Act";
   } else if (projectLegislationYear == 2002) {
     filteredData = fullProjectObject.legislation_2002;
+    filteredData.legislation = "2002 Environmental Assessment Act";
   } else if (projectLegislationYear == 1996) {
     filteredData = fullProjectObject.legislation_1996;
+    filteredData.legislation = "1996 Environmental Assessment Act";
   }
 
   if (!filteredData) {
@@ -926,7 +929,8 @@ exports.protectedPut = async function (args, res, next) {
   filteredData.status = projectObj.status;
   filteredData.eaStatus = projectObj.eaStatus;
   filteredData.name = projectObj.name;
-  filteredData.legislation = projectLegislationYear;
+  //Updating the legislation Year in the legislation key
+  filteredData.legislationYear = projectLegislationYear;
 
   // obj.eaStatusDate = projectObj.eaStatusDate ? new Date(projectObj.eaStatusDate) : null;
   // obj.projectStatusDate = projectObj.projectStatusDate ? new Date(projectObj.projectStatusDate) : null;
