@@ -148,6 +148,7 @@
           "metadata": {
             "labels": {
               "app": "${GROUP_NAME}",
+              "name": "${NAME}",
               "deploymentconfig": "${NAME}"
             },
             "name": "${NAME}"
