@@ -989,7 +989,7 @@ exports.protectedPut = async function (args, res, next) {
 // We need to make this publish also update the current legislation year and the year list  
 exports.protectedPublish = function (args, res, next) {
   var objId = args.swagger.params.projId.value;
-  var legislationYear = args.swagger.params.legislationYear.value;
+  var ProjObject = args.swagger.params.ProjObject.value;
   defaultLog.info("Publish Project:", objId);
 
   var Project = require('mongoose').model('Project');
@@ -997,8 +997,8 @@ exports.protectedPublish = function (args, res, next) {
     if (o) {
       defaultLog.info("o:", o);
 
-      if (legislationYear) {
-        o.currentLegislationYear = "legislation_" + legislationYear;
+      if (ProjObject && ProjObject.legislationYear) {
+        o.currentLegislationYear = "legislation_" + ProjObject.legislationYear;
         o.save();
       }
 

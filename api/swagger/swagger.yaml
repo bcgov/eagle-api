@@ -571,14 +571,6 @@ definitions:
       - lastName
       - username
       - roles
-### Publish Project Definitions
-  PubProjId:
-    type: object
-    properties:
-      legislationYear:
-        type: number
-        example: 2018
-        ## TODO: Add more fields here.
 
 ### Vc Definitions
   VcId:
@@ -1174,11 +1166,11 @@ paths:
           description: "ID of project to update"
           required: true
           type: string
-        - name: legislationYear
+        - name: ProjObject
           in: body
-          required: false
+          required: true
           schema:
-            $ref: "#/definitions/PubProjId"
+            $ref: "#/definitions/ProjObject"
       responses:
         "200":
           description: "Success"
