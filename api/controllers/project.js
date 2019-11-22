@@ -1002,7 +1002,6 @@ exports.protectedPublish = function (args, res, next) {
 
       if (ProjObject && ProjObject.legislationYear) {
         o.currentLegislationYear = "legislation_" + ProjObject.legislationYear;
-        o.save();
       }
 
       return Actions.publish(o)
