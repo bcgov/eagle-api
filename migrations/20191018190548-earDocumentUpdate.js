@@ -80,7 +80,8 @@ exports.up = function(db) {
         }
       }
 
-
+      let transitionDocCount = 0;
+      let docCount2005 = 0;
       // any document created after Jan 1, 2005 AND is a transition project can be tagged as 2002 legislation
       console.log("Tagging documents with 2002 legislation")
       var docs2005 = await get2005Documents(p)
@@ -97,12 +98,17 @@ exports.up = function(db) {
 
         if (projectsTransition.includes(projectData.name)) {
           // console.log("Found doc created 2005+ and is from a transition project")
-          p.updateOne(
-            { _id: item._id },
-            { $set: { legislation: 2002, legislationYearVetted: true } }
-          )
+          transitionDocCount++;
+        } else {
+          docCount2005++;
         }
+        p.updateOne(
+          { _id: item._id },
+          { $set: { legislation: 2002, legislationYearVetted: true } }
+        )
       }
+      console.log("Number of 2005+ Docs in Transition projects: ", transitionDocCount)
+      console.log("Number of 2005+ Docs in 2002+ projects: ", docCount2005)
 
       // get docs between 2002 and 2005
       console.log("Tagging transition documents (2002 - 2005)")
