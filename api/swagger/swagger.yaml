@@ -1166,6 +1166,11 @@ paths:
           description: "ID of project to update"
           required: true
           type: string
+        - name: ProjObject
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/ProjObject"
       responses:
         "200":
           description: "Success"
