@@ -385,12 +385,15 @@ exports.protectedPost = function (args, res, next) {
   if (projectLegislationYear == 2018) {
     project = new Project({legislation_2018: obj});
     projectData = project.legislation_2018;
+    projectData.legislation = "2018 Environmental Assessment Act";
   } else if (projectLegislationYear == 2002) {
     project = new Project({legislation_2002: obj});
     projectData = project.legislation_2002;
+    projectData.legislation = "2002 Environmental Assessment Act";
   } else if (projectLegislationYear == 1996) {
     project = new Project({legislation_1996: obj});
     projectData = project.legislation_1996;
+    projectData.legislation = "1996 Environmental Assessment Act";
   }
 
   if (!project) {
@@ -407,9 +410,9 @@ exports.protectedPost = function (args, res, next) {
   projectData.projectLeadId = mongoose.Types.ObjectId(obj.projectLeadId);
 
   // Define security tag defaults
-  projectData.read = ['sysadmin', 'staff'];
-  projectData.write = ['sysadmin', 'staff'];
-  projectData.delete = ['sysadmin', 'staff'];
+  project.read = ['sysadmin', 'staff'];
+  project.write = ['sysadmin', 'staff'];
+  project.delete = ['sysadmin', 'staff'];
   projectData._createdBy = args.swagger.params.auth_payload.preferred_username;
   projectData.createdDate = Date.now();
 
@@ -1008,7 +1011,7 @@ exports.protectedPublish = function (args, res, next) {
           return Actions.sendResponse(res, 200, published);
         })
         .catch(function (err) {
-          return Actions.sendResponse(res, err.code, err);
+          return Actions.sendResponse(res, 500, err);
         });
     } else {
       defaultLog.info("Couldn't find that object!");
