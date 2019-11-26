@@ -1004,7 +1004,7 @@ exports.protectedPublish = function (args, res, next) {
         o.currentLegislationYear = "legislation_" + ProjObject.legislationYear;
       }
 
-      return Actions.publish(o)
+      return Actions.publish(o,true)
         .then(function (published) {
           Utils.recordAction('Publish', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
           return Actions.sendResponse(res, 200, published);
