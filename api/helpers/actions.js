@@ -2,7 +2,7 @@
 var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 
-exports.publish = async function (o) {
+exports.publish = async function (o,save=false) {
     return new Promise(function (resolve, reject) {
       // Need project specific logic to handle legislation keys
         // Object wasn't already published?
@@ -14,7 +14,7 @@ exports.publish = async function (o) {
             o.read = newReadArray;
             resolve(o.save());
         } else {
-          resolve(o);
+          resolve(save ? o.save(): o);
         }
     });
 };
