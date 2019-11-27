@@ -39,6 +39,7 @@ afterEach(done => {
           done();
         });
       }
+      done();
     } else {
       done();
     }

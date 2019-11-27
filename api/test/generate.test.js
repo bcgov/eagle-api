@@ -37,7 +37,7 @@ describe('Generate Test Data', () => {
               //console.log('        [projectLead, projectLeadEmail]: [' + project.projectLead + ', ' + project.projectLeadEmail + ']');
               expect(project._id).toEqual(jasmine.any(Object));
               expect(project.CELeadEmail).toEqual("eao.compliance@gov.bc.ca");
-              //TODO:: Check the outputted data against the database model
+              //TODO:: Check the outputted deterministic data fields against the database model.  Some fields will always have randomness so tests will have to be designed around that.
               done();
             });
           });
