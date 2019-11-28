@@ -1,6 +1,7 @@
 'use strict';
 const Promise = require("bluebird");
 const faker = require('faker/locale/en');
+const mongTypes = require('mongoose').Types;
 Promise.longStackTraces();
 const test_helper = require('./test_helper');
 const app = test_helper.app;
@@ -110,11 +111,11 @@ function generateEntireDatabase(usersData) {
 
 function generateGroupSetForProject(factoryKey, project, buildOptions, groupsToGen) {
   return new Promise(function(resolve, reject) {
-    let customGroupSettings = { project: require('mongoose').Types.ObjectId(project._id) };
+    let customGroupSettings = { project: mongTypes.ObjectId(project._id) };
     factory.createMany(factoryKey, groupsToGen, customGroupSettings, buildOptions).then(groups => {
       let groupIds = [];
       for (i = 0; i < groups.length; i++) {
-        if (-1 == groupIds.indexOf(require('mongoose').Types.ObjectId(groups[i].id))) groupIds.push(require('mongoose').Types.ObjectId(groups[i].id)); 
+        if (-1 == groupIds.indexOf(mongTypes.ObjectId(groups[i].id))) groupIds.push(mongTypes.ObjectId(groups[i].id)); 
       }
       project.groups = groupIds;
       resolve(groups);
@@ -124,7 +125,7 @@ function generateGroupSetForProject(factoryKey, project, buildOptions, groupsToG
 
 function generateCommentPeriodSetForProject(factoryKey, project, buildOptions, commentPeriodsToGen) {
   return new Promise(function(resolve, reject) {
-    let customCommentPeriodSettings = { project: require('mongoose').Types.ObjectId(project._id) };
+    let customCommentPeriodSettings = { project: mongTypes.ObjectId(project._id) };
     factory.createMany(factoryKey, commentPeriodsToGen, customCommentPeriodSettings, buildOptions).then(commentPeriods => {
       resolve(commentPeriods);
     });
@@ -133,7 +134,7 @@ function generateCommentPeriodSetForProject(factoryKey, project, buildOptions, c
 
 function generateCommentSetForCommentPeriod(factoryKey, commentPeriod, buildOptions, commentsToGen) {
   return new Promise(function(resolve, reject) {
-    let customCommentSettings = { commentPeriod: require('mongoose').Types.ObjectId(commentPeriod._id) };
+    let customCommentSettings = { commentPeriod: mongTypes.ObjectId(commentPeriod._id) };
     factory.createMany(factoryKey, commentsToGen, customCommentSettings, buildOptions).then(comments => {
       resolve(comments);
     });
@@ -142,7 +143,7 @@ function generateCommentSetForCommentPeriod(factoryKey, commentPeriod, buildOpti
 
 function generateDocumentSetForProject(factoryKey, project, buildOptions, projectDocumentsToGen) {
   return new Promise(function(resolve, reject) {
-    let customDocumentSettings = { documentSource: "PROJECT", project: require('mongoose').Types.ObjectId(project._id) };
+    let customDocumentSettings = { documentSource: "PROJECT", project: mongTypes.ObjectId(project._id) };
     factory.createMany(factoryKey, projectDocumentsToGen, customDocumentSettings, buildOptions).then(documents => {
       resolve(documents);
     });
@@ -151,7 +152,7 @@ function generateDocumentSetForProject(factoryKey, project, buildOptions, projec
 
 function generateDocumentSetForCommentPeriod(factoryKey, commentPeriod, buildOptions, commentPeriodDocumentsToGen) {
   return new Promise(function(resolve, reject) {
-  let customDocumentSettings = { documentSource: "COMMENT", project: require('mongoose').Types.ObjectId(commentPeriod.project), _comment: require('mongoose').Types.ObjectId(commentPeriod._id) };  // note that the document._comment field actually refers to a commentPeriod id
+  let customDocumentSettings = { documentSource: "COMMENT", project: mongTypes.ObjectId(commentPeriod.project), _comment: mongTypes.ObjectId(commentPeriod._id) };  // note that the document._comment field actually refers to a commentPeriod id
     factory.createMany(factoryKey, commentPeriodDocumentsToGen, customDocumentSettings, buildOptions).then(documents => {
       resolve(documents);
     });
