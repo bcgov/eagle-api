@@ -48,9 +48,10 @@ exports.up = function(db) {
             let projectRead = item.read
             let projectWrite = item.write
             let projectDelete = item.delete
+            
+            // default to array if null
+            let pins = (item.pins) ? item.pins : [];
 
-            //Add the pin data on the root 
-            const pins = item.pins;
             const pinsHistory = item.pinsHistory;
 
             // new projects since legislation was populated

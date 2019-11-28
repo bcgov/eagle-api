@@ -103,7 +103,7 @@ var projectDefinition = {
   delete                 : [{ type: String, trim: true, default: '["project-system-admin"]' }],
   // PINs
   /////////////////////
-  pins                    : [{ type: 'ObjectId', ref: 'Pin', default: null, index: true }],
+  pins                    : [{ type: 'ObjectId', ref: 'Pin', default: [], index: true }],
   
   pinsHistory            : [{ type: Mixed, default: {} }],
 }
