@@ -38,8 +38,9 @@ afterEach(done => {
         dbCleaner.clean(mongoose.connection.db, () => {
           done();
         });
+      } else {
+        done();
       }
-      done();
     } else {
       done();
     }

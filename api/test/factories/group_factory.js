@@ -14,7 +14,7 @@ factory.define(factoryName, Group, buildOptions => {
     let groupSizeCeiling = (usersPool.length < defaultGroupSizeCeiling) ? usersPool.length : defaultGroupSizeCeiling;
     let groupRandomSize = 1 + faker.random.number(groupSizeCeiling - 1);  // 1-15 not 0-15
     for (i = 0; i < groupRandomSize; i++) {
-      let userId = factory_helper.getRandomExistingUserId(usersPool);
+      let userId = factory_helper.getRandomExistingMongoId(usersPool);
       if (-1 == members.indexOf(userId)) members.push(userId);
     }
   }
@@ -24,9 +24,9 @@ factory.define(factoryName, Group, buildOptions => {
     , project                 : require('mongoose').Types.ObjectId()
     , members                 : members
 
-    , read             : faker.random.arrayElement(['["public"]', '["sysadmin"]'])
-    , write            : faker.random.arrayElement(['["public"]', '["sysadmin"]'])
-    , delete           : faker.random.arrayElement(['["public"]', '["sysadmin"]'])
+    , read             : faker.random.arrayElement(["public", "sysadmin", ["public", "sysadmin"]])
+    , write            : faker.random.arrayElement(["public", "sysadmin", ["public", "sysadmin"]])
+    , delete           : faker.random.arrayElement(["public", "sysadmin", ["public", "sysadmin"]])
 
   };
   return attrs;

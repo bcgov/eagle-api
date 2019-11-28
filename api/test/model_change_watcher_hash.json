@@ -88,7 +88,7 @@
     },
     {
       "name": "group_factory.js",
-      "hash": "PQaF97yTB0pvT9/F8EACpcRLnLY="
+      "hash": "IHCafQ5aZwW+CLO3wS7ZdSpto+Q="
     },
     {
       "name": "inspection_element_factory.js",
@@ -112,7 +112,7 @@
     },
     {
       "name": "organization_factory.js",
-      "hash": "JTL04tyaCBvfiNPWRbQ+9sjVL88="
+      "hash": "e3eH1fOdPJrkwc7+nQ8bdvPdqwo="
     },
     {
       "name": "pin_factory.js",
@@ -120,15 +120,15 @@
     },
     {
       "name": "project_factory.js",
-      "hash": "oIbiZDEuC06KECfo/XaO24ON/Dw="
+      "hash": "W3het3gXbJB9ac5YpdmnHh+ENss="
     },
     {
       "name": "recent_activity_factory.js",
-      "hash": "Xvgc+wt3wHRoIEvIMXN0onuXHhI="
+      "hash": "QKQ7COWmZL73dQg6RV1sMNAOAJw="
     },
     {
       "name": "user_factory.js",
-      "hash": "2F1BuspBNPKAtiSGhLsIJfZzJiA="
+      "hash": "BKG1eCi9cgZO9Q+JdME1kkT16MQ="
     }
   ]
 }

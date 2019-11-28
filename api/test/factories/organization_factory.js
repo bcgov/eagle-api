@@ -1,4 +1,7 @@
 const factory = require('factory-girl').factory;
+const moment = require('moment');
+const mongTypes = require('mongoose').Types;
+const _ = require('lodash');
 const factory_helper = require('./factory_helper');
 const Organization = require('../../helpers/models/organization');
 let faker = require('faker/locale/en');
@@ -25,13 +28,13 @@ factory.define(factoryName, Organization, buildOptions => {
   let dateUpdated = moment(faker.date.past(10, new Date()));
   let dateAdded = dateUpdated.clone().subtract(faker.random.number(45), 'days');
   let companyName = faker.company.companyName();
-  if (0 == updator.length) dateUpdated = null;
+  if (_.isEmpty(updator)) dateUpdated = null;
 
   let attrs = {
       addedBy: author.idir
     , description: faker.lorem.paragraph()
     , name: companyName
-    , updatedBy: updator.idir
+    , updatedBy: (_.isEmpty(updator)) ? null : updator.idir
     , dateAdded: dateAdded
     , dateUpdated: dateUpdated
     , country: "Canada"
@@ -41,13 +44,13 @@ factory.define(factoryName, Organization, buildOptions => {
     , address1: faker.address.streetAddress()
     , address2: faker.address.secondaryAddress()
     , companyType: faker.random.arrayElement(companyTypes)
-    , parentCompany: require('mongoose').Types.ObjectId()
+    , parentCompany: mongTypes.ObjectId()
     , companyLegal: ""
     , company: companyName
 
-    , read             : faker.random.arrayElement(['["public"]', '["sysadmin"]'])
-    , write            : faker.random.arrayElement(['["public"]', '["sysadmin"]'])
-    , delete           : faker.random.arrayElement(['["public"]', '["sysadmin"]'])
+    , read             : faker.random.arrayElement(["public", "sysadmin", ["public", "sysadmin"]])
+    , write            : faker.random.arrayElement(["public", "sysadmin", ["public", "sysadmin"]])
+    , delete           : faker.random.arrayElement(["public", "sysadmin", ["public", "sysadmin"]])
   };
   return attrs;
 });

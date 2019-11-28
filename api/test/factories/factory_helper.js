@@ -1,5 +1,6 @@
 const canada = require('canada');
 const _ = require('lodash');
+const mongTypes = require('mongoose').Types;
 let faker = require('faker/locale/en');
 
 let bcCities = [];
@@ -16,6 +17,9 @@ function generateFakePerson(firstName, middleName, lastName) {
     let email = first.toLowerCase() + (faker.random.boolean() ? "." : "") + last.toLowerCase() + "@" + faker.internet.email().split("@").pop();
     // Active Directory Username, is stored in db as "idir\\sampleidir"
     let idir = "idir\\\\" + ((first.charAt(0) + last).toLowerCase()).substring(0,idirMaxAllowedChars);
+    let phoneNumber = generateEpicFormatPhoneNumber();
+    let faxNumber = generateEpicFormatPhoneNumber();
+    let cellPhoneNumber = generateEpicFormatPhoneNumber();
 
     return {
           "firstName": first
@@ -24,11 +28,19 @@ function generateFakePerson(firstName, middleName, lastName) {
         , "fullName": full
         , "emailAddress": email
         , "idir": idir
+        , "phoneNumber": phoneNumber
+        , "faxNumber": faxNumber
+        , "cellPhoneNumber": cellPhoneNumber
     };
 }
 
-function getRandomExistingUserId(usersPool) {
-    return  (usersPool) ? faker.random.arrayElement(usersPool)._id : require('mongoose').Types.ObjectId();
+function generateEpicFormatPhoneNumber() {
+    // https://en.wikipedia.org/wiki/List_of_British_Columbia_area_codes
+    return faker.phone.phoneNumberFormat(1).replace(/([()]*)/gi, '').replace(/^.{3}/gi, faker.random.arrayElement(["604","250","778", "236", "672"]));
+}
+
+function getRandomExistingMongoId(objectIdsPool) {
+    return  (objectIdsPool) ? mongTypes.ObjectId(faker.random.arrayElement(objectIdsPool)._id) : mongTypes.ObjectId();
 }
 
 function loadBcCities() {
@@ -96,5 +108,6 @@ exports.getBcCities = getBcCities;
 exports.generateFakePostal = generateFakePostal;
 exports.generateFakeBcLatLong = generateFakeBcLatLong;
 exports.generateFakePerson = generateFakePerson;
-exports.getRandomExistingUserId = getRandomExistingUserId;
+exports.getRandomExistingMongoId = getRandomExistingMongoId;
 exports.generateFakeLocationString = generateFakeLocationString;
+exports.generateEpicFormatPhoneNumber = generateEpicFormatPhoneNumber;
