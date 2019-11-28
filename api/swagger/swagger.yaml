@@ -3264,6 +3264,11 @@ paths:
           description: "The eaoStatus of the file."
           required: false
           type: string
+        - name: legislation
+          in: formData
+          description: "The legislation year of the file."
+          required: false
+          type: string
       responses:
         "200":
           description: "Success"
