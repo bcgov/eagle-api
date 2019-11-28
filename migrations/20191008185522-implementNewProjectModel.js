@@ -49,6 +49,10 @@ exports.up = function(db) {
             let projectWrite = item.write
             let projectDelete = item.delete
 
+            //Add the pin data on the root 
+            const pins = item.pins;
+            const pinsHistory = item.pinsHistory;
+
             // new projects since legislation was populated
             if (item.name === "Giant Copper" || item.name === "Kutcho") {
               legislationString = '2002 Environmental Assessment Act';
@@ -119,8 +123,6 @@ exports.up = function(db) {
               projLead                : item.projLead,
               execProjectDirector     : item.execProjectDirector,
               complianceLead          : item.complianceLead,
-              pins                    : item.pins,
-              pinsHistory             : item.pinsHistory,
               groups                  : item.groups
             };
 
@@ -139,7 +141,9 @@ exports.up = function(db) {
                     legislation_1996: currentProjectData,
                     read: projectRead,
                     write: projectWrite,
-                    delete: projectDelete
+                    delete: projectDelete,
+                    pins: pins,
+                    pinsHistory: pinsHistory
                   }
                 }
               );
@@ -157,7 +161,9 @@ exports.up = function(db) {
                     legislation_2002: currentProjectData,
                     read: projectRead,
                     write: projectWrite,
-                    delete: projectDelete
+                    delete: projectDelete,
+                    pins: pins,
+                    pinsHistory: pinsHistory
                   }
                 }
               );
@@ -231,8 +237,6 @@ exports.up = function(db) {
                   projLead                : 1,
                   execProjectDirector     : 1,
                   complianceLead          : 1,
-                  pins                    : 1,
-                  pinsHistory             : 1,
                   groups                  : 1,
                 }
               }
