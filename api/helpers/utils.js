@@ -150,6 +150,8 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
         },
         (modelType === 'Project' || populateProject) &&  {
           '$addFields': {
+            "default.pins": '$pins',
+            "default.pinsHistory": '$pinsHistory',
             "default._id": '$_id',
             "default.read": '$read'
           }
