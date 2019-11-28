@@ -36,7 +36,7 @@ function generateFakePerson(firstName, middleName, lastName) {
 
 function generateEpicFormatPhoneNumber() {
     // https://en.wikipedia.org/wiki/List_of_British_Columbia_area_codes
-    return faker.phone.phoneNumberFormat(1).replace(/([()]*)/gi, '').replace(/^.{3}/gi, faker.random.arrayElement(["604","250","778", "236", "672"]));
+    return faker.phone.phoneNumberFormat(1).replace(/([()]*)/gi, '').replace(/^.{3}/gi, faker.random.arrayElement(["604","250","778","236","672"]));
 }
 
 function getRandomExistingMongoId(objectIdsPool) {
