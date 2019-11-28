@@ -86,22 +86,8 @@ var projectDataDefinition = {
   // Compliance & Enforcement Lead
   complianceLead          : { type: 'ObjectId', ref: 'User', default: null, index: true },
   //////////////////////
-
-  /////////////////////
-  // PINs
-  /////////////////////
-  pins                    : [{ type: 'ObjectId', ref: 'Pin', default: null, index: true }],
-  /*
-    array of mixed:
-    [{
-      action: 'added' | 'removed',
-      date: new Date(now).toISOString()
-    }]
-  */
-  pinsHistory            : [{ type: Mixed, default: {} }],
-
   groups                   : [{ type: 'ObjectId', ref: 'Group', default: null, index: true }],
-
+  
 };
 
 // actual project schema
@@ -115,6 +101,11 @@ var projectDefinition = {
   read                   : [{ type: String, trim: true, default: '["project-system-admin"]' }],
   write                  : [{ type: String, trim: true, default: '["project-system-admin"]' }],
   delete                 : [{ type: String, trim: true, default: '["project-system-admin"]' }],
+  // PINs
+  /////////////////////
+  pins                    : [{ type: 'ObjectId', ref: 'Pin', default: [], index: true }],
+  
+  pinsHistory            : [{ type: Mixed, default: {} }],
 }
 
 var buildToNature = {};

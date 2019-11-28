@@ -196,7 +196,9 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
       {
         '$addFields': {
           [projectLegislationDataIdKey]: '$_id',
-          [projectLegislationDataKey + ".read"]: "$read"
+          [projectLegislationDataKey + ".read"]: "$read",
+          [projectLegislationDataKey + ".pins"]: "$pins",
+          [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory"
         }
       }
     );
@@ -224,7 +226,9 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
       {
         '$addFields': {
           [projectLegislationDataIdKey]: '$_id',
-          [projectLegislationDataKey + ".read"]: "$read"
+          [projectLegislationDataKey + ".read"]: "$read",
+          [projectLegislationDataKey + ".pins"]: "$pins",
+          [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory"          
         }
       }
     );
