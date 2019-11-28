@@ -621,6 +621,8 @@ exports.protectedPut = async function (args, res, next) {
 
   obj.keywords = args.swagger.params.keywords ? args.swagger.params.keywords.value : null;
 
+  obj.legislation = parseInt(args.swagger.params.legislation.value, 10);
+
   obj.eaoStatus = args.swagger.params.eaoStatus.value;
   if (args.swagger.params.eaoStatus.value === 'Published') {
     obj.read = ['public', 'staff', 'sysadmin'];
