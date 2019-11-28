@@ -2,7 +2,8 @@ var mongoose = require('mongoose');
 var _ = require('underscore');
 var Mixed = mongoose.Schema.Types.Mixed;
 
-var definition = {
+// legislation specific data schema
+var projectDataDefinition = {
 
   //Needed for default view
   CEAAInvolvement         : { type: String, default: '' },
@@ -26,6 +27,7 @@ var definition = {
   responsibleEPDPhone     : { type: String, default: '' },
   type                    : { type: String, default: '' },
   legislation             : { type: String, default: '' },
+  legislationYear         : { type: Number },
 
 
   //Everything else
@@ -84,27 +86,27 @@ var definition = {
   // Compliance & Enforcement Lead
   complianceLead          : { type: 'ObjectId', ref: 'User', default: null, index: true },
   //////////////////////
-
-  /////////////////////
-  // PINs
-  /////////////////////
-  pins                    : [{ type: 'ObjectId', ref: 'Pin', default: null, index: true }],
-  /*
-    array of mixed:
-    [{
-      action: 'added' | 'removed',
-      date: new Date(now).toISOString()
-    }]
-  */
-  pinsHistory            : [{ type: Mixed, default: {} }],
-
   groups                   : [{ type: 'ObjectId', ref: 'Group', default: null, index: true }],
+  
+};
 
+// actual project schema
+var projectDefinition = {
+  currentLegislationYear: String,
+  legislationYearList: [ Number ],
+  legislation_1996: projectDataDefinition,
+  legislation_2002: projectDataDefinition,
+  legislation_2018: projectDataDefinition,
   // Permissions
   read                   : [{ type: String, trim: true, default: '["project-system-admin"]' }],
   write                  : [{ type: String, trim: true, default: '["project-system-admin"]' }],
   delete                 : [{ type: String, trim: true, default: '["project-system-admin"]' }],
-};
+  // PINs
+  /////////////////////
+  pins                    : [{ type: 'ObjectId', ref: 'Pin', default: [], index: true }],
+  
+  pinsHistory            : [{ type: Mixed, default: {} }],
+}
 
 var buildToNature = {};
 buildToNature.new = 'New Construction';
@@ -129,6 +131,6 @@ nature.set = function (nature) {
   }
 };
 
-definition.virtuals__ = [nature];
+projectDefinition.virtuals__ = [nature];
 
-module.exports = require ('../models')('Project', definition, 'epic');
+module.exports = require('../models')('Project', projectDefinition, 'epic');

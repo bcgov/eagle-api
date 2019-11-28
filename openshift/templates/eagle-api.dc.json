@@ -112,6 +112,7 @@
           "app": "${GROUP_NAME}"
         },
         "name": "${NAME}",
+        "app": "${GROUP_NAME}",
         "annotations": {
           "description": "Defines how to deploy the application server"
         }

@@ -42,6 +42,8 @@ module.exports = require ('../models')('Document', {
     projectPhase     : { type:'ObjectId', default: null },
     eaoStatus        : { type: String, default: '' },
     keywords         : { type: String, default: '' },
+    legislation      : { type: Number, default: 0 },
+    legislationYearVetted : { type: Boolean, default: false },
 
     // TODO
     labels           : [{ type: Mixed, default: {} }]

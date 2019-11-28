@@ -7,8 +7,8 @@ metadata:
     tags: 'database,backup,mongo'
 parameters:
   - name: MONGODB_BACKUP_SCHEDULE
-    description: 'Cron-like schedule expression. Default: Once every day at 1:00 AM'
-    value: '30 6 * * *'
+    description: 'Cron-like schedule expression. Default: Once every day at 6:35 AM'
+    value: '35 6 * * *'
   - name: MONGODB_BACKUP_VOLUME_CLAIM
     description: 'Name of the volume claim to be used as storage'
     value: ''

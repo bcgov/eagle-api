@@ -55,7 +55,7 @@ var generateExpArray = async function (field, roles) {
   }
   console.log("expArray:", expArray);
   return expArray;
-}
+};
 
 var getConvertedValue = function (item, entry) {
   if (isNaN(entry)) {
@@ -66,7 +66,7 @@ var getConvertedValue = function (item, entry) {
     } else if (entry === 'true') {
       console.log("bool");
       // Bool
-      var tempObj = {}
+      var tempObj = {};
       tempObj[item] = true;
       tempObj.active = true;
       return tempObj;
@@ -82,7 +82,7 @@ var getConvertedValue = function (item, entry) {
     console.log("number");
     return { [item]: parseInt(entry) };
   }
-}
+};
 
 var handlePCPItem = async function (roles, expArray, value) {
   if (Array.isArray(value)) {
@@ -97,7 +97,7 @@ var handlePCPItem = async function (roles, expArray, value) {
   } else {
     expArray.push(await getPCPValue(roles, value));
   }
-}
+};
 
 var getPCPValue = async function (roles, entry) {
   console.log('pcp: ', entry);
@@ -150,7 +150,7 @@ var getPCPValue = async function (roles, entry) {
 
   console.log('pcp', pcp);
   return pcp;
-}
+};
 
 var handleDateStartItem = function (expArray, field, entry) {
   var date = new Date(entry);
@@ -160,7 +160,7 @@ var handleDateStartItem = function (expArray, field, entry) {
     var start = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
     expArray.push({ [field]: { $gte: start } });
   }
-}
+};
 
 var handleDateEndItem = function (expArray, field, entry) {
   var date = new Date(entry);
@@ -170,9 +170,164 @@ var handleDateEndItem = function (expArray, field, entry) {
     var end = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1);
     expArray.push({ [field]: { $lt: end } });
   }
+};
+
+var unwindProjectData = function (aggregation, projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation) {
+  // If projectLegislationYear = "" then use the legislationDefault key on the project model
+  // pop proponent if exists.
+  if (!projectLegislation || projectLegislation == "default") {
+
+    aggregation.push(
+      {
+        '$lookup': {
+          "from": "epic",
+          "localField": projectLegislationDataKey + ".proponent",
+          "foreignField": "_id",
+          "as": projectLegislationDataKey + ".proponent"
+        }
+      }
+    )
+    aggregation.push(
+      {
+        "$unwind": "$" + projectLegislationDataKey + ".proponent"
+      },
+    );
+    aggregation.push(
+      {
+        '$addFields': {
+          [projectLegislationDataIdKey]: '$_id',
+          [projectLegislationDataKey + ".read"]: "$read",
+          [projectLegislationDataKey + ".pins"]: "$pins",
+          [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory"
+        }
+      }
+    );
+    aggregation.push(
+      {
+        "$replaceRoot": { newRoot:  "$" + projectLegislationDataKey }
+      }
+    );
+  } else {
+    aggregation.push(
+      {
+        '$lookup': {
+          "from": "epic",
+          "localField": projectLegislationDataKey + ".proponent",
+          "foreignField": "_id",
+          "as": projectLegislationDataKey + ".proponent"
+        }
+      });
+    aggregation.push(
+      {
+        "$unwind": "$" + projectLegislationDataKey + ".proponent"
+      },
+    );
+    aggregation.push(
+      {
+        '$addFields': {
+          [projectLegislationDataIdKey]: '$_id',
+          [projectLegislationDataKey + ".read"]: "$read",
+          [projectLegislationDataKey + ".pins"]: "$pins",
+          [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory"          
+        }
+      }
+    );
+    aggregation.push(
+      {
+        "$addFields": {
+          "project": { "$mergeObjects": ["$project",  "$" + projectLegislationDataKey]},
+       }
+      }
+    );
+    //Null out the projectLegislationYear
+    aggregation.push({
+      "$project": {["project.legislation_" + projectLegislation]: 0 }
+    });
+    aggregation.push({
+      "$project": {[projectLegislationDataKey]: 0 }
+    });
+  }
+}
+var getProjectLegislationInfo = function(legislation) {
+  let projectLegislationDataKey;
+  switch (legislation) {
+    //TODO: Update this to work for future years
+    case "1996":
+    case "2002":
+    case "2018":
+      projectLegislationDataKey = "legislation_" + legislation;
+      break;
+    case "all":
+      //TODO: Make this extendable. Pull from a list
+      projectLegislationDataKey = [ "legislation_1996", "legislation_2002", "legislation_2018" ];
+      break;
+    default:
+      //TODO: need to know current legislation, to set proper default
+      projectLegislationDataKey = "default";
+      break;
+    }
+    return {projectLegislationDataKey, projectLegislationDataIdKey: projectLegislationDataKey + "._id"};
+
+};
+
+// TODO: make more generic
+var setProjectDefault = function(aggregation, projectOnly) {
+  if (projectOnly) {
+    // variables are tricky for fieldpaths ie. "default"
+    aggregation.push(
+      {
+        $addFields: {
+          "default": {
+            $switch: {
+              branches: [
+                { 
+                  case: { $eq: [ "$currentLegislationYear", 'legislation_1996' ]},
+                  then: "$legislation_1996"
+                },
+                {
+                  case: { $eq: [ "$currentLegislationYear", 'legislation_2002' ]},
+                  then: "$legislation_2002"
+                },
+                {
+                  case: { $eq: [ "$currentLegislationYear", 'legislation_2018' ]},
+                  then: "$legislation_2018"
+                }
+              ], default: "$legislation_2002"
+            }
+          }
+        }
+      }
+    );
+  } else {
+    aggregation.push(
+      {
+        $addFields: {
+          'project.default': {
+            $switch: {
+              branches: [
+                { 
+                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_1996' ]},
+                  then: "$project.legislation_1996"
+                },
+                {
+                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2002' ]},
+                  then: "$project.legislation_2002"
+                },
+                {
+                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2018' ]},
+                  then: "$project.legislation_2018"
+                }
+              //TODO: watch out for the default case. If we hit this then we will have empty projects
+              ], default: "$project.legislation_2002"
+            }
+          }
+        }
+      }
+    );
+  }
 }
 
-var searchCollection = async function (roles, keywords, collection, pageNum, pageSize, project, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or) {
+var searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or) {
   var properties = undefined;
   if (project) {
     properties = { project: mongoose.Types.ObjectId(project) };
@@ -200,7 +355,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
   }
 
   var match = {
-    _schemaName: collection,
+    _schemaName: schemaName,
     ...(isEmpty(modifier) ? undefined : modifier),
     ...(searchProperties ? searchProperties : undefined),
     ...(properties ? properties : undefined),
@@ -247,8 +402,12 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
   };
 
   console.log('collation:', collation);
+  //Get our project Legislation info. Need this for other spots in the code
+  const projectLegislationObj = getProjectLegislationInfo(projectLegislation);
+  const projectLegislationDataKey = projectLegislationObj.projectLegislationDataKey;
+  const projectLegislationDataIdKey = projectLegislationObj.projectLegislationDataIdKey;
 
-  if (collection === 'Document') {
+  if (schemaName === 'Document') {
     // Allow documents to be sorted by status based on publish existence
     aggregation.push(
       {
@@ -277,27 +436,42 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
         }
       }
     );
+    
+    
   }
 
-  if (collection === 'Project') {
-    // pop proponent if exists.
-    aggregation.push(
-      {
-        '$lookup': {
-          "from": "epic",
-          "localField": "proponent",
-          "foreignField": "_id",
-          "as": "proponent"
-        }
+  if (schemaName === 'Project') {
+    if (projectLegislation === "all") {
+      projectLegislationDataKey.forEach ( dataKey => {
+        // pop proponent if exists.
+        aggregation.push(
+          {
+            '$lookup': {
+              "from": "epic",
+              "localField": dataKey + ".proponent",
+              "foreignField": "_id",
+              "as": dataKey + ".proponent"
+            }
+          });
+        aggregation.push(
+          {
+            "$unwind": {
+              path: "$" + dataKey + ".proponent",
+              preserveNullAndEmptyArrays: true
+            }
+          },
+        );
       });
-    aggregation.push(
-      {
-        "$unwind": "$proponent"
-      },
-    );
+    } else if ((!projectLegislation) || projectLegislation === "default") {
+      setProjectDefault(aggregation, true)
+      // unwind proponents and move embedded data up to root
+      unwindProjectData(aggregation, "default", "default._id", projectLegislation)
+    } else {
+      unwindProjectData(aggregation, projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation)
+    }
   }
 
-  if (collection === 'Group') {
+  if (schemaName === 'Group') {
     // pop project and user if exists.
     aggregation.push(
       {
@@ -315,8 +489,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
     );
   }
 
-  if (collection === 'User') {
-    // pop proponent if exists.
+  if (schemaName === 'User') {
     aggregation.push(
       {
         '$lookup': {
@@ -334,7 +507,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
   }
 
   console.log('populate:', populate);
-  if (populate === true && collection !== 'Project') {
+  if (populate === true && schemaName !== 'Project') {
     aggregation.push({
       "$lookup": {
         "from": "epic",
@@ -354,9 +527,33 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
         "preserveNullAndEmptyArrays": true
       }
     });
+    //TODO: Might need to apply this merge to all project calls. This is to get rid of all the legislation keys
+    if (schemaName === "Document" || schemaName === "RecentActivity") {
+      // Here we have documents with a nested Project and a nested legislation key
+      setProjectDefault(aggregation, false)
+
+      // We need to merge the legislation key with the Project while preserving the _id and the rest of the document info
+      // TODO: Abstract these types of stages, as we will need to do this a lot")
+      aggregation.push({
+        "$addFields": {
+          "project": { "$mergeObjects": ["$project", "$project.default"] },
+       }
+      });
+      // Unset the nested legislation data keys
+      aggregation.push({
+        "$project": {["project.legislation_2002"]: 0 }
+      });
+      aggregation.push({
+        "$project": {["project.legislation_1996"]: 0 }
+      });
+      aggregation.push({
+        "$project": {["project.default"]: 0 }
+      });
+      
+    } 
   }
 
-  if (populate === true && collection === 'Inspection') {
+  if (populate === true && schemaName === 'Inspection') {
     // pop elements and their items.
     aggregation.push(
       {
@@ -368,7 +565,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
         }
       }
     );
-  } else if (populate === true && collection === 'InspectionElement') {
+  } else if (populate === true && schemaName === 'InspectionElement') {
     aggregation.push(
       {
         '$lookup': {
@@ -381,7 +578,7 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
     );
   }
 
-  if (populate === true && collection === 'NotificationProject') {
+  if (populate === true && schemaName === 'NotificationProject') {
     aggregation.push(
       {
         $lookup: {
@@ -471,18 +668,17 @@ var searchCollection = async function (roles, keywords, collection, pageNum, pag
         }
       ]
     }
-  })
-
+  });
   return new Promise(function (resolve, reject) {
-    var collectionObj = mongoose.model(collection);
+    var collectionObj = mongoose.model(schemaName);
     collectionObj.aggregate(aggregation)
       .collation(collation)
       .exec()
       .then(function (data) {
-        resolve(Utils.filterData(collection, data, roles));
+        resolve(Utils.filterData(schemaName, data, roles));
       }, reject);
   });
-}
+};
 
 exports.publicGet = async function (args, res, next) {
   executeQuery(args, res, next);
@@ -500,6 +696,7 @@ var executeQuery = async function (args, res, next) {
   var populate = args.swagger.params.populate ? args.swagger.params.populate.value : false;
   var pageNum = args.swagger.params.pageNum.value || 0;
   var pageSize = args.swagger.params.pageSize.value || 25;
+  var projectLegislation = args.swagger.params.projectLegislation.value || '';
   var sortBy = args.swagger.params.sortBy.value ? args.swagger.params.sortBy.value : keywords ? ['-score'] : [];
   var caseSensitive = args.swagger.params.caseSensitive ? args.swagger.params.caseSensitive.value : false;
   var and = args.swagger.params.and ? args.swagger.params.and.value : '';
@@ -524,7 +721,7 @@ var executeQuery = async function (args, res, next) {
   console.log(roles);
   console.log("******************************************************************");
 
-  Utils.recordAction('Search', keywords, args.swagger.params.auth_payload ? args.swagger.params.auth_payload.preferred_username : 'public')
+  Utils.recordAction('Search', keywords, args.swagger.params.auth_payload ? args.swagger.params.auth_payload.preferred_username : 'public');
 
   var sortDirection = undefined;
   var sortField = undefined;
@@ -544,7 +741,7 @@ var executeQuery = async function (args, res, next) {
 
     console.log("Searching Collection:", dataset);
     console.log("sortField:", sortField);
-    var itemData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, sortField, sortDirection, caseSensitive, populate, and, or)
+    var itemData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or);
     if (dataset === 'Comment') {
       // Filter
       _.each(itemData[0].searchResults, function (item) {
@@ -557,7 +754,7 @@ var executeQuery = async function (args, res, next) {
 
   } else if (dataset === 'Item') {
     var collectionObj = mongoose.model(args.swagger.params._schemaName.value);
-    console.log("ITEM GET", { _id: args.swagger.params._id.value })
+    console.log("ITEM GET", { _id: args.swagger.params._id.value });
 
     let aggregation = [
       {

@@ -367,24 +367,66 @@ exports.protectedDelete = function (args, res, next) {
   });
 }
 
+
+
 //  Create a new project
 exports.protectedPost = function (args, res, next) {
   var obj = args.swagger.params.project.value;
 
+  // default project creation is set to 2002 right now for backwards compatibility with other apps that use this api
+  var projectLegislationYear = obj.legislationYear ? obj.legislationYear : 2002;
+
   defaultLog.info("Incoming new object:", obj);
 
   var Project = mongoose.model('Project');
-  var project = new Project(obj);
-  project.proponent = mongoose.Types.ObjectId(obj.proponent)
-  project.responsibleEPDId = mongoose.Types.ObjectId(obj.responsibleEPDId)
-  project.projectLeadId = mongoose.Types.ObjectId(obj.projectLeadId)
+  var project;
+  var projectData;
+
+  if (projectLegislationYear == 2018) {
+    project = new Project({legislation_2018: obj});
+    projectData = project.legislation_2018;
+    projectData.legislation = "2018 Environmental Assessment Act";
+  } else if (projectLegislationYear == 2002) {
+    project = new Project({legislation_2002: obj});
+    projectData = project.legislation_2002;
+    projectData.legislation = "2002 Environmental Assessment Act";
+  } else if (projectLegislationYear == 1996) {
+    project = new Project({legislation_1996: obj});
+    projectData = project.legislation_1996;
+    projectData.legislation = "1996 Environmental Assessment Act";
+  }
+
+  if (!project) {
+    defaultLog.info("Couldn't find that project object!");
+    return Actions.sendResponse(res, 400, "Error loading project data");
+  }
+
+  //Need to add this logic to the put because we will only hit a post on a net new project
+  project.currentLegislationYear = "legislation_" + projectLegislationYear;
+  project.legislationYearList.push(projectLegislationYear);
+
+  projectData.proponent = mongoose.Types.ObjectId(obj.proponent);
+  projectData.responsibleEPDId = mongoose.Types.ObjectId(obj.responsibleEPDId);
+  projectData.projectLeadId = mongoose.Types.ObjectId(obj.projectLeadId);
 
   // Define security tag defaults
   project.read = ['sysadmin', 'staff'];
   project.write = ['sysadmin', 'staff'];
   project.delete = ['sysadmin', 'staff'];
-  project._createdBy = args.swagger.params.auth_payload.preferred_username;
-  project.createdDate = Date.now();
+  projectData._createdBy = args.swagger.params.auth_payload.preferred_username;
+  projectData.createdDate = Date.now();
+
+  if (projectLegislationYear == 2018) {
+    project.legislation_2018 = projectData;
+  } else if (projectLegislationYear == 2002) {
+    project.legislation_2002 = projectData;
+  } else if (projectLegislationYear == 1996) {
+    project.legislation_1996 = projectData;
+  }
+
+  // Currently this will save based on the entire project model.
+  // Meaning there will be three project legislation keys ( legislation_1996, legislation_2002, legislation_2018) only one of which will be populated with data.
+  // The other two keys will be full of null values, as well as any other fields that are in the project model and are not explicitly defined above.
   project.save()
     .then(function (theProject) {
       Utils.recordAction('Post', 'Project', args.swagger.params.auth_payload.preferred_username, theProject._id);
@@ -839,9 +881,41 @@ exports.protectedPut = async function (args, res, next) {
   defaultLog.info("ObjectID:", args.swagger.params.projId.value);
 
   var Project = mongoose.model('Project');
-  var obj = {};
   var projectObj = args.swagger.params.ProjObject.value;
 
+  // get full project object to retain existing data
+  var fullProjectObject = await Project.findById(mongoose.Types.ObjectId(objId));
+
+  var projectLegislationYear;
+  var filteredData;
+
+  // if project legislation doesn't exist then look up current legislation for the project
+  if (projectObj.legislationYear) {
+    projectLegislationYear = projectObj.legislationYear;
+    // check if the passed in project year exists in the legislation year list
+    if ( !fullProjectObject.legislationYearList.includes(projectLegislationYear) ) {
+      fullProjectObject.legislationYearList.push(projectLegislationYear);
+    }
+  } else {
+    // look up the current project legislation
+    projectLegislationYear = fullProjectObject.currentLegislationYear.split("_")[1];
+  }
+
+  if (projectLegislationYear == 2018) {
+    filteredData = fullProjectObject.legislation_2018;
+    filteredData.legislation = "2018 Environmental Assessment Act";
+  } else if (projectLegislationYear == 2002) {
+    filteredData = fullProjectObject.legislation_2002;
+    filteredData.legislation = "2002 Environmental Assessment Act";
+  } else if (projectLegislationYear == 1996) {
+    filteredData = fullProjectObject.legislation_1996;
+    filteredData.legislation = "1996 Environmental Assessment Act";
+  }
+
+  if (!filteredData) {
+    defaultLog.info("Couldn't find that object!");
+    return Actions.sendResponse(res, 404, {});
+  }
   // console.log("Incoming updated object:", projectObj);
   console.log("*****************");
 
@@ -849,51 +923,61 @@ exports.protectedPut = async function (args, res, next) {
   delete projectObj.write;
   delete projectObj.delete;
 
-  obj.type = projectObj.type;
-  obj.build = projectObj.build;
-  obj.sector = projectObj.sector;
-  obj.description = projectObj.description;
-  obj.location = projectObj.location;
-  obj.region = projectObj.region;
-  obj.status = projectObj.status;
-  obj.eaStatus = projectObj.eaStatus;
-  obj.name = projectObj.name;
+  filteredData.type = projectObj.type;
+  filteredData.build = projectObj.build;
+  filteredData.sector = projectObj.sector;
+  filteredData.description = projectObj.description;
+  filteredData.location = projectObj.location;
+  filteredData.region = projectObj.region;
+  filteredData.status = projectObj.status;
+  filteredData.eaStatus = projectObj.eaStatus;
+  filteredData.name = projectObj.name;
+  //Updating the legislation Year in the legislation key
+  filteredData.legislationYear = projectLegislationYear;
 
   // obj.eaStatusDate = projectObj.eaStatusDate ? new Date(projectObj.eaStatusDate) : null;
   // obj.projectStatusDate = projectObj.projectStatusDate ? new Date(projectObj.projectStatusDate) : null;
   // obj.substantiallyDate = projectObj.substantiallyDate ? new Date(projectObj.substantiallyDate) : null;
   // obj.activeDate = projectObj.activeDate ? new Date(projectObj.activeDate) : null;
 
-  obj.substantially = projectObj.substantially;
+  filteredData.substantially = projectObj.substantially;
 
-  obj.centroid = projectObj.centroid;
+  filteredData.centroid = projectObj.centroid;
 
   // Contacts
-  obj.projectLeadId = mongoose.Types.ObjectId(projectObj.projectLeadId);
-  obj.responsibleEPDId = mongoose.Types.ObjectId(projectObj.responsibleEPDId);
+  filteredData.projectLeadId = mongoose.Types.ObjectId(projectObj.projectLeadId);
+  filteredData.responsibleEPDId = mongoose.Types.ObjectId(projectObj.responsibleEPDId);
 
-  obj.CEAAInvolvement = projectObj.CEAAInvolvement;
-  obj.CEAALink = projectObj.CEAALink;
-  obj.eacDecision = projectObj.eacDecision;
-  obj.decisionDate = projectObj.decisionDate ? new Date(projectObj.decisionDate) : null;
-
-  obj.review45Start = projectObj.review45Start  ? new Date(projectObj.review45Start) : null;
-  obj.review180Start = projectObj.review180Start  ? new Date(projectObj.review180Start) : null;
+  filteredData.CEAAInvolvement = projectObj.CEAAInvolvement;
+  filteredData.CEAALink = projectObj.CEAALink;
+  filteredData.eacDecision = projectObj.eacDecision;
+  filteredData.decisionDate = projectObj.decisionDate ? new Date(projectObj.decisionDate) : null;
+  fullProjectObject.review45Start = projectObj.review45Start  ? new Date(projectObj.review45Start) : null;
+  fullProjectObject.review180Start = projectObj.review180Start  ? new Date(projectObj.review180Start) : null;
 
   try {
-    obj.intake = {};
-    obj.intake.investment = projectObj.intake.investment;
-    obj.intake.investmentNotes = projectObj.intake.notes;
+    filteredData.intake = {};
+    filteredData.intake.investment = projectObj.intake.investment;
+    filteredData.intake.investmentNotes = projectObj.intake.notes;
   } catch (e) {
     // Missing info
     console.log("Missing:", e);
     // fall through
   }
-  obj.proponent = projectObj.proponent;
+  filteredData.proponent = projectObj.proponent;
 
-  console.log("Updating with:", obj);
+  console.log("Updating with:", filteredData);
   console.log("--------------------------");
-  var doc = await Project.findOneAndUpdate({ _id: mongoose.Types.ObjectId(objId) }, obj, { upsert: false, new: true });
+
+  if (projectLegislationYear == 2018) {
+    fullProjectObject.legislation_2018 = filteredData;
+  } else if (projectLegislationYear == 2002) {
+    fullProjectObject.legislation_2002 = filteredData;
+  } else if (projectLegislationYear == 1996) {
+    fullProjectObject.legislation_1996 = filteredData;
+  }
+
+  var doc = await Project.findOneAndUpdate({ _id: mongoose.Types.ObjectId(objId) }, fullProjectObject, { upsert: false, new: true });
   // Project.update({ _id: mongoose.Types.ObjectId(objId) }, { $set: updateObj }, function (err, o) {
   if (doc) {
     Utils.recordAction('Put', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
@@ -905,21 +989,28 @@ exports.protectedPut = async function (args, res, next) {
 }
 
 // Publish/Unpublish the project
+// We need to make this publish also update the current legislation year and the year list  
 exports.protectedPublish = function (args, res, next) {
   var objId = args.swagger.params.projId.value;
+  var ProjObject = args.swagger.params.ProjObject.value;
   defaultLog.info("Publish Project:", objId);
 
   var Project = require('mongoose').model('Project');
   Project.findOne({ _id: objId }, function (err, o) {
     if (o) {
       defaultLog.info("o:", o);
-      return Actions.publish(o)
+
+      if (ProjObject && ProjObject.legislationYear) {
+        o.currentLegislationYear = "legislation_" + ProjObject.legislationYear;
+      }
+
+      return Actions.publish(o,true)
         .then(function (published) {
           Utils.recordAction('Publish', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
           return Actions.sendResponse(res, 200, published);
         })
         .catch(function (err) {
-          return Actions.sendResponse(res, err.code, err);
+          return Actions.sendResponse(res, 500, err);
         });
     } else {
       defaultLog.info("Couldn't find that object!");

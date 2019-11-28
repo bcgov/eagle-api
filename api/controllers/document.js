@@ -40,6 +40,7 @@ var getSanitizedFields = function (fields) {
       'documentAuthorType',
       'milestone',
       'projectPhase',
+      'legislation',
       'description',
       'keywords',
       'isPublished',
@@ -619,6 +620,8 @@ exports.protectedPut = async function (args, res, next) {
   obj.description = args.swagger.params.description.value;
 
   obj.keywords = args.swagger.params.keywords ? args.swagger.params.keywords.value : null;
+
+  obj.legislation = parseInt(args.swagger.params.legislation.value, 10);
 
   obj.eaoStatus = args.swagger.params.eaoStatus.value;
   if (args.swagger.params.eaoStatus.value === 'Published') {
