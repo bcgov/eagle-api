@@ -263,12 +263,24 @@ module.exports = [{
   "type" : "label",
   "_schemaName" : "List",
   "legislation": 2018,
+  "name" : "Project Notification"
+},
+{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
   "name" : "Project Designation"
 },{
   "type" : "label",
   "_schemaName" : "List",
   "legislation": 2018,
   "name" : "Initial Project Description"
+},
+{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
+  "name" : "Engagement"
 },{
   "type" : "label",
   "_schemaName" : "List",
@@ -279,30 +291,92 @@ module.exports = [{
   "_schemaName" : "List",
   "legislation": 2018,
   "name" : "Readiness Decision"
+},
+{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
+  "name" : "Draft Process Order"
+},
+{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
+  "name" : "Issued Process Order"
 },{
   "type" : "label",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Process Planning"
+  "name" : "Draft EAC Application"
 },{
   "type" : "label",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Draft Project Order"
+  "name" : "Revised EAC Application"
 },{
   "type" : "label",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Process Order"
+  "name" : "Draft Assessment Report"
 },{
   "type" : "label",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Draft Application"
+  "name" : "Revised Assessment Report"
 },{
   "type" : "label",
   "_schemaName" : "List",
   "legislation": 2018,
-  "name" : "Revised Application"
+  "name" : "Draft EAC Package"
+},{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
+  "name" : "Referral Package"
+},{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
+  "name" : "Decision Package"
+},{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
+  "name" : "Timeline Extension"
+},{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
+  "name" : "Timeline Imposition"
+},{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
+  "name" : "Assessment Suspension"
+},{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
+  "name" : "Withdrawal"
+},{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
+  "name" : "Termination"
+},{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
+  "name" : "Amendment"
+},{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
+  "name" : "Compliance & Enforcement"
+},{
+  "type" : "label",
+  "_schemaName" : "List",
+  "legislation": 2018,
+  "name" : "Other"
 }
 ]
