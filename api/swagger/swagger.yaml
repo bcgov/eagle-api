@@ -3035,6 +3035,11 @@ paths:
           description: "Should we publish right away?"
           required: false
           type: boolean
+        - name: legislation
+          in: formData
+          description: "The legislation year of the file."
+          required: false
+          type: string
       responses:
         "200":
           description: "Success"
