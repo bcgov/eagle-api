@@ -80,7 +80,7 @@ factory.define(factoryName, Document, buildOptions => {
     , projectPhase     : require('mongoose').Types.ObjectId()
     , eaoStatus        : faker.random.arrayElement(["", "Published", "Rejected"])
     , keywords         : ""
-    , legislation      : faker.random.number({min: 1950, max: 2200 })
+    , legislation      : faker.random.arrayElement([1996, 2002, 2018])
     , legislationYearVetted : faker.random.boolean()
 
     // TODO generate more meaningful meta 
