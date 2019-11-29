@@ -80,6 +80,8 @@ factory.define(factoryName, Document, buildOptions => {
     , projectPhase     : require('mongoose').Types.ObjectId()
     , eaoStatus        : faker.random.arrayElement(["", "Published", "Rejected"])
     , keywords         : ""
+    , legislation      : faker.random.number({min: 1950, max: 2200 })
+    , legislationYearVetted : faker.random.boolean()
 
     // TODO generate more meaningful meta 
     // eg ["Under Review","Public Comments/Submissions","(2nd Public Comment Period) Email dated May 13/05 from PersonName1 and PersonName2 (Delta BC) with comments regarding the truck traffic and the port."]

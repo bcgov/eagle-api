@@ -151,8 +151,9 @@ factory.define(factoryName, Project, buildOptions =>{
     let dateAdded = activeDate.clone().subtract(faker.random.number(45), 'days');
     let projectLead = factory_helper.generateFakePerson();
     let responsibleEpd = factory_helper.generateFakePerson();
+    let legislationNumber = faker.random.arrayElement([1996, 2002, 2018])
 
-    let attrs = {
+    let projectData = {
         //Needed for default view
           CEAAInvolvement         : faker.random.arrayElement(ceaaInvolvements)
         , CELead                  : "Compliance & Enforcement Branch"
@@ -175,6 +176,7 @@ factory.define(factoryName, Project, buildOptions =>{
         , responsibleEPDPhone     : responsibleEpd.phoneNumber
         , type                    : faker.random.arrayElement(projectTypes)
         , legislation             : "2002 Environmental Assessment Act"
+        , legislationYear         : legislationNumber
 
 
         //Everything else
@@ -243,18 +245,24 @@ factory.define(factoryName, Project, buildOptions =>{
         , complianceLead          : mongTypes.ObjectId(factory_helper.getRandomExistingMongoId(usersPool))
         //////////////////////
 
-        /////////////////////
-        // PINs
-        /////////////////////
-        , pins                    : mongTypes.ObjectId()
-        , pinsHistory             : {} 
-
         , groups                  : mongTypes.ObjectId()
 
-        // Permissions
-        , read                    : ["sysadmin", "staff", "project-proponent", "project-admin", "system-eao", "project-intake", "project-team", "project-system-admin", "public"]
-        , write                   : ["sysadmin", "staff", "project-admin", "project-intake", "project-team", "project-system-admin"]
-        , delete                  : ["sysadmin", "staff", "project-system-admin", "project-intake"]
+    }
+
+    let attrs = {
+
+        currentLegislationYear      : legislationNumber
+      , legislationYearList     : faker.random.arrayElement([1996, 2002, 2018])
+      // TODO verify this is a valid way to generate embedded data
+      , legislation_1996        : projectData
+      , legislation_2002        : projectData
+      , legislation_2018        : projectData
+      // Permissions
+      , read                    : ["sysadmin", "staff", "project-proponent", "project-admin", "system-eao", "project-intake", "project-team", "project-system-admin", "public"]
+      , write                   : ["sysadmin", "staff", "project-admin", "project-intake", "project-team", "project-system-admin"]
+      , delete                  : ["sysadmin", "staff", "project-system-admin", "project-intake"]
+      , pins                    : [mongTypes.ObjectId()]
+      , pinsHistory            : {} 
     }
     return attrs;
 
