@@ -1,6 +1,7 @@
 'use strict';
 const Promise = require("bluebird");
 const faker = require('faker/locale/en');
+const mongTypes = require('mongoose').Types;
 Promise.longStackTraces();
 const test_helper = require('./test_helper');
 const app = test_helper.app;
@@ -12,6 +13,7 @@ const factory = require('factory-girl').factory;
 //the following include statements populate the 'factories' collection of factory-girl's singleton factory object
 const auditFactory = require("./factories/audit_factory");
 const userFactory = require("./factories/user_factory");
+const organizationFactory = require("./factories/organization_factory");
 const projectFactory = require("./factories/project_factory");
 const commentPeriodFactory = require("./factories/comment_period_factory");
 const commentFactory = require("./factories/comment_factory");
@@ -30,6 +32,7 @@ let generatorCeilings = {
   , documentsPerCommentPeriod: 3
   , commentsPerCommentPeriod: 300
   , groupsPerProject: 4
+  , organizations: 120
 };
 let gc = generatorCeilings;
 
@@ -43,6 +46,7 @@ const uniqueStaticSeeds = {
   , commentPeriodDocument: 104
   , comment: 102
   , group: 924
+  , organization: 436
 };
 const uss = uniqueStaticSeeds;
 
@@ -107,11 +111,11 @@ function generateEntireDatabase(usersData) {
 
 function generateGroupSetForProject(factoryKey, project, buildOptions, groupsToGen) {
   return new Promise(function(resolve, reject) {
-    let customGroupSettings = { project: project._id };
+    let customGroupSettings = { project: mongTypes.ObjectId(project._id) };
     factory.createMany(factoryKey, groupsToGen, customGroupSettings, buildOptions).then(groups => {
       let groupIds = [];
       for (i = 0; i < groups.length; i++) {
-        if (-1 == groupIds.indexOf(groups[i].id)) groupIds.push(groups[i].id); 
+        if (-1 == groupIds.indexOf(mongTypes.ObjectId(groups[i].id))) groupIds.push(mongTypes.ObjectId(groups[i].id)); 
       }
       project.groups = groupIds;
       resolve(groups);
@@ -121,7 +125,7 @@ function generateGroupSetForProject(factoryKey, project, buildOptions, groupsToG
 
 function generateCommentPeriodSetForProject(factoryKey, project, buildOptions, commentPeriodsToGen) {
   return new Promise(function(resolve, reject) {
-    let customCommentPeriodSettings = { project: project._id };
+    let customCommentPeriodSettings = { project: mongTypes.ObjectId(project._id) };
     factory.createMany(factoryKey, commentPeriodsToGen, customCommentPeriodSettings, buildOptions).then(commentPeriods => {
       resolve(commentPeriods);
     });
@@ -130,7 +134,7 @@ function generateCommentPeriodSetForProject(factoryKey, project, buildOptions, c
 
 function generateCommentSetForCommentPeriod(factoryKey, commentPeriod, buildOptions, commentsToGen) {
   return new Promise(function(resolve, reject) {
-    let customCommentSettings = { commentPeriod: commentPeriod._id };
+    let customCommentSettings = { commentPeriod: mongTypes.ObjectId(commentPeriod._id) };
     factory.createMany(factoryKey, commentsToGen, customCommentSettings, buildOptions).then(comments => {
       resolve(comments);
     });
@@ -139,7 +143,7 @@ function generateCommentSetForCommentPeriod(factoryKey, commentPeriod, buildOpti
 
 function generateDocumentSetForProject(factoryKey, project, buildOptions, projectDocumentsToGen) {
   return new Promise(function(resolve, reject) {
-    let customDocumentSettings = { documentSource: "PROJECT", project: project._id };
+    let customDocumentSettings = { documentSource: "PROJECT", project: mongTypes.ObjectId(project._id) };
     factory.createMany(factoryKey, projectDocumentsToGen, customDocumentSettings, buildOptions).then(documents => {
       resolve(documents);
     });
@@ -148,7 +152,7 @@ function generateDocumentSetForProject(factoryKey, project, buildOptions, projec
 
 function generateDocumentSetForCommentPeriod(factoryKey, commentPeriod, buildOptions, commentPeriodDocumentsToGen) {
   return new Promise(function(resolve, reject) {
-  let customDocumentSettings = { documentSource: "COMMENT", project: commentPeriod.project, _comment: commentPeriod._id };  // note that the document._comment field actually refers to a commentPeriod id
+  let customDocumentSettings = { documentSource: "COMMENT", project: mongTypes.ObjectId(commentPeriod.project), _comment: mongTypes.ObjectId(commentPeriod._id) };  // note that the document._comment field actually refers to a commentPeriod id
     factory.createMany(factoryKey, commentPeriodDocumentsToGen, customDocumentSettings, buildOptions).then(documents => {
       resolve(documents);
     });
@@ -166,19 +170,22 @@ function generateProjects(usersData) {
       factory.create(auditFactory.name, {}, {faker: getSeeded(genSettings.generate_consistent_data, uss.audit)}).then(audit =>{
         factory.createMany(userFactory.name, usersData, {faker: getSeeded(genSettings.generate_consistent_data, uss.guaranteedUser)}).then(guaranteedUsersArray => {
           factory.createMany(userFactory.name, generatorCeilings.extraUsers, {}, {faker: getSeeded(genSettings.generate_consistent_data, uss.extraUser)}).then(extraUsersArray => {
-            let users = guaranteedUsersArray.concat(extraUsersArray);            
-            factory.createMany(projectFactory.name, numOfProjsToGen, {}, {faker: getSeeded(genSettings.generate_consistent_data, uss.project), usersPool: users}).then(projectsArray => {
-              numOfProjsGenned = projectsArray.length;
-              let genData = new gd.GeneratedData();
-              genData.audit = audit;
-              genData.users = users;
-              genData.projects = projectsArray;
-              resolve(genData);
-            }).catch(error => {
-              console.log("Project error:" + error);
-              reject(error);
-            }).finally(function(){
-              console.log('Generated ' + numOfProjsGenned + ' projects.');
+            let users = guaranteedUsersArray.concat(extraUsersArray);       
+            factory.createMany(organizationFactory.name, generatorCeilings.organizations, {}, {faker: getSeeded(genSettings.generate_consistent_data, uss.organization)}).then(orgsArray => {
+              factory.createMany(projectFactory.name, numOfProjsToGen, {}, {faker: getSeeded(genSettings.generate_consistent_data, uss.project), usersPool: users, orgsPool: orgsArray}).then(projectsArray => {
+                numOfProjsGenned = projectsArray.length;
+                let genData = new gd.GeneratedData();
+                genData.audit = audit;
+                genData.users = users;
+                genData.organizations = orgsArray;
+                genData.projects = projectsArray;
+                resolve(genData);
+              }).catch(error => {
+                console.log("Project error:" + error);
+                reject(error);
+              }).finally(function(){
+                console.log('Generated ' + numOfProjsGenned + ' projects.');
+              });
             });
           });
         });

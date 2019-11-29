@@ -15,8 +15,8 @@ factory.define(factoryName, RecentActivity, buildOptions => {
   let attrs = {
       dateUpdated         : dateUpdated
     , dateAdded           : dateAdded
-    , _addedBy            : factory_helper.getRandomExistingUserId(usersPool)
-    , _updatedBy          : factory_helper.getRandomExistingUserId(usersPool)
+    , _addedBy            : factory_helper.getRandomExistingMongoId(usersPool)
+    , _updatedBy          : factory_helper.getRandomExistingMongoId(usersPool)
     , pinned              : faker.random.boolean()
     , documentUrl         : ("News" == raType) ? "/api/document/" + require('mongoose').Types.ObjectId() + "/fetch": ""
 
