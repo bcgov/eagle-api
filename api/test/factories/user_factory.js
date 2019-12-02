@@ -18,11 +18,11 @@ factory.define(factoryName, User, buildOptions => {
     , org                     : require('mongoose').Types.ObjectId()
     , orgName                 : faker.company.companyName()
     , title                   : faker.name.title()
-    , phoneNumber             : faker.phone.phoneNumberFormat(1)
+    , phoneNumber             : person.phoneNumber
     , salutation              : faker.name.prefix()
     , department              : faker.name.jobArea()
-    , faxNumber               : faker.phone.phoneNumberFormat(1)
-    , cellPhoneNumber         : faker.phone.phoneNumberFormat(1)
+    , faxNumber               : person.faxNumber
+    , cellPhoneNumber         : person.cellPhoneNumber
     , address1                : faker.address.streetAddress()
     , address2                : faker.address.secondaryAddress()
     , city                    : faker.random.arrayElement(factory_helper.getBcCities())
@@ -30,9 +30,9 @@ factory.define(factoryName, User, buildOptions => {
     , country                 : "Canada"
     , postalCode              : factory_helper.generateFakePostal()
     , notes                   : faker.random.arrayElement(["", faker.lorem.paragraph()])
-    , read                    : faker.random.arrayElement(['["public"]', '["sysadmin"]'])
-    , write                   : faker.random.arrayElement(['["public"]', '["sysadmin"]'])
-    , delete                  : faker.random.arrayElement(['["public"]', '["sysadmin"]'])
+    , read                    : faker.random.arrayElement(["public", "sysadmin"])
+    , write                   : faker.random.arrayElement(["public", "sysadmin"])
+    , delete                  : faker.random.arrayElement(["public", "sysadmin"])
   }
   return attrs;
 });

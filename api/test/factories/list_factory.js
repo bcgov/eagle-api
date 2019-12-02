@@ -40,7 +40,10 @@ factory.define(factoryName, List, buildOptions => {
     , type         : type
     , item         : null
     , guid         : require('mongoose').Types.ObjectId()
+    , legislation  : faker.random.arrayElement([1996, 2002, 2018])
+    , listOrder    : faker.random.number({ min: 0, max: 20 })
     , read         : '["public"]'
+    , write        : '["staff"]'
   };
   return attrs;
 });

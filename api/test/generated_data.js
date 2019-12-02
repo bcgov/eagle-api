@@ -2,6 +2,7 @@ class GeneratedData {
     constructor() {
         this.audit = null;
         this.users = null;
+        this.organizations = null;
         this.projects = null;
         this.projectDocuments = null;
         this.commentPeriods = null;

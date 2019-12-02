@@ -502,9 +502,9 @@ exports.protectedPost = async function (args, res, next) {
               doc.internalSize = upfile.size;
               doc.passedAVCheck = true;
               doc.internalMime = upfile.mimetype;
+              doc.legislation = parseInt(args.swagger.params.legislation.value, 10);
 
               doc.documentSource = args.swagger.params.documentSource.value;
-
               // TODO Not Yet
               // doc.labels = JSON.parse(args.swagger.params.labels.value);
 

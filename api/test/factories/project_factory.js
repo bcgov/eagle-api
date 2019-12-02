@@ -1,5 +1,6 @@
 const factory = require('factory-girl').factory;
 const moment = require('moment');
+const mongTypes = require('mongoose').Types;
 const factory_helper = require('./factory_helper');
 const Project = require('../../helpers/models/project');
 let faker = require('faker/locale/en');
@@ -138,6 +139,7 @@ const eaStatuses = [
 factory.define(factoryName, Project, buildOptions =>{
     if (buildOptions.faker) faker = buildOptions.faker;
     let usersPool = (buildOptions.usersPool) ? buildOptions.usersPool : null;
+    let organizationsPool = (buildOptions.orgsPool) ? buildOptions.orgsPool : null;
 
     let projectName = faker.company.companyName() + " " + faker.random.arrayElement(projectNameSuffixes);
     let decisionDate = moment(faker.date.past(10, new Date()));
@@ -149,51 +151,65 @@ factory.define(factoryName, Project, buildOptions =>{
     let dateAdded = activeDate.clone().subtract(faker.random.number(45), 'days');
     let projectLead = factory_helper.generateFakePerson();
     let responsibleEpd = factory_helper.generateFakePerson();
+    let legislationNumber = faker.random.arrayElement([1996, 2002, 2018]);
 
-    let attrs = {
+    let baseProjectData = {
         //Needed for default view
           CEAAInvolvement         : faker.random.arrayElement(ceaaInvolvements)
         , CELead                  : "Compliance & Enforcement Branch"
         , CELeadEmail             : "eao.compliance@gov.bc.ca"
-        , CELeadPhone             : faker.phone.phoneNumberFormat(1)
+        , CELeadPhone             : factory_helper.generateEpicFormatPhoneNumber()
         , centroid                : factory_helper.generateFakeBcLatLong().centroid
         , description             : faker.lorem.paragraph()
         , eacDecision             : faker.random.arrayElement(eacDecision)
         , location                : factory_helper.generateFakeLocationString()
         , name                    : projectName
-        //, projectLeadId           : { type:'ObjectId', default: null }
+        , projectLeadId           : mongTypes.ObjectId()
         , projectLead             : projectLead.fullName
         , projectLeadEmail        : projectLead.emailAddress
-        , projectLeadPhone        : faker.phone.phoneNumberFormat(1)
-        //, proponent               : { type:'ObjectId', default: null }
+        , projectLeadPhone        : projectLead.phoneNumber
+        , proponent               : mongTypes.ObjectId(factory_helper.getRandomExistingMongoId(organizationsPool))
         , region                  : faker.random.arrayElement(regions)
-        //, responsibleEPDId        : { type:'ObjectId', default: null }
+        , responsibleEPDId        : mongTypes.ObjectId()
         , responsibleEPD          : responsibleEpd.fullName
         , responsibleEPDEmail     : responsibleEpd.emailAddress
-        , responsibleEPDPhone     : faker.phone.phoneNumberFormat(1)
+        , responsibleEPDPhone     : responsibleEpd.phoneNumber
         , type                    : faker.random.arrayElement(projectTypes)
-        , legislation             : ""
 
 
         //Everything else
-        , addedBy                 : factory_helper.getRandomExistingUserId(usersPool)
+        , addedBy                 : mongTypes.ObjectId(factory_helper.getRandomExistingMongoId(usersPool))
         , build                   : faker.random.arrayElement(projectBuilds)
         , CEAALink                : "https://www.ceaa-acee.gc.ca/050/evaluations/proj/" + faker.random.number(99999) + "?culture=en-CA"
-        , code                    : projectName.replace(/[^A-Z0-9]/ig, "-").replace(/(\-)(\1+)/, "-")
+        , code                    : projectName.replace(/[^A-Z0-9]/ig, "-").replace(/(\-)(\1+)/, "-").toLowerCase()
         , commodity               : ""
         , currentPhaseName        : faker.random.arrayElement(currentPhaseNames)
         , dateAdded               : dateAdded
-        , dateCommentsClosed      : ""
-        , dateCommentsOpen        : ""
+        , dateCommentsClosed      : null
+        , dateCommentsOpen        : null
         , dateUpdated             : dateUpdated
         , decisionDate            : decisionDate
         , duration                : "90"
         , eaoMember               : faker.random.arrayElement(["project-eao-staff", "system-eao"])
         , fedElecDist             : faker.random.arrayElement(federalElectoralDistricts)
-        , intake                  : ""
+        , intake                  : {
+            "section7optin" : "",
+            "operatingjobsNotes" : "",
+            "operatingjobs" : "2",
+            "meetsrprcriteria" : "",
+            "meetsCEAACriteria" : "",
+            "lifespan" : "",
+            "investmentNotes" : "",
+            "investment" : "200000000",
+            "contactedFirstNations" : "",
+            "contactedCEAA" : "",
+            "constructionjobsNotes" : "",
+            "constructionjobs" : "300",
+            "affectedFirstNations" : ""
+        }
         , isTermsAgreed           : false
         , overallProgress         : 0
-        , primaryContact          : factory_helper.getRandomExistingUserId(usersPool)
+        , primaryContact          : mongTypes.ObjectId(factory_helper.getRandomExistingMongoId(usersPool))
         , proMember               : "proponent-team"
         , provElecDist            : ""
         , sector                  : faker.random.arrayElement(sectors)
@@ -218,28 +234,71 @@ factory.define(factoryName, Project, buildOptions =>{
         // Contact references
         /////////////////////
         // Project Lead
-        , projLead                : factory_helper.getRandomExistingUserId(usersPool)
+        , projLead                : mongTypes.ObjectId(factory_helper.getRandomExistingMongoId(usersPool))
 
         // Executive Project Director
-        , execProjectDirector     : factory_helper.getRandomExistingUserId(usersPool)
+        , execProjectDirector     : mongTypes.ObjectId(factory_helper.getRandomExistingMongoId(usersPool))
 
         // Compliance & Enforcement Lead
-        , complianceLead          : factory_helper.getRandomExistingUserId(usersPool)
+        , complianceLead          : mongTypes.ObjectId(factory_helper.getRandomExistingMongoId(usersPool))
         //////////////////////
 
-        /////////////////////
-        // PINs
-        /////////////////////
-        , pins                    : require('mongoose').Types.ObjectId()
-        , pinsHistory            : {} 
+        , groups                  : mongTypes.ObjectId()
 
-        , groups                   : require('mongoose').Types.ObjectId()
-
-        // Permissions
-        , read                   : '["project-system-admin"]'
-        , write                  : '["project-system-admin"]'
-        , delete                 : '["project-system-admin"]'
     }
+
+    let projectDataLeg1996 = JSON.parse(JSON.stringify(baseProjectData))
+    , projectDataLeg2002 = JSON.parse(JSON.stringify(baseProjectData))
+    , projectDataLeg2018 = JSON.parse(JSON.stringify(baseProjectData));
+    
+    // customize any 1996 legislation specific fields here:
+    projectDataLeg1996.legislation = "1996 Environmental Assessment Act";
+    projectDataLeg1996.legislationYear = 1996;
+
+    // customize any 2002 legislation specific fields here:
+    projectDataLeg2002.legislation = "2002 Environmental Assessment Act";
+    projectDataLeg2002.legislationYear = 2002;
+
+    // customize any 2018 legislation specific fields here:
+    projectDataLeg2018.legislation = "2018 Environmental Assessment Act";
+    projectDataLeg2018.legislationYear = 2018;
+
+    let legacyRoll2002 = faker.random.boolean();
+    let legacyRoll1996 = faker.random.boolean();
+    let legislationYearList = [];
+
+    switch (legislationNumber) {
+        case 1996:
+          legislationYearList.push(1996);
+          break;
+        case 2002:
+          if (legacyRoll1996) legislationYearList.push(1996);
+          legislationYearList.push(2002);
+          break;
+        case 2018:
+          if (legacyRoll1996 && legacyRoll2002) legislationYearList.push(1996);
+          if (legacyRoll2002) legislationYearList.push(2002);
+          legislationYearList.push(2018);
+          break;
+      }
+
+    
+    let attrs = {
+        currentLegislationYear    : legislationNumber
+      , legislationYearList       : legislationYearList
+
+      // Permissions
+      , read                      : ["sysadmin", "staff", "project-proponent", "project-admin", "system-eao", "project-intake", "project-team", "project-system-admin", "public"]
+      , write                     : ["sysadmin", "staff", "project-admin", "project-intake", "project-team", "project-system-admin"]
+      , delete                    : ["sysadmin", "staff", "project-system-admin", "project-intake"]
+      , pins                      : [mongTypes.ObjectId()]
+      , pinsHistory               : {} 
+    };
+
+    if (legislationYearList.includes(1996)) attrs.legislation_1996 = projectDataLeg1996;
+    if (legislationYearList.includes(2002)) attrs.legislation_2002 = projectDataLeg2002;
+    if (legislationYearList.includes(2018)) attrs.legislation_2018 = projectDataLeg2018;
+
     return attrs;
 
 });
