@@ -151,9 +151,9 @@ factory.define(factoryName, Project, buildOptions =>{
     let dateAdded = activeDate.clone().subtract(faker.random.number(45), 'days');
     let projectLead = factory_helper.generateFakePerson();
     let responsibleEpd = factory_helper.generateFakePerson();
-    let legislationNumber = faker.random.arrayElement([1996, 2002, 2018])
+    let legislationNumber = faker.random.arrayElement([1996, 2002, 2018]);
 
-    let projectData = {
+    let baseProjectData = {
         //Needed for default view
           CEAAInvolvement         : faker.random.arrayElement(ceaaInvolvements)
         , CELead                  : "Compliance & Enforcement Branch"
@@ -175,8 +175,6 @@ factory.define(factoryName, Project, buildOptions =>{
         , responsibleEPDEmail     : responsibleEpd.emailAddress
         , responsibleEPDPhone     : responsibleEpd.phoneNumber
         , type                    : faker.random.arrayElement(projectTypes)
-        , legislation             : "2002 Environmental Assessment Act"
-        , legislationYear         : legislationNumber
 
 
         //Everything else
@@ -249,21 +247,58 @@ factory.define(factoryName, Project, buildOptions =>{
 
     }
 
-    let attrs = {
+    let projectDataLeg1996 = JSON.parse(JSON.stringify(baseProjectData))
+    , projectDataLeg2002 = JSON.parse(JSON.stringify(baseProjectData))
+    , projectDataLeg2018 = JSON.parse(JSON.stringify(baseProjectData));
+    
+    // customize any 1996 legislation specific fields here:
+    projectDataLeg1996.legislation = "1996 Environmental Assessment Act";
+    projectDataLeg1996.legislationYear = 1996;
 
-        currentLegislationYear      : legislationNumber
-      , legislationYearList     : faker.random.arrayElement([1996, 2002, 2018])
-      // TODO verify this is a valid way to generate embedded data
-      , legislation_1996        : projectData
-      , legislation_2002        : projectData
-      , legislation_2018        : projectData
+    // customize any 2002 legislation specific fields here:
+    projectDataLeg2002.legislation = "2002 Environmental Assessment Act";
+    projectDataLeg2002.legislationYear = 2002;
+
+    // customize any 2018 legislation specific fields here:
+    projectDataLeg2018.legislation = "2018 Environmental Assessment Act";
+    projectDataLeg2018.legislationYear = 2018;
+
+    let legacyRoll2002 = faker.random.boolean();
+    let legacyRoll1996 = faker.random.boolean();
+    let legislationYearList = [];
+
+    switch (legislationNumber) {
+        case 1996:
+          legislationYearList.push(1996);
+          break;
+        case 2002:
+          if (legacyRoll1996) legislationYearList.push(1996);
+          legislationYearList.push(2002);
+          break;
+        case 2018:
+          if (legacyRoll1996 && legacyRoll2002) legislationYearList.push(1996);
+          if (legacyRoll2002) legislationYearList.push(2002);
+          legislationYearList.push(2018);
+          break;
+      }
+
+    
+    let attrs = {
+        currentLegislationYear    : legislationNumber
+      , legislationYearList       : legislationYearList
+
       // Permissions
-      , read                    : ["sysadmin", "staff", "project-proponent", "project-admin", "system-eao", "project-intake", "project-team", "project-system-admin", "public"]
-      , write                   : ["sysadmin", "staff", "project-admin", "project-intake", "project-team", "project-system-admin"]
-      , delete                  : ["sysadmin", "staff", "project-system-admin", "project-intake"]
-      , pins                    : [mongTypes.ObjectId()]
-      , pinsHistory            : {} 
-    }
+      , read                      : ["sysadmin", "staff", "project-proponent", "project-admin", "system-eao", "project-intake", "project-team", "project-system-admin", "public"]
+      , write                     : ["sysadmin", "staff", "project-admin", "project-intake", "project-team", "project-system-admin"]
+      , delete                    : ["sysadmin", "staff", "project-system-admin", "project-intake"]
+      , pins                      : [mongTypes.ObjectId()]
+      , pinsHistory               : {} 
+    };
+
+    if (legislationYearList.includes(1996)) attrs.legislation_1996 = projectDataLeg1996;
+    if (legislationYearList.includes(2002)) attrs.legislation_2002 = projectDataLeg2002;
+    if (legislationYearList.includes(2018)) attrs.legislation_2018 = projectDataLeg2018;
+
     return attrs;
 
 });
