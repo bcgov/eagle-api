@@ -932,6 +932,8 @@ exports.protectedPut = async function (args, res, next) {
   filteredData.status = projectObj.status;
   filteredData.eaStatus = projectObj.eaStatus;
   filteredData.name = projectObj.name;
+  filteredData.substantiallyDate = projectObj.substantiallyDate;
+  filteredData.eaStatusDate = projectObj.eaStatusDate;
   //Updating the legislation Year in the legislation key
   filteredData.legislationYear = projectLegislationYear;
 
