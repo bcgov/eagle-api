@@ -52,67 +52,159 @@ objects:
                       );
 
                       ALL_BACKUPS_HEALTHY=true;
+                      TAKE_NEW_BACKUP=true;
+                      TODAY=$(date +'%d');
+                      LAST_YEAR="";
+                      LAST_MONTH="";
+                      LAST_DAY="";
+                      ERROR_MESSAGE="";
 
-                      alertBadDump () {
+                      alertRocketChat () {
+                        curl -X POST -H "Content-Type: application/json" --data "{\"username\":\"BakBot\",\"icon_emoji\":\":robot:\",\"text\":\"$1\"}" $ROCKETCHAT_BACKUP_DB_WEBHOOK;
+                      }
+
+                      setUnhealthyFolderName () {
                         HEALTHY_STR="$1";
-                        MESSAGE="$2";
+                        echo "Renaming unhealthy backup - $HEALTHY_STR";
                         UNHEALTHY_STR="UNHEALTHY";
                         if [[ $HEALTHY_STR != *"UNHEALTHY"* ]]; then
                           UNHEALTHY_STR=${1/HEALTHY/$UNHEALTHY_STR};
-                          mv /var/lib/mongodb-backup/$HEALTHY_STR /var/lib/mongodb-backup/$UNHEALTHY_STR;
+                          echo "Begin move from $UNHEALTHY_STR to $HEALTHY_STR";
+                          mv $HEALTHY_STR $UNHEALTHY_STR;
                         fi;
                         ALL_BACKUPS_HEALTHY=false;
-                        curl -X POST -H "Content-Type: application/json" --data "{\"username\":\"BakBot\",\"icon_emoji\":\":robot:\",\"text\":\"@all EAGLE Mongo backup FAILURE. Backups are currently paused until the issue is fixed. $MESSAGE Please see documentation https://github.com/bcgov/eagle-api/tree/develop/openshift/templates/jobs\"}" $ROCKETCHAT_BACKUP_DB_WEBHOOK;
                       };
-                      alertWarning () {
-                        MESSAGE="$1";
-                        curl -X POST -H "Content-Type: application/json" --data "{\"username\":\"BakBot\",\"icon_emoji\":\":robot:\",\"text\":\"@all EAGLE Mongo backup WARNING - $MESSAGE Please see documentation https://github.com/bcgov/eagle-api/tree/develop/openshift/templates/jobs\"}" $ROCKETCHAT_BACKUP_DB_WEBHOOK;
-                      };
-                      checkDumps () {
+
+                      deleteBadDump () {
+                        echo "Deleting any unhealthy backups";
                         DUMP_DIRS=$(ls /var/lib/mongodb-backup/);
-                        for DUMP_DIR in $DUMP_DIRS; do
-                          for ADMIN_FILE in "${adminDirFiles[@]}"; do
-                            if [ ! -f /var/lib/mongodb-backup/$DUMP_DIR/admin/$ADMIN_FILE ]; then
-                              alertBadDump "$DUMP_DIR" "A previous backup did not complete successfully. One or more files in the admin directory are missing.";
-                              return;
-                            fi;
-                          done;
-                          for EPIC_FILE in "${epicDirFiles[@]}"; do
-                            if [ ! -f /var/lib/mongodb-backup/$DUMP_DIR/epic/$EPIC_FILE ]; then
-                              alertBadDump "$DUMP_DIR" "A previous backup did not complete successfully. One or more files in the epic directory  are missing.";
-                              return;
-                            fi;
-                          done;
-                          if [ "$(du -sb /var/lib/mongodb-backup/$DUMP_DIR | cut -f1)" -gt $MONGO_BACKUP_SIZE_UPPER_LIMIT ]; then
-                            alertWarning "Disk usage is approaching capacity. Please transfer backups to larger PVC or decrease the number of backups to keep.";
-                            return;
-                          fi;
-                          if [ "$(du -sb /var/lib/mongodb-backup/$DUMP_DIR | cut -f1)" -lt $MONGO_BACKUP_SIZE_LOWER_LIMIT ]; then
-                            alertBadDump "$DUMP_DIR" "A previous backup did not complete successfully. Backup size was lower than normal.";
+
+                        for DUMP_DIR in /var/lib/mongodb-backup/dump-*; do
+                          if [[ $DUMP_DIR == *"UNHEALTHY"* ]]; then
+                            echo "Unhealthy backup found, deleting $DUMP_DIR and trying again "
+                            echo "BEFORE";
+                            echo $(ls /var/lib/mongodb-backup);
+                            rm -rf $DUMP_DIR;
+                            echo "AFTER";
+                            echo $(ls /var/lib/mongodb-backup);
                             return;
                           fi;
                         done;
+                        echo "No unhealthy backups found, and none deleted";
                       };
-                      checkDumps;
-                      if [ "$ALL_BACKUPS_HEALTHY" = true ]; then
+
+                      getLastBackupDate () {
+                        echo "Getting last backup date from the file name";
+                        LATEST=$(ls -rd /var/lib/mongodb-backup/dump-* | head -1);
+
+                        IFS='-';
+                        read -ra DIR <<< "$LATEST";
+                        IFS=' ';
+                        LAST_TIMESTAMP=${DIR[2]};
+                        echo "Last time stamp - $LAST_TIMESTAMP";
+
+                        LAST_YEAR="${LAST_TIMESTAMP:0:4}"
+                        LAST_MONTH="${LAST_TIMESTAMP:4:2}"
+                        LAST_DAY="${LAST_TIMESTAMP:6:2}"
+
+                        echo "Last successful backup $LAST_DAY, and today is $TODAY" >&2;
+                      }
+
+                      checkTakeNewBackup () {
+                        echo "Checking weather to take another backup";
+                        if [ "$LAST_DAY" = "$TODAY" ]; then
+                          echo "Don't take new backup, there was already one taken today.";
+                          TAKE_NEW_BACKUP=false;
+                        else
+                          echo "Last backup was yesterday or before, attempting a new one.";
+                        fi;
+                      };
+
+                      checkDumps () {
+                        echo "Checking for unhealthy backups";
+
+                        for DUMP_DIR in /var/lib/mongodb-backup/dump-*; do
+
+                          for ADMIN_FILE in "${adminDirFiles[@]}"; do
+                            if [ ! -f $DUMP_DIR/admin/$ADMIN_FILE ]; then
+                              ERROR_MESSAGE="A file is missing in the admin directory.";
+                              echo "A file is missing in the admin directory";
+                              setUnhealthyFolderName "$DUMP_DIR";
+                              return;
+                            fi;
+                          done;
+
+                          for EPIC_FILE in "${epicDirFiles[@]}"; do
+                            if [ ! -f $DUMP_DIR/epic/$EPIC_FILE ]; then
+                              ERROR_MESSAGE="A file is missing in the epic directory.";
+                              echo "A file is missing in the epic directory";
+                              setUnhealthyFolderName "$DUMP_DIR";
+                              return;
+                            fi;
+                          done;
+
+                          if [ "$(du -sb $DUMP_DIR | cut -f1)" -gt $MONGO_BACKUP_SIZE_UPPER_LIMIT ]; then
+                            alertRocketChat "@all EPIC database backup WARNING - Disk usage is approaching capacity. Please transfer backups to larger PVC or decrease the number of backups to keep. Documentation is here https://github.com/bcgov/eagle-api/tree/develop/openshift/templates/jobs";
+                            return;
+                          fi;
+
+                          if [ "$(du -sb $DUMP_DIR | cut -f1)" -lt $MONGO_BACKUP_SIZE_LOWER_LIMIT ]; then
+                            ERROR_MESSAGE="The last backup is unusually small.";
+                            echo "The last backup is unusually small";
+                            setUnhealthyFolderName "$DUMP_DIR";
+                            return;
+                          fi;
+
+                        done;
+                        echo "No new unhealthy backups found.";
+                      };
+
+                      deleteBadDump;
+                      getLastBackupDate;
+                      checkTakeNewBackup;
+
+                      if [ "$TAKE_NEW_BACKUP" = true ]; then
+                        echo "Take new backup";
                         DIR=/var/lib/mongodb-backup/dump-`date +%Y%m%d%H%M%S%Z`-HEALTHY;
+
                         mongodump --numParallelCollections=1 --username=admin --password=$MONGODB_EAGLE_ADMIN_PASSWORD --host=$MONGODB_EAGLE_SERVICE_HOST --port=$MONGODB_EAGLE_SERVICE_PORT --authenticationDatabase=admin -d admin --out=$DIR;
                         mongodump --numParallelCollections=1 --username=admin --password=$MONGODB_EAGLE_ADMIN_PASSWORD --host=$MONGODB_EAGLE_SERVICE_HOST --port=$MONGODB_EAGLE_SERVICE_PORT --authenticationDatabase=admin -d epic --out=$DIR;
+
                         checkDumps;
+
                         if [ "$ALL_BACKUPS_HEALTHY" = true ]; then
+                          echo "Trimming old dumps";
                           ls -rdt /var/lib/mongodb-backup/dump-* |
                           head -n -$MONGODB_BACKUP_KEEP |
                           xargs rm -rf;
-                          curl -X POST -H 'Content-Type: application/json' --data '{"username":"BakBot","icon_emoji":":robot:","text":"Backup for EAGLE Mongo Database SUCCESS!"}' $ROCKETCHAT_BACKUP_DB_WEBHOOK;
+
+                          alertRocketChat "Backup for EPIC database SUCCESS!";
                           echo;
+                          echo "Success";
                           echo "To restore, use:";
                           echo "~# mongorestore -u admin -p \$MONGODB_ADMIN_PASSWORD --authenticationDatabase admin $DIR/DB_TO_RESTORE -d DB_TO_RESTORE_INTO";
+                        else
+                          echo;
+                          TODAY_SEC=$(date +"%s");
+                          LAST_BACKUP="$LAST_YEAR-$LAST_MONTH-$LAST_DAY";
+                          LAST_BACKUP_SEC=$(date -d "$LAST_BACKUP" +"%s");
+
+                          DIFF_SEC=$(($TODAY_SEC-$LAST_BACKUP_SEC));
+
+                          if [ $DIFF_SEC -gt 172800 ]; then
+                            echo "Last successful backup was over two days ago.";
+                            alertRocketChat "@all Backups for EPIC database have been FAILING for over two days. The error is - $ERROR_MESSAGE Documentation is here https://github.com/bcgov/eagle-api/tree/develop/openshift/templates/jobs";
+                          else
+                            echo "Last successful backup was within two days ago. Waiting and trying again later.";
+                          fi;
                         fi;
-                      fi
+                      else
+                        echo "Skipping backup as one completed successfully within the last day.";
+                      fi;
                   resources:
                   limits:
-                    cpu: 250m
-                    memory: 1Gi
+                    cpu: 500m
+                    memory: 2Gi
                   requests:
                     cpu: 100m
                     memory: 512Mi
