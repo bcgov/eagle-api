@@ -55,7 +55,17 @@ Check the swagger-ui on `http://localhost:3000/api/docs/`
 
 ### Database
 
-If possible, acquire a dump of the database from one of the live environments.
+One can run the EPIC applications on two kinds of data; generated and backed-up-from-live.
+
+Generated data will typically be cleaner as it is generated against the latest mongoose models.  Generated data also does not require transferring PI to dev machines.  Live production dumps should only be used in situations where a particular bug cannot be replicated locally, and after replicating, the data generators and unit tests should be updated to include that edge case.
+
+#### Generate data
+
+Described in [generate README](generate.md)
+
+#### Restoring from a live backup
+
+Acquire a dump of the database from one of the live environments.
 
 To make sure you don't have an existing old copy (careful, this is destructive):
 
@@ -69,7 +79,7 @@ use epic
 db.dropDatabase()
 ```
 
-#### Load database dump
+##### Load database dump
 
 1. Download and unzip archived dump file.
 2. Restore the dump into your local mongo:
@@ -79,23 +89,8 @@ db.dropDatabase()
 mongorestore -d epic epic/
 ```
 
-#### Seed with generated data:
-
-Described in [seed README](seed/README.md)
-
-#### Loading legacy data
-To restore the database dump you have from the old epic system (ie ESM):
-
-```bash
-#!/bin/bash
-mongorestore -d epic dump/[old_database_name_most_likely_esm]
-```
-
-Then run the contents of [dataload](prod-load-db/esm_prod_april_1/dataload.sh) against that database.  You may need to edit the commands slightly to match your db name or to remove the ".gz --gzip" portion if your dump unpacks as straight ".bson" files.
 
 ### Database Conversions
-
-NB: These are useless once they are run on an environments' database, and are only stored here for historical record.
 
 In the process of developing this application, we have database conversion scripts that must be run in order to update the db model so that the newest codebase can work properly.  There are currently two methods of doing the database conversion depending on how long-lived and memory intensive the conversion is.
 
@@ -210,6 +205,15 @@ External http calls (such as GETs to BCGW) are mocked with a tool called [nock](
 ```
 
 ## Configuring Environment Variables
+
+To get all your settings for this project automatically set up, run the file
+
+```bash
+#!/bin/bash
+./install_prerequisites.sh
+```
+
+...or follow the following manual process if you require custom settings:
 
 Recall the environment variables we need for local dev:
 
