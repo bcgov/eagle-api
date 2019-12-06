@@ -648,9 +648,7 @@ exports.protectedAddPins = async function (args, res, next) {
   var objId = args.swagger.params.projId.value;
   defaultLog.info("ObjectID:", args.swagger.params.projId.value);
 
-  // todo make pins array of objects { pinId, read}
   var Project = mongoose.model('Project');
-  // var pinsArr = args.swagger.params.pins.value;
   var pinsArr = [];
   args.swagger.params.pins.value.map(item => {
     pinsArr.push( { id: mongoose.Types.ObjectId(item), read: ['sysadmin', 'staff'] });
@@ -678,66 +676,56 @@ exports.protectedAddPins = async function (args, res, next) {
 }
 
 // todo single pin or group of pins? i think the latter
-exports.protectedPublishPin = async function (args, res, next) {
+exports.protectedPublishPin = async function (args, res) {
   var projId = args.swagger.params.projId.value;
   var pinId = args.swagger.params.pinId.value;
   var Project = require('mongoose').model('Project')
   try {
-    var project = await Project.findOne({ _id: projId }, {pins: 1})
-    // todo add check that project has pin in array
-    if (project) {
-      defaultLog.info("Project:", project);
-      for ( let pinObj of project.pins) {
-        if (pinObj.id == pinId) {
-          var published = await Project.update(
-            { _id: mongoose.Types.ObjectId(projId) },
-            {
-              $push: {
-                "pins.$[elem].read": 'public'
-              }
-            },
-            { arrayFilters: [ {"elem.id": pinId } ] }
-          )
-          Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, pinId);
-          return Actions.sendResponse(res, 200, published);
-        }
-      }
+    var project = await Project.findOne({ _id: projId })
+    if (project && project.pins) {
+      defaultLog.info("Project:", projId);
+      var published = await Project.update(
+        { _id: mongoose.Types.ObjectId(projId) },
+        {
+          $addToSet: {
+            "pins.$[elem].read": 'public'
+          }
+        },
+        { arrayFilters: [ {"elem.id": pinId } ] }
+      )
+      Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, pinId);
+      return Actions.sendResponse(res, 200, published);
     } else {
-      defaultLog.info("Couldn't find that PIN");
-      return Actions.sendResponse(res, 404, e);
+      defaultLog.info("Couldn't find that PIN: ", pinId);
+      return Actions.sendResponse(res, 404);
     }
   } catch (e) {
     return Actions.sendResponse(res, 400, e);
   }
 }
 
-exports.protectedUnPublishPin = async function (args, res, next) {
+exports.protectedUnPublishPin = async function (args, res) {
   var projId = args.swagger.params.projId.value;
   var pinId = args.swagger.params.pinId.value;
   var Project = require('mongoose').model('Project')
   try {
-    var project = await Project.findOne({ _id: projId }, {pins: 1})
-    // todo add check that project has pin in array
-    if (project) {
-      defaultLog.info("Project:", project);
-      for ( let pinObj of project.pins) {
-        if (pinObj.id == pinId) {
-          var published = await Project.update(
-            { _id: mongoose.Types.ObjectId(projId) },
-            {
-              $pull: {
-                "pins.$[elem].read": 'public'
-              }
-            },
-            { arrayFilters: [ {"elem.id": pinId } ] }
-          )
-          Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, pinId);
-          return Actions.sendResponse(res, 200, published);
-        }
-      }
+    var project = await Project.findOne({ _id: projId })
+    if (project && project.pins) {
+      defaultLog.info("Project:", projId);
+      var published = await Project.update(
+        { _id: mongoose.Types.ObjectId(projId) },
+        {
+          $pull: {
+            "pins.$[elem].read": 'public'
+          }
+        },
+        { arrayFilters: [ {"elem.id": pinId } ] }
+      )
+      Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, pinId);
+      return Actions.sendResponse(res, 200, published);
     } else {
       defaultLog.info("Couldn't find that PIN");
-      return Actions.sendResponse(res, 404, e);
+      return Actions.sendResponse(res, 404);
     }
   } catch (e) {
     return Actions.sendResponse(res, 400, e);
