@@ -77,7 +77,6 @@ objects:
 
                       deleteBadDump () {
                         echo "Deleting any unhealthy backups";
-                        DUMP_DIRS=$(ls /var/lib/mongodb-backup/);
 
                         for DUMP_DIR in /var/lib/mongodb-backup/dump-*; do
                           if [[ $DUMP_DIR == *"UNHEALTHY"* ]]; then
@@ -173,7 +172,7 @@ objects:
                         checkDumps;
 
                         if [ "$ALL_BACKUPS_HEALTHY" = true ]; then
-                          echo "Trimming old dumps";
+                          echo "Trimming old backups";
                           ls -rdt /var/lib/mongodb-backup/dump-* |
                           head -n -$MONGODB_BACKUP_KEEP |
                           xargs rm -rf;
