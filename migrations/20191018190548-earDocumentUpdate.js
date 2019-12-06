@@ -60,17 +60,17 @@ exports.up = function(db) {
         }
 
         // console.log("project name: ", projectData)
-        if (projects1996.includes(projectData.name)) {
+        if (projectData && projectData.name && projects1996.includes(projectData.name)) {
           p.updateOne(
             { _id: item._id },
             { $set: { legislation: 1996, legislationYearVetted: true } }
           )
-        } else if (projects2002.includes(projectData.name)) {
+        } else if (projectData && projectData.name && projects2002.includes(projectData.name)) {
           p.updateOne(
             { _id: item._id },
             { $set: { legislation: 2002, legislationYearVetted: true } }
           )
-        } else if (projectsTransition.includes(projectData.name)) {
+        } else if (projectData && projectData.name && projectsTransition.includes(projectData.name)) {
           p.updateOne(
             { _id: item._id },
             { $set: { legislation: 2002 } }
