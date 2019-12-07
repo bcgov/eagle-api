@@ -33,6 +33,7 @@ var generateExpArray = async function (field, roles) {
         });
         expArray.push({ $or: orArray });
       } else {
+        let fields = []
         switch (item) {
           case 'decisionDateStart':
             handleDateStartItem(expArray, 'decisionDate', entry);
@@ -47,7 +48,10 @@ var generateExpArray = async function (field, roles) {
             handleDateEndItem(expArray, 'datePosted', entry);
             break;
           default:
-            expArray.push(getConvertedValue(item, entry));
+            fields = handleProjectTerms(item);
+            for(let field of fields) {
+              expArray.push(getConvertedValue(field, entry));
+            }
             break;
         }
       }
@@ -56,6 +60,15 @@ var generateExpArray = async function (field, roles) {
   console.log("expArray:", expArray);
   return expArray;
 };
+
+var handleProjectTerms = function(item) {
+  let legislations = ['legislation_1996', 'legislation_2002', 'legislation_2018'];
+  let legislation_items = [];
+  for (let legis of legislations) {
+    legislation_items.push(legis + '.' + item)
+  }
+  return legislation_items;
+}
 
 var getConvertedValue = function (item, entry) {
   if (isNaN(entry)) {
@@ -347,11 +360,11 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
 
   var modifier = {};
   if (andExpArray.length > 0 && orExpArray.length > 0) {
-    modifier = { $and: [{ $and: andExpArray }, { $and: orExpArray }] };
+    modifier = { $and: [{ $and: andExpArray }, { $or: orExpArray }] };
   } else if (andExpArray.length === 0 && orExpArray.length > 0) {
-    modifier = { $and: orExpArray };
+    modifier = { $and: [{ $or: orExpArray }] };
   } else if (andExpArray.length > 0 && orExpArray.length === 0) {
-    modifier = { $and: andExpArray };
+    modifier = { $and: [{ $and: andExpArray }] };
   }
 
   var match = {
