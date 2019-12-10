@@ -110,7 +110,7 @@ objects:
                       }
 
                       checkTakeNewBackup () {
-                        echo "Checking weather to take another backup";
+                        echo "Checking whether to take another backup";
                         if [ "$LAST_DAY" = "$TODAY" ]; then
                           echo "Don't take new backup, there was already one taken today.";
                           TAKE_NEW_BACKUP=false;
