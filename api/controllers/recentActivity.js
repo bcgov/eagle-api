@@ -60,7 +60,7 @@ exports.publicGet = async function (args, res, next) {
       null,
       false,
       false,
-      true); // count
+      false); // count
 
     Utils.recordAction('Get', 'RecentActivity', 'public');
 
@@ -84,7 +84,7 @@ exports.publicGet = async function (args, res, next) {
         null,
         false,
         false,
-        true); // count
+        false); // count
 
       dataNext.slice(0, 4 - data.length).map(item => {
         data.push(item);
