@@ -464,7 +464,7 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
 
   _.assignIn(query, { "_schemaName": "Project" });
 
-  var fields = ['_id', 'pins', 'name', 'website', 'province'];
+  var fields = ['_id', 'pins', 'name', 'website', 'province', 'pinsRead'];
 
   // First get the project
   if (projectId && projectId.value) {
@@ -481,7 +481,7 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
       false, // count
       null,
       true,
-      null
+      null,
     );
 
     _.assignIn(query, { "_schemaName": "Organization" });
@@ -493,9 +493,15 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
         total_items: 0
       }]);
     } else {
+      if (data[0].pinsRead && data[0].pinsRead.includes("public") && username === "public") {
+        return Actions.sendResponse(res, 200, [{
+          total_items: 0
+        }]);
+      }
       data[0].pins.map(pin => {
-        thePins.push(mongoose.Types.ObjectId(pin.id));
+          thePins.push(mongoose.Types.ObjectId(pin.id));
       })
+      console.log(data[0].pins);
       query = { _id: { $in: thePins } }
 
       // Sort
@@ -675,7 +681,7 @@ exports.protectedAddPins = async function (args, res, next) {
   }
 }
 
-// todo single pin or group of pins? i think the latter
+// todo single pin or group of pins? i think the latter, correct!
 exports.protectedPublishPin = async function (args, res) {
   var projId = args.swagger.params.projId.value;
   var pinId = args.swagger.params.pinId.value;
@@ -688,10 +694,9 @@ exports.protectedPublishPin = async function (args, res) {
         { _id: mongoose.Types.ObjectId(projId) },
         {
           $addToSet: {
-            "pins.$[elem].read": 'public'
+            "pinsRead": 'public'
           }
         },
-        { arrayFilters: [ {"elem.id": pinId } ] }
       )
       Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, pinId);
       return Actions.sendResponse(res, 200, published);
@@ -716,10 +721,9 @@ exports.protectedUnPublishPin = async function (args, res) {
         { _id: mongoose.Types.ObjectId(projId) },
         {
           $pull: {
-            "pins.$[elem].read": 'public'
+            "pinsRead": 'public'
           }
         },
-        { arrayFilters: [ {"elem.id": pinId } ] }
       )
       Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, pinId);
       return Actions.sendResponse(res, 200, published);

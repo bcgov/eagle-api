@@ -105,9 +105,9 @@ var projectDefinition = {
   /////////////////////
   pins                    : [{
     id: { type: 'ObjectId', ref: 'Pin', index: true },
-    read: [{ type: String, trim: true, default: '["project-system-admin"]' }]
   }],
-  pinsHistory            : [{ type: Mixed, default: {} }],
+  pinsRead                : [{ type: String, trim: true, default: '["project-system-admin"]' }],
+  pinsHistory             : [{ type: Mixed, default: {} }],
 }
 
 var buildToNature = {};
