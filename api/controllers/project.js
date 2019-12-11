@@ -493,7 +493,8 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
         total_items: 0
       }]);
     } else {
-      if (data[0].pinsRead && data[0].pinsRead.includes("public") && username === "public") {
+      if (data[0].pinsRead && !data[0].pinsRead.includes("public") && username === "public") {
+        // This is the case that the public api has asked for these pins but they are not published yet
         return Actions.sendResponse(res, 200, [{
           total_items: 0
         }]);
@@ -501,9 +502,9 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
       data[0].pins.map(pin => {
           thePins.push(mongoose.Types.ObjectId(pin.id));
       })
-      console.log(data[0].pins);
+      
       query = { _id: { $in: thePins } }
-
+      const read = data[0].pinsRead;
       // Sort
       if (sortBy && sortBy.value) {
         sort = {};
@@ -529,6 +530,10 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
           skip, // skip
           limit, // limit
           true); // count
+        //Add out pinsread field to our response
+        if (orgData && orgData.length > 0) {
+          orgData[0].read = read.slice();
+        }
         Utils.recordAction('Get', 'Pin', username, projectId && projectId.value ? projectId.value : null);
         return Actions.sendResponse(res, 200, orgData);
       } catch (e) {
@@ -681,7 +686,7 @@ exports.protectedAddPins = async function (args, res, next) {
   }
 }
 
-// todo single pin or group of pins? i think the latter, correct!
+// pinsRead is on the project level and for all pins on the project
 exports.protectedPublishPin = async function (args, res) {
   var projId = args.swagger.params.projId.value;
   var pinId = args.swagger.params.pinId.value;

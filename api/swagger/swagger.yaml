@@ -1449,7 +1449,7 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-  /project/{projId}/pin/{pinId}/publish:
+  /project/{projId}/pin/publish:
     x-swagger-router-controller: project
     options:
       tags:
@@ -1461,11 +1461,6 @@ paths:
         - name: projId
           in: path
           description: "ID of project to get"
-          required: true
-          type: string
-        - name: pinId
-          in: path
-          description: "ID of pin to get"
           required: true
           type: string
       responses:
@@ -1482,7 +1477,7 @@ paths:
         - pin
       summary: "Publish a Participating Indigineous Nation on a project"
       operationId: protectedPublishPin
-      description: "Adds the singular instance of the 'public' role to a project's pins."
+      description: "Adds the 'public' role to the project pinsRead field"
       security:
         - Bearer: []
       x-security-scopes:
@@ -1494,11 +1489,6 @@ paths:
           description: "ID of project to update"
           required: true
           type: string
-        - name: pinId
-          in: path
-          description: "ID of pin to update"
-          required: true
-          type: string
       responses:
         "200":
           description: "Success"
@@ -1508,7 +1498,7 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-  /project/{projId}/pin/{pinId}/unpublish:
+  /project/{projId}/pin/unpublish:
     x-swagger-router-controller: project
     options:
       tags:
@@ -1520,11 +1510,6 @@ paths:
         - name: projId
           in: path
           description: "ID of project to get"
-          required: true
-          type: string
-        - name: pinId
-          in: path
-          description: "ID of pin to get"
           required: true
           type: string
       responses:
@@ -1551,11 +1536,6 @@ paths:
         - name: projId
           in: path
           description: "ID of project to update"
-          required: true
-          type: string
-        - name: pinId
-          in: path
-          description: "ID of pin to update"
           required: true
           type: string
       responses:
