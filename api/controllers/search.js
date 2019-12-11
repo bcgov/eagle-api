@@ -13,7 +13,7 @@ function isEmpty(obj) {
   return true;
 }
 
-var generateExpArray = async function (field, roles) {
+var generateExpArray = async function (field, roles, schemaName) {
   var expArray = [];
   if (field && field != undefined) {
     var queryString = qs.parse(field);
@@ -48,9 +48,14 @@ var generateExpArray = async function (field, roles) {
             handleDateEndItem(expArray, ['datePosted'], entry);
             break;
           default:
-            for(let field of fields) {
-              expArray.push(getConvertedValue(field, entry));
+          // todo differentiate between projects and docs, only projects need this
+            if (schemaName === 'Project') {
+              for(let field of fields) {
+                expArray.push(getConvertedValue(field, entry));
+              }
+              break;
             }
+            expArray.push(getConvertedValue(field, entry));
             break;
         }
       }
@@ -61,8 +66,15 @@ var generateExpArray = async function (field, roles) {
 };
 
 var handleProjectTerms = function(item) {
-  let legislations = ['legislation_1996', 'legislation_2002', 'legislation_2018'];
   let legislation_items = [];
+  //leave _id as is, for project details calls
+  // TODO does this work?
+  if (item === '_id') {
+    legislation_items.push(item)
+    return legislation_items;
+  }
+
+  let legislations = ['legislation_1996', 'legislation_2002', 'legislation_2018'];
   for (let legis of legislations) {
     legislation_items.push(legis + '.' + item)
   }
@@ -359,7 +371,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
   var andExpArray = await generateExpArray(and, roles);
 
   // filters
-  var orExpArray = await generateExpArray(or, roles);
+  var orExpArray = await generateExpArray(or, roles, schemaName);
 
   var modifier = {};
   if (andExpArray.length > 0 && orExpArray.length > 0) {
