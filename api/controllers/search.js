@@ -23,17 +23,22 @@ var generateExpArray = async function (field, roles, schemaName) {
     await Promise.all(Object.keys(queryString).map(async item => {
       var entry = queryString[item];
       console.log("item:", item, entry);
+      var orArray = [];
       if (item === 'pcp') {
         await handlePCPItem(roles, expArray, entry);
       } else if (Array.isArray(entry)) {
         // Arrays are a list of options so will always be ors
-        var orArray = [];
         entry.map(element => {
           orArray.push(getConvertedValue(item, element));
         });
         expArray.push({ $or: orArray });
       } else {
-        let fields = handleProjectTerms(item);
+        let fields = []
+        if (schemaName === 'Project') {
+          fields = handleProjectTerms(item);
+        } else {
+          fields.push(item)
+        }
         switch (item) {
           case 'decisionDateStart':
             handleDateStartItem(expArray, fields, entry);
@@ -48,16 +53,17 @@ var generateExpArray = async function (field, roles, schemaName) {
             handleDateEndItem(expArray, ['datePosted'], entry);
             break;
           default:
-          // todo differentiate between projects and docs, only projects need this
             if (schemaName === 'Project') {
               for(let field of fields) {
-                expArray.push(getConvertedValue(field, entry));
+                orArray.push(getConvertedValue(field, entry));
               }
               break;
+            } else {
+              orArray.push(getConvertedValue(fields[0], entry));
+              break;
             }
-            expArray.push(getConvertedValue(field, entry));
-            break;
         }
+        expArray.push({ $or: orArray });
       }
     }));
   }
@@ -68,7 +74,6 @@ var generateExpArray = async function (field, roles, schemaName) {
 var handleProjectTerms = function(item) {
   let legislation_items = [];
   //leave _id as is, for project details calls
-  // TODO does this work?
   if (item === '_id') {
     legislation_items.push(item)
     return legislation_items;
@@ -368,7 +373,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
   }
 
   // query modifiers
-  var andExpArray = await generateExpArray(and, roles);
+  var andExpArray = await generateExpArray(and, roles, schemaName);
 
   // filters
   var orExpArray = await generateExpArray(or, roles, schemaName);
@@ -377,9 +382,9 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
   if (andExpArray.length > 0 && orExpArray.length > 0) {
     modifier = { $and: [{ $and: andExpArray }, { $or: orExpArray }] };
   } else if (andExpArray.length === 0 && orExpArray.length > 0) {
-    modifier = { $and: [{ $or: orExpArray }] };
+    modifier = { $and: orExpArray };
   } else if (andExpArray.length > 0 && orExpArray.length === 0) {
-    modifier = { $and: [{ $and: andExpArray }] };
+    modifier = { $and: andExpArray };
   }
 
   var match = {
