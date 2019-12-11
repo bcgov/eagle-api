@@ -33,22 +33,21 @@ var generateExpArray = async function (field, roles) {
         });
         expArray.push({ $or: orArray });
       } else {
-        let fields = []
+        let fields = handleProjectTerms(item);
         switch (item) {
           case 'decisionDateStart':
-            handleDateStartItem(expArray, 'decisionDate', entry);
+            handleDateStartItem(expArray, fields, entry);
             break;
           case 'decisionDateEnd':
-            handleDateEndItem(expArray, 'decisionDate', entry);
+            handleDateEndItem(expArray, fields, entry);
             break;
           case 'datePostedStart':
-            handleDateStartItem(expArray, 'datePosted', entry);
+            handleDateStartItem(expArray, ['datePosted'], entry);
             break;
           case 'datePostedEnd':
-            handleDateEndItem(expArray, 'datePosted', entry);
+            handleDateEndItem(expArray, ['datePosted'], entry);
             break;
           default:
-            fields = handleProjectTerms(item);
             for(let field of fields) {
               expArray.push(getConvertedValue(field, entry));
             }
@@ -165,23 +164,27 @@ var getPCPValue = async function (roles, entry) {
   return pcp;
 };
 
-var handleDateStartItem = function (expArray, field, entry) {
-  var date = new Date(entry);
+var handleDateStartItem = function (expArray, fields, entry) {
+  for (let field of fields) {
+    var date = new Date(entry);
 
-  // Validate: valid date?
-  if (!isNaN(date)) {
-    var start = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-    expArray.push({ [field]: { $gte: start } });
+    // Validate: valid date?
+    if (!isNaN(date)) {
+      var start = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+      expArray.push({ [field]: { $gte: start } });
+    }
   }
 };
 
-var handleDateEndItem = function (expArray, field, entry) {
-  var date = new Date(entry);
+var handleDateEndItem = function (expArray, fields, entry) {
+  for (let field of fields) {
+    var date = new Date(entry);
 
-  // Validate: valid date?
-  if (!isNaN(date)) {
-    var end = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1);
-    expArray.push({ [field]: { $lt: end } });
+    // Validate: valid date?
+    if (!isNaN(date)) {
+      var end = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1);
+      expArray.push({ [field]: { $lt: end } });
+    }
   }
 };
 
