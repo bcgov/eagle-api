@@ -126,6 +126,20 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
         {
             '$match': query
         },
+        (populateProject && modelType !== 'Project') && {
+          '$lookup': {
+            "from": "epic",
+            "localField": "project",
+            "foreignField": "_id",
+            "as": "project"
+          }
+        },
+        (populateProject && modelType !== 'Project') && {
+          "$unwind": {
+            "path": "$project",
+            "preserveNullAndEmptyArrays": true
+          }
+        },
         (modelType === 'Project' || populateProject) && {
           $addFields: {
             "default": {
@@ -175,20 +189,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
         populateProponent && {
           "$unwind": "$proponent"
         },
-        populateProject && {
-          '$lookup': {
-            "from": "epic",
-            "localField": "project",
-            "foreignField": "_id",
-            "as": "project"
-          }
-        },
-        populateProject && {
-          "$unwind": {
-            "path": "$project",
-            "preserveNullAndEmptyArrays": true
-          }
-        },
+       
         postQueryPipelineSteps,
         {
           $redact: {
