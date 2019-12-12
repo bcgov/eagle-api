@@ -531,7 +531,7 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
           limit, // limit
           true); // count
         //Add out pinsread field to our response
-        if (orgData && orgData.length > 0) {
+        if (orgData && orgData.length > 0 && read) {
           orgData[0].read = read.slice();
         }
         Utils.recordAction('Get', 'Pin', username, projectId && projectId.value ? projectId.value : null);
