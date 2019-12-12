@@ -144,7 +144,6 @@ exports.up = function(db) {
                     write: projectWrite,
                     delete: projectDelete,
                     pins: pins,
-                    pinsRead: ["sysadmin", "staff"],
                     pinsHistory: pinsHistory
                   }
                 }
@@ -165,7 +164,6 @@ exports.up = function(db) {
                     write: projectWrite,
                     delete: projectDelete,
                     pins: pins,
-                    pinsRead: ["sysadmin", "staff"],
                     pinsHistory: pinsHistory
                   }
                 }
