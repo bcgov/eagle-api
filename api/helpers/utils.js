@@ -126,7 +126,22 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
         {
             '$match': query
         },
-        (modelType === 'Project' || populateProject) && {
+        (populateProject && modelType !== 'Project') && {
+          '$lookup': {
+            "from": "epic",
+            "localField": "project",
+            "foreignField": "_id",
+            "as": "project"
+          }
+        },
+        (populateProject && modelType !== 'Project') && {
+          "$unwind": {
+            "path": "$project",
+            "preserveNullAndEmptyArrays": true
+          }
+        },
+        // To unpack the legislation data into the project key
+        (modelType === 'Project') && {
           $addFields: {
             "default": {
               $switch: {
@@ -148,7 +163,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
             }
           }
         },
-        (modelType === 'Project' || populateProject) &&  {
+        (modelType === 'Project') &&  {
           '$addFields': {
             "default.pins": '$pins',
             "default.pinsHistory": '$pinsHistory',
@@ -157,8 +172,47 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
             "default.read": '$read'
           }
         },
-        (modelType === 'Project' || populateProject) && {
+        (modelType === 'Project') && {
           "$replaceRoot": { newRoot:  "$default" }
+        },
+
+        //Unpack the default key inside a nested call with project data
+         // To unpack the legislation data into the project key
+         (modelType !== 'Project' && populateProject) && {
+          $addFields: {
+            "project.default": {
+              $switch: {
+                branches: [
+                  { 
+                    case: { $eq: [ "$project.currentLegislationYear", 'legislation_1996' ]},
+                    then: "$project.legislation_1996"
+                  },
+                  {
+                    case: { $eq: [ "$project.currentLegislationYear", 'legislation_2002' ]},
+                    then: "$project.legislation_2002"
+                  },
+                  {
+                    case: { $eq: [ "$project.currentLegislationYear", 'legislation_2018' ]},
+                    then: "$project.legislation_2018"
+                  }
+                ], default: "$project.legislation_2002"
+              }
+            }
+          }
+        },
+        (modelType !== 'Project' && populateProject) &&  {
+          '$addFields': {
+            "project.default.pins": '$project.pins',
+            "project.default.pinsHistory": '$project.pinsHistory',
+            "project.default.pinsRead": '$project.pinsRead',
+            "project.default._id": '$project._id',
+            "project.default.read": '$project.read'
+          }
+        },
+        (modelType !== 'Project' && populateProject) && {
+          "$addFields": {
+            "project": "$project.default"
+          },
         },
         // Add our projection after we have reformatted project
         {
@@ -175,20 +229,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
         populateProponent && {
           "$unwind": "$proponent"
         },
-        populateProject && {
-          '$lookup': {
-            "from": "epic",
-            "localField": "project",
-            "foreignField": "_id",
-            "as": "project"
-          }
-        },
-        populateProject && {
-          "$unwind": {
-            "path": "$project",
-            "preserveNullAndEmptyArrays": true
-          }
-        },
+       
         postQueryPipelineSteps,
         {
           $redact: {
