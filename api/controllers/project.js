@@ -464,7 +464,7 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
 
   _.assignIn(query, { "_schemaName": "Project" });
 
-  var fields = ['_id', 'pins', 'name', 'website', 'province'];
+  var fields = ['_id', 'pins', 'name', 'website', 'province', 'pinsRead'];
 
   // First get the project
   if (projectId && projectId.value) {
@@ -481,7 +481,7 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
       false, // count
       null,
       true,
-      null
+      null,
     );
 
     _.assignIn(query, { "_schemaName": "Organization" });
@@ -493,11 +493,18 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
         total_items: 0
       }]);
     } else {
+      if (data[0].pinsRead && !data[0].pinsRead.includes("public") && username === "public") {
+        // This is the case that the public api has asked for these pins but they are not published yet
+        return Actions.sendResponse(res, 200, [{
+          total_items: 0
+        }]);
+      }
       data[0].pins.map(pin => {
-        thePins.push(mongoose.Types.ObjectId(pin.id));
+          thePins.push(mongoose.Types.ObjectId(pin));
       })
+      
       query = { _id: { $in: thePins } }
-
+      const read = data[0].pinsRead;
       // Sort
       if (sortBy && sortBy.value) {
         sort = {};
@@ -523,6 +530,10 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
           skip, // skip
           limit, // limit
           true); // count
+        //Add out pinsread field to our response
+        if (orgData && orgData.length > 0 && read) {
+          orgData[0].read = read.slice();
+        }
         Utils.recordAction('Get', 'Pin', username, projectId && projectId.value ? projectId.value : null);
         return Actions.sendResponse(res, 200, orgData);
       } catch (e) {
@@ -651,7 +662,7 @@ exports.protectedAddPins = async function (args, res, next) {
   var Project = mongoose.model('Project');
   var pinsArr = [];
   args.swagger.params.pins.value.map(item => {
-    pinsArr.push( { id: mongoose.Types.ObjectId(item), read: ['sysadmin', 'staff'] });
+    pinsArr.push(mongoose.Types.ObjectId(item));
   });
 
   // Add pins to pins existing
@@ -675,10 +686,9 @@ exports.protectedAddPins = async function (args, res, next) {
   }
 }
 
-// todo single pin or group of pins? i think the latter
+// pinsRead is on the project level and for all pins on the project
 exports.protectedPublishPin = async function (args, res) {
   var projId = args.swagger.params.projId.value;
-  var pinId = args.swagger.params.pinId.value;
   var Project = require('mongoose').model('Project')
   try {
     var project = await Project.findOne({ _id: projId })
@@ -688,15 +698,14 @@ exports.protectedPublishPin = async function (args, res) {
         { _id: mongoose.Types.ObjectId(projId) },
         {
           $addToSet: {
-            "pins.$[elem].read": 'public'
+            "pinsRead": 'public'
           }
         },
-        { arrayFilters: [ {"elem.id": pinId } ] }
       )
-      Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, pinId);
+      Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username);
       return Actions.sendResponse(res, 200, published);
     } else {
-      defaultLog.info("Couldn't find that PIN: ", pinId);
+      defaultLog.info("Couldn't publish PINS on project: ", projId);
       return Actions.sendResponse(res, 404);
     }
   } catch (e) {
@@ -706,7 +715,6 @@ exports.protectedPublishPin = async function (args, res) {
 
 exports.protectedUnPublishPin = async function (args, res) {
   var projId = args.swagger.params.projId.value;
-  var pinId = args.swagger.params.pinId.value;
   var Project = require('mongoose').model('Project')
   try {
     var project = await Project.findOne({ _id: projId })
@@ -716,15 +724,14 @@ exports.protectedUnPublishPin = async function (args, res) {
         { _id: mongoose.Types.ObjectId(projId) },
         {
           $pull: {
-            "pins.$[elem].read": 'public'
+            "pinsRead": 'public'
           }
         },
-        { arrayFilters: [ {"elem.id": pinId } ] }
       )
-      Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, pinId);
+      Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, projId);
       return Actions.sendResponse(res, 200, published);
     } else {
-      defaultLog.info("Couldn't find that PIN");
+      defaultLog.info("Couldn't unpublish PINS on project: ", projId);
       return Actions.sendResponse(res, 404);
     }
   } catch (e) {

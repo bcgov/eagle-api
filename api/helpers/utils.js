@@ -152,6 +152,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
           '$addFields': {
             "default.pins": '$pins',
             "default.pinsHistory": '$pinsHistory',
+            "default.pinsRead": '$pinsRead',
             "default._id": '$_id',
             "default.read": '$read'
           }
