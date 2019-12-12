@@ -500,7 +500,7 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
         }]);
       }
       data[0].pins.map(pin => {
-          thePins.push(mongoose.Types.ObjectId(pin.id));
+          thePins.push(mongoose.Types.ObjectId(pin));
       })
       
       query = { _id: { $in: thePins } }
@@ -662,7 +662,7 @@ exports.protectedAddPins = async function (args, res, next) {
   var Project = mongoose.model('Project');
   var pinsArr = [];
   args.swagger.params.pins.value.map(item => {
-    pinsArr.push( { id: mongoose.Types.ObjectId(item), read: ['sysadmin', 'staff'] });
+    pinsArr.push(mongoose.Types.ObjectId(item));
   });
 
   // Add pins to pins existing
@@ -689,7 +689,6 @@ exports.protectedAddPins = async function (args, res, next) {
 // pinsRead is on the project level and for all pins on the project
 exports.protectedPublishPin = async function (args, res) {
   var projId = args.swagger.params.projId.value;
-  var pinId = args.swagger.params.pinId.value;
   var Project = require('mongoose').model('Project')
   try {
     var project = await Project.findOne({ _id: projId })
@@ -703,10 +702,10 @@ exports.protectedPublishPin = async function (args, res) {
           }
         },
       )
-      Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, pinId);
+      Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username);
       return Actions.sendResponse(res, 200, published);
     } else {
-      defaultLog.info("Couldn't find that PIN: ", pinId);
+      defaultLog.info("Couldn't publish PINS on project: ", projId);
       return Actions.sendResponse(res, 404);
     }
   } catch (e) {
@@ -716,7 +715,6 @@ exports.protectedPublishPin = async function (args, res) {
 
 exports.protectedUnPublishPin = async function (args, res) {
   var projId = args.swagger.params.projId.value;
-  var pinId = args.swagger.params.pinId.value;
   var Project = require('mongoose').model('Project')
   try {
     var project = await Project.findOne({ _id: projId })
@@ -730,10 +728,10 @@ exports.protectedUnPublishPin = async function (args, res) {
           }
         },
       )
-      Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, pinId);
+      Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, projId);
       return Actions.sendResponse(res, 200, published);
     } else {
-      defaultLog.info("Couldn't find that PIN");
+      defaultLog.info("Couldn't unpublish PINS on project: ", projId);
       return Actions.sendResponse(res, 404);
     }
   } catch (e) {

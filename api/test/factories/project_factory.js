@@ -291,7 +291,7 @@ factory.define(factoryName, Project, buildOptions =>{
       , read                      : ["sysadmin", "staff", "project-proponent", "project-admin", "system-eao", "project-intake", "project-team", "project-system-admin", "public"]
       , write                     : ["sysadmin", "staff", "project-admin", "project-intake", "project-team", "project-system-admin"]
       , delete                    : ["sysadmin", "staff", "project-system-admin", "project-intake"]
-      , pins                      : [{id: mongTypes.ObjectId()}]
+      , pins                      : [mongTypes.ObjectId()]
       , pinsRead: ["sysadmin", "staff", "project-proponent", "project-admin", "system-eao", "project-intake", "project-team", "project-system-admin", "public"]
       , pinsHistory               : {} 
     };
