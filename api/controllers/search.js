@@ -13,7 +13,7 @@ function isEmpty(obj) {
   return true;
 }
 
-var generateExpArray = async function (field, roles) {
+var generateExpArray = async function (field, roles, schemaName) {
   var expArray = [];
   if (field && field != undefined) {
     var queryString = qs.parse(field);
@@ -23,39 +23,76 @@ var generateExpArray = async function (field, roles) {
     await Promise.all(Object.keys(queryString).map(async item => {
       var entry = queryString[item];
       console.log("item:", item, entry);
+      var orArray = [];
       if (item === 'pcp') {
         await handlePCPItem(roles, expArray, entry);
       } else if (Array.isArray(entry)) {
         // Arrays are a list of options so will always be ors
-        var orArray = [];
         entry.map(element => {
           orArray.push(getConvertedValue(item, element));
         });
         expArray.push({ $or: orArray });
       } else {
+        let fields = []
+        if (schemaName === 'Project') {
+          fields = handleProjectTerms(item);
+        } else {
+          fields.push(item)
+        }
         switch (item) {
           case 'decisionDateStart':
-            handleDateStartItem(expArray, 'decisionDate', entry);
+            for(let field of fields) {
+              handleDateStartItem(orArray, field, entry);
+            }
             break;
           case 'decisionDateEnd':
-            handleDateEndItem(expArray, 'decisionDate', entry);
+            for(let field of fields) {
+              handleDateEndItem(orArray, field, entry);
+            }
             break;
           case 'datePostedStart':
-            handleDateStartItem(expArray, 'datePosted', entry);
+            handleDateStartItem(expArray, ['datePosted'], entry);
             break;
           case 'datePostedEnd':
-            handleDateEndItem(expArray, 'datePosted', entry);
+            handleDateEndItem(expArray, ['datePosted'], entry);
             break;
           default:
-            expArray.push(getConvertedValue(item, entry));
-            break;
+            if (schemaName === 'Project') {
+              for(let field of fields) {
+                orArray.push(getConvertedValue(field, entry));
+              }
+              break;
+            } else {
+              orArray.push(getConvertedValue(fields[0], entry));
+              break;
+            }
         }
+        expArray.push({ $or: orArray });
       }
     }));
   }
   console.log("expArray:", expArray);
   return expArray;
 };
+
+var handleProjectTerms = function(item) {
+  let legislation_items = [];
+  //leave _id as is, for project details calls
+  if (item === '_id') {
+    legislation_items.push(item)
+    return legislation_items;
+  }
+
+  if (item === 'decisionDateStart' || item === 'decisionDateEnd') {
+    item = 'decisionDate';
+  }
+  // prepend for embedded fields
+  let legislations = ['legislation_1996', 'legislation_2002', 'legislation_2018'];
+  for (let legis of legislations) {
+    legislation_items.push(legis + '.' + item)
+  }
+  return legislation_items;
+}
 
 var getConvertedValue = function (item, entry) {
   if (isNaN(entry)) {
@@ -340,14 +377,14 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
   }
 
   // query modifiers
-  var andExpArray = await generateExpArray(and, roles);
+  var andExpArray = await generateExpArray(and, roles, schemaName);
 
   // filters
-  var orExpArray = await generateExpArray(or, roles);
+  var orExpArray = await generateExpArray(or, roles, schemaName);
 
   var modifier = {};
   if (andExpArray.length > 0 && orExpArray.length > 0) {
-    modifier = { $and: [{ $and: andExpArray }, { $and: orExpArray }] };
+    modifier = { $and: [{ $and: andExpArray }, { $or: orExpArray }] };
   } else if (andExpArray.length === 0 && orExpArray.length > 0) {
     modifier = { $and: orExpArray };
   } else if (andExpArray.length > 0 && orExpArray.length === 0) {
