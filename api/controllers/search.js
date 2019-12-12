@@ -28,9 +28,18 @@ var generateExpArray = async function (field, roles, schemaName) {
         await handlePCPItem(roles, expArray, entry);
       } else if (Array.isArray(entry)) {
         // Arrays are a list of options so will always be ors
-        entry.map(element => {
-          orArray.push(getConvertedValue(item, element));
-        });
+        if (schemaName === 'Project') {
+          var fields = handleProjectTerms(item);
+          fields.map(field => {
+            entry.map(element => {
+              orArray.push(getConvertedValue(field, element));
+            });
+          })
+        } else {
+          entry.map(element => {
+            orArray.push(getConvertedValue(item, element));
+          });
+        }
         expArray.push({ $or: orArray });
       } else {
         let fields = []
