@@ -174,7 +174,7 @@ exports.protectedPut = async function (args, res, next) {
 
   var RecentActivity = require('mongoose').model('RecentActivity');
   try {
-    if ( obj.project && obj.project === {} ){
+    if ( obj.project && Object.keys(obj.project).length === 0 && obj.project.constructor === Object){
       obj.project = null;
     }
     var rec = await RecentActivity.findOneAndUpdate({ _id: objId }, obj, { upsert: false });
