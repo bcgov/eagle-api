@@ -55,7 +55,7 @@ exports.up = function(db) {
             const pinsHistory = item.pinsHistory;
 
             // new projects since legislation was populated
-            if (item.name === "Giant Copper" || item.name === "Kutcho") {
+            if (item.name === "Giant Copper" || item.name === "Kutcho" || item.name === "Nicola Valley Aggregates Gravel Pit" ) {
               legislationString = '2002 Environmental Assessment Act';
             }
 
