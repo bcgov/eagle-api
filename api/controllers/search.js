@@ -4,6 +4,7 @@ var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 var qs = require('qs');
+const {Types: {ObjectId}} = mongoose;
 
 function isEmpty(obj) {
   for (var key in obj) {
@@ -12,6 +13,20 @@ function isEmpty(obj) {
   }
   return true;
 }
+
+//Helper to check if an ID is an object ID
+mongoose.isObjectId = function(id) {
+  return (id instanceof ObjectId);
+};
+
+//Helper to validate a string as object ID
+// needed since mongoose will validate any 12 char string as valid id. Ie. 'municipality'
+mongoose.isValidObjectId = function(str) {
+  if (typeof str !== 'string') {
+    return false;
+  }
+  return str.match(/^[a-f\d]{24}$/i);
+};
 
 var generateExpArray = async function (field, roles, schemaName) {
   var expArray = [];
@@ -105,7 +120,7 @@ var handleProjectTerms = function(item) {
 
 var getConvertedValue = function (item, entry) {
   if (isNaN(entry)) {
-    if (mongoose.Types.ObjectId.isValid(entry)) {
+    if (mongoose.isObjectId(entry) && mongoose.isValidObjectId(entry)) {
       console.log("objectid");
       // ObjectID
       return { [item]: mongoose.Types.ObjectId(entry) };
