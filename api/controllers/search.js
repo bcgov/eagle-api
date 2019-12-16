@@ -69,10 +69,10 @@ var generateExpArray = async function (field, roles, schemaName) {
             }
             break;
           case 'datePostedStart':
-            handleDateStartItem(expArray, ['datePosted'], entry);
+            handleDateStartItem(orArray, ['datePosted'], entry);
             break;
           case 'datePostedEnd':
-            handleDateEndItem(expArray, ['datePosted'], entry);
+            handleDateEndItem(orArray, ['datePosted'], entry);
             break;
           default:
             if (schemaName === 'Project') {
