@@ -65,6 +65,8 @@ var projectDataDefinition = {
   projectStatusDate       : { type: Date, default: '' },
   substantiallyDate       : { type: Date, default: '' },
   substantially           : { type: Boolean, default: false },
+  disputeDate             : { type: Date, default: '' },
+  dispute                 : { type: Boolean, default: false },
   activeDate              : { type: Date, default: '' },
   activeStatus            : { type: String, default: '' },
 

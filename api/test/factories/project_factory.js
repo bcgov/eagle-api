@@ -146,6 +146,7 @@ factory.define(factoryName, Project, buildOptions =>{
     let dateUpdated = decisionDate.clone().subtract(faker.random.number(45), 'days'); // 45 days is the max allowed
     let projectStatusDate = dateUpdated.clone().subtract(faker.random.number(45), 'days');
     let substantiallyDate = projectStatusDate.clone().subtract(faker.random.number(45), 'days');
+    let disputeDate = projectStatusDate.clone().subtract(faker.random.number(45), 'days');
     // order dependent chain backwards in time so that the dates make sense
     let activeDate = substantiallyDate.clone().subtract(faker.random.number(45), 'days'); // company or staff is doing work, 'active' is a state
     let dateAdded = activeDate.clone().subtract(faker.random.number(45), 'days');
@@ -221,6 +222,8 @@ factory.define(factoryName, Project, buildOptions =>{
         , projectStatusDate       : projectStatusDate
         , substantiallyDate       : substantiallyDate
         , substantially           : faker.random.boolean()
+        , disputeDate             : disputeDate
+        , dispute                 : faker.random.boolean()
         , activeDate              : activeDate
         , activeStatus            : ""
 
