@@ -1,4 +1,4 @@
-module.exports = [
+module.exports.milestoneList = [
   //2002 milestone legislation
   {
     type: "label",
@@ -39,113 +39,120 @@ module.exports = [
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "AIR",
+    name: "Draft Application Information Requirements",
     listOrder: 5
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Application Evaluation",
+    name: "Application Information Requirements",
     listOrder: 6
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Concurrent Permitting",
+    name: "Application Evaluation",
     listOrder: 7
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Application Review",
+    name: "Concurrent Permitting",
     listOrder: 8
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Decision",
+    name: "Application Review",
     listOrder: 9
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Time Limit Extension",
+    name: "Decision",
     listOrder: 10
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Time Limit Suspension",
+    name: "Time Limit Extension",
     listOrder: 11
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Withdrawal",
+    name: "Time Limit Suspension",
     listOrder: 12
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Termination",
+    name: "Withdrawal",
     listOrder: 13
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Other",
+    name: "Termination",
     listOrder: 14
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Certificate",
+    name: "Other",
     listOrder: 15
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Certificate Extension",
+    name: "Certificate",
     listOrder: 16
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Substantial Start Decision",
+    name: "Certificate Extension",
     listOrder: 17
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Compliance & Enforcement",
+    name: "Substantial Start Decision",
     listOrder: 18
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Post-Decision Materials",
+    name: "Compliance & Enforcement",
     listOrder: 19
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2002,
-    name: "Amendment",
+    name: "Post-Decision Materials",
     listOrder: 20
+  },
+  {
+    type: "label",
+    _schemaName: "List",
+    legislation: 2002,
+    name: "Amendment",
+    listOrder: 21
   },
   // 2018 milestone legislation
   {
@@ -159,155 +166,169 @@ module.exports = [
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Project Designation",
+    name: "Minister's Designation",
+    oldName: "Project Designation",
     listOrder: 1
   },
+  //Update listorder
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
     name: "Initial Project Description",
-    listOrder: 2
-  },
-  {
-    type: "label",
-    _schemaName: "List",
-    legislation: 2018,
-    name: "Readiness Decision",
     listOrder: 3
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Issued Process Order",
+    name: "Readiness Decision",
     listOrder: 4
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Draft Process Order",
+    name: "Issued Process Order",
     listOrder: 5
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Draft EAC Application",
+    name: "Draft Process Order",
     listOrder: 6
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Revised EAC Application",
+    name: "Draft EAC Application",
     listOrder: 7
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Draft Assessment Report",
+    name: "Revised EAC Application",
     listOrder: 8
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Draft EAC Package",
+    name: "Draft Assessment Report",
     listOrder: 9
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Referrral Package",
+    name: "Draft EAC Package",
     listOrder: 10
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Time Limit Extension",
+    name: "Referrral Package",
     listOrder: 11
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Time Limit Imposition",
+    name: "Time Limit Extension",
     listOrder: 12
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Assessment Suspension",
+    name: "Time Limit Imposition",
     listOrder: 13
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Withdrawal",
+    name: "Assessment Suspension",
     listOrder: 14
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Termination",
+    name: "Withdrawal",
     listOrder: 15
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Other",
+    name: "Termination",
     listOrder: 16
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Certificate Decision",
+    name: "Other",
     listOrder: 17
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Certificate Extension",
+    name: "Certificate Decision",
     listOrder: 18
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Substancial Start Decision",
+    name: "Certificate Extension",
     listOrder: 19
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Compliance & Enforcement",
+    name: "Substancial Start Decision",
     listOrder: 20
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Post-Decision Materials",
+    name: "Compliance & Enforcement",
     listOrder: 21
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Amendment",
+    name: "Post-Decision Materials",
     listOrder: 22
+  },
+  {
+    type: "label",
+    _schemaName: "List",
+    legislation: 2018,
+    name: "Amendment",
+    listOrder: 23
   },
   
 ];
+
+module.exports.newMilestone = [
+  {
+    type: "label",
+    _schemaName: "List",
+    legislation: 2018,
+    name: "CEAO's Designation",
+    listOrder: 2,
+    read: ["public", "staff", "sysadmin"],
+    write: ["staff", "sysadmin"]
+  },
+]
