@@ -193,7 +193,6 @@ module.exports.milestoneList = [
     name: "Detailed Project Description",
     listOrder: 5
   },
-  //Update listorder
   {
     type: "label",
     _schemaName: "List",
@@ -248,6 +247,7 @@ module.exports.milestoneList = [
     _schemaName: "List",
     legislation: 2018,
     name: "Referral Package",
+    oldName: "Referral",
     listOrder: 13
   },
   {
@@ -255,6 +255,7 @@ module.exports.milestoneList = [
     _schemaName: "List",
     legislation: 2018,
     name: "Time Limit Extension",
+    oldName: "Timeline Imposition",
     listOrder: 14
   },
   {
