@@ -3,7 +3,7 @@
 var dbm;
 var type;
 var seed;
-
+var mongoose = require('mongoose');
 /**
   * We receive the dbmigrate dependency from dbmigrate initially.
   * This enables us to not have to rely on NODE_PATH.
@@ -22,6 +22,8 @@ exports.up = function(db) {
     .then((mClientInst) => {
       mClient = mClientInst;
       var p = mClient.collection('epic');
+      p.insert(migrationItems.newMilestone)
+      //Delete Revised Assessment Repo
       p.aggregate([
         { $match: {_schemaName:"List", type: "label"} }
       ])
@@ -29,6 +31,10 @@ exports.up = function(db) {
       .then(function(arr) {
         for (let item of arr) {
           const milestoneName = item.name;
+          if (milestoneName === "Revised Assessment Report") {
+            //Delete this entry
+            p.deleteOne({_id: item._id});
+          }
           const lookupMilestone = getMilestoneListObject(milestoneName);
           if (lookupMilestone) {
             p.update(
@@ -44,7 +50,6 @@ exports.up = function(db) {
             )
           }
           }
-          p.insert(migrationItems.newMilestone)
           mClient.close();
       })
       //Add in new milestone object

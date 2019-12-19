@@ -82,6 +82,7 @@ module.exports.milestoneList = [
     _schemaName: "List",
     legislation: 2002,
     name: "Time Limit Extension",
+    oldName: "Timeline Extension",
     listOrder: 11
   },
   {
@@ -89,6 +90,7 @@ module.exports.milestoneList = [
     _schemaName: "List",
     legislation: 2002,
     name: "Time Limit Suspension",
+    oldName: "Timeline Suspension",
     listOrder: 12
   },
   {
@@ -170,7 +172,6 @@ module.exports.milestoneList = [
     oldName: "Project Designation",
     listOrder: 1
   },
-  //Update listorder
   {
     type: "label",
     _schemaName: "List",
@@ -182,143 +183,159 @@ module.exports.milestoneList = [
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Readiness Decision",
+    name: "Engagement",
     listOrder: 4
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Issued Process Order",
+    name: "Detailed Project Description",
     listOrder: 5
   },
+  //Update listorder
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Draft Process Order",
+    name: "Readiness Decision",
     listOrder: 6
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Draft EAC Application",
+    name: "Issued Process Order",
     listOrder: 7
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Revised EAC Application",
+    name: "Draft Process Order",
     listOrder: 8
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Draft Assessment Report",
+    name: "Draft EAC Application",
     listOrder: 9
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Draft EAC Package",
+    name: "Revised EAC Application",
     listOrder: 10
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Referrral Package",
+    name: "Draft Assessment Report",
     listOrder: 11
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Time Limit Extension",
+    name: "Draft EAC Package",
     listOrder: 12
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Time Limit Imposition",
+    name: "Referral Package",
     listOrder: 13
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Assessment Suspension",
+    name: "Time Limit Extension",
     listOrder: 14
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Withdrawal",
+    name: "Time Limit Imposition",
+    oldName: "Timeline Imposition",
     listOrder: 15
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Termination",
+    name: "Assessment Suspension",
     listOrder: 16
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Other",
+    name: "Withdrawal",
     listOrder: 17
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Certificate Decision",
+    name: "Termination",
     listOrder: 18
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Certificate Extension",
+    name: "Other",
     listOrder: 19
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Substancial Start Decision",
+    name: "Certificate Decision",
     listOrder: 20
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Compliance & Enforcement",
+    name: "Certificate Extension",
     listOrder: 21
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Post-Decision Materials",
+    name: "Substancial Start Decision",
     listOrder: 22
   },
   {
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Amendment",
+    name: "Compliance & Enforcement",
     listOrder: 23
   },
-  
+  {
+    type: "label",
+    _schemaName: "List",
+    legislation: 2018,
+    name: "Post-Decision Materials",
+    oldName: "Decision Package",
+    listOrder: 24
+  },
+  {
+    type: "label",
+    _schemaName: "List",
+    legislation: 2018,
+    name: "Amendment",
+    listOrder: 25
+  }
 ];
 
 module.exports.newMilestone = [
@@ -330,5 +347,5 @@ module.exports.newMilestone = [
     listOrder: 2,
     read: ["public", "staff", "sysadmin"],
     write: ["staff", "sysadmin"]
-  },
-]
+  }
+];
