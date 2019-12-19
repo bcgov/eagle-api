@@ -22,7 +22,7 @@ exports.up = function(db) {
     .then((mClientInst) => {
       mClient = mClientInst;
       var p = mClient.collection('epic');
-      p.insert(migrationItems.newMilestone)
+      p.insert(migrationItems.newMilestones)
       //Delete Revised Assessment Repo
       p.aggregate([
         { $match: {_schemaName:"List", type: "label"} }
