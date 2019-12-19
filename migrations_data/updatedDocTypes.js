@@ -36,7 +36,7 @@ module.exports.docList = [{
 {
   "type" : "doctype",
   "_schemaName" : "List",
-  "name" : "AIR Materials",
+  "name" : "Application Information Requirement Materials",
   "oldName" : "Application Information Requirements",
   "legislation" : 2002,
   "listOrder" : 5
