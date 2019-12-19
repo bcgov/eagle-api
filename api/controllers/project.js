@@ -1006,6 +1006,8 @@ exports.protectedPut = async function (args, res, next) {
   // obj.activeDate = projectObj.activeDate ? new Date(projectObj.activeDate) : null;
 
   filteredData.substantially = projectObj.substantially;
+  filteredData.dispute = projectObj.dispute;
+  filteredData.disputeDate = projectObj.disputeDate;
 
   filteredData.centroid = projectObj.centroid;
 
