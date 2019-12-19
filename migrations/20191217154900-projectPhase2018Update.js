@@ -31,7 +31,8 @@ let newItem = {
   "listOrder" : 0
 };
 
-let docList_order = [1,2,3,4,5,6,14,7,8,9,10,11,16,12,13,15,17,0];
+let docList_order_2018 = [1,2,3,4,5,6,14,7,8,9,10,11,16,12,13,15,17,0];
+let docList_order_2002 = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];
 
 exports.up = function(db) {
     let mClient;
@@ -58,11 +59,33 @@ exports.up = function(db) {
               p.update(
                 { _id: item._id },
                 {
-                  $set: { listOrder: docList_order[i] }
+                  $set: { listOrder: docList_order_2018[i] }
                 }
               )
               i++;
             }
+          }
+          ).catch((e) => {
+            console.log("error: ", e);
+            mClient.close()
+        });
+
+        p.aggregate([
+          { $match: {_schemaName:"List", type: "projectPhase", legislation: 2002} }
+        ])
+          .toArray()
+          .then((arr) => {
+            let i = 0;
+            for (let item of arr) {
+              p.update(
+                { _id: item._id },
+                {
+                  $set: { listOrder: docList_order_2002[i] }
+                }
+              )
+              i++;
+            }
+            mClient.close();
           }
           ).catch((e) => {
             console.log("error: ", e);
@@ -73,6 +96,8 @@ exports.up = function(db) {
         console.log("e:", e);
         mClient.close()
       });
+
+      
   };
   
 
