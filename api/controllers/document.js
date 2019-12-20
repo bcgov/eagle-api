@@ -610,10 +610,10 @@ exports.protectedPut = async function (args, res, next) {
 
   obj.displayName = args.swagger.params.displayName.value;
 
-  obj.milestone = args.swagger.params.milestone ? mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null;
-  obj.type = args.swagger.params.type ? mongoose.Types.ObjectId(args.swagger.params.type.value) : null;
-  obj.documentAuthorType = args.swagger.params.documentAuthorType ? mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null;
-  obj.projectPhase = args.swagger.params.projectPhase ? mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null;
+  obj.milestone = args.swagger.params.milestone.value ? mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null;
+  obj.type = args.swagger.params.type.value ? mongoose.Types.ObjectId(args.swagger.params.type.value) : null;
+  obj.documentAuthorType = args.swagger.params.documentAuthorType.value ? mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null;
+  obj.projectPhase = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null;
 
   obj.dateUploaded = args.swagger.params.dateUploaded.value;
   obj.datePosted = args.swagger.params.datePosted.value;
