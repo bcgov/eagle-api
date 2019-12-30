@@ -1,6 +1,6 @@
 const factory = require('factory-girl').factory;
 const factory_helper = require('./factory_helper');
-const Pin = require('../../helpers/models/pin');
+const Pin = require('../../../helpers/models/pin');
 let faker = require('faker/locale/en');
 
 const factoryName = Pin.modelName;

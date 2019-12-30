@@ -8,7 +8,7 @@ const app = test_helper.app;
 const mongoose = require('mongoose');
 mongoose.Promise = require('bluebird'); // for extra debugging capabilities
 //mongoose.Promise = global.Promise;  // without debugging extras
-require('../helpers/models/audit');
+require('../../helpers/models/audit');
 const factory = require('factory-girl').factory;
 //the following include statements populate the 'factories' collection of factory-girl's singleton factory object
 const auditFactory = require("./factories/audit_factory");
@@ -19,8 +19,8 @@ const commentPeriodFactory = require("./factories/comment_period_factory");
 const commentFactory = require("./factories/comment_factory");
 const documentFactory = require("./factories/document_factory");
 const groupFactory = require("./factories/group_factory");
-require('../helpers/models/user');
-require('../helpers/models/project');
+require('../../helpers/models/user');
+require('../../helpers/models/project');
 let ft = require('./factory_template');
 let gd = require('./generated_data');
 

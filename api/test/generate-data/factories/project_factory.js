@@ -2,7 +2,7 @@ const factory = require('factory-girl').factory;
 const moment = require('moment');
 const mongTypes = require('mongoose').Types;
 const factory_helper = require('./factory_helper');
-const Project = require('../../helpers/models/project');
+const Project = require('../../../helpers/models/project');
 let faker = require('faker/locale/en');
 
 const factoryName = Project.modelName;

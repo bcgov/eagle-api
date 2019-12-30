@@ -1,5 +1,5 @@
 const factory = require('factory-girl').factory;
-const Comment = require('../../helpers/models/comment');
+const Comment = require('../../../helpers/models/comment');
 const factory_helper = require('./factory_helper');
 const moment = require('moment');
 let faker = require('faker/locale/en');

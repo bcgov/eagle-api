@@ -3,7 +3,7 @@ const moment = require('moment');
 const mongTypes = require('mongoose').Types;
 const _ = require('lodash');
 const factory_helper = require('./factory_helper');
-const Organization = require('../../helpers/models/organization');
+const Organization = require('../../../helpers/models/organization');
 let faker = require('faker/locale/en');
 
 const factoryName = Organization.modelName;

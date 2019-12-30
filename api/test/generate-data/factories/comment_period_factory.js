@@ -1,5 +1,5 @@
 const factory = require('factory-girl').factory;
-const CommentPeriod = require('../../helpers/models/commentperiod');
+const CommentPeriod = require('../../../helpers/models/commentperiod');
 const factory_helper = require('./factory_helper');
 const Chance = require('chance');
 const moment = require('moment');
