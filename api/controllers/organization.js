@@ -136,6 +136,7 @@ exports.protectedPut = async function (args, res, next) {
   defaultLog.info("ObjectID:", args.swagger.params.orgId.value);
 
   var Organization = mongoose.model('Organization');
+  var User = mongoose.model('User');
 
   var organization = {
     description: obj.description ? obj.description : '',
@@ -159,6 +160,9 @@ exports.protectedPut = async function (args, res, next) {
 
   try {
     var org = await Organization.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).exec();
+    // Update the name for all users associated with the organization.
+    await User.updateMany({ _schemaName: 'User', org: mongoose.Types.ObjectId(objId) }, { $set: { orgName: obj.name } });
+
     Utils.recordAction('Put', 'Organization', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Organization updated:', org);
     return Actions.sendResponse(res, 200, org);
