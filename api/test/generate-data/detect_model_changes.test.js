@@ -41,7 +41,6 @@ function filterRelevantFolders(apiFolderJsonObj) {
               break;
             case "test":
                 apiSubfolder.children.forEach(function(testSubfolder) {
-                    console.log(testSubfolder)
                     if ("generate-data" == testSubfolder.name) {
                         testSubfolder.children.forEach(generateDataSub => {
                             if ("factories" == generateDataSub.name) {
