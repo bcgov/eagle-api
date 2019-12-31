@@ -838,13 +838,9 @@ handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, pageNu
         total_items: 0
       }]);
     } else {
-      _.assignIn(query, { "_schemaName": "User" });
-
-      let theUsers = [];
-      data[0].members.map(user => {
-        theUsers.push(mongoose.Types.ObjectId(user));
-      })
+      const theUsers = data[0].members.map(user => mongoose.Types.ObjectId(user));
       query = { _id: { $in: theUsers } }
+      _.assignIn(query, { "_schemaName": "User" });
 
       // Sort
       if (sortBy && sortBy.value) {
@@ -872,6 +868,7 @@ handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, pageNu
           skip, // skip
           limit, // limit
           false); // count
+
         Utils.recordAction('Get', 'GroupMember', username);
         return Actions.sendResponse(res, 200, groupData);
       } catch (e) {
