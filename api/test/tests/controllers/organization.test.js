@@ -41,7 +41,7 @@ describe('API Testing - organization', () => {
           return done(err);
         }
         // Confirm the expected number of documents are returned.
-        expect(res.body.length).toBe(NUMBER_OF_DOCS);
+        expect(res.body).toHaveLength(NUMBER_OF_DOCS);
         return done();
       });
   });
