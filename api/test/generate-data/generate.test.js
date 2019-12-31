@@ -1,7 +1,7 @@
 'use strict';
 const Promise = require("bluebird");
 Promise.longStackTraces();
-const test_helper = require('./test_helper');
+const test_helper = require('../test_helper');
 const factory_helper = require('./factories/factory_helper');
 const generate_helper = require("./generate_helper");
 const gh = generate_helper; // shorthand alias for brevity

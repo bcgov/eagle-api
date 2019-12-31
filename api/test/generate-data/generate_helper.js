@@ -3,7 +3,7 @@ const Promise = require("bluebird");
 const faker = require('faker/locale/en');
 const mongTypes = require('mongoose').Types;
 Promise.longStackTraces();
-const test_helper = require('./test_helper');
+const test_helper = require('../test_helper');
 const app = test_helper.app;
 const mongoose = require('mongoose');
 mongoose.Promise = require('bluebird'); // for extra debugging capabilities
@@ -236,6 +236,10 @@ function getSeeded(setConstant, seed) {
   return (setConstant) ? (require('faker/locale/en')).seed(seed) : (require('faker/locale/en')).seed();
 }
 
+function generateSingleFactory(modelName, numberToGenerate, buildOptions = {}) {
+  return factory.createMany(modelName, numberToGenerate, buildOptions);
+}
+
 exports.uss = uniqueStaticSeeds; // external shorthand alias for brevity
 exports.generateEntireDatabase = generateEntireDatabase;
-;
+exports.generateSingleFactory = generateSingleFactory;

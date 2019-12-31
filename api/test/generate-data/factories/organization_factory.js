@@ -48,9 +48,9 @@ factory.define(factoryName, Organization, buildOptions => {
     , companyLegal: ""
     , company: companyName
 
-    , read             : faker.random.arrayElement(["public", "sysadmin", ["public", "sysadmin"]])
-    , write            : faker.random.arrayElement(["public", "sysadmin", ["public", "sysadmin"]])
-    , delete           : faker.random.arrayElement(["public", "sysadmin", ["public", "sysadmin"]])
+    , read             : faker.random.arrayElement(["staff", "sysadmin", ["staff", "sysadmin"]])
+    , write            : faker.random.arrayElement(["staff", "sysadmin", ["staff", "sysadmin"]])
+    , delete           : faker.random.arrayElement(["staff", "sysadmin", ["staff", "sysadmin"]])
   };
   return attrs;
 });

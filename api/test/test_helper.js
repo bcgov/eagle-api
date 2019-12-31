@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const DatabaseCleaner = require('database-cleaner');
 const dbCleaner = new DatabaseCleaner('mongodb');
 const mongoose = require('mongoose');
-const mongooseOpts = require('../../../config/mongoose_options').mongooseOptions;
+const mongooseOpts = require('../../config/mongoose_options').mongooseOptions;
 const mongoDbMemoryServer = require('mongodb-memory-server');
 const MongoClient = require('mongodb').MongoClient;
 const exec = require('child_process').exec;
@@ -123,7 +123,17 @@ function defaultProtectedParams(fieldNames, username = null) {
       scopes: ['sysadmin', 'public'],
       // This value in the real world is pulled from the keycloak user. It will look something like
       // idir/someusername
-      preferred_username: username
+      preferred_username: username,
+      realm_access: {
+        roles: [
+          'project-proponent',
+          'project-system-admin',
+          'offline_access',
+          'uma_authorization',
+          'inspector',
+          'sysadmin'
+        ]
+      },
     },
     fields: {
       value: _.cloneDeep(fieldNames)
@@ -135,6 +145,14 @@ function defaultPublicParams(fieldNames) {
   return {
     fields: {
       value: _.cloneDeep(fieldNames)
+    }
+  };
+}
+
+function createSwaggerBodyObj(paramName, bodyObj) {
+  return {
+    [paramName]: {
+      value: bodyObj
     }
   };
 }
@@ -199,5 +217,6 @@ exports.defaultNumberOfProjects = defaultNumberOfProjects;
 exports.dataGenerationSettings = dataGenerationSettings;
 exports.createSwaggerParams = createSwaggerParams;
 exports.createPublicSwaggerParams = createPublicSwaggerParams;
+exports.createSwaggerBodyObj = createSwaggerBodyObj;
 exports.buildParams = buildParams;
 exports.app = app;
