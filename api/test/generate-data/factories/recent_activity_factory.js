@@ -1,6 +1,6 @@
 const factory = require('factory-girl').factory;
 const moment = require('moment');
-const RecentActivity = require('../../helpers/models/recentActivity');
+const RecentActivity = require('../../../helpers/models/recentActivity');
 let faker = require('faker/locale/en');
 
 const factoryName = RecentActivity.modelName;

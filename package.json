@@ -55,7 +55,7 @@
     "start": "node app",
     "start-watch": "nodemon app.js",
     "test": "echo 'Test suite should be run with \"`npm run tests` or npm `run tests-debug`\"'",
-    "tests": "UPLOAD_DIRECTORY='./api/test/uploads/' jest api --runInBand",
+    "tests": "cross-env UPLOAD_DIRECTORY='./api/test/uploads/' jest api --runInBand",
     "tests-debug": "node --inspect node_modules/.bin/jest --runInBand",
     "coverage": "jest --collectCoverageFrom=api/**.js --coverage api"
   },
@@ -68,6 +68,7 @@
     "@types/supertest": "^2.0.8",
     "bluebird": "^3.5.5",
     "canada": "^0.1.0",
+    "cross-env": "^6.0.3",
     "database-cleaner": "^1.2.0",
     "eslint": "^6.5.1",
     "factory-girl": "^5.0.4",

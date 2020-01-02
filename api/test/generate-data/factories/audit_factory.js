@@ -1,5 +1,5 @@
 const factory = require('factory-girl').factory;
-const Audit = require('../../helpers/models/audit');
+const Audit = require('../../../helpers/models/audit');
 let faker = require('faker/locale/en');
 
 const factoryName = Audit.modelName;

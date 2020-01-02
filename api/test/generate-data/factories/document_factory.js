@@ -1,7 +1,7 @@
 const factory = require('factory-girl').factory;
 const factory_helper = require('./factory_helper');
 const moment = require('moment');
-const Document = require('../../helpers/models/document');
+const Document = require('../../../helpers/models/document');
 let faker = require('faker/locale/en');
 
 const factoryName = Document.modelName;

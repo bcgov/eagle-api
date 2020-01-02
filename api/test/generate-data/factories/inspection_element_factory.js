@@ -1,6 +1,6 @@
 const factory = require('factory-girl').factory;
 const factory_helper = require('./factory_helper');
-const InspectionElement = require('../../helpers/models/inspectionElement');
+const InspectionElement = require('../../../helpers/models/inspectionElement');
 let faker = require('faker/locale/en');
 
 const factoryName = InspectionElement.modelName;

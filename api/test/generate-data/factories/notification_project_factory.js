@@ -1,6 +1,6 @@
 const factory = require('factory-girl').factory;
 const factory_helper = require('./factory_helper');
-const NotificationProject = require('../../helpers/models/notificationProject');
+const NotificationProject = require('../../../helpers/models/notificationProject');
 let faker = require('faker/locale/en');
 
 const notificationProjectNameSuffixes = [

@@ -11,7 +11,7 @@ const stringify_space = 2;
 
 const options = {
     folders: { 
-        include: ['./api/helpers/models', './api/test/factories']
+        include: ['./api/helpers/models', './api/test/generate-data/factories']
         , exclude: ['.*', 'controllers', 'fixtures'] },
     files: { 
         include: ['*.js']
@@ -20,7 +20,7 @@ const options = {
 
 function getLastGoodHashsetFromFile() {
     return new Promise(resolve => {
-      let filename = './api/test/model_change_watcher_hash.json';
+      let filename = './api/test/generate-data/model_change_watcher_hash.json';
       let fileContents = "";
       fs.readFileSync(filename).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; })
       resolve(fileContents);
@@ -41,8 +41,12 @@ function filterRelevantFolders(apiFolderJsonObj) {
               break;
             case "test":
                 apiSubfolder.children.forEach(function(testSubfolder) {
-                    if ("factories" == testSubfolder.name) {
-                        factories = testSubfolder.children;
+                    if ("generate-data" == testSubfolder.name) {
+                        testSubfolder.children.forEach(generateDataSub => {
+                            if ("factories" == generateDataSub.name) {
+                                factories = generateDataSub.children;
+                            }
+                        })
                     }
                 });
               break;

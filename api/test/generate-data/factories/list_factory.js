@@ -5,10 +5,10 @@ let faker = require('faker/locale/en');
 
 const factoryName = List.modelName;
 
-const ListArray1 = require('../../../migrations_data/lists.js');
-const ListArray2 = require('../../../migrations_data/new_list_items.js');
-const ListArray3 = require('../../../migrations_data/newProjectPhaseListItems.js');
-const ListArray4 = require('../../../migrations_data/regionList.js');
+const ListArray1 = require('../../../../migrations_data/lists.js');
+const ListArray2 = require('../../../../migrations_data/new_list_items.js');
+const ListArray3 = require('../../../../migrations_data/newProjectPhaseListItems.js');
+const ListArray4 = require('../../../../migrations_data/regionList.js');
 const allListEntries = [].concat(ListArray1).concat(ListArray2).concat(ListArray3).concat(ListArray4);
 
 let allLists = {};
