@@ -255,7 +255,7 @@ module.exports.milestoneList = [
     _schemaName: "List",
     legislation: 2018,
     name: "Time Limit Extension",
-    oldName: "Timeline Imposition",
+    oldName: "Timeline Extension",
     listOrder: 14
   },
   {
@@ -298,13 +298,6 @@ module.exports.milestoneList = [
     type: "label",
     _schemaName: "List",
     legislation: 2018,
-    name: "Substancial Start Decision",
-    listOrder: 22
-  },
-  {
-    type: "label",
-    _schemaName: "List",
-    legislation: 2018,
     name: "Compliance & Enforcement",
     listOrder: 23
   },
@@ -341,6 +334,15 @@ module.exports.newMilestones = [
     legislation: 2018,
     name: "Certificate Extension",
     listOrder: 21,
+    read: ["public", "staff", "sysadmin"],
+    write: ["staff", "sysadmin"]
+  },
+  {
+    type: "label",
+    _schemaName: "List",
+    legislation: 2018,
+    name: "Substantial Start Decision",
+    listOrder: 22,
     read: ["public", "staff", "sysadmin"],
     write: ["staff", "sysadmin"]
   },

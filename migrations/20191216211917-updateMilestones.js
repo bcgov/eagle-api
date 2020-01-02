@@ -35,7 +35,7 @@ exports.up = function(db) {
             //Delete this entry
             p.deleteOne({_id: item._id});
           }
-          const lookupMilestone = getMilestoneListObject(milestoneName);
+          const lookupMilestone = getListObject(migrationItems.milestoneList, item.name, item.legislation);
           if (lookupMilestone) {
             p.update(
               {
@@ -59,11 +59,16 @@ exports.up = function(db) {
       mClient.close()
     });
 };
-function getMilestoneListObject(milestoneName) {
-  for (var i=0; i < migrationItems.milestoneList.length; i++) { 
-    const milestoneItem = migrationItems.milestoneList[i];
-    if (milestoneItem.name === milestoneName || milestoneItem.oldName && milestoneItem.oldName === milestoneName) {
-      return milestoneItem;
+function getListObject(list, name, legislation) {
+  for (var i=0; i < list.length; i++) { 
+    const listItem = list[i];
+    //Logic to check legislation match and name or oldname match
+    const legislationCheck = legislation === listItem.legislation;
+    const newNameCheck = listItem.name.trim() === name.trim() && legislationCheck
+    const oldNameCheck = listItem.oldName && listItem.oldName.trim() === name.trim() && legislationCheck
+
+    if (newNameCheck || oldNameCheck) {
+      return listItem;
     }
   }
 }
