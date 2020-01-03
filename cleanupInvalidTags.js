@@ -28,22 +28,22 @@ MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
 
     for (let z = 0; z < typeData.length; z++) {
         let object_id = typeData[z]._id.substring(9,33);
-        updateType(db, ObjectId(object_id));
+        await updateType(db, ObjectId(object_id));
     }
 
     for (let z = 0; z < projectPhaseData.length; z++) {
         let object_id = projectPhaseData[z]._id.substring(9,33);
-        updateProjectPhase(db, ObjectId(object_id));
+        await updateProjectPhase(db, ObjectId(object_id));
     }
 
     for (let z = 0; z < authorData.length; z++) {
         let object_id = authorData[z]._id.substring(9,33);
-        updateAuthor(db, ObjectId(object_id));
+        await updateAuthor(db, ObjectId(object_id));
     }
 
     for (let z = 0; z < milestoneData.length; z++) {
         let object_id = milestoneData[z]._id.substring(9,33);
-        updateMilestone(db, ObjectId(object_id));
+        await updateMilestone(db, ObjectId(object_id));
     }
 
     console.log("ALL DONE");
