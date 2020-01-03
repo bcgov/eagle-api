@@ -26,26 +26,31 @@ MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
     let milestoneData = require(process.cwd() + "/null_milestone");
     console.log("milestoneData:", milestoneData.length);
 
+    const typePromises = [];
     for (let z = 0; z < typeData.length; z++) {
         let object_id = typeData[z]._id.substring(9,33);
-        await updateType(db, ObjectId(object_id));
+        typePromises.push(updateProjectPhase(db, ObjectId(object_id)));
     }
 
+    const projectPromises = [];
     for (let z = 0; z < projectPhaseData.length; z++) {
         let object_id = projectPhaseData[z]._id.substring(9,33);
-        await updateProjectPhase(db, ObjectId(object_id));
+        projectPromises.push(updateProjectPhase(db, ObjectId(object_id)));
     }
 
+    const authorPromises = [];
     for (let z = 0; z < authorData.length; z++) {
         let object_id = authorData[z]._id.substring(9,33);
-        await updateAuthor(db, ObjectId(object_id));
+        authorPromises.push(updateAuthor(db, ObjectId(object_id)));
     }
 
+    const milestonePromises = [];
     for (let z = 0; z < milestoneData.length; z++) {
         let object_id = milestoneData[z]._id.substring(9,33);
-        await updateMilestone(db, ObjectId(object_id));
+        milestonePromises.push(updateAuthor(db, ObjectId(object_id)));
     }
 
+    await Promise.all([projectPromises, authorPromises, milestonePromises, typePromises]);
     console.log("ALL DONE");
     client.close();
   } else{
