@@ -3,28 +3,38 @@ var MongoClient = require("mongodb").MongoClient;
 var fs = require("fs");
 var ObjectId = require("mongodb").ObjectID;
     
+/*
+HOW TO RUN:
+node loadDocumentTags.js <project data>
+
+Ex. If your data is in a file called GaloreCreek.json in the same directory, run:
+node loadDocumentTags.js GaloreCreek
+*/
+
 // Connect to the db
 // Dev
 // MongoClient.connect("mongodb://x:x@localhost:5555/epic", async function(err, client) {
 // Test
 // MongoClient.connect("mongodb://x:x@localhost:5555/epic", async function(err, client) {
 // Local
+var args = process.argv.slice(2);
+
 MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
     if (!err) {
         console.log("We are connected");
         const db = client.db("epic");
 
-        let nahwitti = require(process.cwd() + '/nahwitti');
+        let documentTagsData = require(process.cwd() + '/' + args[0]);
 
-        console.log("Updating tags on " + nahwitti.length + " documents.");
+        console.log("Updating tags on " + documentTagsData.length + " documents.");
 
-        for (let i = 0; i < nahwitti.length; i++) {
-            let object_id = nahwitti[i].id.substring(9,33);
-            let newDocumentType = nahwitti[i].type.substring(9,33);
-            let newDocumentAuthor = nahwitti[i].documentAuthorType.substring(9,33);
-            let newProjectPhase = nahwitti[i].projectPhase.substring(9,33);
-            let newMilestone = nahwitti[i].milestone.substring(9,33);
-            updateDocument(db, ObjectId(object_id), ObjectId(newDocumentType), ObjectId(newDocumentAuthor), ObjectId(newProjectPhase), ObjectId(newMilestone));
+        for (let i = 0; i < documentTagsData.length; i++) {
+            let object_id = documentTagsData[i]._id.substring(9,33);
+            let newDocumentType = documentTagsData[i].type.substring(9,33);
+            let newDocumentAuthor = documentTagsData[i].documentAuthorType.substring(9,33);
+            let newProjectPhase = documentTagsData[i].projectPhase.substring(9,33);
+            let newMilestone = documentTagsData[i].milestone.substring(9,33);
+            await updateDocument(db, ObjectId(object_id), ObjectId(newDocumentType), ObjectId(newDocumentAuthor), ObjectId(newProjectPhase), ObjectId(newMilestone));
         }
         console.log("ALL DONE");
         client.close();
