@@ -3,18 +3,28 @@ var MongoClient = require("mongodb").MongoClient;
 var fs = require("fs");
 var ObjectId = require("mongodb").ObjectID;
     
+/*
+HOW TO RUN:
+node loadDocumentTags.js <project data>
+
+Ex. If your data is in a file called GaloreCreek.json in the same directory, run:
+node loadDocumentTags.js GaloreCreek
+*/
+
 // Connect to the db
 // Dev
 // MongoClient.connect("mongodb://x:x@localhost:5555/epic", async function(err, client) {
 // Test
 // MongoClient.connect("mongodb://x:x@localhost:5555/epic", async function(err, client) {
 // Local
+var args = process.argv.slice(2);
+
 MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
     if (!err) {
         console.log("We are connected");
         const db = client.db("epic");
 
-        let documentTagsData = require(process.cwd() + '/GaloreCreek');
+        let documentTagsData = require(process.cwd() + '/' + args[0]);
 
         console.log("Updating tags on " + documentTagsData.length + " documents.");
 
