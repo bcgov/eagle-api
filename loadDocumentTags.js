@@ -30,11 +30,16 @@ MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
 
         for (let i = 0; i < documentTagsData.length; i++) {
             let object_id = documentTagsData[i]._id.substring(9,33);
-            let newDocumentType = documentTagsData[i].type.substring(9,33);
-            let newDocumentAuthor = documentTagsData[i].documentAuthorType.substring(9,33);
-            let newProjectPhase = documentTagsData[i].projectPhase.substring(9,33);
-            let newMilestone = documentTagsData[i].milestone.substring(9,33);
-            await updateDocument(db, ObjectId(object_id), ObjectId(newDocumentType), ObjectId(newDocumentAuthor), ObjectId(newProjectPhase), ObjectId(newMilestone));
+            let newDocumentType = (documentTagsData[i].type === "") ? null : documentTagsData[i].type.substring(9,33);
+            let newDocumentAuthor = (documentTagsData[i].documentAuthorType === "") ? null : documentTagsData[i].documentAuthorType.substring(9,33);
+            let newProjectPhase = (documentTagsData[i].projectPhase === "") ? null : documentTagsData[i].projectPhase.substring(9,33);
+            let newMilestone = (documentTagsData[i].milestone === "") ? null : documentTagsData[i].milestone.substring(9,33);
+            if(documentTagsData[i].dateReceived && documentTagsData[i].datePosted){
+                let uploadDate = (documentTagsData[i].milestone === "") ? null : new Date(documentTagsData[i].dateReceived);
+                let documentDate = (documentTagsData[i].milestone === "") ? null : new Date(documentTagsData[i].datePosted);
+                await updateTagsDates(db, ObjectId(object_id), ObjectId(newDocumentType), ObjectId(newDocumentAuthor), ObjectId(newProjectPhase), ObjectId(newMilestone), uploadDate, documentDate);
+            }
+            await updateDocumentTags(db, ObjectId(object_id), ObjectId(newDocumentType), ObjectId(newDocumentAuthor), ObjectId(newProjectPhase), ObjectId(newMilestone));
         }
         console.log("ALL DONE");
         client.close();
