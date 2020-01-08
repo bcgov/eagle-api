@@ -78,3 +78,4 @@ async function updateDocumentTags(db, object_id, newDocumentType, newDocumentAut
           resolve(data);
         });
     });
+}
