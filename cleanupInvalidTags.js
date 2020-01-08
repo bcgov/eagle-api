@@ -9,7 +9,8 @@ var ObjectId = require("mongodb").ObjectID;
 // Test
 // MongoClient.connect("mongodb://x:x@localhost:5555/epic", async function(err, client) {
 // Local
-MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
+// MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
+MongoClient.connect("mongodb://userBCH:PWkTwUwJjW2rdvuE@localhost:27018/epic", async function (err, client) {
   if (!err) {
     console.log("We are connected");
     const db = client.db("epic");
@@ -29,7 +30,7 @@ MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
     const typePromises = [];
     for (let z = 0; z < typeData.length; z++) {
         let object_id = typeData[z]._id.substring(9,33);
-        typePromises.push(updateProjectPhase(db, ObjectId(object_id)));
+        typePromises.push(updateType(db, ObjectId(object_id)));
     }
 
     const projectPromises = [];
@@ -47,7 +48,7 @@ MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
     const milestonePromises = [];
     for (let z = 0; z < milestoneData.length; z++) {
         let object_id = milestoneData[z]._id.substring(9,33);
-        milestonePromises.push(updateAuthor(db, ObjectId(object_id)));
+        milestonePromises.push(updateMilestone(db, ObjectId(object_id)));
     }
 
     await Promise.all([projectPromises, authorPromises, milestonePromises, typePromises]);
