@@ -18,7 +18,6 @@ node loadDocumentTags.js GaloreCreek
 // MongoClient.connect("mongodb://x:x@localhost:5555/epic", async function(err, client) {
 // Local
 var args = process.argv.slice(2);
-
 MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
     if (!err) {
         console.log("We are connected");
@@ -34,12 +33,12 @@ MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
             let newDocumentAuthor = (documentTagsData[i].documentAuthorType === "") ? null : documentTagsData[i].documentAuthorType.substring(9,33);
             let newProjectPhase = (documentTagsData[i].projectPhase === "") ? null : documentTagsData[i].projectPhase.substring(9,33);
             let newMilestone = (documentTagsData[i].milestone === "") ? null : documentTagsData[i].milestone.substring(9,33);
-            if(documentTagsData[i].dateReceived && documentTagsData[i].datePosted){
-                let uploadDate = (documentTagsData[i].milestone === "") ? null : new Date(documentTagsData[i].dateReceived);
+            if(documentTagsData[i].datePosted){
                 let documentDate = (documentTagsData[i].milestone === "") ? null : new Date(documentTagsData[i].datePosted);
-                await updateTagsDates(db, ObjectId(object_id), ObjectId(newDocumentType), ObjectId(newDocumentAuthor), ObjectId(newProjectPhase), ObjectId(newMilestone), uploadDate, documentDate);
+                await updateTagsDates(db, ObjectId(object_id), ObjectId(newDocumentType), ObjectId(newDocumentAuthor), ObjectId(newProjectPhase), ObjectId(newMilestone), documentDate);
+            } else {
+                await updateDocumentTags(db, ObjectId(object_id), ObjectId(newDocumentType), ObjectId(newDocumentAuthor), ObjectId(newProjectPhase), ObjectId(newMilestone));
             }
-            await updateDocumentTags(db, ObjectId(object_id), ObjectId(newDocumentType), ObjectId(newDocumentAuthor), ObjectId(newProjectPhase), ObjectId(newMilestone));
         }
         console.log("ALL DONE");
         client.close();
@@ -48,11 +47,34 @@ MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
       }
 });
 
-async function updateDocument(db, object_id, newDocumentType, newDocumentAuthor, newProjectPhase, newMilestone) {
+async function updateTagsDates(db, object_id, newDocumentType, newDocumentAuthor, newProjectPhase, newMilestone, newDocumentDate) {
     return new Promise(function(resolve, reject) {
       db.collection("epic")
         .updateOne({ _id: object_id },
-        { $set: { type: newDocumentType , documentAuthorType: newDocumentAuthor, projectPhase: newProjectPhase, milestone: newMilestone }})
+        { $set: { 
+            type: newDocumentType, 
+            documentAuthorType: newDocumentAuthor, 
+            projectPhase: newProjectPhase, 
+            milestone: newMilestone, 
+            datePosted: newDocumentDate}},
+        { upsert : true })
+        .then(async function(data) {
+          resolve(data);
+        });
+    });
+}
+
+async function updateDocumentTags(db, object_id, newDocumentType, newDocumentAuthor, newProjectPhase, newMilestone) {
+    return new Promise(function(resolve, reject) {
+      db.collection("epic")
+        .updateOne({ _id: object_id },
+        { $set: { 
+            type: newDocumentType, 
+            documentAuthorType: newDocumentAuthor, 
+            projectPhase: newProjectPhase, 
+            milestone: newMilestone, 
+        }},
+        { upsert : true })
         .then(async function(data) {
           resolve(data);
         });
