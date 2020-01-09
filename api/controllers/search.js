@@ -228,25 +228,58 @@ var handleDateEndItem = function (expArray, field, entry) {
 };
 
 var unwindProjectData = function (aggregation, projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation) {
+  const ceeaInvolvementField = `${projectLegislationDataKey}.CEAAInvolvement`;
+  const eacDecisionField = `${projectLegislationDataKey}.eacDecision`;
+  const proponentField = `${projectLegislationDataKey}.proponent`;
+
+  // CEAA Involvement lookup.
+  aggregation.push(
+    {
+      '$lookup': {
+        'from': 'epic',
+        'localField': ceeaInvolvementField,
+        'foreignField': '_id',
+        'as': ceeaInvolvementField
+      }
+    },
+    {
+      '$unwind': `$${ceeaInvolvementField}`
+    },
+  );
+
+  // EA Decision lookup.
+  aggregation.push(
+    {
+      '$lookup': {
+        'from': 'epic',
+        'localField': eacDecisionField,
+        'foreignField': '_id',
+        'as': eacDecisionField
+      }
+    },
+    {
+      '$unwind': `$${eacDecisionField}`
+    },
+  );
+
+  // Proponent lookup.
+  aggregation.push(
+    {
+      '$lookup': {
+        'from': 'epic',
+        'localField': proponentField,
+        'foreignField': '_id',
+        'as': proponentField
+      }
+    },
+    {
+      '$unwind': `$${proponentField}`
+    },
+  );
+
   // If projectLegislationYear = "" then use the legislationDefault key on the project model
   // pop proponent if exists.
   if (!projectLegislation || projectLegislation == "default") {
-
-    aggregation.push(
-      {
-        '$lookup': {
-          "from": "epic",
-          "localField": projectLegislationDataKey + ".proponent",
-          "foreignField": "_id",
-          "as": projectLegislationDataKey + ".proponent"
-        }
-      }
-    )
-    aggregation.push(
-      {
-        "$unwind": "$" + projectLegislationDataKey + ".proponent"
-      },
-    );
     aggregation.push(
       {
         '$addFields': {
@@ -254,10 +287,11 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
           [projectLegislationDataKey + ".read"]: "$read",
           [projectLegislationDataKey + ".pins"]: "$pins",
           [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory",
-          [projectLegislationDataKey + ".pinsRead"]: "$pinsRead"
+          [projectLegislationDataKey + ".pinsRead"]: "$pinsRead",
         }
       }
     );
+    
     aggregation.push(
       {
         "$replaceRoot": { newRoot:  "$" + projectLegislationDataKey }
@@ -266,28 +300,15 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
   } else {
     aggregation.push(
       {
-        '$lookup': {
-          "from": "epic",
-          "localField": projectLegislationDataKey + ".proponent",
-          "foreignField": "_id",
-          "as": projectLegislationDataKey + ".proponent"
-        }
-      });
-    aggregation.push(
-      {
-        "$unwind": "$" + projectLegislationDataKey + ".proponent"
-      },
-    );
-    aggregation.push(
-      {
         '$addFields': {
           [projectLegislationDataIdKey]: '$_id',
           [projectLegislationDataKey + ".read"]: "$read",
           [projectLegislationDataKey + ".pins"]: "$pins",
-          [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory"          
+          [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory",
         }
       }
     );
+
     aggregation.push(
       {
         "$addFields": {
@@ -295,15 +316,18 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
        }
       }
     );
+
     //Null out the projectLegislationYear
     aggregation.push({
       "$project": {["project.legislation_" + projectLegislation]: 0 }
     });
+
     aggregation.push({
       "$project": {[projectLegislationDataKey]: 0 }
     });
   }
 }
+
 var getProjectLegislationInfo = function(legislation) {
   let projectLegislationDataKey;
   switch (legislation) {
@@ -498,21 +522,61 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
 
   if (schemaName === 'Project') {
     if (projectLegislation === "all") {
-      projectLegislationDataKey.forEach ( dataKey => {
+      projectLegislationDataKey.forEach ( dataKey => {  
+        const ceeaInvolvementField = `${dataKey}.CEAAInvolvement`;
+        const eacDecisionField = `${dataKey}.eacDecision`;
+        const proponentField = `${dataKey}.proponent`;
+    
+        // CEAA Involvement lookup.
+        aggregation.push(
+          {
+            '$lookup': {
+              'from': 'epic',
+              'localField': ceeaInvolvementField,
+              'foreignField': '_id',
+              'as': ceeaInvolvementField
+            }
+          },
+          {
+            '$unwind': {
+              path: `$${ceeaInvolvementField}`,
+              preserveNullAndEmptyArrays: true
+            }
+          },
+        );
+    
+        // EA Decision lookup.
+        aggregation.push(
+          {
+            '$lookup': {
+              'from': 'epic',
+              'localField': eacDecisionField,
+              'foreignField': '_id',
+              'as': eacDecisionField
+            }
+          },
+          {
+            '$unwind': {
+              path: `$${eacDecisionField}`,
+              preserveNullAndEmptyArrays: true
+            }
+          },
+        );
+
         // pop proponent if exists.
         aggregation.push(
           {
             '$lookup': {
               "from": "epic",
-              "localField": dataKey + ".proponent",
+              "localField": proponentField,
               "foreignField": "_id",
-              "as": dataKey + ".proponent"
+              "as": proponentField
             }
           });
         aggregation.push(
           {
             "$unwind": {
-              path: "$" + dataKey + ".proponent",
+              path: `$${proponentField}`,
               preserveNullAndEmptyArrays: true
             }
           },
