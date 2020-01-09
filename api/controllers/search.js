@@ -287,7 +287,7 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
           [projectLegislationDataKey + ".read"]: "$read",
           [projectLegislationDataKey + ".pins"]: "$pins",
           [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory",
-          [projectLegislationDataKey + ".pinsRead"]: "$pinsRead",
+          [projectLegislationDataKey + ".pinsRead"]: "$pinsRead"
         }
       }
     );
