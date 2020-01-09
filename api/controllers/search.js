@@ -287,7 +287,7 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
           [projectLegislationDataKey + ".read"]: "$read",
           [projectLegislationDataKey + ".pins"]: "$pins",
           [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory",
-          [projectLegislationDataKey + ".pinsRead"]: "$pinsRead",
+          [projectLegislationDataKey + ".pinsRead"]: "$pinsRead"
         }
       }
     );
@@ -304,7 +304,7 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
           [projectLegislationDataIdKey]: '$_id',
           [projectLegislationDataKey + ".read"]: "$read",
           [projectLegislationDataKey + ".pins"]: "$pins",
-          [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory",
+          [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory"
         }
       }
     );
@@ -789,7 +789,6 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
       ]
     }
   });
-console.log(JSON.stringify(aggregation));
 
   return new Promise(function (resolve, reject) {
     var collectionObj = mongoose.model(schemaName);
