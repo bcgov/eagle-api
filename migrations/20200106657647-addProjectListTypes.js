@@ -19,9 +19,10 @@ const listItems = require(process.cwd() + '/migrations_data/eaDecisionsAndIAACIn
 exports.up = function(db) {
   let mClient;
   return db.connection.connect(db.connectionString, { native_parser: true })
-    .then((mClient) => {
+    .then((client) => {
+      mClient = client;
+      
       const collection = mClient.collection('epic');
-console.log(listItems);
       // Insert new list items
       collection.insertMany(
         listItems

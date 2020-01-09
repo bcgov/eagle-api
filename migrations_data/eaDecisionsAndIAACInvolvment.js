@@ -74,7 +74,7 @@ module.exports = [
     _schemaName: "List",
     type: "ceaaInvolvements",
     legislation: 2002,
-    name: "Comprehensive Study - Confirmed'",
+    name: "Comprehensive Study - Confirmed",
     listOrder: 100
   },
   {
