@@ -207,92 +207,99 @@ module.exports = [
   {
     _schemaName: "List",
     type: "eaDecisions",
-    legislation: 2018,
-    name: "In Progress",
+    legislation: 2002,
+    name: "Further Assessment Required",
     listOrder: 90
   },
   {
     _schemaName: "List",
     type: "eaDecisions",
     legislation: 2018,
-    name: "Exemption Order",
+    name: "In Progress",
     listOrder: 100
   },
   {
     _schemaName: "List",
     type: "eaDecisions",
     legislation: 2018,
-    name: "Assessment Terminated",
+    name: "Exemption Order",
     listOrder: 110
   },
   {
     _schemaName: "List",
     type: "eaDecisions",
     legislation: 2018,
-    name: "Application Withdrawn",
+    name: "Assessment Terminated",
     listOrder: 120
   },
   {
     _schemaName: "List",
     type: "eaDecisions",
     legislation: 2018,
-    name: "Certificate Issued",
+    name: "Application Withdrawn",
     listOrder: 130
   },
   {
     _schemaName: "List",
     type: "eaDecisions",
     legislation: 2018,
-    name: "Certificate Refused",
+    name: "Certificate Issued",
     listOrder: 140
   },
   {
     _schemaName: "List",
     type: "eaDecisions",
     legislation: 2018,
-    name: "Certificate Cancelled",
+    name: "Certificate Refused",
     listOrder: 150
   },
   {
     _schemaName: "List",
     type: "eaDecisions",
     legislation: 2018,
-    name: "Certificate Expired",
+    name: "Certificate Cancelled",
     listOrder: 160
   },
   {
     _schemaName: "List",
     type: "eaDecisions",
     legislation: 2018,
-    name: "Exemption Order Rescinded",
+    name: "Certificate Expired",
     listOrder: 170
   },
   {
     _schemaName: "List",
     type: "eaDecisions",
     legislation: 2018,
-    name: "Certificate Reinstated",
+    name: "Exemption Order Rescinded",
     listOrder: 180
   },
   {
     _schemaName: "List",
     type: "eaDecisions",
     legislation: 2018,
-    name: "Readiness Termination",
+    name: "Certificate Reinstated",
     listOrder: 190
   },
   {
     _schemaName: "List",
     type: "eaDecisions",
     legislation: 2018,
-    name: "Project Designated Non-Reviewable",
+    name: "Readiness Termination",
     listOrder: 200
   },
   {
     _schemaName: "List",
     type: "eaDecisions",
     legislation: 2018,
-    name: "Certificate End of Life'",
+    name: "Project Designated Non-Reviewable",
     listOrder: 210
+  },
+  {
+    _schemaName: "List",
+    type: "eaDecisions",
+    legislation: 2018,
+    name: "Certificate End of Life'",
+    listOrder: 220
   }
 ];
