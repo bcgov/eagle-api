@@ -6,13 +6,13 @@ var Mixed = mongoose.Schema.Types.Mixed;
 var projectDataDefinition = {
 
   //Needed for default view
-  CEAAInvolvement         : { type: String, default: '' },
+  CEAAInvolvement         : { type:'ObjectId', default: null },
   CELead                  : { type: String, default: '' },
   CELeadEmail             : { type: String, default: '' },
   CELeadPhone             : { type: String, default: '' },
   centroid                : [{ type: Mixed, default: 0.00}],
   description             : { type: String, default: '' },
-  eacDecision             : { type: String, default: '' },
+  eacDecision             : { type:'ObjectId', default: null },
   location                : { type: String, default: '' },
   name                    : { type: String, trim: true },
   projectLeadId           : { type:'ObjectId', default: null },
