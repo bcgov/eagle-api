@@ -299,7 +299,7 @@ module.exports = [
     _schemaName: "List",
     type: "eaDecisions",
     legislation: 2018,
-    name: "Certificate End of Life'",
+    name: "Certificate End of Life",
     listOrder: 220
   }
 ];
