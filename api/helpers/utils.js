@@ -175,7 +175,28 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
         (modelType === 'Project') && {
           "$replaceRoot": { newRoot:  "$default" }
         },
-
+        (modelType === 'Project') && {
+          '$lookup': {
+            "from": "epic",
+            "localField": "CEAAInvolvement",
+            "foreignField": "_id",
+            "as": "CEAAInvolvement"
+          }
+        },
+        (modelType === 'Project') && {
+          "$unwind": "$CEAAInvolvement"
+        },
+        (modelType === 'Project') && {
+          '$lookup': {
+            "from": "epic",
+            "localField": "eacDecision",
+            "foreignField": "_id",
+            "as": "eacDecision"
+          }
+        },
+        (modelType === 'Project') && {
+          "$unwind": "$eacDecision"
+        },
         //Unpack the default key inside a nested call with project data
          // To unpack the legislation data into the project key
          (modelType !== 'Project' && populateProject) && {
