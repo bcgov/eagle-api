@@ -243,8 +243,11 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
       }
     },
     {
-      '$unwind': `$${ceeaInvolvementField}`
-    },
+      '$unwind': {
+        path: `$${ceeaInvolvementField}`,
+        preserveNullAndEmptyArrays: true
+      }
+    }
   );
 
   // EA Decision lookup.
@@ -258,8 +261,11 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
       }
     },
     {
-      '$unwind': `$${eacDecisionField}`
-    },
+      '$unwind': {
+        path: `$${eacDecisionField}`,
+        preserveNullAndEmptyArrays: true
+      }
+    }
   );
 
   // Proponent lookup.
@@ -273,8 +279,11 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
       }
     },
     {
-      '$unwind': `$${proponentField}`
-    },
+      '$unwind': {
+        path: `$${proponentField}`,
+        preserveNullAndEmptyArrays: true
+      }
+    }
   );
 
   // If projectLegislationYear = "" then use the legislationDefault key on the project model
