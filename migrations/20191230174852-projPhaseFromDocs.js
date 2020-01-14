@@ -27,31 +27,34 @@ exports.up = function (db) {
       var docsWithoutPhase = [];
       var projectsWithoutDocPhase = [];
       var updateCandidates = [];
+      // all published documents grouped by project, sorted by datePosted
       var projectDocs = await getDocsByProject(p);
       // items is projects
+      var docsListByPhase = [];
       for (let docArray of projectDocs) {
         if (!docArray) {
           continue;
         }
 
+        var mostRecentDocBeforeAmendment = '';
         var mostRecentDoc = '';
-        var projectId = docArray._id
+        var projectId = docArray._id;
         // loop through project's docs
         for (let doc of docArray.docs) {
-          // todo need to do lookup of doc, 
-          if (!doc.projectPhase) {
 
-            var document = await getDocument(p, doc._id);
+          var document = await getDocument(p, doc._id);
+          if (!doc.projectPhase) {
+            // console.log(doc)
             let docId = mongoose.Types.ObjectId(doc._id).toString();
-            docsWithoutPhase.push({ "docId": docId, "name": document.displayName })
+            docsWithoutPhase.push({ "docId": docId, "name": document[0].displayName })
             continue;
           }
 
-          var docPhase = await getPhase(p, doc.projectPhase);
+          var docPhase = await getObjById(p, doc.projectPhase);
           if (!docPhase) {
             continue;
           }
-          // docs with Other, are ignored for project status
+          // docs with Other, are ignored for project phase
           if (docPhase.name === 'Other') {
             continue;
           }
@@ -60,14 +63,33 @@ exports.up = function (db) {
             mostRecentDoc = doc;
           }
 
-          var mostRecentDocPhase = await getPhase(p, mostRecentDoc.projectPhase)
+          if (!mostRecentDocBeforeAmendment) {
+            mostRecentDocBeforeAmendment = doc;
+          }
+
+          var mostRecentDocPhase = await getObjById(p, mostRecentDoc.projectPhase)
           // not a valid phase id
           if (!mostRecentDocPhase) {
             continue;
           }
+          // 
+            // docsListByPhase.push({"projectId": projectId, "phase": docPhase.name, "order": docPhase.listOrder, "docId": doc._id});
 
-          if (docPhase.listOrder > mostRecentDocPhase.listOrder) {
-            mostRecentDoc = doc;
+          if (docPhase.name === 'Post Decision - Amendment') {
+            if (amendmentDone(document[0])) {
+              // amendment complete - phase should be whatever it was in before amendment started
+              mostRecentDoc = mostRecentDocBeforeAmendment;
+            } else {
+              // amendment not done yet, phase shold be amendment
+              // console.log(`Amendment not done yet or tagged enough, project: ${projectId}, doc: ${doc._id}`)
+              mostRecentDoc = doc;
+            }
+          } else {
+            mostRecentDocBeforeAmendment = doc;
+            if (docPhase.listOrder >= mostRecentDocPhase.listOrder) {
+              mostRecentDoc = doc;
+              // mostRecentDocBeforeAmendment = doc;
+            }
           }
         }
 
@@ -81,30 +103,67 @@ exports.up = function (db) {
 
         let projId = mongoose.Types.ObjectId(projectId).toString();
         if (!mostRecentDoc) {
-          console.log("no valid mostrecent doc (likely all missing phase field)")
-          console.log("projId: ", projectId)
+          // console.log("no valid mostrecent doc (likely all missing phase field)")
           projectsWithoutDocPhase.push({ "projectId": projId, "name": project[0].default.name })
           continue;
         }
 
-        mostRecentDocPhase = await getPhase(p, mostRecentDoc.projectPhase)
+        mostRecentDocPhase = await getObjById(p, mostRecentDoc.projectPhase)
         if (!mostRecentDocPhase) {
           continue;
         }
 
+        // todo check EA decision, use to improve accuracy
+        let phaseToSet = '';
+        let eacDecision = await getObjById(p, project[0].default.eacDecision)
+        const completePhase = mongoose.Types.ObjectId("5d3f6c7eda7a384218296039");
+        const preConstructionPhase = mongoose.Types.ObjectId("5d3f6c7eda7a384218296034")
+        if (!eacDecision) {
+          // just use doc phase
+          phaseToSet = mostRecentDoc.projectPhase;
+        } else {
+          switch(eacDecision.name) {
+            // 2002
+            case "Terminated":
+            case "Withdrawn":
+            case "Certificate Refused":
+            case "Certificate Expired":
+            case "Not Designated Reviewable":
+              phaseToSet = completePhase;
+              break;
+            case "In Progress":
+              phaseToSet = mostRecentDoc.projectPhase
+              break;
+            case "EAC Not Required":
+              phaseToSet = preConstructionPhase;
+              break;
+            default:
+              phaseToSet = mostRecentDoc.projectPhase;
+              break;
+          }
+        }
         // console.log("Project phase: ", project[0].default.currentPhaseName)
         // console.log("Most recent doc phase: ", mostRecentDocPhase.name)
+        let phaseToSetName = await getObjById(p, phaseToSet);
+        if (!phaseToSetName) {
+          console.log(`bad phase: ${phaseToSet} `)
+          continue;
+        }
         let docId = mongoose.Types.ObjectId(mostRecentDoc._id).toString();
-        var taggingCandidate = { "project": projId, "recentDoc": docId, "projectName": project[0].default.name, "docPhase":  mostRecentDocPhase.name, "oldPhase": project[0].default.currentPhaseName }
+        var taggingCandidate = { "project": projId, "recentDoc": docId, "projectName": project[0].default.name, "docPhase":  phaseToSetName.name, "oldPhase": project[0].default.currentPhaseName }
         // console.log(`Project: ${projectId}, mostRecentDoc: ${mostRecentDoc._id}, docPhase: ${mostRecentPhaseName}`)
   
-        // todo differentiate between legislation years?? (document wise)
         updateCandidates.push(taggingCandidate)
         // p.update(
         //   { _id: projectId },
         //   { $set: { currentPhase: mostRecentDoc.projectPhase } }
         // )
       }
+
+      let doclists_cols = [{key: 'projectId', header: 'projectId' },{ key: 'phase', header: 'phase' }, { key: 'order', header: 'order' }, { key: 'docId', header: 'docId'}];
+      CSV.stringify(docsListByPhase, { header: true, columns: doclists_cols }, function (err, data) {
+        fs.writeFileSync("migrations_temp/ProjectDocsPhase.csv", data)
+      })
 
       console.log("Document without phase field found: ", docsWithoutPhase.length);
       let docs_cols = [{ key: 'docId', header: 'docId' }, { key: 'name', header: 'displayName' }];
@@ -137,6 +196,19 @@ exports.up = function (db) {
     });
 };
 
+function amendmentDone(doc) {
+  if (!doc.projectPhase[0] || !doc.milestone[0] || !doc.type[0]) {
+    // need all 3 to determine if done amendment
+    return false;
+  }
+  // if phase: amendment, milestone: amendment, type: amendment package, then amendment is done
+  if (doc.type[0].name === "Amendment Package" && doc.milestone[0].name === "Amendment") {
+    console.log("Found final amendment doc: ", doc._id )
+    return true;
+  } else {
+    return false;
+  }
+}
 
 // get all published docs, grouped by project
 async function getDocsByProject(db) {
@@ -145,7 +217,7 @@ async function getDocsByProject(db) {
       { $match: { _schemaName: "Document" } },
       { $project: { project: 1, projectPhase: 1, datePosted: 1, legislation: 1, read: { $filter: { input: "$read", as: "published", cond: { $in: ["public", "$read"] } } } } },
       { $project: { read: 0 } },
-      { $sort: { datePosted: -1 } },
+      { $sort: { datePosted: 1 } },
       { $group: { _id: "$project", docs: { $push: "$$ROOT" } } }
     ])
       .toArray()
@@ -156,7 +228,7 @@ async function getDocsByProject(db) {
 }
 
 
-async function getPhase(db, phaseId) {
+async function getObjById(db, phaseId) {
   return new Promise(function (resolve, reject) {
     db.findOne({
       _id: phaseId
@@ -169,9 +241,13 @@ async function getPhase(db, phaseId) {
 
 async function getDocument(db, docId) {
   return new Promise(function (resolve, reject) {
-    db.findOne({
-      _id: docId
-    })
+    db.aggregate([
+      { $match: { _id: docId } },
+      { $lookup: { from: 'epic', localField: 'milestone', foreignField: '_id', as: 'milestone' }},
+      { $lookup: { from: 'epic', localField: 'projectPhase', foreignField: '_id', as: 'projectPhase' }},
+      { $lookup: { from: 'epic', localField: 'type', foreignField: '_id', as: 'type' }},
+    ])
+      .toArray()
       .then(async function (data) {
         resolve(data)
       })
