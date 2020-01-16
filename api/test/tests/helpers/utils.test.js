@@ -29,4 +29,18 @@ describe('Helper Testing - utils', () => {
     expect(testRecord.performedBy).toBe(testUser);
     done();
   });
+
+  test('Generate search terms for all words - `generateSearchTerms`', async (done) => {
+    const testSentence = 'test three words';
+    const wordsToProcess = 3;
+
+    // Word search terms start at two.
+    const expectedResults = ['te', 'tes', 'test', 'th', 'thr', 'thre', 'three', 'wo', 'wor', 'word', 'words'];
+
+    const searchTerms = utils.generateSearchTerms(testSentence, wordsToProcess);
+
+    expect(searchTerms).toHaveLength(expectedResults.length);
+    expect(searchTerms).toEqual(expectedResults);
+    done();
+  });
 });

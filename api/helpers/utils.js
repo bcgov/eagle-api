@@ -364,7 +364,7 @@ exports.generateSearchTerms = function (name, maxWordLimit) {
   }
 
   // Remove any duplicate terms by casting to a set and then back to an array.
-  const filteredTerms = [... new Set(searchTerms)];
+  const filteredTerms = [...new Set(searchTerms)];
   
   return filteredTerms;
 }
