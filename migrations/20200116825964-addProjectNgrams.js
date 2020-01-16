@@ -134,7 +134,8 @@ const generateSearchTerms = (name, maxWordLimit) => {
 const getWordSearchTerms = (word) => {
   const searchTerms = [];
 
-  for (let i = 1; i <= word.length; i++) {
+  // Start terms at 2 letters in length. Do not want to search on single letter.
+  for (let i = 2; i <= word.length; i++) {
     searchTerms.push(word.substring(0, i));
   }
 

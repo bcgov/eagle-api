@@ -76,6 +76,8 @@ var tagList = [
   'delete'
 ];
 
+const WORDS_TO_ANALYZE = 3;
+
 var getSanitizedFields = function (fields) {
   return _.remove(fields, function (f) {
     return (_.indexOf(tagList, f) !== -1);
@@ -408,6 +410,9 @@ exports.protectedPost = function (args, res, next) {
   projectData.proponent = mongoose.Types.ObjectId(obj.proponent);
   projectData.responsibleEPDId = mongoose.Types.ObjectId(obj.responsibleEPDId);
   projectData.projectLeadId = mongoose.Types.ObjectId(obj.projectLeadId);
+
+  // Generate search terms for the name.
+  projectData.nameSearchTerms = Utils.generateSearchTerms(obj.name, WORDS_TO_ANALYZE);
 
   // Define security tag defaults
   project.read = ['sysadmin', 'staff'];
@@ -1018,6 +1023,8 @@ exports.protectedPut = async function (args, res, next) {
   filteredData.decisionDate = projectObj.decisionDate ? new Date(projectObj.decisionDate) : null;
   fullProjectObject.review45Start = projectObj.review45Start  ? new Date(projectObj.review45Start) : null;
   fullProjectObject.review180Start = projectObj.review180Start  ? new Date(projectObj.review180Start) : null;
+
+  filteredData.nameSearchTerms = Utils.generateSearchTerms(projectObj.name, WORDS_TO_ANALYZE);
 
   try {
     filteredData.intake = {};
