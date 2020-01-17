@@ -231,6 +231,7 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
   const ceeaInvolvementField = `${projectLegislationDataKey}.CEAAInvolvement`;
   const eacDecisionField = `${projectLegislationDataKey}.eacDecision`;
   const proponentField = `${projectLegislationDataKey}.proponent`;
+  const currentPhaseField = `${projectLegislationDataKey}.currentPhaseName`;
 
   // CEAA Involvement lookup.
   aggregation.push(
@@ -266,6 +267,24 @@ var unwindProjectData = function (aggregation, projectLegislationDataKey, projec
         preserveNullAndEmptyArrays: true
       }
     }
+  );
+
+  // phase name lookup
+  aggregation.push(
+    {
+      '$lookup': {
+        'from': 'epic',
+        'localField': currentPhaseField,
+        'foreignField': '_id',
+        'as': currentPhaseField
+      }
+    },
+    {
+      '$unwind': {
+        path: `$${currentPhaseField}`,
+        preserveNullAndEmptyArrays: true
+      }
+    },
   );
 
   // Proponent lookup.
@@ -570,6 +589,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
         const ceeaInvolvementField = `${dataKey}.CEAAInvolvement`;
         const eacDecisionField = `${dataKey}.eacDecision`;
         const proponentField = `${dataKey}.proponent`;
+        const currentPhaseField = `${dataKey}.currentPhaseName`;
     
         // CEAA Involvement lookup.
         aggregation.push(
@@ -589,6 +609,23 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
           },
         );
     
+        aggregation.push(
+          {
+            '$lookup': {
+              'from': 'epic',
+              'localField': currentPhaseField,
+              'foreignField': '_id',
+              'as': currentPhaseField
+            }
+          },
+          {
+            '$unwind': {
+              path: `$${currentPhaseField}`,
+              preserveNullAndEmptyArrays: true
+            }
+          },
+        );
+
         // EA Decision lookup.
         aggregation.push(
           {

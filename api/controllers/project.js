@@ -39,6 +39,7 @@ var tagList = [
   'nature',
   'commodity',
   'currentPhaseName',
+  'phaseHistory',
   'dateAdded',
   'dateCommentsClosed',
   'dateCommentsOpen',

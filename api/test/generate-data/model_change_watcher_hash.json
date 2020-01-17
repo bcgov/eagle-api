@@ -50,7 +50,11 @@
     },
     {
       "name": "project.js",
+<<<<<<< HEAD
       "hash": "J8Gff/30dN6mCqpOzMv3/L35xRU="
+=======
+      "hash": "AL5oNF2GytP3iyNrt29dMQcl6LY="
+>>>>>>> update search controllers, project models and factories
     },
     {
       "name": "recentActivity.js",
@@ -120,7 +124,7 @@
     },
     {
       "name": "project_factory.js",
-      "hash": "Jt29tQTLG1CvPtNvsJB6xiu7Ahs="
+      "hash": "2f/8LelrvPrF0G4nfn/Pr7VnWY4="
     },
     {
       "name": "recent_activity_factory.js",
