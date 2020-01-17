@@ -22,14 +22,13 @@ exports.up = function (db) {
       mClient = mClientInst;
       var p = mClient.collection('epic');
       var phases2002 = await getPhaseList(p, 2002);
-      var phases2018 = await getPhaseList(p, 2018);
+      var allPhases = await getPhaseList(p)
       var docsWithoutPhase = [];
       var projectsWithoutDocPhase = [];
       var updateCandidates = [];
       // all published documents grouped by project, sorted by datePosted
       var projectDocs = await getDocsByProject(p);
-      // items is projects
-      var docsListByPhase = [];
+      // loop through project groups
       for (let docArray of projectDocs) {
         if (!docArray) {
           continue;
@@ -38,7 +37,6 @@ exports.up = function (db) {
         var mostRecentDocBeforeAmendment = '';
         var mostRecentDoc = '';
         var projectId = docArray._id;
-        // loop through project's docs
         var mostRecentDocStack = [];
         for (let doc of docArray.docs) {
 
@@ -98,7 +96,6 @@ exports.up = function (db) {
         var invalidProjectIds = [];
         var project = await getProject(p, projectId);
         if (!project[0]) {
-          // console.log(`Invalid project: ${projectId} \n`)
           invalidProjectIds.push(projectId)
           continue;
         }
@@ -120,12 +117,13 @@ exports.up = function (db) {
         let phaseHistory = [];
         let eacDecision = await getObjById(p, project[0].default.eacDecision)
         // todo look these up by name
-        const completePhase = mongoose.Types.ObjectId("5d3f6c7eda7a384218296039");
-        const preConstructionPhase = mongoose.Types.ObjectId("5d3f6c7eda7a384218296034");
-        const preAppPhase = mongoose.Types.ObjectId("5d3f6c7eda7a38421829602d");
+        const [completePhase] = namesToIds(phases2002, ["Post Decision - Complete"]);
+        const [preConstructionPhase] = namesToIds(phases2002, ["Post Decision - Pre-Construction"]);
+        const [preAppPhase] = namesToIds(phases2002, ["Pre-Application"]);
         if (!eacDecision) {
           // just use doc phase, convert to use phaseStack
-          phaseToSet = mostRecentDocStack.pop();
+          phaseToSet = namesToIds(allPhases, [mostRecentDocStack.pop()]);
+          phaseHistory = namesToIds(allPhases, mostRecentDocStack);
         } else {
           var postDecisions = [ "Post Decision - Pre-Construction", "Post Decision - Construction", "Post Decision - Operation", "Post Decision - Care & Maintenance", "Post Decision - Decommission" ];
           switch(eacDecision.name) {
@@ -136,18 +134,19 @@ exports.up = function (db) {
             case "Certificate Expired":
             case "Not Designated Reviewable":
               phaseToSet = completePhase;
+              phaseHistory = namesToIds(allPhases, mostRecentDocStack);
               break;
             case "Certificate Issued":
               // Pre-Construction, Construction, Operation, Care & Maintenance, Decommission
               // console.log("Cert Issued, ", mostRecentDocPhase.name)
-              phaseParsed = matchPhaseToDecision(postDecisions, mostRecentDocStack, phases2002)
+              phaseParsed = matchPhaseToDecision(postDecisions, mostRecentDocStack, allPhases)
               phaseToSet = phaseParsed.currentPhase;
               phaseHistory = phaseParsed.previousPhases;
               break;
             case "Certificate Not Required":
               //phase is one of - Pre-Construction, Construction, Operation, Care & Maintenance, Decommission
               // console.log("Cert not required, ", mostRecentDocPhase.name)
-              phaseParsed = matchPhaseToDecision(postDecisions, mostRecentDocStack, phases2002)
+              phaseParsed = matchPhaseToDecision(postDecisions, mostRecentDocStack, allPhases)
               phaseToSet = phaseParsed.currentPhase;
               phaseHistory = phaseParsed.previousPhases;
               break;
@@ -155,24 +154,26 @@ exports.up = function (db) {
               //phase is one of - EA Process Phases (Pre-Application, Evaluation, Application Review, Referral
               var inProgressPhases  = ["Pre-Application", "Evaluation", "Application Review", "Referral"]
               // console.log("In progress ", mostRecentDocPhase.name)
-              phaseParsed = matchPhaseToDecision(inProgressPhases, mostRecentDocStack, phases2002)
+              phaseParsed = matchPhaseToDecision(inProgressPhases, mostRecentDocStack, allPhases)
               phaseToSet = phaseParsed.currentPhase;
               phaseHistory = phaseParsed.previousPhases;
               break;
             case "Pre-EA Act Approval":
               // Pre-Construction, Construction, Operation, Care & Maintenance, Decommission
               // console.log("Pre-EA act approval")
-              phaseParsed = matchPhaseToDecision(postDecisions, mostRecentDocStack, phases2002)
+              phaseParsed = matchPhaseToDecision(postDecisions, mostRecentDocStack, allPhases)
               phaseToSet = phaseParsed.currentPhase;
               phaseHistory = phaseParsed.previousPhases;
               break;
             case "EAC Not Required":
               phaseToSet = preConstructionPhase;
+              phaseHistory = namesToIds(allPhases, mostRecentDocStack);
               break;
             case "Further Assessment Required":
               // only 1 project should have this, only Morrison
               // console.log("Pre application")
               phaseToSet = preAppPhase;
+              phaseHistory = namesToIds(allPhases, mostRecentDocStack);
               break;
             default:
               console.log("default - ", eacDecision.name)
@@ -180,21 +181,33 @@ exports.up = function (db) {
               break;
           }
         }
-
+        // get string for csv output
         let phaseToSetName = await getObjById(p, phaseToSet);
         if (!phaseToSetName) {
-          console.log(`bad phase: ${phaseToSet} `)
+          console.log(`projectid: ${projectId}, bad phase: ${phaseToSet} `)
           continue;
         }
         let docId = mongoose.Types.ObjectId(mostRecentDoc._id).toString();
         var taggingCandidate = { "project": projId, "recentDoc": docId, "projectName": project[0].default.name, "docPhase":  phaseToSetName.name, "phaseList": phaseParsed.previousNames }
-  
         updateCandidates.push(taggingCandidate)
-        // p.update(
-        //   { _id: projectId },
-        //   { $set: { currentPhase: mostRecentDoc.projectPhase, previousPhases: phaseHistory } }
-        // )
-        // console.log("Stack: ", mostRecentDocStack);
+
+        // Update the project data
+        if (project[0].currentLegislationYear === 'legislation_2002') {
+          p.update(
+            { _id: projectId },
+            { $set: { 'legislation_2002.currentPhaseName': phaseToSet, 'legislation_2002.phaseHistory': phaseHistory } }
+          )
+        } else if (project[0].currentLegislationYear === 'legislation_1996') {
+          p.update(
+            { _id: projectId },
+            { $set: { 'legislation_1996.currentPhaseName': phaseToSet, 'legislation_1996.phaseHistory': phaseHistory } }
+          )
+        } else {
+          p.update(
+            { _id: projectId },
+            { $set: { 'legislation_2018.currentPhaseName': phaseToSet, 'legislation_2018.phaseHistory': phaseHistory } }
+          )
+        }
       }
 
       console.log("Document without phase field found: ", docsWithoutPhase.length);
@@ -251,8 +264,8 @@ function matchPhaseToDecision(decisionPhases, docPhaseStack, phases) {
   if (docPhaseStack.length === 1) {
     phaseToTag = docPhaseStack.pop()
   }
-
-  while (!docPhaseStack) {
+  // todo is this getting hit?
+  while (!phaseToTag && !docPhaseStack) {
     let phaseCandidate = docPhaseStack.pop();
     if (decisionPhases.includes(phaseCandidate)) {
       console.log(`Most recent phase: ${phaseCandidate}, stack: ${stackCopy} `)
@@ -266,10 +279,9 @@ function matchPhaseToDecision(decisionPhases, docPhaseStack, phases) {
   if (!phaseToTag) {
     phaseToTag = stackCopy.pop();
     previousPhases = stackCopy;
-    console.log("popped all stack, defaulting to most recent: ", phaseToTag );
+    // console.log("popped all stack, defaulting to most recent: ", phaseToTag );
   }
 
-  console.log("phaseToTag: ", phaseToTag)
   var phaseToTagId = lookupId(phases, phaseToTag);
   var previousPhasesIds = namesToIds(phases, previousPhases);
   return { "currentPhase": phaseToTagId, "previousPhases": previousPhasesIds, "previousNames": previousPhases }
@@ -277,14 +289,26 @@ function matchPhaseToDecision(decisionPhases, docPhaseStack, phases) {
 
 function lookupId(phases, name) {
   // console.log("looking up: ", name);
-  var phaseId = phases.filter(phase => {
-    if (phase.name === name) {
+  var phaseId;
+  [phaseId] = phases.filter(phase => {
+    if (phase.name === name && phase.legislation === 2002) {
       return true;
     } else {
       return false;
     }
   })
-  return phaseId[0]._id
+  // not in 2002
+  if (!phaseId) {
+    // console.log("looking up 2018: ", name);
+    [phaseId] = phases.filter(phase => {
+      if (phase.name === name && phase.legislation === 2018) {
+        return true;
+      } else {
+        return false;
+      }
+    })
+  }
+  return phaseId._id
 }
 
 function namesToIds(phases, names) {
