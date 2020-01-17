@@ -28,6 +28,7 @@ var projectDataDefinition = {
   type                    : { type: String, default: '' },
   legislation             : { type: String, default: '' },
   legislationYear         : { type: Number },
+  nameSearchTerms         : [{ type: String }],
 
 
   //Everything else

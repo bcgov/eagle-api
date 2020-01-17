@@ -345,3 +345,38 @@ exports.filterData = function (collection, data, roles) {
     return data;
   }
 }
+
+// Generates all unique search terms up to a word limit.
+exports.generateSearchTerms = function (name, maxWordLimit) {
+  if (!name) {
+    return;
+  }
+
+  let searchTerms = []
+
+  // Split the name into words.
+  const words = name.trim().split(/\s+/);
+  const wordLimit = words.length < maxWordLimit ? words.length : maxWordLimit;
+
+  for (let i = 0; i < wordLimit; i++) {
+    const wordTerms = getWordSearchTerms(words[i]);
+    searchTerms = [...searchTerms, ...wordTerms];
+  }
+
+  // Remove any duplicate terms by casting to a set and then back to an array.
+  const filteredTerms = [...new Set(searchTerms)];
+  
+  return filteredTerms;
+}
+
+// Gets all search terms for a single word.
+const getWordSearchTerms = (word) => {
+  const searchTerms = [];
+
+  // Start terms at 2 letters in length. Do not want to search on single letter.
+  for (let i = 2; i <= word.length; i++) {
+    searchTerms.push(word.substring(0, i));
+  }
+
+  return searchTerms;
+}
