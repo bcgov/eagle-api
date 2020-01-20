@@ -184,7 +184,10 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
           }
         },
         (modelType === 'Project') && {
-          "$unwind": "$CEAAInvolvement"
+          "$unwind": {
+            "path": "$CEAAInvolvement",
+            "preserveNullAndEmptyArrays": true
+          }
         },
         (modelType === 'Project') && {
           '$lookup': {
@@ -195,7 +198,10 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
           }
         },
         (modelType === 'Project') && {
-          "$unwind": "$eacDecision"
+          "$unwind": {
+            "path": "$eacDecision",
+            "preserveNullAndEmptyArrays": true
+          }
         },
         //Unpack the default key inside a nested call with project data
          // To unpack the legislation data into the project key

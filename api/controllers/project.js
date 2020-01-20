@@ -410,7 +410,11 @@ exports.protectedPost = function (args, res, next) {
   projectData.proponent = mongoose.Types.ObjectId(obj.proponent);
   projectData.responsibleEPDId = mongoose.Types.ObjectId(obj.responsibleEPDId);
   projectData.projectLeadId = mongoose.Types.ObjectId(obj.projectLeadId);
-
+  
+  // Also need to make sure that the eacDecision and CEAAInvolvement fields are in the project. Hard requirement for public
+  projectData.CEAAInvolvement = obj.CEAAInvolvement ? obj.CEAAInvolvement : null;
+  projectData.eacDecision = obj.eacDecision ? obj.eacDecision : null;
+  
   // Generate search terms for the name.
   projectData.nameSearchTerms = Utils.generateSearchTerms(obj.name, WORDS_TO_ANALYZE);
 
