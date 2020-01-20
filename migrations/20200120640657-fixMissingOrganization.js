@@ -2,9 +2,9 @@
 
 const mongoose = require('mongoose');
 
-const dbm;
-const type;
-const seed;
+var dbm;
+var type;
+var seed;
 
 /**
   * We receive the dbmigrate dependency from dbmigrate initially.
