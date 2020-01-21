@@ -116,7 +116,6 @@ exports.up = function (db) {
         let phaseParsed = {};
         let phaseHistory = [];
         let eacDecision = await getObjById(p, project[0].default.eacDecision)
-        // todo look these up by name
         const [completePhase] = namesToIds(phases2002, ["Post Decision - Complete"]);
         const [preConstructionPhase] = namesToIds(phases2002, ["Post Decision - Pre-Construction"]);
         const [preAppPhase] = namesToIds(phases2002, ["Pre-Application"]);
@@ -261,20 +260,25 @@ function matchPhaseToDecision(decisionPhases, docPhaseStack, phases) {
   let previousPhases = [];
   let stackCopy = [...docPhaseStack];
 
+  if (docPhaseStack.length === 0) {
+    console.log("empty stack")
+  }
+
   if (docPhaseStack.length === 1) {
     phaseToTag = docPhaseStack.pop()
   }
-  // todo is this getting hit?
-  while (!phaseToTag && !docPhaseStack) {
+
+  const stackSize = docPhaseStack.length;
+  for (let i = 0; i < stackSize; i++) {
     let phaseCandidate = docPhaseStack.pop();
     if (decisionPhases.includes(phaseCandidate)) {
-      console.log(`Most recent phase: ${phaseCandidate}, stack: ${stackCopy} `)
+      console.log(`Most recent phase: ${phaseCandidate}, stack: ${docPhaseStack} `)
       phaseToTag = phaseCandidate;
       previousPhases = docPhaseStack;
-    } else {
-      console.log(`phase not in Ea decision set: ${phaseCandidate}, stack: ${stackCopy} `)
+      break;
     }
   }
+
   // popped whole stack, no matching phase found, use most recent
   if (!phaseToTag) {
     phaseToTag = stackCopy.pop();
