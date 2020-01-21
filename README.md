@@ -19,6 +19,8 @@ These projects comprise EAO EPIC:
 
 ## Pre-requisites
 
+Note: The following commands work in MacOS bash (not zsh which now default in Catalina). The scripts are currently not fully working in Windows and Linux, so you may need to look at the source of the scripts and manually apply the commands in a right order.
+
 Run the following two scripts to create your environment
 
 ```bash
