@@ -116,9 +116,12 @@ exports.up = function (db) {
         let phaseParsed = {};
         let phaseHistory = [];
         let eacDecision = await getObjById(p, project[0].default.eacDecision)
-        const [completePhase] = namesToIds(phases2002, ["Post Decision - Complete"]);
+        const [completePhase] = namesToIds(allPhases, ["Complete"])
+        // const [pdCompletePhase] = namesToIds(phases2002, ["Post Decision - Complete"]);
         const [preConstructionPhase] = namesToIds(phases2002, ["Post Decision - Pre-Construction"]);
         const [preAppPhase] = namesToIds(phases2002, ["Pre-Application"]);
+        const [withdrawalPhase] = namesToIds(phases2002, ["Withdrawal"])
+        const [terminatedPhase] = namesToIds(phases2002, ["Termination"])
         if (!eacDecision) {
           // just use doc phase, convert to use phaseStack
           phaseToSet = namesToIds(allPhases, [mostRecentDocStack.pop()]);
@@ -128,7 +131,15 @@ exports.up = function (db) {
           switch(eacDecision.name) {
             // 2002
             case "Terminated":
+              // 2002 = Termination
+              phaseToSet = terminatedPhase;
+              phaseHistory = namesToIds(allPhases, mostRecentDocStack);
+              break;
             case "Withdrawn":
+              // 2002 = Withdrawal
+              phaseToSet = withdrawalPhase;
+              phaseHistory = namesToIds(allPhases, mostRecentDocStack);
+              break;
             case "Certificate Refused":
             case "Certificate Expired":
             case "Not Designated Reviewable":
