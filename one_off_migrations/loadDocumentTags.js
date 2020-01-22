@@ -1,7 +1,7 @@
 // Retrieve
 var MongoClient = require("mongodb").MongoClient;
 var fs = require("fs");
-var ObjectId = require("mongodb").ObjectID;
+var mongoose = require("mongoose");
 const csvtojson = require("csvtojson");
 
 /*
@@ -17,8 +17,13 @@ node loadDocumentTags.js GaloreCreek
 // Test
 // MongoClient.connect("mongodb://x:x@localhost:5555/epic", async function(err, client) {
 // Local
+var args = process.argv.slice(2);
+if (!args[0]) {
+  console.log("ERROR: Please provide filename as arg. Exciting")
+  return
+}
 // Make sure the headers match the csv and the requirements
-const csvFilePath='EPIC Tagging Engine - Nahwitti.csv'
+const csvFilePath = args[0]
 const requiredHeaders = ['projectid', 'documentid', 'doctype', 'author', 'phase', 'milestone'];
 let docTagArray = []
 csvtojson({
@@ -40,37 +45,36 @@ csvtojson({
       milestone: obj.milestone})
   }
 })
-console.log(docTagArray)
 });
-var args = process.argv.slice(2);
-if (!args[0]) {
-  console.log("ERROR: Please provide filename as arg. Exciting")
-  return
-}
 MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
     if (!err) {
         console.log("We are connected");
         const db = client.db("epic");
-        let documentTagsData = require(process.cwd() + '/' + args[0]);
 
-        console.log("Updating tags on " + documentTagsData.length + " documents.");
+        console.log("Updating tags on " + docTagArray.length + " documents.");
 
-        for (let i = 0; i < documentTagsData.length; i++) {
-            let object_id = documentTagsData[i]._id.substring(9,33);
-            let newDocumentType = (documentTagsData[i].type === "") ? null : documentTagsData[i].type.substring(9,33);
-            let newDocumentAuthor = (documentTagsData[i].documentAuthorType === "") ? null : documentTagsData[i].documentAuthorType.substring(9,33);
-            let newProjectPhase = (documentTagsData[i].projectPhase === "") ? null : documentTagsData[i].projectPhase.substring(9,33);
-            let newMilestone = (documentTagsData[i].milestone === "") ? null : documentTagsData[i].milestone.substring(9,33);
-            if(documentTagsData[i].datePosted){
-                let documentDate = (documentTagsData[i].milestone === "") ? null : new Date(documentTagsData[i].datePosted);
-                await updateTagsDates(db, ObjectId(object_id), ObjectId(newDocumentType), ObjectId(newDocumentAuthor), ObjectId(newProjectPhase), ObjectId(newMilestone), documentDate);
-            } else {
-                await updateDocumentTags(db, ObjectId(object_id), ObjectId(newDocumentType), ObjectId(newDocumentAuthor), ObjectId(newProjectPhase), ObjectId(newMilestone));
+        for (let i = 0; i < docTagArray.length; i++) {
+          // JSON parse this! thanks morgan3
+          let projectid = docTagArray[i].projectid;
+            let newDocumentType = (docTagArray[i].doctype === "") ? null : docTagArray[i].doctype;
+            let newDocumentAuthor = (docTagArray[i].author === "") ? null : docTagArray[i].author;
+            let newProjectPhase = (docTagArray[i].phase === "") ? null : docTagArray[i].phase;
+            let newMilestone = (docTagArray[i].milestone === "") ? null : docTagArray[i].milestone;
+            // This datePosted will never exist with the csvs we have now. Also we do not pass through a datePosted
+            try {
+              if(docTagArray[i].datePosted){
+                  let documentDate = (docTagArray[i].milestone === "") ? null : new Date(docTagArray[i].datePosted);
+                  await updateTagsDates(db, (projectid),(newDocumentType), (newDocumentAuthor),(newProjectPhase), (newMilestone), documentDate);
+              } else {
+                  await updateDocumentTags(db, (projectid),(newDocumentType), (newDocumentAuthor),(newProjectPhase), (newMilestone));
+              }
+            } catch(err) {
+              console.log(err)
             }
         }
         console.log("ALL DONE");
         client.close();
-      } else{
+      } else {
         console.log(err);
       }
 });
@@ -89,6 +93,8 @@ async function updateTagsDates(db, object_id, newDocumentType, newDocumentAuthor
         .then(async function(data) {
           resolve(data);
         });
+    }).catch(function(error) {
+      console.log(error)
     });
 }
 
@@ -106,6 +112,8 @@ async function updateDocumentTags(db, object_id, newDocumentType, newDocumentAut
         .then(async function(data) {
           resolve(data);
         });
+    }).catch(function(error) {
+      console.log(error)
     });
 }
 
