@@ -462,7 +462,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
 
 
   
-  if (schemaName == "Document" &&  sortingValue['datePosted'] == -1 || sortingValue['score'] == -1){
+  if (schemaName == "Document" &&  sortingValue['datePosted'] === -1 || sortingValue['score'] === -1){
     defaultTwoSorts = true;
   } else if (schemaName == "Document" && Object.keys(sortingValue).length > 1 ){
     // If there are more than two values, but they're not the default values ignore the second value
