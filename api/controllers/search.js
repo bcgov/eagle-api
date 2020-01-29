@@ -418,7 +418,7 @@ var setProjectDefault = function(aggregation, projectOnly) {
 
 var searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue) {
   var properties = undefined;
-  var twoSorts = false;
+  var defaultTwoSorts = false;
   if (project) {
     properties = { project: mongoose.Types.ObjectId(project) };
   }
@@ -461,8 +461,15 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
   console.log("match:", match);
 
 
-  if (schemaName == "Document"){
-    twoSorts = true;
+  
+  if (schemaName == "Document" &&  sortingValue['datePosted'] == -1 || sortingValue['score'] == -1){
+    defaultTwoSorts = true;
+  } else if (schemaName == "Document" && Object.keys(sortingValue).length > 1 ){
+    // If there are more than two values, but they're not the default values ignore the second value
+    var keysArr = Object.keys(sortingValue);
+    var tempSortValue = {};
+    tempSortValue[keysArr[0]] = sortingValue[keysArr[0]];
+    sortingValue = tempSortValue;
   }else {
     sortingValue = {};
     sortingValue[sortField] = sortDirection;
@@ -475,7 +482,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
   // We don't want to have sort in the aggregation if the front end doesn't need sort.
   if (sortField && sortDirection) {
 
-    if (twoSorts){
+    if (defaultTwoSorts){
       searchResultAggregation.push(
 
         { $addFields: {
@@ -888,7 +895,12 @@ var executeQuery = async function (args, res, next) {
   sortBy.map((value) => {
     sortDirection = value.charAt(0) == '-' ? -1 : 1;
     sortField = value.slice(1);
-    sortingValue[sortField] = sortDirection;
+    if (sortingValue.hasOwnProperty(sortField)){
+      //field is already set, don't set it again with an identical secondary sort
+    } else {
+      sortingValue[sortField] = sortDirection;
+    }
+    
   });
 
   console.log("sortingValue:", sortingValue);
@@ -899,7 +911,7 @@ var executeQuery = async function (args, res, next) {
 
     console.log("Searching Collection:", dataset);
     console.log("sortField:", sortField);
-    var itemData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or);
+    var itemData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue);
     if (dataset === 'Comment') {
       // Filter
       _.each(itemData[0].searchResults, function (item) {
