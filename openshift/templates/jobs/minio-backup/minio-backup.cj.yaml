@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: minio-backup
+parameters:
+  - name: NAME_SUFFIX
+    required: true
+  - name: NAMESPACE
+    required: true
+  - name: TOOLS_NAMESPACE
+    required: true
+  - name: PVC_SIZE
+    value: "15Gi"
+  - name: DEST_PVC
+    required: true
+  - name: SCHEDULE
+    value: "15 3 * * *"
+    required: false
+  - name: SOURCE_PVC
+    required: true
+objects:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      finalizers:
+      - kubernetes.io/pvc-protection
+      name: "epic-documents-${NAME_SUFFIX}-backup"
+      labels:
+        app: "epic-${NAME_SUFFIX}"
+        name: "epic-${NAME_SUFFIX}-documents-backup"
+    spec:
+      accessModes:
+      - ReadWriteMany
+      resources:
+        requests:
+          storage: ${PVC_SIZE}
+      storageClassName: netapp-file-standard
+  - apiVersion: batch/v1beta1
+    kind: CronJob
+    metadata:
+      name: epic-documents-${NAME_SUFFIX}-backup
+      namespace: "${NAMESPACE}"
+    spec:
+      concurrencyPolicy: Forbid
+      failedJobsHistoryLimit: 3
+      jobTemplate:
+        metadata:
+          labels:
+            app: "epic-${NAME_SUFFIX}"
+            name: "epic-${NAME_SUFFIX}-documents-backup"
+        spec:
+          backoffLimit: 10
+          template:
+            spec:
+              activeDeadlineSeconds: 3600
+              containers:
+              - image: docker-registry.default.svc:5000/${TOOLS_NAMESPACE}/epic-documents-backup
+                imagePullPolicy: Always
+                name: minio-backup
+                env:
+                  - name: RESTIC_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        key: RESTIC_PASSWORD
+                        name: minio-access-parameters-${NAME_SUFFIX}
+                  - name: ROCKETCHAT_WEBHOOK
+                    valueFrom:
+                      secretKeyRef:
+                        key: ROCKETCHAT_WEBHOOK
+                        name: minio-rocketchat-webhook-${NAME_SUFFIX}
+                volumeMounts:
+                - mountPath: /mnt/dest/
+                  name: dest
+                - mountPath: /backup
+                  name: backup
+                - mountPath: /mnt/source/
+                  name: source
+                  readOnly: true
+              restartPolicy: OnFailure
+              terminationGracePeriodSeconds: 30
+              volumes:
+              - name: source
+                persistentVolumeClaim:
+                  claimName: "${SOURCE_PVC}"
+              - name: dest
+                persistentVolumeClaim:
+                  claimName: "${DEST_PVC}"
+              - name: backup
+                persistentVolumeClaim:
+                  claimName: "epic-documents-${NAME_SUFFIX}-backup"
+      schedule: ${SCHEDULE}
+      successfulJobsHistoryLimit: 3

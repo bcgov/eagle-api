@@ -69,6 +69,7 @@
     "bluebird": "^3.5.5",
     "canada": "^0.1.0",
     "cross-env": "^6.0.3",
+    "csvtojson": "^2.0.10",
     "database-cleaner": "^1.2.0",
     "eslint": "^6.5.1",
     "factory-girl": "^5.0.4",

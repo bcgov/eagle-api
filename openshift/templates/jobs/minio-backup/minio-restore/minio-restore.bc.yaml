@@ -1,0 +1,56 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+parameters:
+- name: NAME
+  displayName: Name
+  description: The name assigned to all of the resources defined in this template.
+  required: false
+  value: epic-documents-restore
+- name: GIT_REPO_URL
+  displayName: Git Repository URL
+  description: The URL of the repository containing the code.
+  required: false
+  value: https://github.com/bcgov/eagle-api.git
+- name: GIT_REF
+  displayName: Git Reference
+  description: Set this to a branch name, tag or other ref of your repository if you are not using the default branch.
+  required: false
+  value: develop
+- name: SOURCE_CONTEXT_DIR
+  displayName: Source Context Directory
+  description: The folder in the Git repo that contains the source code.
+  required: false
+  value: openshift/templates/jobs/minio-backup/minio-restore
+objects:
+- kind: ImageStream
+  apiVersion: v1
+  metadata:
+    name: "${NAME}"
+    labels:
+      app: ${NAME}
+- kind: BuildConfig
+  apiVersion: v1
+  metadata:
+    name: "${NAME}"
+    labels:
+      app: ${NAME}
+  spec:
+    triggers:
+      - type: ConfigChange
+    failedBuildsHistoryLimit: 1
+    successfulBuildsHistoryLimit: 2
+    runPolicy: Serial
+    source:
+      type: Git
+      git:
+        ref: "${GIT_REF}"
+        uri: "${GIT_REPO_URL}"
+      contextDir: "${SOURCE_CONTEXT_DIR}"
+      type: Dockerfile
+    strategy:
+      dockerStrategy:
+      type: Docker
+    output:
+      to:
+        kind: ImageStreamTag
+        name: "${NAME}:latest"
