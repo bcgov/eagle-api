@@ -416,8 +416,9 @@ var setProjectDefault = function(aggregation, projectOnly) {
   }
 }
 
-var searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or) {
+var searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue) {
   var properties = undefined;
+  var twoSorts = false;
   if (project) {
     properties = { project: mongoose.Types.ObjectId(project) };
   }
@@ -454,20 +455,47 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
     ]
   };
 
+
+  
   console.log("modifier:", modifier);
   console.log("match:", match);
 
-  var sortingValue = {};
-  sortingValue[sortField] = sortDirection;
+
+  if (schemaName == "Document"){
+    twoSorts = true;
+  }else {
+    sortingValue = {};
+    sortingValue[sortField] = sortDirection;
+  }
+
+
+  
 
   let searchResultAggregation = [];
   // We don't want to have sort in the aggregation if the front end doesn't need sort.
   if (sortField && sortDirection) {
-    searchResultAggregation.push(
-      {
-        $sort: sortingValue
-      }
-    );
+
+    if (twoSorts){
+      searchResultAggregation.push(
+
+        { $addFields: {
+          "date": 
+            { $dateToString: {
+              "format": "%Y-%m-%d", "date": "$datePosted"
+            }}
+          
+        }},
+        { "$sort": { "date": -1, "displayName": 1 }}
+
+      );
+    } else {
+      searchResultAggregation.push(
+        {
+          $sort: sortingValue
+        }
+      );
+    }
+
   }
   searchResultAggregation.push(
     {
