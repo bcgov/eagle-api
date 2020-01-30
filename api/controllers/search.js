@@ -498,19 +498,6 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
 
   if (schemaName === 'Document') {
 
-    // if we're coming in from the public endoiuint, and we're fetching documents, 
-    // we MUST add a match to enforce eaoStatus='Published', regardless of filter
-    // ensure this occurs after the main filters
-
-    if(roles && roles.length === 1 && roles.includes('public')) {
-      aggregation.push({
-          $match: {
-            eaoStatus: 'Published'
-          }
-        }
-      );
-    }
-
     // Allow documents to be sorted by status based on publish existence
     aggregation.push(
       {
@@ -540,7 +527,17 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
       }
     );
     
-    
+    // if we're coming in from the public endpoint, and we're fetching documents, 
+    // we MUST add a match to enforce eaoStatus='Published', regardless of filter
+    // ensure this occurs after the main filters
+
+    if(roles && roles.length === 1 && roles.includes('public')) {
+      aggregation.push({
+        $match: {
+          status: 'published'
+        }
+      });
+    }
   }
 
   if (schemaName === 'Project') {
@@ -812,6 +809,8 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
       ]
     }
   });
+
+  console.log(JSON.stringify(aggregation));
 
   return new Promise(function (resolve, reject) {
     var collectionObj = mongoose.model(schemaName);
