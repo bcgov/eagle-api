@@ -3,15 +3,19 @@
 var dbm;
 var type;
 var seed;
+var CSV = require("csv");
 var fs = require("fs");
 var mongoose = require("mongoose");
-const CSV = require("csv");
+
 
 exports.setup = function (options, seedLink) {
   dbm = options.dbmigrate;
   type = dbm.dataType;
   seed = seedLink;
 };
+
+const eaStatusPath = fs.readFileSync(process.cwd() + '/migrations_data/projects_eastatus.json', 'utf8');
+const PROJECT_STATUSES = JSON.parse(eaStatusPath);
 
 exports.up = function (db) {
   //get all docs, group by project
@@ -117,7 +121,7 @@ exports.up = function (db) {
         let phaseHistory = [];
         let eacDecision = await getObjById(p, project[0].default.eacDecision)
         const [completePhase] = namesToIds(allPhases, ["Complete"])
-        // const [pdCompletePhase] = namesToIds(phases2002, ["Post Decision - Complete"]);
+        const [pdCompletePhase] = namesToIds(phases2002, ["Post Decision - Complete"]);
         const [preConstructionPhase] = namesToIds(phases2002, ["Post Decision - Pre-Construction"]);
         const [preAppPhase] = namesToIds(phases2002, ["Pre-Application"]);
         const [withdrawalPhase] = namesToIds(phases2002, ["Withdrawal"])
@@ -197,6 +201,25 @@ exports.up = function (db) {
           console.log(`projectid: ${projectId}, bad phase: ${phaseToSet} `)
           continue;
         }
+        
+        // Handle referrals, uses data from business to improve tagging
+        if (phaseToSetName.name === "Referral" || phaseToSetName.name === "Post Decision - Amendment" ) {
+          // console.log(`project: ${project[0].default.name}, decision: ${project[0].default.eacDecision}, status: ${project[0].default.status}`);
+          let something = checkProjectStatus(project[0].default.name);
+          if (something === 'Expired') {
+            phaseToSet = pdCompletePhase;
+          } else if (something === 'Pre-EA') {
+            const [preEAPhase] = namesToIds(phases2002, ["Pre-EA"]);
+            phaseToSet = preEAPhase;
+          } else {
+            let phaseString = `Post Decision - ${something}`;
+            const [targetPhase] = namesToIds(phases2002, [phaseString]);
+            phaseToSet = targetPhase;
+          }
+        }
+
+        // get phase again, just for logging output
+        phaseToSetName = await getObjById(p, phaseToSet)
         let docId = mongoose.Types.ObjectId(mostRecentDoc._id).toString();
         var taggingCandidate = { "project": projId, "recentDoc": docId, "projectName": project[0].default.name, "docPhase":  phaseToSetName.name, "phaseList": phaseParsed.previousNames }
         updateCandidates.push(taggingCandidate)
@@ -251,6 +274,32 @@ exports.up = function (db) {
     });
 };
 
+function checkProjectStatus(name) {
+  let statusStr = '';
+  for (let project of PROJECT_STATUSES) {
+    if(project.name === name) {
+      statusStr = project.status;
+      break;
+    }
+  }
+  // only the demonstration project hits this
+  if (!statusStr) {
+    console.log("no match: ", name)
+    return 'Expired';
+  }
+  let phase = statusStr.split(' - ');
+
+  if (phase[0] === 'EA Certificate Expired') {
+    return 'Expired';
+  } else if (phase[1] === 'Unknown') {
+    return 'Operation';
+  } else if (phase[0] === 'Pre-EA Act Approval') {
+    return 'Pre-EA';
+  }
+  return phase[1];
+
+}
+
 function amendmentDone(doc) {
   if (!doc.projectPhase[0] || !doc.milestone[0] || !doc.type[0]) {
     // need all 3 to determine if done amendment
@@ -283,7 +332,7 @@ function matchPhaseToDecision(decisionPhases, docPhaseStack, phases) {
   for (let i = 0; i < stackSize; i++) {
     let phaseCandidate = docPhaseStack.pop();
     if (decisionPhases.includes(phaseCandidate)) {
-      console.log(`Most recent phase: ${phaseCandidate}, stack: ${docPhaseStack} `)
+      // console.log(`Most recent phase: ${phaseCandidate}, stack: ${docPhaseStack} `)
       phaseToTag = phaseCandidate;
       previousPhases = docPhaseStack;
       break;
@@ -303,7 +352,6 @@ function matchPhaseToDecision(decisionPhases, docPhaseStack, phases) {
 }
 
 function lookupId(phases, name) {
-  // console.log("looking up: ", name);
   var phaseId;
   [phaseId] = phases.filter(phase => {
     if (phase.name === name && phase.legislation === 2002) {
@@ -314,7 +362,6 @@ function lookupId(phases, name) {
   })
   // not in 2002
   if (!phaseId) {
-    // console.log("looking up 2018: ", name);
     [phaseId] = phases.filter(phase => {
       if (phase.name === name && phase.legislation === 2018) {
         return true;
