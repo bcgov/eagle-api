@@ -10,23 +10,23 @@
         "name": "Attach by Process ID",
         "processId": "${command:PickProcess}"
       },
-        {
-            // "type": "node",
-            // "request": "launch",
-            // "name": "Launch API using NPM",
-            // "runtimeExecutable": "npm",
-            // "runtimeArgs": [
-            //     // "debug",
-            //     "run start"
-            // ],
-            // "port": 3000
-        },
-        {
-             "type": "node",
-             "request": "launch",
-             "name": "Launch API using Node",
-             "program": "${workspaceFolder}/app.js",
-            // "envFile": "${workspaceFolder}/.env",
-        }
+      {
+            //"type": "node",
+            //"request": "launch",
+            //"name": "Launch API using NPM",
+            //"runtimeExecutable": "npm",
+            //"runtimeArgs": [
+            //    //"debug",
+            //    "run start"
+            //],
+            //"port": 3000
+      },
+      {
+           "type": "node",
+           "request": "launch",
+           "name": "Launch API using Node",
+           "program": "${workspaceFolder}/app.js",
+           //"envFile": "${workspaceFolder}/.env",
+      }
     ]
 }
