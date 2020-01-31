@@ -58,11 +58,12 @@ def getChangeLog(pastBuilds) {
   return log;
 }
 
+def testPodLabel = 'node-tester-' + UUID.randomUUID().toString();
 def nodejsTester () {
   openshift.withCluster() {
     openshift.withProject() {
       podTemplate(
-        label: 'node-tester',
+        label: testPodLabel,
         name: 'node-tester',
         serviceAccount: 'jenkins',
         cloud: 'openshift',
@@ -70,7 +71,7 @@ def nodejsTester () {
         containers: [
           containerTemplate(
             name: 'jnlp',
-            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
+            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7:v3.11.161',
             resourceRequestCpu: '500m',
             resourceLimitCpu: '1000m',
             resourceRequestMemory: '2Gi',
@@ -80,7 +81,7 @@ def nodejsTester () {
           )
         ]
       ) {
-        node("node-tester") {
+        node(testPodLabel) {
           checkout scm
           sh 'npm i'
           try {
@@ -95,12 +96,12 @@ def nodejsTester () {
   }
 }
 
-// todo templates can be pulled from a repository, instead of declared here
+def sonarLabel = 'sonarqube-runner-' + UUID.randomUUID().toString();
 def nodejsSonarqube () {
   openshift.withCluster() {
     openshift.withProject() {
       podTemplate(
-        label: 'node-sonarqube',
+        label: sonarLabel,
         name: 'node-sonarqube',
         serviceAccount: 'jenkins',
         cloud: 'openshift',
@@ -108,7 +109,7 @@ def nodejsSonarqube () {
         containers: [
           containerTemplate(
             name: 'jnlp',
-            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
+            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7:v3.11.161',
             resourceRequestCpu: '500m',
             resourceLimitCpu: '1000m',
             resourceRequestMemory: '2Gi',
@@ -119,7 +120,7 @@ def nodejsSonarqube () {
           )
         ]
       ) {
-        node("node-sonarqube") {
+        node(sonarLabel) {
           checkout scm
           dir('sonar-runner') {
             try {
@@ -247,7 +248,7 @@ pipeline {
             echo "Deploying to dev..."
             openshiftTag destStream: 'eagle-api', verbose: 'false', destTag: 'dev', srcStream: 'eagle-api', srcTag: "${IMAGE_HASH}"
             sleep 5
-            // todo eagle-test? what depCfg?
+
             openshiftVerifyDeployment depCfg: 'eagle-api', namespace: 'esm-dev', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
             echo ">>>> Deployment Complete"
 
