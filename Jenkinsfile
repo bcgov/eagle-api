@@ -65,8 +65,8 @@ def nodejsTester () {
   openshift.withCluster() {
     openshift.withProject() {
       podTemplate(
-        label: testPodLabel,
-        name: testPodLabel,
+        label: 'node-tester',
+        name: 'node-tester',
         serviceAccount: 'jenkins',
         cloud: 'openshift',
         slaveConnectTimeout: 300,
@@ -83,7 +83,7 @@ def nodejsTester () {
           )
         ]
       ) {
-        node(testPodLabel) {
+        node('node-tester') {
           checkout scm
           sh 'npm i'
           try {
@@ -103,8 +103,8 @@ def nodejsSonarqube () {
   openshift.withCluster() {
     openshift.withProject() {
       podTemplate(
-        label: sonarLabel,
-        name: sonarLabel,
+        label: 'sonarqube-runner',
+        name: 'sonarqube-runner',
         serviceAccount: 'jenkins',
         cloud: 'openshift',
         slaveConnectTimeout: 300,
@@ -122,7 +122,7 @@ def nodejsSonarqube () {
           )
         ]
       ) {
-        node(sonarLabel) {
+        node('sonarqube-runner') {
           checkout scm
           dir('sonar-runner') {
             try {
