@@ -1,6 +1,7 @@
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import java.util.regex.Pattern
+import java.util.UUID
 
 /*
  * Sends a rocket chat notification
@@ -59,6 +60,7 @@ def getChangeLog(pastBuilds) {
 }
 
 def testPodLabel = "node-tester-${UUID.randomUUID().toString()}"
+println testPodLabel
 def nodejsTester () {
   openshift.withCluster() {
     openshift.withProject() {
