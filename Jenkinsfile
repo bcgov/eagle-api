@@ -58,7 +58,7 @@ def getChangeLog(pastBuilds) {
   return log;
 }
 
-def testPodLabel = 'node-tester-' + UUID.randomUUID().toString();
+def testPodLabel = "node-tester-${UUID.randomUUID().toString()}"
 def nodejsTester () {
   openshift.withCluster() {
     openshift.withProject() {
@@ -96,7 +96,7 @@ def nodejsTester () {
   }
 }
 
-def sonarLabel = 'sonarqube-runner-' + UUID.randomUUID().toString();
+def sonarLabel = "sonarqube-runner-${UUID.randomUUID().toString()}"
 def nodejsSonarqube () {
   openshift.withCluster() {
     openshift.withProject() {
