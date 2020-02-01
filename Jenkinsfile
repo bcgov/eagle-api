@@ -64,7 +64,7 @@ def nodejsTester () {
     openshift.withProject() {
       podTemplate(
         label: testPodLabel,
-        name: 'node-tester',
+        name: testPodLabel,
         serviceAccount: 'jenkins',
         cloud: 'openshift',
         slaveConnectTimeout: 300,
@@ -102,7 +102,7 @@ def nodejsSonarqube () {
     openshift.withProject() {
       podTemplate(
         label: sonarLabel,
-        name: 'node-sonarqube',
+        name: sonarLabel,
         serviceAccount: 'jenkins',
         cloud: 'openshift',
         slaveConnectTimeout: 300,
