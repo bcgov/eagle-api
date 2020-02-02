@@ -47,6 +47,7 @@ tags:
     url: "http://github.com/bcgov/eagle-api.git"
 schemes:
   - http
+  - https
 securityDefinitions:
   Bearer:
     type: apiKey
@@ -6284,6 +6285,317 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/VcObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
+### V2 Routes
+
+  /v2/Public/Projects:
+    x-swagger-router-controller: projectV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project Route"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    head:
+      tags:
+        - project
+      summary: "Retrieve META associated with an project."
+      operationId: protectedHead
+      description: "Get META from the request, without returning the payload in question."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - project
+      summary: "Get a list of projects"
+      operationId: publicGet
+      description: "Public access to retreiving projects."
+      parameters:
+        - in: query
+          name: pageNumber
+          type: number
+          required: false
+          description: "Page number (ignored if pageSize is set to 0, defaults to 1)"
+        - in: query
+          name: pageSize
+          type: number
+          required: false
+          description: "Number of results per page (a value of 0 will fetch all, defaults to 10)"
+        - in: query
+          name: sortBy
+          description: "Fields to sort by."
+          required: false
+          type: string
+        - in: query
+          name: query
+          description: "Custom query KVP object."
+          required: false
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
+  /v2/Projects:
+    x-swagger-router-controller: projectV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project Route"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    post:
+      tags:
+        - project
+      summary: "Create a new project"
+      operationId: protectedPost
+      description: "Create a new project object."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+        - sysadmin
+      parameters:
+        - name: project
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/ProjId"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    head:
+      tags:
+        - project
+      summary: "Retrieve META associated with an project."
+      operationId: protectedHead
+      description: "Get META from the request, without returning the payload in question."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - project
+      summary: "Get a list of projects"
+      operationId: protectedGet
+      description: "Authenticated access to retreiving projects."
+      parameters:
+        - in: query
+          name: pageNumber
+          type: number
+          required: false
+          description: "Page number (ignored if pageSize is set to 0, defaults to 1)"
+        - in: query
+          name: pageSize
+          type: number
+          required: false
+          description: "Number of results per page (a value of 0 will fetch all, defaults to 10)"
+        - in: query
+          name: sortBy
+          description: "Fields to sort by."
+          required: false
+          type: string
+        - in: query
+          name: query
+          description: "Custom query KVP object."
+          required: false
+          type: string
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
+  /v2/public/projects/{projId}:
+    x-swagger-router-controller: projectV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project GET Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - project
+      summary: "Get a project"
+      operationId: publicGet
+      description: "Public access to retreiving projects."
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
+  /v2/projects/{projId}:
+    x-swagger-router-controller: projectV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project GET Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - project
+      summary: "Get a project"
+      operationId: protectedGet
+      description: "Public access to retreiving projects."
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      tags:
+        - project
+      summary: "Update a project"
+      operationId: protectedPut
+      description: "Public access to retreiving projects."
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to update"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    delete:
+      tags:
+        - project
+      summary: "delete a project"
+      operationId: protectedDelete
+      description: "Public access to retreiving projects."
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to delete"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
         "403":
           description: "Access Denied"
           schema:
