@@ -358,17 +358,131 @@ exports.protectedUnPublish = async function (args, res, next)
 // POST (Protected Only, createExtension)
 exports.protectedExtensionAdd = async function (args, res, next)
 {
+    defaultLog.debug('>>> {POST}/Projects/{id}/Extensions');
 
+    try
+    {
+        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('extension'))
+        {
+            let projectId = args.swagger.params.projId.value;
+            let extension = args.swagger.params.extension.value;
+
+            defaultLog.debug(' Adding extension to project ' + projectId);
+            defaultLog.debug(' Extension: ' + JSON.stringify(extension));
+
+            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+
+            if(project)
+            {
+                project = await projectDAO.addExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
+
+                return Actions.sendResponse(res, 200, project);
+            }
+            else
+            {
+                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+            }
+        }
+        else
+        {
+            throw Error('Invalid request');
+        }
+    }
+    catch (e)
+    {
+        defaultLog.error('### Error in {POST}/Projects/{id}/Extensions :', e);
+        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Extensions' });        
+    }
+    finally
+    {
+        defaultLog.debug('<<< {POST}/Projects/{id}/Extensions');
+    }
 };
 
 // PUT (Protected Only, updateExtension)
 exports.protectedExtensionUpdate = async function (args, res, next)
 {
+    defaultLog.debug('>>> {PUT}/Projects/{id}/Extensions');
 
+    try
+    {
+        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('extension'))
+        {
+            let projectId = args.swagger.params.projId.value;
+            let extension = args.swagger.params.extension.value;
+
+            defaultLog.debug(' Updating extension on project ' + projectId);
+            defaultLog.debug(' Extension: ' + JSON.stringify(extension));
+
+            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+
+            if(project)
+            {
+                project = await projectDAO.updateExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
+
+                return Actions.sendResponse(res, 200, project);
+            }
+            else
+            {
+                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+            }
+        }
+        else
+        {
+            throw Error('Invalid request');
+        }
+    }
+    catch (e)
+    {
+        defaultLog.error('### Error in {PUT}/Projects/{id}/Extensions :', e);
+        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Extensions' });        
+    }
+    finally
+    {
+        defaultLog.debug('<<< {PUT}/Projects/{id}/Extensions');
+    }
 };
 
 // DELETE (Protected Only, deleteExtension)
 exports.protectedExtensionDelete = async function (args, res, next)
 {
+    defaultLog.debug('>>> {DELETE}/Projects/{id}/Extensions');
 
+    try
+    {
+        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('extension'))
+        {
+            let projectId = args.swagger.params.projId.value;
+            let extension = JSON.parse(args.swagger.params.item.value);
+
+            defaultLog.debug(' Updating extension on project ' + projectId);
+            defaultLog.debug(' Extension: ' + JSON.stringify(extension));
+
+            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+
+            if(project)
+            {
+                project = await projectDAO.updateExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
+
+                return Actions.sendResponse(res, 200, project);
+            }
+            else
+            {
+                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+            }
+        }
+        else
+        {
+            throw Error('Invalid request');
+        }
+    }
+    catch (e)
+    {
+        defaultLog.error('### Error in {DELETE}/Projects/{id}/Extensions :', e);
+        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Extensions' });        
+    }
+    finally
+    {
+        defaultLog.debug('<<< {DELETE}/Projects/{id}/Extensions');
+    }
 };

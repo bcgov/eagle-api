@@ -507,3 +507,102 @@ exports.unPublishProject = async function(user, project)
                       throw Error('Failed to unpublish project', err);
                   });
 };
+
+exports.addExtension = async function(user, extension, project)
+{
+    let extensionType = extension.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
+
+    try 
+    {
+        let data = await mongoose.model('Project').update(
+          { _id: project._id },
+          { $push: { [extensionType]: extension } },
+          { new: true }
+        );
+
+        if (data.nModified === 0) 
+        {
+            throw Error('Project extensions could not be modified');
+        }
+
+        Utils.recordAction('Post', 'Extension', user, project._id);
+
+        return data;
+    } 
+    catch (e) 
+    {
+        throw Error('Project extension could not be added: ', e);
+    }
+};
+
+exports.updateExtension = async function(user, extension, project)
+{
+    let extensionNew = extension.new;
+    let extensionOld = extension.old;
+    let extensionOldType = extensionOld.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
+    let extensionNewType = extensionNew.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
+
+    let projectModel = mongoose.model('Project');
+
+    try 
+    {
+        let dataRemoved = await projectModel.update(
+            { _id: project._id },
+            { $pull: { [extensionOldType]: extensionOld } },
+            { new: true }
+        );
+
+        if (dataRemoved.nModified === 0) 
+        {
+            throw Error('Project extensions could not be modified');
+        }
+
+        let dataAdded = await projectModel.update(
+            { _id: project._id },
+            { $push: { [extensionNewType]: extensionNew } },
+            { new: true }
+        );
+
+        if (dataAdded.nModified === 0)
+        {
+            throw Error('Project extensions could not be modified');
+        }
+
+        Utils.recordAction('Put', 'Extension', user, project._id);
+
+        return dataAdded;
+    } 
+    catch (e) 
+    {
+        throw Error('Project extension could not be updated: ', e);
+    }
+};
+
+exports.deleteExtension = async function(user, extension, project)
+{
+    try 
+    {
+        let extensionType = extension.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
+
+        let projectModel = mongoose.model('Project');
+
+        let data = await projectModel.update(
+            { _id: project._id },
+            { $pull: { [extensionType]: extension } },
+            { new: true }
+        );
+
+        if (data.nModified === 0) 
+        {
+            throw Error('Project extensions could not be modified');
+        }
+
+        Utils.recordAction('Delete', 'Extension', user, project._id);
+
+        return data;
+    } 
+    catch (e) 
+    {
+      throw Error('Project extension could not be deleted: ', e);
+    }
+};
