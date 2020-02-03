@@ -1,6 +1,5 @@
-const defaultLog = require('winston').loggers.get('default');
+const _          = require('lodash');
 const mongoose   = require('mongoose');
-const Actions    = require('../helpers/actions');
 const Utils      = require('../helpers/utils');
 
 const WORDS_TO_ANALYZE = 3;
@@ -99,7 +98,7 @@ exports.addGroupMember = async function(user, group, members)
     }
 };
 
-exports.getGroupMembers = async function(user, roles, group, sortBy, pageSize, pageNumber)
+exports.getGroupMembers = async function(roles, user, group, sortBy, pageSize, pageNumber)
 {
     let skip = null, 
         limit = null, 
@@ -112,20 +111,20 @@ exports.getGroupMembers = async function(user, roles, group, sortBy, pageSize, p
     let fields = ['_id', 'members', 'name', 'project'];
 
     // Getting a single group
-    _.assignIn(query, { _id: mongoose.Types.ObjectId(groupId.value) });
+    _.assignIn(query, { _id: mongoose.Types.ObjectId(group._id) });
 
-    var resultData = await Utils.runDataQuery('Group',
-                                         roles,
-                                         query,
-                                         fields, // Fields
-                                         null, // sort warmup
-                                         null, // sort
-                                         null, // skip
-                                         null, // limit
-                                         false, // count
-                                         null,
-                                         false,
-                                         null);
+    let resultData = await Utils.runDataQuery('Group',
+                                               roles,
+                                               query,
+                                               fields, // Fields
+                                               null, // sort warmup
+                                               null, // sort
+                                               null, // skip
+                                               null, // limit
+                                               false, // count
+                                               null,
+                                               false,
+                                               null);
 
     if (resultData.length === 0) 
     {

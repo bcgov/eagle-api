@@ -2,6 +2,7 @@
 const defaultLog = require('winston').loggers.get('default');
 const Actions    = require('../helpers/actions');
 const projectDAO = require('../dao/projectDAO');
+const projectGroupDAO = require('../dao/projectGroupDAO');
 
 // Constants
 const PUBLIC_ROLES = ['public'];
@@ -29,7 +30,7 @@ exports.protectedOptions = function (args, res, rest)
 // ? no getMemeber (resource)
 
 // POST (Protected only createGroup)
-exports.protectedAddGroup = function (args, res, rest) 
+exports.protectedAddGroup = async function (args, res, rest) 
 {
     defaultLog.debug('>>> {POST} /Projects/{id}/Groups');
 
@@ -73,7 +74,7 @@ exports.protectedAddGroup = function (args, res, rest)
 };
 
 // DELETE (Protected only deleteGroup)
-exports.protectedGroupDelete = function (args, res, rest) 
+exports.protectedGroupDelete = async function (args, res, rest) 
 {
     defaultLog.debug('>>> {DELETE} /Projects/{projId}/Groups/{groupId}');
 
@@ -117,7 +118,7 @@ exports.protectedGroupDelete = function (args, res, rest)
 };
 
 // PUT (Protected only updateGroup)
-exports.protectedGroupPut = function (args, res, rest) 
+exports.protectedGroupPut = async function (args, res, rest) 
 {
     defaultLog.debug('>>> {PUT} /Projects/{projId}/Groups/{groupId}');
 
@@ -162,7 +163,7 @@ exports.protectedGroupPut = function (args, res, rest)
 };
 
 // POST (Protected only createGroupMember)
-exports.protectedAddGroupMembers = function (args, res, rest) 
+exports.protectedAddGroupMembers = async function (args, res, rest) 
 {
     defaultLog.debug('>>> {POST} /Projects/{projId}/Groups/{groupId}/members');
 
@@ -208,7 +209,7 @@ exports.protectedAddGroupMembers = function (args, res, rest)
 };
 
 // GET (Protected only getGroupMembers)
-exports.protectedGroupGetMembers = function (args, res, rest) 
+exports.protectedGroupGetMembers = async function (args, res, rest) 
 {
     defaultLog.debug('>>> {GET} /Projects/{projId}/Groups/{groupId}/members');
 
@@ -226,9 +227,9 @@ exports.protectedGroupGetMembers = function (args, res, rest)
 
             if(project && group)
             {
-                let pageNumber = params.pageNumber.value ? params.pageNumber.value : 1;
-                let pageSize   = params.pageSize.value   ? params.pageSize.value   : 10;
-                let sortBy     = params.sortBy.value     ? params.sortBy.value     : '';
+                let pageNumber = args.swagger.params.hasOwnProperty('pageNumber') && args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
+                let pageSize   = args.swagger.params.hasOwnProperty('pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
+                let sortBy     = args.swagger.params.hasOwnProperty('sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
 
                 let members = await projectGroupDAO.getGroupMembers(SECURE_ROLES, args.swagger.params.auth_payload.preferred_username, group, sortBy, pageSize, pageNumber);
 
@@ -256,7 +257,7 @@ exports.protectedGroupGetMembers = function (args, res, rest)
 };
 
 // DELETE (Protected only deleteGroupMember)
-exports.protectedDeleteGroupMembers = function (args, res, rest) 
+exports.protectedDeleteGroupMembers = async function (args, res, rest) 
 {
     defaultLog.debug('>>> {DELETE} /Projects/{projId}/Groups/{groupId}/members/{memberId}');
 

@@ -1,3 +1,4 @@
+const _          = require('lodash');
 const defaultLog = require('winston').loggers.get('default');
 const mongoose   = require('mongoose');
 const Utils      = require('../helpers/utils');

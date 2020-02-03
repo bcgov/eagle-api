@@ -23,11 +23,11 @@ async function getProjectHandler(roles, params)
     }
     else
     {
-        let pageNumber = params.pageNumber.value ? params.pageNumber.value : 1;
-        let pageSize   = params.pageSize.value   ? params.pageSize.value   : 10;
-        let sortBy     = params.sortBy.value     ? params.sortBy.value     : '';
-        let query      = params.query.value      ? params.query.value      : '';
-        let keywords   = params.keywords.value   ? params.keywords.value   : '';
+        let pageNumber = params.hasOwnProperty('pageNumber') && params.pageNumber.value ? params.pageNumber.value : 1;
+        let pageSize   = params.hasOwnProperty('pageSize')   && params.pageSize.value   ? params.pageSize.value   : 10;
+        let sortBy     = params.hasOwnProperty('sortBy')     && params.sortBy.value     ? params.sortBy.value     : '';
+        let query      = params.hasOwnProperty('query')      && params.query.value      ? params.query.value      : '';
+        let keywords   = params.hasOwnProperty('keywords')   && params.keywords.value   ? params.keywords.value   : '';
 
         data = await projectDAO.getProjects(PUBLIC_ROLES, pageNumber, pageSize, sortBy, keywords, query);
     }

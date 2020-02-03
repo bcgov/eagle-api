@@ -41,9 +41,9 @@ exports.publicPinGet = async function (args, res, next)
 
             if(project)
             {
-                let pageNumber = params.pageNumber.value ? params.pageNumber.value : 1;
-                let pageSize   = params.pageSize.value   ? params.pageSize.value   : 10;
-                let sortBy     = params.sortBy.value     ? params.sortBy.value     : '';
+                let pageNumber = args.swagger.params.hasOwnProperty('pageNumber') && args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
+                let pageSize   = args.swagger.params.hasOwnProperty('pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
+                let sortBy     = args.swagger.params.hasOwnProperty('sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
     
                 let data = await pinDAO.getProjectPins(PUBLIC_ROLES, project, pageNumber, pageSize, sortBy);
     
@@ -88,9 +88,9 @@ exports.protectedPinGet = async function (args, res, next)
 
             if(project)
             {
-                let pageNumber = params.pageNumber.value ? params.pageNumber.value : 1;
-                let pageSize   = params.pageSize.value   ? params.pageSize.value   : 10;
-                let sortBy     = params.sortBy.value     ? params.sortBy.value     : '';
+                let pageNumber = args.swagger.params.hasOwnProperty('pageNumber') && args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
+                let pageSize   = args.swagger.params.hasOwnProperty('pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
+                let sortBy     = args.swagger.params.hasOwnProperty('sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
     
                 let data = await pinDAO.getProjectPins(SECURE_ROLES, project, pageNumber, pageSize, sortBy);
     
