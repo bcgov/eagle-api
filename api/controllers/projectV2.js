@@ -9,7 +9,31 @@ const SECURE_ROLES = ['sysadmin', 'staff'];
 // Vars
 /* put any needed local variables here */
 // functions
-/* put any needed local functions here */
+async function getProjectHandler(roles, params)
+{
+    let data = {};
+
+    // fetch a project, or a list of projects
+    if (params.hasOwnProperty('projId'))
+    {
+        let projectId = params.projId.value;
+        
+        defaultLog.debug(' Fetching project ' + projectId);
+        data = await projectDAO.getProject(PUBLIC_ROLES, projectId);
+    }
+    else
+    {
+        let pageNumber = params.pageNumber.value ? params.pageNumber.value : 1;
+        let pageSize   = params.pageSize.value   ? params.pageSize.value   : 10;
+        let sortBy     = params.sortBy.value     ? params.sortBy.value     : '';
+        let query      = params.query.value      ? params.query.value      : '';
+        let keywords   = params.keywords.value   ? params.keywords.value   : '';
+
+        data = await projectDAO.getProjects(PUBLIC_ROLES, pageNumber, pageSize, sortBy, keywords, query);
+    }
+
+    return data;
+} 
 
 // Exports
 
@@ -31,26 +55,7 @@ exports.publicHead = async function (args, res, next)
 
     try
     {
-        let data = {};
-
-        // fetch a project, or a list of projects
-        if (args.swagger.params.hasOwnProperty('projId'))
-        {
-            let projectId = args.swagger.params.projId.value;
-            
-            defaultLog.debug(' Fetching project ' + projectId);
-            data = await projectDAO.getProject(PUBLIC_ROLES, projectId);
-        }
-        else
-        {
-            let pageNumber = args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
-            let pageSize   = args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
-            let sortBy     = args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
-            let query      = args.swagger.params.query.value      ? args.swagger.params.query.value      : '';
-            let keywords   = args.swagger.params.keywords.value   ? args.swagger.params.keywords.value   : '';
-
-            data = await projectDAO.getProjects(PUBLIC_ROLES, pageNumber, pageSize, sortBy, keywords, query);
-        }
+        let data = await getProjectHandler(PUBLIC_ROLES, args.swagger.params);
 
         return data ? Actions.sendResponse(res, 200, data) 
                     : Actions.sendResponse(res, 404, { code: 404, message: 'Project information was not found'});
@@ -72,26 +77,7 @@ exports.protectedHead = async function (args, res, next)
 
     try
     {
-        let data = {};
-
-        // fetch a project, or a list of projects
-        if (args.swagger.params.hasOwnProperty('projId'))
-        {
-            let projectId = args.swagger.params.projId.value;
-            
-            defaultLog.debug(' Fetching project ' + projectId);
-            data = await projectDAO.getProject(SECURE_ROLES, projectId);
-        }
-        else
-        {
-            let pageNumber = args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
-            let pageSize   = args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
-            let sortBy     = args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
-            let query      = args.swagger.params.query.value      ? args.swagger.params.query.value      : '';
-            let keywords   = args.swagger.params.keywords.value   ? args.swagger.params.keywords.value   : '';
-
-            data = await projectDAO.getProjects(SECURE_ROLES, pageNumber, pageSize, sortBy, keywords, query);
-        }
+        let data = await getProjectHandler(SECURE_ROLES, args.swagger.params);
 
         return data ? Actions.sendResponse(res, 200, data) 
                     : Actions.sendResponse(res, 404, { code: 404, message: 'Project information was not found'});
@@ -114,26 +100,7 @@ exports.publicGet = async function (args, res, next)
 
     try
     {
-        let data = {};
-
-        // fetch a project, or a list of projects
-        if (args.swagger.params.hasOwnProperty('projId'))
-        {
-            let projectId = args.swagger.params.projId.value;
-            
-            defaultLog.debug(' Fetching project ' + projectId);
-            data = await projectDAO.getProject(PUBLIC_ROLES, projectId);
-        }
-        else
-        {
-            let pageNumber = args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
-            let pageSize   = args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
-            let sortBy     = args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : null;
-            let query      = args.swagger.params.query.value      ? args.swagger.params.query.value      : null;
-            let keywords   = args.swagger.params.keywords.value   ? args.swagger.params.keywords.value   : null;
-
-            data = await projectDAO.getProjects(PUBLIC_ROLES, pageNumber, pageSize, sortBy, keywords, query);
-        }
+        let data = await getProjectHandler(PUBLIC_ROLES, args.swagger.params);
 
         return data ? Actions.sendResponse(res, 200, data) 
                     : Actions.sendResponse(res, 404, { code: 404, message: 'Project information was not found'});
@@ -155,26 +122,7 @@ exports.protectedGet = async function (args, res, next)
 
     try
     {
-        let data = {};
-
-        // fetch a project, or a list of projects
-        if (args.swagger.params.hasOwnProperty('projId'))
-        {
-            let projectId = args.swagger.params.projId.value;
-            
-            defaultLog.debug(' Fetching project ' + projectId);
-            data = await projectDAO.getProject(SECURE_ROLES, projectId);
-        }
-        else
-        {
-            let pageNumber = args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
-            let pageSize   = args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
-            let sortBy     = args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
-            let query      = args.swagger.params.query.value      ? args.swagger.params.query.value      : '';
-            let keywords   = args.swagger.params.keywords.value   ? args.swagger.params.keywords.value   : '';
-
-            data = await projectDAO.getProjects(SECURE_ROLES, pageNumber, pageSize, sortBy, keywords, query);
-        }
+        let data = await getProjectHandler(SECURE_ROLES, args.swagger.params);
 
         return data ? Actions.sendResponse(res, 200, data) 
                     : Actions.sendResponse(res, 404, { code: 404, message: 'Project information was not found'});
