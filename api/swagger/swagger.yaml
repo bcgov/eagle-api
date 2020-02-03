@@ -7150,3 +7150,331 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+  /v2/projects/{projId}/groups:
+    x-swagger-router-controller: projectGroupV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    post:
+      tags:
+        - project
+      summary: "Add Groups to a project"
+      operationId: protectedAddGroup
+      description: "Adds group to a project."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+        - staff
+        - sysadmin
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to update"
+          required: true
+          type: string
+        - name: group
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/ProjObject"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /v2/projects/{projId}/groups/{groupId}:
+    x-swagger-router-controller: projectGroupV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+        - name: groupId
+          in: path
+          description: "ID of group to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    delete:
+      tags:
+        - project
+      summary: "Delete a Group"
+      operationId: protectedGroupDelete
+      description: "Delete specific group."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+        - sysadmin
+        - staff
+      parameters:
+          - name: projId
+            in: path
+            type: string
+            required: true
+            description: "Groups corresponding to a project."
+          - name: groupId
+            in: path
+            type: string
+            required: true
+            description: "Delete Group."
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      tags:
+        - project
+      summary: "Update a group"
+      operationId: protectedGroupPut
+      description: "Update a group"
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+        - staff
+        - sysadmin
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to update"
+          required: true
+          type: string
+        - name: groupId
+          in: path
+          description: "ID of group to update"
+          required: true
+          type: string
+        - name: groupObject
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/GroupObject"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/OrgObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /v2/projects/{projId}/groups/{groupId}/members:
+    x-swagger-router-controller: projectGroupV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+        - name: groupId
+          in: path
+          description: "ID of group to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    post:
+      tags:
+        - project
+      summary: "Add Contact to a project group"
+      operationId: protectedAddGroupMembers
+      description: "Adds contact to a project group."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+        - staff
+        - sysadmin
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to update"
+          required: true
+          type: string
+        - name: groupId
+          in: path
+          description: "ID of group to update"
+          required: true
+          type: string
+        - name: members
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/ProjObject"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/RecentActivityObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - project
+      summary: "Get a Group"
+      operationId: protectedGroupGetMembers
+      description: "Get specific group."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+        - sysadmin
+        - staff
+      parameters:
+          - name: projId
+            in: path
+            type: string
+            required: true
+            description: "Group corresponding to a project."
+          - name: groupId
+            in: path
+            type: string
+            required: true
+            description: "Get Group."
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /v2/projects/{projId}/groups/{groupId}/members/{memberId}:
+    x-swagger-router-controller: projectGroupV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+        - name: groupId
+          in: path
+          description: "ID of group to get"
+          required: true
+          type: string
+        - name: memberId
+          in: path
+          description: "ID of member to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    delete:
+      tags:
+        - project
+      summary: "Delete a member from a group"
+      operationId: protectedDeleteGroupMembers
+      description: "Delete specific members from a project group."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+        - sysadmin
+        - staff
+      parameters:
+          - name: projId
+            in: path
+            type: string
+            required: true
+            description: "Members corresponding to a project."
+          - name: groupId
+            in: path
+            type: string
+            required: true
+            description: "Group."
+          - name: memberId
+            in: path
+            type: string
+            required: true
+            description: "Delete Member."
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"

@@ -157,7 +157,7 @@ exports.protectedPost = async function (args, res, next)
             {
                 // If the resource was successfully created, fetch it and return it
                 project = await projectDAO.getProject(SECURE_ROLES, project._id);
-                return Actions.sendResponse(res, 200, project);
+                return Actions.sendResponse(res, 201, project);
             }
             else
             {
@@ -376,7 +376,7 @@ exports.protectedExtensionAdd = async function (args, res, next)
             {
                 project = await projectDAO.addExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
 
-                return Actions.sendResponse(res, 200, project);
+                return Actions.sendResponse(res, 201, project);
             }
             else
             {

@@ -118,7 +118,7 @@ exports.protectedPinGet = async function (args, res, next)
     }
 };
 
-// GET (Protected Only, createPin)
+// POST (Protected Only, createPin)
 exports.protectedPinCreate = async function (args, res, next)
 {
     defaultLog.debug('>>> {POST}/Projects/{id}/Pins');
@@ -141,7 +141,7 @@ exports.protectedPinCreate = async function (args, res, next)
                 {
                     let data = await pinDAO.createPin(args.swagger.params.auth_payload.preferred_username, project, pins);
         
-                    return data ? Actions.sendResponse(res, 200, data) 
+                    return data ? Actions.sendResponse(res, 201, data) 
                                 : Actions.sendResponse(res, 404, { code: 404, message: 'Project pins were not found'});
                 }
                 else
