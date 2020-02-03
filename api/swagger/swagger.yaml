@@ -6610,3 +6610,108 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+
+  /v2/projects/{projId}/publish:
+    x-swagger-router-controller: projectV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      tags:
+        - project
+      summary: "Publish a project"
+      operationId: protectedPublish
+      description: "Adds the singular instance of the 'public' role to a project."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+        # TODO: Define publish roles.
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to update"
+          required: true
+          type: string
+        - name: ProjObject
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/ProjObject"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
+  /v2/projects/{projId}/unpublish:
+    x-swagger-router-controller: projectV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      tags:
+        - project
+      summary: "UnPublish a project"
+      operationId: protectedUnPublish
+      description: "Removes the singular instance of the 'public' role to a project."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+        # TODO: Define publish roles.
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to update"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
