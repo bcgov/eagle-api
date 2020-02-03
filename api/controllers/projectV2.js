@@ -302,7 +302,7 @@ exports.protectedPublish = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {PUT}/Projects{id}/Publish :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects' });        
+        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Publish' });        
     }
     finally
     {
@@ -344,10 +344,31 @@ exports.protectedUnPublish = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {PUT}/Projects{id}/Unpublish :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects' });        
+        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Unpublish' });        
     }
     finally
     {
         defaultLog.debug('<<< {PUT}/Projects{id}/Unpublish');
     }
+};
+
+// Extensions should be a model, and include endpoints for fetching
+// these could also be broken out of project controller and put into an extension controller
+
+// POST (Protected Only, createExtension)
+exports.protectedExtensionAdd = async function (args, res, next)
+{
+
+};
+
+// PUT (Protected Only, updateExtension)
+exports.protectedExtensionUpdate = async function (args, res, next)
+{
+
+};
+
+// DELETE (Protected Only, deleteExtension)
+exports.protectedExtensionDelete = async function (args, res, next)
+{
+
 };
