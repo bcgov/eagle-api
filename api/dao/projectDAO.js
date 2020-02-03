@@ -258,10 +258,10 @@ exports.getProject = async function(roles, projectId)
     // sanitize based on roles
     if (result && roles.includes('public'))
     {
-        delete item.review180Start;
-        delete item.review45Start;
-        delete item.reviewSuspensions;
-        delete item.reviewExtensions;
+        delete result.review180Start;
+        delete result.review45Start;
+        delete result.reviewSuspensions;
+        delete result.reviewExtensions;
     }
 
     return result;
