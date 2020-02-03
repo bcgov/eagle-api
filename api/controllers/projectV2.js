@@ -151,7 +151,7 @@ exports.protectedPost = async function (args, res, next)
             
             let project = args.swagger.params.project.value;
 
-            project = await projectDAO.createProject(project);
+            project = await projectDAO.createProject(args.swagger.params.auth_payload.preferred_username, project);
             
             if(project)
             {
@@ -198,7 +198,7 @@ exports.protectedPut = async function (args, res, next)
 
             if(sourceProject && updateProject)
             {
-                updatedProject = await projectDAO.updateProject(sourceProject, updatedProject);
+                updatedProject = await projectDAO.updateProject(args.swagger.params.auth_payload.preferred_username, sourceProject, updatedProject);
 
                 return Actions.sendResponse(res, 200, updatedProject);
             }
@@ -222,7 +222,6 @@ exports.protectedPut = async function (args, res, next)
         defaultLog.debug('<<< {PUT}/Projects');
     }
 };
-
 
 // DELETE (Protected Only, deleteProject)
 exports.protectedDelete = async function (args, res, next) 
@@ -266,5 +265,89 @@ exports.protectedDelete = async function (args, res, next)
     finally
     {
         defaultLog.debug('<<< {DELETE}/Projects');
+    }
+};
+
+// PUT (Protected Only, publishProject)
+exports.protectedPublish = async function (args, res, next) 
+{
+    defaultLog.debug('>>> {PUT}/Projects{id}/Publish');
+
+    try
+    {
+        if (args.swagger.params.hasOwnProperty('projId'))
+        {
+            let projectId = args.swagger.params.projId.value;
+            
+            defaultLog.debug(' Publishing project ' + projectId);
+            
+            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+
+            if(project)
+            {
+                project = await projectDAO.publishProject(args.swagger.params.auth_payload.preferred_username, project);
+
+                return Actions.sendResponse(res, 200, project);
+            }
+            else
+            {
+                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+            }
+        }
+        else
+        {
+            throw Error('Invalid request');
+        }
+    }
+    catch (e)
+    {
+        defaultLog.error('### Error in {PUT}/Projects{id}/Publish :', e);
+        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects' });        
+    }
+    finally
+    {
+        defaultLog.debug('<<< {PUT}/Projects{id}/Publish');
+    }
+};
+
+// PUT (Protected Only, unPublishProject)
+exports.protectedUnPublish = async function (args, res, next) 
+{
+    defaultLog.debug('>>> {PUT}/Projects{id}/Unpublish');
+
+    try
+    {
+        if (args.swagger.params.hasOwnProperty('projId'))
+        {
+            let projectId = args.swagger.params.projId.value;
+            
+            defaultLog.debug(' Un-Publishing project ' + projectId);
+            
+            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+
+            if(project)
+            {
+                project = await projectDAO.unPublishProject(args.swagger.params.auth_payload.preferred_username, project);
+
+                return Actions.sendResponse(res, 200, project);
+            }
+            else
+            {
+                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+            }
+        }
+        else
+        {
+            throw Error('Invalid request');
+        }
+    }
+    catch (e)
+    {
+        defaultLog.error('### Error in {PUT}/Projects{id}/Unpublish :', e);
+        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects' });        
+    }
+    finally
+    {
+        defaultLog.debug('<<< {PUT}/Projects{id}/Unpublish');
     }
 };
