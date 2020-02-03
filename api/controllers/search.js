@@ -455,14 +455,10 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
     ]
   };
 
-
-  
   console.log("modifier:", modifier);
   console.log("match:", match);
 
-
-  
-  if (schemaName == "Document" &&  sortingValue['datePosted'] === -1 || sortingValue['score'] === -1){
+  if (schemaName == "Document" && sortingValue['datePosted'] === -1 || sortingValue['score'] === -1){
     defaultTwoSorts = true;
   } else if (schemaName == "Document" && Object.keys(sortingValue).length > 1 ){
     // If there are more than two values, but they're not the default values ignore the second value
@@ -474,9 +470,6 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
     sortingValue = {};
     sortingValue[sortField] = sortDirection;
   }
-
-
-  
 
   let searchResultAggregation = [];
   // We don't want to have sort in the aggregation if the front end doesn't need sort.
@@ -844,6 +837,8 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
       ]
     }
   });
+
+  console.log(JSON.stringify(aggregation));
 
   return new Promise(function (resolve, reject) {
     var collectionObj = mongoose.model(schemaName);

@@ -1,14 +1,11 @@
 // Imports
-const _          = require('lodash');
 const defaultLog = require('winston').loggers.get('default');
-const mongoose   = require('mongoose');
-const qs         = require('qs');
 const Actions    = require('../helpers/actions');
-const Utils      = require('../helpers/utils');
 const projectDAO = require('../dao/projectDAO');
 
 // Constants
-/* put any needed constants here */ 
+const PUBLIC_ROLES = ['public'];
+const SECURE_ROLES = ['sysadmin', 'staff'];
 // Vars
 /* put any needed local variables here */
 // functions
@@ -42,16 +39,17 @@ exports.publicHead = async function (args, res, next)
             let projectId = args.swagger.params.projId.value;
             
             defaultLog.debug(' Fetching project ' + projectId);
-            data = await projectDAO.getProject(projectId);
+            data = await projectDAO.getProject(PUBLIC_ROLES, projectId);
         }
         else
         {
-            let pageNumber = args.swagger.params.pageNumber ? args.swagger.params.pageNumber : 1;
-            let pageSize   = args.swagger.params.pageSize   ? args.swagger.params.pageSize   : 10;
-            let sortBy     = args.swagger.params.sortBy     ? args.swagger.params.sortBy     : '';
-            let query      = args.swagger.params.query      ? args.swagger.params.query      : '';
+            let pageNumber = args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
+            let pageSize   = args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
+            let sortBy     = args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
+            let query      = args.swagger.params.query.value      ? args.swagger.params.query.value      : '';
+            let keywords   = args.swagger.params.keywords.value   ? args.swagger.params.keywords.value   : '';
 
-            data = await projectDAO.getProjects(pageNumber, pageSize, sortBy, query);
+            data = await projectDAO.getProjects(PUBLIC_ROLES, pageNumber, pageSize, sortBy, keywords, query);
         }
 
         return data ? Actions.sendResponse(res, 200, data) 
@@ -82,16 +80,17 @@ exports.protectedHead = async function (args, res, next)
             let projectId = args.swagger.params.projId.value;
             
             defaultLog.debug(' Fetching project ' + projectId);
-            data = await projectDAO.getProject(projectId);
+            data = await projectDAO.getProject(SECURE_ROLES, projectId);
         }
         else
         {
-            let pageNumber = args.swagger.params.pageNumber ? args.swagger.params.pageNumber : 1;
-            let pageSize   = args.swagger.params.pageSize   ? args.swagger.params.pageSize   : 10;
-            let sortBy     = args.swagger.params.sortBy     ? args.swagger.params.sortBy     : '';
-            let query      = args.swagger.params.query      ? args.swagger.params.query      : '';
+            let pageNumber = args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
+            let pageSize   = args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
+            let sortBy     = args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
+            let query      = args.swagger.params.query.value      ? args.swagger.params.query.value      : '';
+            let keywords   = args.swagger.params.keywords.value   ? args.swagger.params.keywords.value   : '';
 
-            data = await projectDAO.getProjects(pageNumber, pageSize, sortBy, query);
+            data = await projectDAO.getProjects(SECURE_ROLES, pageNumber, pageSize, sortBy, keywords, query);
         }
 
         return data ? Actions.sendResponse(res, 200, data) 
@@ -123,16 +122,17 @@ exports.publicGet = async function (args, res, next)
             let projectId = args.swagger.params.projId.value;
             
             defaultLog.debug(' Fetching project ' + projectId);
-            data = await projectDAO.getProject(projectId);
+            data = await projectDAO.getProject(PUBLIC_ROLES, projectId);
         }
         else
         {
-            let pageNumber = args.swagger.params.pageNumber ? args.swagger.params.pageNumber : 1;
-            let pageSize   = args.swagger.params.pageSize   ? args.swagger.params.pageSize   : 10;
-            let sortBy     = args.swagger.params.sortBy     ? args.swagger.params.sortBy     : '';
-            let query      = args.swagger.params.query      ? args.swagger.params.query      : '';
+            let pageNumber = args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
+            let pageSize   = args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
+            let sortBy     = args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : null;
+            let query      = args.swagger.params.query.value      ? args.swagger.params.query.value      : null;
+            let keywords   = args.swagger.params.keywords.value   ? args.swagger.params.keywords.value   : null;
 
-            data = await projectDAO.getProjects(pageNumber, pageSize, sortBy, query);
+            data = await projectDAO.getProjects(PUBLIC_ROLES, pageNumber, pageSize, sortBy, keywords, query);
         }
 
         return data ? Actions.sendResponse(res, 200, data) 
@@ -163,16 +163,17 @@ exports.protectedGet = async function (args, res, next)
             let projectId = args.swagger.params.projId.value;
             
             defaultLog.debug(' Fetching project ' + projectId);
-            data = await projectDAO.getProject(projectId);
+            data = await projectDAO.getProject(SECURE_ROLES, projectId);
         }
         else
         {
-            let pageNumber = args.swagger.params.pageNumber ? args.swagger.params.pageNumber : 1;
-            let pageSize   = args.swagger.params.pageSize   ? args.swagger.params.pageSize   : 10;
-            let sortBy     = args.swagger.params.sortBy     ? args.swagger.params.sortBy     : '';
-            let query      = args.swagger.params.query      ? args.swagger.params.query      : '';
+            let pageNumber = args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
+            let pageSize   = args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
+            let sortBy     = args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
+            let query      = args.swagger.params.query.value      ? args.swagger.params.query.value      : '';
+            let keywords   = args.swagger.params.keywords.value   ? args.swagger.params.keywords.value   : '';
 
-            data = await projectDAO.getProjects(pageNumber, pageSize, sortBy, query);
+            data = await projectDAO.getProjects(SECURE_ROLES, pageNumber, pageSize, sortBy, keywords, query);
         }
 
         return data ? Actions.sendResponse(res, 200, data) 
@@ -203,8 +204,17 @@ exports.protectedPost = async function (args, res, next)
             let project = args.swagger.params.project.value;
 
             project = await projectDAO.createProject(project);
-
-            return Actions.sendResponse(res, 200, project);
+            
+            if(project)
+            {
+                // If the resource was successfully created, fetch it and return it
+                project = await projectDAO.getProject(SECURE_ROLES, project._id);
+                return Actions.sendResponse(res, 200, project);
+            }
+            else
+            {
+                throw Error('Project could not be created');
+            }
         }
         else
         {
@@ -235,7 +245,7 @@ exports.protectedPut = async function (args, res, next)
             
             defaultLog.debug(' Updating project ' + projectId);
             
-            let sourceProject = await projectDAO.getProject(projectId);
+            let sourceProject = await projectDAO.getProject(SECURE_ROLES, projectId);
             let updatedProject = args.swagger.params.project.value;
 
             if(sourceProject && updateProject)
@@ -279,7 +289,7 @@ exports.protectedDelete = async function (args, res, next)
             
             defaultLog.debug(' Deleting project ' + projectId);
             
-            let project = await projectDAO.getProject(projectId);
+            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
 
             if(project)
             {

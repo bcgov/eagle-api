@@ -6351,6 +6351,11 @@ paths:
           required: false
           type: string
         - in: query
+          name: keywords
+          description: "keywords search filter."
+          required: false
+          type: string
+        - in: query
           name: query
           description: "Custom query KVP object."
           required: false
@@ -6447,6 +6452,11 @@ paths:
         - in: query
           name: sortBy
           description: "Fields to sort by."
+          required: false
+          type: string
+        - in: query
+          name: keywords
+          description: "keywords search filter."
           required: false
           type: string
         - in: query
