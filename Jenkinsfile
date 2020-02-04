@@ -103,8 +103,8 @@ def nodejsSonarqube () {
   openshift.withCluster() {
     openshift.withProject() {
       podTemplate(
-        label: sonarLabel,
-        name: sonarLabel,
+        label: "${sonarLabel}",
+        name: "${sonarLabel}",
         serviceAccount: 'jenkins',
         cloud: 'openshift',
         slaveConnectTimeout: 300,
@@ -122,7 +122,7 @@ def nodejsSonarqube () {
           )
         ]
       ) {
-        node(sonarLabel) {
+        node("${sonarLabel}") {
           checkout scm
           dir('sonar-runner') {
             try {
