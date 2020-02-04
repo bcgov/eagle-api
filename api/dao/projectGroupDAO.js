@@ -4,6 +4,23 @@ const Utils      = require('../helpers/utils');
 
 const WORDS_TO_ANALYZE = 3;
 
+exports.groupHateoas = function(group, roles)
+{
+    group.links = [];
+
+    if (roles && roles.length > 0 && (roles.includes('sysadmin') || roles.includes('staff')))
+    {
+        group.links.push({ rel: 'self', title: 'secure self', method: 'GET', href: '/api/v2/Projects/' + group.project + '/Groups/' + group._id });
+        group.links.push({ rel: 'parent', title: 'secure parent project', method: 'GET', href: '/api/v2/Projects/' + group.project });
+        group.links.push({ rel: 'update', title: 'Secure Project Update Group', method: 'PUT', href: '/api/v2//Projects/' + group.project + '/Groups/' + group._id });
+        group.links.push({ rel: 'delete', title: 'Secure Project Delete Group', method: 'DELETE', href: '/api/v2/Projects/' + group.project + '/Groups/' + group._id });
+        group.links.push({ rel: 'create', title: 'Secure Project Create Group Members', method: 'POST', href: '/api/v2/Projects/' + group.project + '/Groups/' + group._id + '/Members' });
+        group.links.push({ rel: 'fetch', title: 'Secure Project Get Group Members', method: 'GET', href: '/api/v2/Projects/' + group.project + '/Groups/' + group._id + '/Members' });
+    }
+
+    return group;
+};
+
 exports.createGroup = async function(user, group, project)
 {
     let groupModel = mongoose.model('Group');
@@ -90,7 +107,7 @@ exports.addGroupMember = async function(user, group, members)
     {
         Utils.recordAction('Add', 'GroupMember', user, updatedGroup._id);
 
-        return updatedGroup;
+        return updateGroup;
     } 
     else 
     {
@@ -181,7 +198,7 @@ exports.getGroupMembers = async function(roles, user, group, sortBy, pageSize, p
 
 exports.getGroupMember = async function(memberId)
 {
-    return await mongoose.model('User').findById(mongoose.Types.ObjectId(memberId));
+    return await mongoose.model('User').findById(mongoose.Types.ObjectId(memberId)); // hateoas from User DAO
 };
 
 exports.deleteGroupMember = async function(user, group, member)

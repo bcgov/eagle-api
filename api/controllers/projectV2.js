@@ -19,7 +19,8 @@ async function getProjectHandler(roles, params)
         let projectId = params.projId.value;
         
         defaultLog.debug(' Fetching project ' + projectId);
-        data = await projectDAO.getProject(PUBLIC_ROLES, projectId);
+        data = await projectDAO.getProject(roles, projectId);
+        data = projectDAO.projectHateoas(data, roles);
     }
     else
     {
@@ -29,7 +30,13 @@ async function getProjectHandler(roles, params)
         let query      = params.hasOwnProperty('query')      && params.query.value      ? params.query.value      : '';
         let keywords   = params.hasOwnProperty('keywords')   && params.keywords.value   ? params.keywords.value   : '';
 
-        data = await projectDAO.getProjects(PUBLIC_ROLES, pageNumber, pageSize, sortBy, keywords, query);
+        data = await projectDAO.getProjects(roles, pageNumber, pageSize, sortBy, keywords, query);
+
+        for(let projectIndex in data[0].searchResults)
+        {
+            let project = data[0].searchResults[projectIndex];
+            project = projectDAO.projectHateoas(project, roles);
+        }
     }
 
     return data;
@@ -103,7 +110,7 @@ exports.publicGet = async function (args, res, next)
         let data = await getProjectHandler(PUBLIC_ROLES, args.swagger.params);
 
         return data ? Actions.sendResponse(res, 200, data) 
-                    : Actions.sendResponse(res, 404, { code: 404, message: 'Project information was not found'});
+                      : Actions.sendResponse(res, 404, { code: 404, message: 'Project information was not found'});
     }
     catch (e)
     {
@@ -157,6 +164,8 @@ exports.protectedPost = async function (args, res, next)
             {
                 // If the resource was successfully created, fetch it and return it
                 project = await projectDAO.getProject(SECURE_ROLES, project._id);
+                
+                project = projectDAO.projectHateoas(project, roles);
                 return Actions.sendResponse(res, 201, project);
             }
             else
@@ -200,6 +209,7 @@ exports.protectedPut = async function (args, res, next)
             {
                 updatedProject = await projectDAO.updateProject(args.swagger.params.auth_payload.preferred_username, sourceProject, updatedProject);
 
+                updatedProject = projectDAO.projectHateoas(updatedProject, roles);
                 return Actions.sendResponse(res, 200, updatedProject);
             }
             else
@@ -245,6 +255,7 @@ exports.protectedDelete = async function (args, res, next)
                 // delete endpoints return the original resource so
                 // 1.) we honour the principle of idempotency and safety
                 // 2.) we can recreate the resource in the event this was done in error
+                project = projectDAO.projectHateoas(project, roles);
                 return Actions.sendResponse(res, 200, project);
             }
             else
@@ -286,7 +297,7 @@ exports.protectedPublish = async function (args, res, next)
             if(project)
             {
                 project = await projectDAO.publishProject(args.swagger.params.auth_payload.preferred_username, project);
-
+                project = projectDAO.projectHateoas(project, roles);
                 return Actions.sendResponse(res, 200, project);
             }
             else
@@ -328,7 +339,7 @@ exports.protectedUnPublish = async function (args, res, next)
             if(project)
             {
                 project = await projectDAO.unPublishProject(args.swagger.params.auth_payload.preferred_username, project);
-
+                project = projectDAO.projectHateoas(project, roles);
                 return Actions.sendResponse(res, 200, project);
             }
             else
@@ -375,7 +386,7 @@ exports.protectedExtensionAdd = async function (args, res, next)
             if(project)
             {
                 project = await projectDAO.addExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
-
+                project = projectDAO.projectHateoas(project, roles);
                 return Actions.sendResponse(res, 201, project);
             }
             else
@@ -419,7 +430,7 @@ exports.protectedExtensionUpdate = async function (args, res, next)
             if(project)
             {
                 project = await projectDAO.updateExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
-
+                project = projectDAO.projectHateoas(project, roles);
                 return Actions.sendResponse(res, 200, project);
             }
             else
@@ -463,7 +474,7 @@ exports.protectedExtensionDelete = async function (args, res, next)
             if(project)
             {
                 project = await projectDAO.updateExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
-
+                project = projectDAO.projectHateoas(project, roles);
                 return Actions.sendResponse(res, 200, project);
             }
             else

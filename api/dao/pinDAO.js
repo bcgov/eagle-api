@@ -2,8 +2,9 @@ const _          = require('lodash');
 const defaultLog = require('winston').loggers.get('default');
 const mongoose   = require('mongoose');
 const Utils      = require('../helpers/utils');
+const projectDAO = require('../dao/projectDAO');
 
-exports.getProjectPins = async function(roles, project, pageNumber, pageSize, sortBy)
+exports.getProjectPins = async function(user, roles, project, pageNumber, pageSize, sortBy)
 {
     let skip = null, 
         limit = null, 
@@ -35,14 +36,14 @@ exports.getProjectPins = async function(roles, project, pageNumber, pageSize, so
 
     let thePins = [];
     
-    if (!data[0].pins) 
+    if (data.length === 0) 
     {
         // no pins, return empty result;
         return [{ total_items: 0 }];
     } 
     else 
     {
-        if (data[0].pinsRead && !data[0].pinsRead.includes("public") && username === "public") 
+        if (data[0].pinsRead && !data[0].pinsRead.includes("public") && user === "public") 
         {
           // This is the case that the public api has asked for these pins but they are not published yet
           return [{ total_items: 0 }];
@@ -92,7 +93,7 @@ exports.getProjectPins = async function(roles, project, pageNumber, pageSize, so
                 orgData[0].read = (read) ? read.slice() : [];
             } 
 
-            Utils.recordAction('Get', 'Pin', username, project._id);
+            Utils.recordAction('Get', 'Pin', user, project._id);
             
             return orgData;
         } 
@@ -128,7 +129,7 @@ exports.createPin = async function(user, project, pins)
     if (doc) 
     {
         Utils.recordAction('Add', 'Pin', user, project._id);
-        return doc;
+        return projectDAO.projectHateoas(doc, ['sysadmin', 'staff']);;
     } 
     else 
     {
@@ -152,7 +153,7 @@ exports.publishPins = async function(user, project)
             });
 
             Utils.recordAction('Publish', 'PIN', user);
-            return published;
+            return projectDAO.projectHateoas(published, ['sysadmin', 'staff']);
         } 
         else 
         {
@@ -179,7 +180,7 @@ exports.unPublishPins = async function(user, project)
 
             Utils.recordAction('Publish', 'PIN', user, project._id);
 
-            return published;
+            return projectDAO.projectHateoas(published, ['sysadmin', 'staff']);
         } 
         else 
         {
@@ -204,7 +205,7 @@ exports.deletePin = async function(user, pinId, project)
 
         Utils.recordAction('Delete', 'Pin', user, pinId);
         
-        return updatedProject;
+        return projectDAO.projectHateoas(updatedProject, ['sysadmin', 'staff']);
     } 
     catch (e) 
     {

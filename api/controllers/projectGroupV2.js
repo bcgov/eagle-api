@@ -49,7 +49,7 @@ exports.protectedAddGroup = async function (args, res, rest)
             if(project)
             {
                 let savedGroup = await projectGroupDAO.createGroup(args.swagger.params.auth_payload.preferred_username, group, project);
-
+                savedGroup = projectGroupDAO.groupHateoas(savedGroup, SECURE_ROLES);
                 return Actions.sendResponse(res, 201, savedGroup);
             }
             else
@@ -93,7 +93,7 @@ exports.protectedGroupDelete = async function (args, res, rest)
             if(project && group)
             {
                 group = await projectGroupDAO.deleteGroup(args.swagger.params.auth_payload.preferred_username, group, project);
-
+                group = projectGroupDAO.groupHateoas(group, SECURE_ROLES);
                 return Actions.sendResponse(res, 200, group);
             }
             else
@@ -124,7 +124,7 @@ exports.protectedGroupPut = async function (args, res, rest)
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('groupId'))
+        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('groupId') && args.swagger.params.hasOwnProperty('updatedGroup'))
         {
             let projectId = args.swagger.params.projId.value;
             let groupId = args.swagger.params.groupId.value;
@@ -138,7 +138,7 @@ exports.protectedGroupPut = async function (args, res, rest)
             if(project && updatedGroup && sourceGroup)
             {
                 updatedGroup = await projectGroupDAO.updateGroup(args.swagger.params.auth_payload.preferred_username, updatedGroup, sourceGroup);
-
+                updatedGroup = projectGroupDAO.groupHateoas(updatedGroup, SECURE_ROLES);
                 return Actions.sendResponse(res, 200, updatedGroup);
             }
             else
@@ -169,7 +169,7 @@ exports.protectedAddGroupMembers = async function (args, res, rest)
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('groupId'))
+        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('groupId') && args.swagger.params.hasOwnProperty('members'))
         {
             let projectId = args.swagger.params.projId.value;
             let groupId = args.swagger.params.groupId.value;
@@ -184,7 +184,7 @@ exports.protectedAddGroupMembers = async function (args, res, rest)
             if(project && group && members)
             {
                 updatedGroup = await projectGroupDAO.addGroupMember(args.swagger.params.auth_payload.preferred_username, group, members);
-
+                updatedGroup = projectGroupDAO.groupHateoas(updatedGroup, SECURE_ROLES);
                 return Actions.sendResponse(res, 201, updatedGroup);
             }
             else
@@ -232,7 +232,7 @@ exports.protectedGroupGetMembers = async function (args, res, rest)
                 let sortBy     = args.swagger.params.hasOwnProperty('sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
 
                 let members = await projectGroupDAO.getGroupMembers(SECURE_ROLES, args.swagger.params.auth_payload.preferred_username, group, sortBy, pageSize, pageNumber);
-
+                members = projectGroupDAO.groupHateoas(members, SECURE_ROLES);
                 return Actions.sendResponse(res, 200, members);
             }
             else
@@ -263,7 +263,7 @@ exports.protectedDeleteGroupMembers = async function (args, res, rest)
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('memberId'))
+        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('groupId') && args.swagger.params.hasOwnProperty('memberId'))
         {
             let projectId = args.swagger.params.projId.value;
             let groupId = args.swagger.params.groupId.value;
@@ -278,7 +278,7 @@ exports.protectedDeleteGroupMembers = async function (args, res, rest)
             if(project && group && member)
             {
                 let updatedGroup = await projectGroupDAO.deleteGroupMember(args.swagger.params.auth_payload.preferred_username, group, member);
-
+                data = projectGroupDAO.groupHateoas(data, SECURE_ROLES);
                 return Actions.sendResponse(res, 200, updatedGroup);
             }
             else

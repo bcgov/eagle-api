@@ -5,6 +5,34 @@ const Utils      = require('../helpers/utils');
 
 const WORDS_TO_ANALYZE = 3;
 
+exports.projectHateoas = function(project, roles)
+{
+    project.links = 
+    [
+        { rel: 'self', title: 'public self', type: 'GET', href: '/api/v2/Public/Projects/' + project._id },
+        { rel: 'fetch', title: 'Public Project Pins List', type: 'GET', href: '/api/v2/Public/Projects/' + project._id + '/Pins' }
+    ];
+
+    if (roles && roles.length > 0 && (roles.includes('sysadmin') || roles.includes('staff')))
+    {
+        project.links.push({ rel: 'self', title: 'secure self', method: 'GET', href: '/api/v2/Projects/' + project._id });
+        project.links.push({ rel: 'update', title: 'Secure Project Update', method: 'PUT', href: '/api/v2/Projects/' + project._id });
+        project.links.push({ rel: 'delete', title: 'Secure Project Delete', method: 'DELETE', href: '/api/v2/Projects/' + project._id });
+        project.links.push({ rel: 'update', title: 'Secure Project Publish', method: 'PUT', href: '/api/v2/Projects/' + project._id + '/Publish' });
+        project.links.push({ rel: 'update', title: 'Secure Project Un-Publish', method: 'PUT', href: '/api/v2/Projects/' + project._id + '/Unpublish' });
+        project.links.push({ rel: 'fetch', title: 'Secure Project Pins List', method: 'GET', href: '/api/v2/Projects/' + project._id + '/Pins' });
+        project.links.push({ rel: 'create', title: 'Secure Project Pins Create', method: 'POST', href: '/api/v2/Projects/' + project._id + '/Pins' });
+        project.links.push({ rel: 'update', title: 'Secure Project Pins Publish', method: 'PUT', href: '/api/v2/Projects/' + project._id + '/Pins/Publish' });
+        project.links.push({ rel: 'update', title: 'Secure Project Pins Unpublish', method: 'PUT', href: '/api/v2/Projects/' + project._id + '/Pins/Unpublish' });
+        project.links.push({ rel: 'create', title: 'Secure Project Create Extensions', method: 'POST', href: '/api/v2/Projects/' + project._id + '/Extensions' });
+        project.links.push({ rel: 'update', title: 'Secure Project Update Extensions', method: 'PUT', href: '/api/v2/Projects/' + project._id + '/Extensions' });
+        project.links.push({ rel: 'delete', title: 'Secure Project Delete Extensions', method: 'DELETE', href: '/api/v2/Projects/' + project._id + '/Extensions' });
+        project.links.push({ rel: 'create', title: 'Secure Project Create Groups', method: 'POST', href: '/api/v2/Projects/' + project._id + '/Groups' });
+    }
+
+    return project;
+};
+
 exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywords, query)
 {
     let projectModel = mongoose.model('Project');
@@ -250,6 +278,15 @@ exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywor
     // sanitize based on roles
     resultSet = Utils.filterData('Project', resultSet, roles);
 
+    // hateoas
+
+    for(let projectIndex in resultSet[0].searchResults)
+    {
+        let project = resultSet[0].searchResults[projectIndex];
+
+        project = this.projectHateoas(project, roles);
+    }
+
     return resultSet;
 };
 
@@ -344,6 +381,7 @@ exports.createProject = async function (user, project)
                     .then(function (createdProject) 
                     {
                         Utils.recordAction('Post', 'Project', user, createdProject._id);
+
                         return createdProject;
                     })
                     .catch(function (err) {
@@ -486,6 +524,7 @@ exports.publishProject = async function(user, project)
                 .then(function (published) 
                 {
                     Utils.recordAction('Publish', 'Project', user, project._id);
+
                     return published;
                 })
                 .catch(function (err) 
@@ -500,6 +539,7 @@ exports.unPublishProject = async function(user, project)
                   .then(function (unpublished) 
                   {
                       Utils.recordAction('Put', 'Unpublish', user, project._id);
+
                       return unpublished;
                   })
                   .catch(function (err) 
@@ -598,7 +638,6 @@ exports.deleteExtension = async function(user, extension, project)
         }
 
         Utils.recordAction('Delete', 'Extension', user, project._id);
-
         return data;
     } 
     catch (e) 

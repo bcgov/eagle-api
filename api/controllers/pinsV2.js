@@ -92,7 +92,7 @@ exports.protectedPinGet = async function (args, res, next)
                 let pageSize   = args.swagger.params.hasOwnProperty('pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
                 let sortBy     = args.swagger.params.hasOwnProperty('sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
     
-                let data = await pinDAO.getProjectPins(SECURE_ROLES, project, pageNumber, pageSize, sortBy);
+                let data = await pinDAO.getProjectPins(args.swagger.params.auth_payload.preferred_username, SECURE_ROLES, project, pageNumber, pageSize, sortBy);
     
                 return data ? Actions.sendResponse(res, 200, data) 
                             : Actions.sendResponse(res, 404, { code: 404, message: 'Project pins were not found'});

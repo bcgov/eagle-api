@@ -6292,6 +6292,39 @@ paths:
 
 ### V2 Routes
 
+  /v2/:
+    x-swagger-router-controller: topLevelV2
+    options:
+      tags:
+        - EPIC
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project Route"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - EPIC
+      summary: "Get the API top level"
+      operationId: getTopLevel
+      description: "HATEOAS listing of EPIC API top level endpoints"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
   /v2/Public/Projects:
     x-swagger-router-controller: projectV2
     options:
