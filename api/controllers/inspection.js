@@ -71,7 +71,6 @@ exports.protectedPostInspection = async function (args, res, next) {
       // We alrady had this - send it back to them.
       return Actions.sendResponse(res, 200, elementDocument);
     } else {
-      let theDoc = null;
       inspection.save()
       .then(function (doc) {
         Utils.recordAction('Post', 'Inspection', args.swagger.params.auth_payload.preferred_username, doc._id);
