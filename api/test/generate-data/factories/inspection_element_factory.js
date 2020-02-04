@@ -39,7 +39,8 @@ factory.define(factoryName, InspectionElement, buildOptions => {
     , description : "\nLat: " + fakeBcLatLong.lat + ", Long:" + fakeBcLatLong.long + "\n"
     , timestamp   : timestamp
     // Items
-    , items: [require('mongoose').Types.ObjectId(), require('mongoose').Types.ObjectId(), require('mongoose').Types.ObjectId()],
+    , items: [require('mongoose').Types.ObjectId(), require('mongoose').Types.ObjectId(), require('mongoose').Types.ObjectId()]
+    , elementId: "abc456-abc456-abc456"
   };
   return attrs;
 });

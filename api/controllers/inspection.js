@@ -38,7 +38,7 @@ exports.protectedGetInspection = function (args, res, next) {
 }
 
 //  Create a new inspection
-exports.protectedPostInspection = function (args, res, next) {
+exports.protectedPostInspection = async function (args, res, next) {
   var obj = args.swagger.params.inspection.value;
 
   defaultLog.info("Incoming new object:", obj);
@@ -46,6 +46,7 @@ exports.protectedPostInspection = function (args, res, next) {
   var Inspection = mongoose.model('Inspection');
 
   var inspection = new Inspection(obj);
+
   inspection.startDate = obj.startDate;
   inspection.endDate = obj.endDate;
 
@@ -60,16 +61,33 @@ exports.protectedPostInspection = function (args, res, next) {
   inspection.delete = ['sysadmin', 'inspector'];
   inspection._createdBy = args.swagger.params.auth_payload.preferred_username;
   inspection._createdDate = Date.now();
-  inspection.save()
-    .then(function (theInspection) {
-      Utils.recordAction('Post', 'Inspection', args.swagger.params.auth_payload.preferred_username, theInspection._id);
-      theInspection.status = 'Uploading';
-      return Actions.sendResponse(res, 200, theInspection);
-    })
-    .catch(function (err) {
-      console.log("Error in API:", err);
-      return Actions.sendResponse(res, 400, err);
-    });
+
+  // This is an overwrite in case of error from mobile app,
+  // otherwise this will create a new record.
+  try {
+    // var doc = await Inspection.findOneAndUpdate({ inspectionId: inspection.inspectionId }, inspection, { upsert: true, new: true });
+    var Inspection = mongoose.model('Inspection');
+    let elementDocument = await Inspection.findOne({_schemaName: "Inspection", inspectionId: inspection.inspectionId});
+    if (elementDocument) {
+      // We alrady had this - send it back to them.
+      return Actions.sendResponse(res, 200, elementDocument);
+    } else {
+      let theDoc = null;
+      inspection.save()
+      .then(function (doc) {
+        Utils.recordAction('Post', 'Inspection', args.swagger.params.auth_payload.preferred_username, doc._id);
+        doc.status = 'Uploading';
+        return Actions.sendResponse(res, 200, doc);
+      })
+      .catch(function (err) {
+        console.log("Error in API:", err);
+        return Actions.sendResponse(res, 400, err);
+      });
+    }
+  } catch (err) {
+    console.log("Error in API:", err);
+    return Actions.sendResponse(res, 400, err);
+  };
 };
 
 // Get an inspection element
@@ -78,7 +96,7 @@ exports.protectedGetElement = function (args, res, next) {
 }
 
 //  Create a new inspection element
-exports.protectedPostElement = function (args, res, next) {
+exports.protectedPostElement = async function (args, res, next) {
   var obj = args.swagger.params.inspection.value;
   var inspId = args.swagger.params.inspId.value;
 
@@ -95,40 +113,46 @@ exports.protectedPostElement = function (args, res, next) {
   inspectionElement._createdBy = args.swagger.params.auth_payload.preferred_username;
   inspectionElement._createdDate = Date.now();
 
-  // inspectionElement.title = args.swagger.params.auth_payload.preferred_username;
-  // inspectionElement.requirement = args.swagger.params.auth_payload.preferred_username;
-  // inspectionElement.description = args.swagger.params.auth_payload.preferred_username;
-  // inspectionElement.timestamp = args.swagger.params.auth_payload.preferred_username;
-
-  let theDoc = null;
-  inspectionElement.save()
-    .then(function (doc) {
-      theDoc = doc;
-      var Inspection = mongoose.model('Inspection');
-      return Inspection.update(
-        { _id: mongoose.Types.ObjectId(inspId) },
-        {
-          $push: {
-            elements: doc._id
-          }
-        },
-        { new: true }
-      );
-    })
-    .then(function (theInspection) {
-      Utils.recordAction('Post', 'InspectionElement', args.swagger.params.auth_payload.preferred_username, theDoc._id);
-      return Actions.sendResponse(res, 200, theDoc);
-    })
-    .catch(function (err) {
-      console.log("Error in API:", err);
-      return Actions.sendResponse(res, 400, err);
-    });
+  // If this exists already, don't bother to insert.. just return 200 OK
+  // Based on elementId (as per mobile uuid);  We don't want to modify it in case there
+  // are other elements that exist in the elements array
+  var Inspection = mongoose.model('Inspection');
+  let elementDocument = await Inspection.findOne({_schemaName: "InspectionElement", elementId: inspectionElement.elementId});
+  if (elementDocument) {
+    // We alrady had this - send it back to them.
+    return Actions.sendResponse(res, 200, elementDocument);
+  } else {
+    // Couldn't find that id, let it pass through.
+    let theDoc = null;
+    inspectionElement.save()
+      .then(function (doc) {
+        theDoc = doc;
+        var Inspection = mongoose.model('Inspection');
+        return Inspection.update(
+          { _id: mongoose.Types.ObjectId(inspId) },
+          {
+            $push: {
+              elements: doc._id
+            }
+          },
+          { new: true }
+        );
+      })
+      .then(function (theInspection) {
+        Utils.recordAction('Post', 'InspectionElement', args.swagger.params.auth_payload.preferred_username, theDoc._id);
+        return Actions.sendResponse(res, 200, theDoc);
+      })
+      .catch(function (err) {
+        console.log("Error in API:", err);
+        return Actions.sendResponse(res, 400, err);
+      });
+    }
 };
 
 // Create element item
-exports.protectedPostElementItem = function (args, res, next) {
+exports.protectedPostElementItem = async function (args, res, next) {
   var upfile = args.swagger.params.upfile.value;
-  var guid = intformat(generator.next(), 'dec');
+  var guid = args.swagger.params.itemId.value;
   var project = null
   if (args.swagger.params.project.value) {
     project = args.swagger.params.project.value;
@@ -168,6 +192,10 @@ exports.protectedPostElementItem = function (args, res, next) {
 
         var InspectionItem = mongoose.model('InspectionItem');
         var doc = new InspectionItem();
+
+        // Set the mobile itemId
+        doc.itemId = guid;
+
         // Define security tag defaults
         if (project) {
           doc.project = mongoose.Types.ObjectId(project);
@@ -190,42 +218,53 @@ exports.protectedPostElementItem = function (args, res, next) {
 
         // Update who did this?
         console.log('unlink');
-        var savedDocument = null;
-        doc.save()
-          .then(function (d) {
-            defaultLog.info("Saved new document object:", d._id);
-            Utils.recordAction('Post', 'InspectionItem', args.swagger.params.auth_payload.preferred_username, d._id);
-            savedDocument = d;
-            return;
-          }).then(function () {
-            // Push this into the inspection elements' items' array for things.
-            var InspectionElement = mongoose.model('InspectionElement');
-            return InspectionElement.update(
-              { _id: mongoose.Types.ObjectId(elementId) },
-              {
-                $push: {
-                  items: doc
-                }
-              },
-              { new: true }
-            );
-          }).then(function (theInspection) {
-            console.log("updated insp:", theInspection);
-            return theInspection;
-          }).then(function () {
-            return Actions.sendResponse(res, 200, savedDocument);
-          })
-          .catch(function (error) {
-            console.log("error:", error);
-            // the model failed to be created - delete the document from minio so the database and minio remain in sync.
-            MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
-            return Actions.sendResponse(res, 400, error);
-          });
+
+        var InspectionItem = mongoose.model('InspectionItem');
+        let itemDocument = await InspectionItem.findOne({_schemaName: "InspectionItem", itemId: doc.itemId});
+        if (itemDocument) {
+          // We alrady had this - send it back to them.
+          return Actions.sendResponse(res, 200, itemDocument);
+        } else {
+          var savedDocument = null;
+          doc.save()
+            .then(function (d) {
+              defaultLog.info("Saved new document object:", d._id);
+              Utils.recordAction('Post', 'InspectionItem', args.swagger.params.auth_payload.preferred_username, d._id);
+              savedDocument = d;
+              return;
+            }).then(function () {
+              // Push this into the inspection elements' items' array for things.
+              var InspectionElement = mongoose.model('InspectionElement');
+              return InspectionElement.update(
+                { _id: mongoose.Types.ObjectId(elementId) },
+                {
+                  $push: {
+                    items: doc
+                  }
+                },
+                { new: true }
+              );
+            }).then(function (theInspection) {
+              console.log("updated insp:", theInspection);
+              return theInspection;
+            }).then(function () {
+              return Actions.sendResponse(res, 200, savedDocument);
+            })
+            .catch(function (error) {
+              console.log("error:", error);
+              // the model failed to be created - delete the document from minio so the database and minio remain in sync.
+              MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
+              return Actions.sendResponse(res, 400, error);
+            });
+        }
       })
   } else {
     // Just a text element.
     var InspectionItem = mongoose.model('InspectionItem');
     var doc = new InspectionItem();
+
+    doc.itemId = guid;
+
     // Define security tag defaults
     if (project) {
       doc.project = mongoose.Types.ObjectId(project);
@@ -242,37 +281,44 @@ exports.protectedPostElementItem = function (args, res, next) {
     doc.geo = JSON.parse(geo);
     doc.markModified('geo');
 
-    var savedDocument = null;
-    doc.save()
-      .then(function (d) {
-        defaultLog.info("Saved new document object:", d._id);
-        Utils.recordAction('Post', 'InspectionItem', args.swagger.params.auth_payload.preferred_username, d._id);
-        savedDocument = d;
-        return;
-      }).then(function () {
-        // Push this into the inspection elements' array for things.
-        var InspectionElement = mongoose.model('InspectionElement');
-        return InspectionElement.update(
-          { _id: mongoose.Types.ObjectId(elementId) },
-          {
-            $push: {
-              items: doc
-            }
-          },
-          { new: true }
-        );
-      }).then(function (theInspection) {
-        console.log("updated insp:", theInspection);
-        return theInspection;
-      }).then(function () {
-        return Actions.sendResponse(res, 200, savedDocument);
-      })
-      .catch(function (error) {
-        console.log("error:", error);
-        // the model failed to be created - delete the document from minio so the database and minio remain in sync.
-        MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
-        return Actions.sendResponse(res, 400, error);
-      });
+    var InspectionItem = mongoose.model('InspectionItem');
+    let itemDocument = await InspectionItem.findOne({_schemaName: "InspectionItem", itemId: doc.itemId});
+    if (itemDocument) {
+      // We alrady had this - send it back to them.
+      return Actions.sendResponse(res, 200, itemDocument);
+    } else {
+      var savedDocument = null;
+      doc.save()
+        .then(function (d) {
+          defaultLog.info("Saved new document object:", d._id);
+          Utils.recordAction('Post', 'InspectionItem', args.swagger.params.auth_payload.preferred_username, d._id);
+          savedDocument = d;
+          return;
+        }).then(function () {
+          // Push this into the inspection elements' array for things.
+          var InspectionElement = mongoose.model('InspectionElement');
+          return InspectionElement.update(
+            { _id: mongoose.Types.ObjectId(elementId) },
+            {
+              $push: {
+                items: doc
+              }
+            },
+            { new: true }
+          );
+        }).then(function (theInspection) {
+          console.log("updated insp:", theInspection);
+          return theInspection;
+        }).then(function () {
+          return Actions.sendResponse(res, 200, savedDocument);
+        })
+        .catch(function (error) {
+          console.log("error:", error);
+          // the model failed to be created - delete the document from minio so the database and minio remain in sync.
+          MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
+          return Actions.sendResponse(res, 400, error);
+        });
+    }
   }
 }
 
