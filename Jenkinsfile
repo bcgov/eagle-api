@@ -98,11 +98,11 @@ def nodejsTester () {
   }
 }
 
-String sonarLabel = "sonarqube-runner-${UUID.randomUUID().toString()}";
-println sonarLabel;
 def nodejsSonarqube () {
   openshift.withCluster() {
     openshift.withProject() {
+      String sonarLabel = "sonarqube-runner-${UUID.randomUUID().toString()}";
+      println sonarLabel;
       podTemplate(
         label: "${sonarLabel}",
         name: "${sonarLabel}",
