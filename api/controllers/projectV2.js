@@ -64,13 +64,13 @@ exports.publicHead = async function (args, res, next)
     {
         let data = await getProjectHandler(PUBLIC_ROLES, args.swagger.params);
 
-        return data ? Actions.sendResponse(res, 200, data) 
-                    : Actions.sendResponse(res, 404, { code: 404, message: 'Project information was not found'});
+        return data ? Actions.sendResponseV2(res, 200, data) 
+                    : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found'});
     }
     catch (e)
     {
         defaultLog.error('### Error in {HEAD}/Public/Projects/ :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects' });        
     }
     finally
     {
@@ -86,13 +86,13 @@ exports.protectedHead = async function (args, res, next)
     {
         let data = await getProjectHandler(SECURE_ROLES, args.swagger.params);
 
-        return data ? Actions.sendResponse(res, 200, data) 
-                    : Actions.sendResponse(res, 404, { code: 404, message: 'Project information was not found'});
+        return data ? Actions.sendResponseV2(res, 200, data) 
+                    : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found'});
     }
     catch (e)
     {
         defaultLog.error('### Error in {HEAD}/Projects/ :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects' });        
     }
     finally
     {
@@ -109,13 +109,13 @@ exports.publicGet = async function (args, res, next)
     {
         let data = await getProjectHandler(PUBLIC_ROLES, args.swagger.params);
 
-        return data ? Actions.sendResponse(res, 200, data) 
-                      : Actions.sendResponse(res, 404, { code: 404, message: 'Project information was not found'});
+        return data ? Actions.sendResponseV2(res, 200, data)
+                    : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found'});
     }
     catch (e)
     {
         defaultLog.error('### Error in {GET}/Public/Projects/ :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects' });        
+        return res.json({ code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects' });        
     }
     finally
     {
@@ -131,13 +131,13 @@ exports.protectedGet = async function (args, res, next)
     {
         let data = await getProjectHandler(SECURE_ROLES, args.swagger.params);
 
-        return data ? Actions.sendResponse(res, 200, data) 
-                    : Actions.sendResponse(res, 404, { code: 404, message: 'Project information was not found'});
+        return data ? Actions.sendResponseV2(res, 200, data) 
+                    : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found'});
     }
     catch (e)
     {
         defaultLog.error('### Error in {GET}/Projects/ :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects' });        
     }
     finally
     {
@@ -166,7 +166,7 @@ exports.protectedPost = async function (args, res, next)
                 project = await projectDAO.getProject(SECURE_ROLES, project._id);
                 
                 project = projectDAO.projectHateoas(project, roles);
-                return Actions.sendResponse(res, 201, project);
+                return Actions.sendResponseV2(res, 201, project);
             }
             else
             {
@@ -181,7 +181,7 @@ exports.protectedPost = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {POST}/Projects/ :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects' });        
     }
     finally
     {
@@ -210,11 +210,11 @@ exports.protectedPut = async function (args, res, next)
                 updatedProject = await projectDAO.updateProject(args.swagger.params.auth_payload.preferred_username, sourceProject, updatedProject);
 
                 updatedProject = projectDAO.projectHateoas(updatedProject, roles);
-                return Actions.sendResponse(res, 200, updatedProject);
+                return Actions.sendResponseV2(res, 200, updatedProject);
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -225,7 +225,7 @@ exports.protectedPut = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {PUT}/Projects/ :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects' });        
     }
     finally
     {
@@ -256,11 +256,11 @@ exports.protectedDelete = async function (args, res, next)
                 // 1.) we honour the principle of idempotency and safety
                 // 2.) we can recreate the resource in the event this was done in error
                 project = projectDAO.projectHateoas(project, roles);
-                return Actions.sendResponse(res, 200, project);
+                return Actions.sendResponseV2(res, 200, project);
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -271,7 +271,7 @@ exports.protectedDelete = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {DELETE}/Projects/ :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects' });        
     }
     finally
     {
@@ -298,11 +298,11 @@ exports.protectedPublish = async function (args, res, next)
             {
                 project = await projectDAO.publishProject(args.swagger.params.auth_payload.preferred_username, project);
                 project = projectDAO.projectHateoas(project, roles);
-                return Actions.sendResponse(res, 200, project);
+                return Actions.sendResponseV2(res, 200, project);
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -313,7 +313,7 @@ exports.protectedPublish = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {PUT}/Projects{id}/Publish :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Publish' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Publish' });        
     }
     finally
     {
@@ -340,11 +340,11 @@ exports.protectedUnPublish = async function (args, res, next)
             {
                 project = await projectDAO.unPublishProject(args.swagger.params.auth_payload.preferred_username, project);
                 project = projectDAO.projectHateoas(project, roles);
-                return Actions.sendResponse(res, 200, project);
+                return Actions.sendResponseV2(res, 200, project);
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -355,7 +355,7 @@ exports.protectedUnPublish = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {PUT}/Projects{id}/Unpublish :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Unpublish' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Unpublish' });        
     }
     finally
     {
@@ -387,11 +387,11 @@ exports.protectedExtensionAdd = async function (args, res, next)
             {
                 project = await projectDAO.addExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
                 project = projectDAO.projectHateoas(project, roles);
-                return Actions.sendResponse(res, 201, project);
+                return Actions.sendResponseV2(res, 201, project);
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -402,7 +402,7 @@ exports.protectedExtensionAdd = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {POST}/Projects/{id}/Extensions :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Extensions' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Extensions' });        
     }
     finally
     {
@@ -431,11 +431,11 @@ exports.protectedExtensionUpdate = async function (args, res, next)
             {
                 project = await projectDAO.updateExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
                 project = projectDAO.projectHateoas(project, roles);
-                return Actions.sendResponse(res, 200, project);
+                return Actions.sendResponseV2(res, 200, project);
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -446,7 +446,7 @@ exports.protectedExtensionUpdate = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {PUT}/Projects/{id}/Extensions :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Extensions' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Extensions' });        
     }
     finally
     {
@@ -475,11 +475,11 @@ exports.protectedExtensionDelete = async function (args, res, next)
             {
                 project = await projectDAO.updateExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
                 project = projectDAO.projectHateoas(project, roles);
-                return Actions.sendResponse(res, 200, project);
+                return Actions.sendResponseV2(res, 200, project);
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -490,7 +490,7 @@ exports.protectedExtensionDelete = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {DELETE}/Projects/{id}/Extensions :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Extensions' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Extensions' });        
     }
     finally
     {

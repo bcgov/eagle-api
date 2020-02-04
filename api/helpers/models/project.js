@@ -90,7 +90,6 @@ var projectDataDefinition = {
   complianceLead          : { type: 'ObjectId', ref: 'User', default: null, index: true },
   //////////////////////
   groups                   : [{ type: 'ObjectId', ref: 'Group', default: null, index: true }],
-  
 };
 
 // actual project schema
@@ -109,6 +108,7 @@ var projectDefinition = {
   pins                    : [{ type: 'ObjectId', ref: 'Pin', index: true }],
   pinsRead                : [{ type: String, trim: true, default: '["project-system-admin"]' }],
   pinsHistory             : [{ type: Mixed, default: {} }],
+  links: [{ type: Mixed }]
 }
 
 var buildToNature = {};

@@ -51,12 +51,12 @@ exports.getTopLevel = async function (args, res, next)
             topLevelData.links.push({ name: 'Secure Project Delete Group Member', type: 'DELETE', uri: '/api/v2/Projects/Groups/{id}/Members/{id}' });*/
         }
 
-        Actions.sendResponse(res, 200, topLevelData);
+        Actions.sendResponseV2(res, 200, topLevelData);
     }
     catch (e)
     {
         defaultLog.error('### Error in {GET} / :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/v2/' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/v2/' });        
     }
     finally
     {

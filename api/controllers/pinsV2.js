@@ -47,12 +47,12 @@ exports.publicPinGet = async function (args, res, next)
     
                 let data = await pinDAO.getProjectPins(PUBLIC_ROLES, project, pageNumber, pageSize, sortBy);
     
-                return data ? Actions.sendResponse(res, 200, data) 
-                            : Actions.sendResponse(res, 404, { code: 404, message: 'Project pins were not found'});
+                return data ? Actions.sendResponseV2(res, 200, data) 
+                            : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project pins were not found'});
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -63,7 +63,7 @@ exports.publicPinGet = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {GET}/Public/Projects/{id}/Pins :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects/{id}/Pins' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects/{id}/Pins' });        
     }
     finally
     {
@@ -94,12 +94,12 @@ exports.protectedPinGet = async function (args, res, next)
     
                 let data = await pinDAO.getProjectPins(args.swagger.params.auth_payload.preferred_username, SECURE_ROLES, project, pageNumber, pageSize, sortBy);
     
-                return data ? Actions.sendResponse(res, 200, data) 
-                            : Actions.sendResponse(res, 404, { code: 404, message: 'Project pins were not found'});
+                return data ? Actions.sendResponseV2(res, 200, data) 
+                            : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project pins were not found'});
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -110,7 +110,7 @@ exports.protectedPinGet = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {GET}/Projects/{id}/Pins :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects/{id}/Pins' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects/{id}/Pins' });        
     }
     finally
     {
@@ -141,8 +141,8 @@ exports.protectedPinCreate = async function (args, res, next)
                 {
                     let data = await pinDAO.createPin(args.swagger.params.auth_payload.preferred_username, project, pins);
         
-                    return data ? Actions.sendResponse(res, 201, data) 
-                                : Actions.sendResponse(res, 404, { code: 404, message: 'Project pins were not found'});
+                    return data ? Actions.sendResponseV2(res, 201, data) 
+                                : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project pins were not found'});
                 }
                 else
                 {
@@ -151,7 +151,7 @@ exports.protectedPinCreate = async function (args, res, next)
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -162,7 +162,7 @@ exports.protectedPinCreate = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {POST}/Projects/{id}/Pins :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects/{id}/Pins' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects/{id}/Pins' });        
     }
     finally
     {
@@ -189,12 +189,12 @@ exports.protectedPublishPin = async function (args, res, next)
             {
                 let publishedProject = await pinDAO.publishPins(args.swagger.params.auth_payload.preferred_username, project);
         
-                return publishedProject ? Actions.sendResponse(res, 200, publishedProject) 
-                                        : Actions.sendResponse(res, 404, { code: 404, message: 'Project pins were not found or could not be published'});
+                return publishedProject ? Actions.sendResponseV2(res, 200, publishedProject) 
+                                        : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project pins were not found or could not be published'});
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -205,7 +205,7 @@ exports.protectedPublishPin = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {PUT}/Projects/{id}/Pins/Publish :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects/{id}/Pins/Publish' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects/{id}/Pins/Publish' });        
     }
     finally
     {
@@ -232,12 +232,12 @@ exports.protectedUnPublishPin = async function (args, res, next)
             {
                 let publishedProject = await pinDAO.unPublishPins(args.swagger.params.auth_payload.preferred_username, project);
         
-                return publishedProject ? Actions.sendResponse(res, 200, publishedProject) 
-                                        : Actions.sendResponse(res, 404, { code: 404, message: 'Project pins were not found or could not be published'});
+                return publishedProject ? Actions.sendResponseV2(res, 200, publishedProject) 
+                                        : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project pins were not found or could not be published'});
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -248,7 +248,7 @@ exports.protectedUnPublishPin = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {PUT}/Projects/{id}/Pins/Unpublish :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects/{id}/Pins/Unpublish' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects/{id}/Pins/Unpublish' });        
     }
     finally
     {
@@ -276,12 +276,12 @@ exports.protectedPinDelete = async function (args, res, next)
             {
                 project = pinDAO.deletePin(args.swagger.params.auth_payload.preferred_username, pinId, project);
 
-                return publishedProject ? Actions.sendResponse(res, 200, project) 
-                                        : Actions.sendResponse(res, 404, { code: 404, message: 'Project pin was not found or could not be deleted'});
+                return publishedProject ? Actions.sendResponseV2(res, 200, project) 
+                                        : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project pin was not found or could not be deleted'});
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -292,7 +292,7 @@ exports.protectedPinDelete = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {DELETE}/Projects/{projId}/Pins/{pinId} :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects/{projId}/Pins/{pinId}' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects/{projId}/Pins/{pinId}' });        
     }
     finally
     {

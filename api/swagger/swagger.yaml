@@ -82,6 +82,30 @@ definitions:
         type: string
         example: "password"
 
+### Link Definitions
+  Link:
+    type: object
+    description: "hateoas"
+    properties:
+      rel:
+        type: string
+        example: "Links To"
+      title:
+        type: string
+        example: "Link Name"
+      method:
+        type: string
+        example: "Link method"
+      href:
+        type: string
+        example: "Link href"
+    example: "{ rel: 'create', title: 'Create a thing', method: 'POST', href: '/api/thing/'}"
+    enum: &linkFields
+      - rel
+      - title
+      - method
+      - href
+
 ### Project Definitions
   ProjId:
     type: object
@@ -95,6 +119,12 @@ definitions:
       _id:
         type: string
         example: "54759eb3c090d83494e2d804"
+      links:
+        type: array
+        example: "[{ rel: '', title: '', method: '', href: ''}]"
+        items:
+          type: object
+          $ref: "#/definitions/Link"
       tags:
         type: string
         example: "[['public']]"
@@ -131,6 +161,13 @@ definitions:
     type: string
     description: "Optional fields to return."
     example: name|type
+    properties:
+      links:
+        type: array
+        example: "[{ rel: '', title: '', method: '', href: ''}]"
+        items:
+          type: object
+          $ref: "#/definitions/Link"
     #TODO: Fix enums
     enum: &projectFields
       - cEAAInvolvement
@@ -158,7 +195,8 @@ definitions:
       - read
       - build
       - nature
-  TopicSortByFields:
+      - links
+  ProjectSortByFields:
     type: string
     description: "Optional fields to sort by (prefixed with + or - for order)"
     example: +name,-name
@@ -454,8 +492,6 @@ definitions:
     description: "Optional fields to return."
     example: name
     #TODO: Fix enums
-    enum: &organizationFields
-      - name
     enum: &organizationSortByFields
       - +name
       - -name
@@ -1926,15 +1962,6 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-      responses:
-        "200":
-          description: "Success"
-          schema:
-            $ref: "#/definitions/RecentActivityObject"
-        "403":
-          description: "Access Denied"
-          schema:
-            $ref: "#/definitions/Error"
     get:
       tags:
         - project
@@ -3030,7 +3057,6 @@ paths:
       summary: "Create a new document"
       operationId: protectedPost
       description: "Create a new document object."
-      summary: "Create a new document object."
       security:
         - Bearer: []
       x-security-scopes:
@@ -3098,11 +3124,11 @@ paths:
           in: formData
           description: "The description of the file."
           required: false
-          name: keywords
+          type: string
+        - name: keywords
           in: formData
           description: "The keywords of the file."
           required: false
-          type: string
           type: string
         - name: labels
           in: formData
@@ -3680,7 +3706,6 @@ paths:
       summary: "Create a new document from public"
       operationId: unProtectedPost
       description: "Create a new document object from public."
-      summary: "Create a new document object from public."
       consumes:
         - multipart/form-data
       parameters:
@@ -3923,7 +3948,6 @@ paths:
           collectionFormat: pipes
           items:
             type: string
-            enum: *organizationFields
       responses:
         "200":
           description: "Success"
@@ -3980,7 +4004,6 @@ paths:
           collectionFormat: pipes
           items:
             type: string
-            enum: *organizationFields
       responses:
         "200":
           description: "Success"
@@ -4155,7 +4178,6 @@ paths:
           collectionFormat: pipes
           items:
             type: string
-            enum: *organizationFields
         - in: query
           name: sortBy
           description: "Organization fields to sort by."
@@ -4216,7 +4238,6 @@ paths:
           collectionFormat: pipes
           items:
             type: string
-            enum: *organizationFields
       responses:
         "200":
           description: "Success"
@@ -4594,7 +4615,6 @@ paths:
       summary: "Create a new comment"
       operationId: protectedPost
       description: "Create a new comment object."
-      summary: "Create a new comment object."
       security:
         - Bearer: []
       x-security-scopes:
@@ -4854,7 +4874,6 @@ paths:
       summary: "Create a new comment"
       operationId: unProtectedPost
       description: "Create a new comment object."
-      summary: "Create a new comment object."
       parameters:
         - name: comment
           in: body
@@ -5040,7 +5059,6 @@ paths:
       summary: "Create a new commentperiod"
       operationId: protectedPost
       description: "Create a new commentperiod object."
-      summary: "Create a new commentperiod object."
       security:
         - Bearer: []
       x-security-scopes:
@@ -6324,7 +6342,6 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-
   /v2/Public/Projects:
     x-swagger-router-controller: projectV2
     options:
@@ -7396,15 +7413,6 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/ProjObject"
-        "403":
-          description: "Access Denied"
-          schema:
-            $ref: "#/definitions/Error"
-      responses:
-        "200":
-          description: "Success"
-          schema:
-            $ref: "#/definitions/RecentActivityObject"
         "403":
           description: "Access Denied"
           schema:

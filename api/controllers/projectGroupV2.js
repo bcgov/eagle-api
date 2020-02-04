@@ -50,11 +50,11 @@ exports.protectedAddGroup = async function (args, res, rest)
             {
                 let savedGroup = await projectGroupDAO.createGroup(args.swagger.params.auth_payload.preferred_username, group, project);
                 savedGroup = projectGroupDAO.groupHateoas(savedGroup, SECURE_ROLES);
-                return Actions.sendResponse(res, 201, savedGroup);
+                return Actions.sendResponseV2(res, 201, savedGroup);
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
             }
         }
         else
@@ -65,7 +65,7 @@ exports.protectedAddGroup = async function (args, res, rest)
     catch (e)
     {
         defaultLog.error('### Error in {POST} /Projects/{id}/Groups :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Groups' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Groups' });        
     }
     finally
     {
@@ -94,11 +94,11 @@ exports.protectedGroupDelete = async function (args, res, rest)
             {
                 group = await projectGroupDAO.deleteGroup(args.swagger.params.auth_payload.preferred_username, group, project);
                 group = projectGroupDAO.groupHateoas(group, SECURE_ROLES);
-                return Actions.sendResponse(res, 200, group);
+                return Actions.sendResponseV2(res, 200, group);
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' or Group ' + groupId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' or Group ' + groupId + ' not found.'});
             }
         }
         else
@@ -109,7 +109,7 @@ exports.protectedGroupDelete = async function (args, res, rest)
     catch (e)
     {
         defaultLog.error('### Error in {DELETE} /Projects/{projId}/Groups/{groupId} :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Groups/{id}' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Groups/{id}' });        
     }
     finally
     {
@@ -139,11 +139,11 @@ exports.protectedGroupPut = async function (args, res, rest)
             {
                 updatedGroup = await projectGroupDAO.updateGroup(args.swagger.params.auth_payload.preferred_username, updatedGroup, sourceGroup);
                 updatedGroup = projectGroupDAO.groupHateoas(updatedGroup, SECURE_ROLES);
-                return Actions.sendResponse(res, 200, updatedGroup);
+                return Actions.sendResponseV2(res, 200, updatedGroup);
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' or Group ' + groupId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' or Group ' + groupId + ' not found.'});
             }
         }
         else
@@ -154,7 +154,7 @@ exports.protectedGroupPut = async function (args, res, rest)
     catch (e)
     {
         defaultLog.error('### Error in {PUT} /Projects/{projId}/Groups/{groupId} :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Groups/{id}' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Groups/{id}' });        
     }
     finally
     {
@@ -185,11 +185,11 @@ exports.protectedAddGroupMembers = async function (args, res, rest)
             {
                 updatedGroup = await projectGroupDAO.addGroupMember(args.swagger.params.auth_payload.preferred_username, group, members);
                 updatedGroup = projectGroupDAO.groupHateoas(updatedGroup, SECURE_ROLES);
-                return Actions.sendResponse(res, 201, updatedGroup);
+                return Actions.sendResponseV2(res, 201, updatedGroup);
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' or Group ' + groupId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' or Group ' + groupId + ' not found.'});
             }
         }
         else
@@ -200,7 +200,7 @@ exports.protectedAddGroupMembers = async function (args, res, rest)
     catch (e)
     {
         defaultLog.error('### Error in {POST} /Projects/{projId}/Groups/{groupId}/members :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Groups/{id}/members' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Groups/{id}/members' });        
     }
     finally
     {
@@ -233,11 +233,11 @@ exports.protectedGroupGetMembers = async function (args, res, rest)
 
                 let members = await projectGroupDAO.getGroupMembers(SECURE_ROLES, args.swagger.params.auth_payload.preferred_username, group, sortBy, pageSize, pageNumber);
                 members = projectGroupDAO.groupHateoas(members, SECURE_ROLES);
-                return Actions.sendResponse(res, 200, members);
+                return Actions.sendResponseV2(res, 200, members);
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' or Group ' + groupId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' or Group ' + groupId + ' not found.'});
             }
         }
         else
@@ -248,7 +248,7 @@ exports.protectedGroupGetMembers = async function (args, res, rest)
     catch (e)
     {
         defaultLog.error('### Error in {GET} /Projects/{projId}/Groups/{groupId}/members :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Groups/{id}/members' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Groups/{id}/members' });        
     }
     finally
     {
@@ -279,11 +279,11 @@ exports.protectedDeleteGroupMembers = async function (args, res, rest)
             {
                 let updatedGroup = await projectGroupDAO.deleteGroupMember(args.swagger.params.auth_payload.preferred_username, group, member);
                 data = projectGroupDAO.groupHateoas(data, SECURE_ROLES);
-                return Actions.sendResponse(res, 200, updatedGroup);
+                return Actions.sendResponseV2(res, 200, updatedGroup);
             }
             else
             {
-                return Actions.sendResponse(res, 404, { status: 404, message: 'Project ' + projectId + ' or Group ' + groupId + ' not found.'});
+                return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' or Group ' + groupId + ' not found.'});
             }
         }
         else
@@ -294,7 +294,7 @@ exports.protectedDeleteGroupMembers = async function (args, res, rest)
     catch (e)
     {
         defaultLog.error('### Error in {DELETE} /Projects/{projId}/Groups/{groupId}/members :', e);
-        return Actions.sendResponse(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Groups/{id}/members/{id}' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Groups/{id}/members/{id}' });        
     }
     finally
     {
