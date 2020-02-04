@@ -1,9 +1,9 @@
-var _ = require('lodash');
-var defaultLog = require('winston').loggers.get('default');
-var mongoose = require('mongoose');
-var Actions = require('../helpers/actions');
-var Utils = require('../helpers/utils');
+const _ = require('lodash');
+const defaultLog = require('winston').loggers.get('default');
+const mongoose = require('mongoose');
 
+const Actions = require('../helpers/actions');
+const Utils = require('../helpers/utils');
 const constants = require('../helpers/constants').schemaTypes;
 const createDocumentAggr = require('../aggregators/documentAggregator').createDocumentAggr;
 const createProjectAggr = require('../aggregators/projectAggregator').createProjectAggr;
@@ -112,12 +112,10 @@ const executeQuery = async function (args, res) {
   let sortField = undefined;
   const sortingValue = {};
 
-  sortBy.map((value) => {
-    sortDirection = value.charAt(0) == '-' ? -1 : 1;
+  sortBy.forEach((value) => {
+    sortDirection = value.charAt(0) === '-' ? -1 : 1;
     sortField = value.slice(1);
-    if (Object.prototype.hasOwnProperty.call(sortingValue, sortField)){
-      //field is already set, don't set it again with an identical secondary sort
-    } else {
+    if (!Object.prototype.hasOwnProperty.call(sortingValue, sortField)) {
       sortingValue[sortField] = sortDirection;
     }
   });

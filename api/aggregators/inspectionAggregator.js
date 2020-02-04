@@ -5,7 +5,7 @@
  * @returns {array} Aggregate for inspections
  */
 exports.createInspectionAggr = (populate) => {
-  let aggregation = [];
+  const aggregation = [];
 
   if (populate) {
     aggregation.push(
@@ -53,7 +53,7 @@ exports.createInspectionAggr = (populate) => {
  * @returns {array} Aggregate for inspection elements
  */
 exports.createInspectionElementAggr = (populate) => {
-  let aggregation = [];
+  const aggregation = [];
 
   if (populate) {
     aggregation.push(

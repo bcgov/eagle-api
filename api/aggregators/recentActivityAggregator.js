@@ -1,3 +1,5 @@
+const { setProjectDefault } = require('../helpers/aggregators');
+
 /**
  * Creates an aggregate for looking up recent activity.
  * 
@@ -51,73 +53,6 @@ exports.createRecentActivityAggr = (populate) => {
       },
       {
         "$project": {["project.default"]: 0 }
-      }
-    );
-  }
-
-  return aggregation;
-};
-
-/**
- * Creates an aggregation with the default project year set as the root.
- * 
- * @param {boolean} projectOnly Flag that indicates if the project should be set as root.
- * @returns {array} Aggregate with the default year set.
- */
-const setProjectDefault = (projectOnly) => {
-  const aggregation = [];
-
-  if (projectOnly) {
-    // variables are tricky for fieldpaths ie. "default"
-    aggregation.push(
-      {
-        $addFields: {
-          "default": {
-            $switch: {
-              branches: [
-                { 
-                  case: { $eq: [ "$currentLegislationYear", 'legislation_1996' ]},
-                  then: "$legislation_1996"
-                },
-                {
-                  case: { $eq: [ "$currentLegislationYear", 'legislation_2002' ]},
-                  then: "$legislation_2002"
-                },
-                {
-                  case: { $eq: [ "$currentLegislationYear", 'legislation_2018' ]},
-                  then: "$legislation_2018"
-                }
-              ],
-              default: "$legislation_2002"
-            }
-          }
-        }
-      }
-    );
-  } else {
-    aggregation.push(
-      {
-        $addFields: {
-          'project.default': {
-            $switch: {
-              branches: [
-                { 
-                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_1996' ]},
-                  then: "$project.legislation_1996"
-                },
-                {
-                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2002' ]},
-                  then: "$project.legislation_2002"
-                },
-                {
-                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2018' ]},
-                  then: "$project.legislation_2018"
-                }
-              //TODO: watch out for the default case. If we hit this then we will have empty projects
-              ], default: "$project.legislation_2002"
-            }
-          }
-        }
       }
     );
   }
