@@ -65,7 +65,6 @@ exports.protectedPostInspection = async function (args, res, next) {
   // This is an overwrite in case of error from mobile app,
   // otherwise this will create a new record.
   try {
-    // var doc = await Inspection.findOneAndUpdate({ inspectionId: inspection.inspectionId }, inspection, { upsert: true, new: true });
     var Inspection = mongoose.model('Inspection');
     let elementDocument = await Inspection.findOne({_schemaName: "Inspection", inspectionId: inspection.inspectionId});
     if (elementDocument) {
