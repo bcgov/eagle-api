@@ -5,6 +5,7 @@ var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 var qs = require('qs');
 
+const constants = require('../helpers/constants').schemaTypes;
 const createDocumentAggr = require('../aggregators/documentAggregator').createDocumentAggr;
 const createProjectAggr = require('../aggregators/projectAggregator').createProjectAggr;
 const createGroupAggr = require('../aggregators/groupAggregator').createGroupAggr;
@@ -14,9 +15,9 @@ const createInspectionAggr = require('../aggregators/inspectionAggregator').crea
 const createInspectionElementAggr = require('../aggregators/inspectionAggregator').createInspectionElementAggr;
 const createNotificationProjectAggr = require('../aggregators/notificationProjectAggregator').createNotificationProjectAggr;
 
-function isEmpty(obj) {
+const isEmpty = function(obj) {
   for (var key in obj) {
-    if (obj.hasOwnProperty(key))
+    if (Object.prototype.hasOwnProperty.call(obj, key))
       return false;
   }
   return true;
@@ -24,14 +25,14 @@ function isEmpty(obj) {
 
 //Helper to validate a string as object ID
 // needed since mongoose will validate any 12 char string as valid id. Ie. 'municipality'
-mongoose.isValidObjectId = function(str) {
+const isValidObjectId = function(str) {
   if (typeof str !== 'string') {
     return false;
   }
   return str.match(/^[a-f\d]{24}$/i);
 };
 
-var generateExpArray = async function (field, roles, schemaName) {
+const generateExpArray = async function (field, roles, schemaName) {
   var expArray = [];
   if (field && field != undefined) {
     var queryString = qs.parse(field);
@@ -46,7 +47,7 @@ var generateExpArray = async function (field, roles, schemaName) {
         await handlePCPItem(roles, expArray, entry);
       } else if (Array.isArray(entry)) {
         // Arrays are a list of options so will always be ors
-        if (schemaName === 'Project') {
+        if (schemaName === constants.PROJECT) {
           var fields = handleProjectTerms(item);
           fields.map(field => {
             entry.map(element => {
@@ -61,7 +62,7 @@ var generateExpArray = async function (field, roles, schemaName) {
         expArray.push({ $or: orArray });
       } else {
         let fields = []
-        if (schemaName === 'Project') {
+        if (schemaName === constants.PROJECT) {
           fields = handleProjectTerms(item);
         } else {
           fields.push(item)
@@ -84,7 +85,7 @@ var generateExpArray = async function (field, roles, schemaName) {
             handleDateEndItem(orArray, ['datePosted'], entry);
             break;
           default:
-            if (schemaName === 'Project') {
+            if (schemaName === constants.PROJECT) {
               for(let field of fields) {
                 orArray.push(getConvertedValue(field, entry));
               }
@@ -102,7 +103,7 @@ var generateExpArray = async function (field, roles, schemaName) {
   return expArray;
 };
 
-var handleProjectTerms = function(item) {
+const handleProjectTerms = function(item) {
   let legislation_items = [];
   //leave _id as is, for project details calls
   if (item === '_id') {
@@ -121,9 +122,9 @@ var handleProjectTerms = function(item) {
   return legislation_items;
 }
 
-var getConvertedValue = function (item, entry) {
+const getConvertedValue = function (item, entry) {
   if (isNaN(entry)) {
-    if (mongoose.isValidObjectId(entry)) {
+    if (isValidObjectId(entry)) {
       console.log("objectid");
       // ObjectID
       return { [item]: mongoose.Types.ObjectId(entry) };
@@ -148,7 +149,7 @@ var getConvertedValue = function (item, entry) {
   }
 };
 
-var handlePCPItem = async function (roles, expArray, value) {
+const handlePCPItem = async function (roles, expArray, value) {
   if (Array.isArray(value)) {
     // Arrays are a list of options so will always be ors
     var orArray = [];
@@ -163,7 +164,7 @@ var handlePCPItem = async function (roles, expArray, value) {
   }
 };
 
-var getPCPValue = async function (roles, entry) {
+const getPCPValue = async function (roles, entry) {
   console.log('pcp: ', entry);
 
   var query = null;
@@ -175,7 +176,7 @@ var getPCPValue = async function (roles, entry) {
       in7days.setDate(now.getDate() + 7);
 
       query = {
-        _schemaName: 'CommentPeriod',
+        _schemaName: constants.COMMENT_PERIOD,
         $and: [
           { dateStarted: { $gt: now } },
           { dateStarted: { $lte: in7days } }
@@ -185,7 +186,7 @@ var getPCPValue = async function (roles, entry) {
 
     case 'open':
       query = {
-        _schemaName: 'CommentPeriod',
+        _schemaName: constants.COMMENT_PERIOD,
         $and: [
           { dateStarted: { $lte: now } },
           { dateCompleted: { $gt: now } }
@@ -195,7 +196,7 @@ var getPCPValue = async function (roles, entry) {
 
     case 'closed':
       query = {
-        _schemaName: 'CommentPeriod',
+        _schemaName: constants.COMMENT_PERIOD,
         dateCompleted: { $lt: now }
       };
       break;
@@ -207,7 +208,7 @@ var getPCPValue = async function (roles, entry) {
   var pcp = {};
 
   if (query) {
-    var data = await Utils.runDataQuery('CommentPeriod', roles, query, ['project'], null, null, null, null, false, null);
+    var data = await Utils.runDataQuery(constants.COMMENT_PERIOD, roles, query, ['project'], null, null, null, null, false, null);
     var ids = _.map(data, 'project');
     pcp = { _id: { $in: ids } };
   }
@@ -216,7 +217,7 @@ var getPCPValue = async function (roles, entry) {
   return pcp;
 };
 
-var handleDateStartItem = function (expArray, field, entry) {
+const handleDateStartItem = function (expArray, field, entry) {
   var date = new Date(entry);
 
   // Validate: valid date?
@@ -226,7 +227,7 @@ var handleDateStartItem = function (expArray, field, entry) {
   }
 };
 
-var handleDateEndItem = function (expArray, field, entry) {
+const handleDateEndItem = function (expArray, field, entry) {
   var date = new Date(entry);
 
   // Validate: valid date?
@@ -250,28 +251,28 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   // Create appropriate aggregations for the schema.
   let schemaAggregation;
   switch (schemaName) {
-    case 'Document':
+    case constants.DOCUMENT:
       schemaAggregation = createDocumentAggr(populate, roles);
       break;
-    case 'Project':
+    case constants.PROJECT:
       schemaAggregation = createProjectAggr(projectLegislation);
       break;
-    case 'Group':
+    case constants.GROUP:
       schemaAggregation = createGroupAggr(populate);
       break;
-    case 'User':
+    case constants.USER:
       schemaAggregation = createUserAggr(populate);
       break;
-    case 'RecentActivity':
+    case constants.RECENT_ACTIVITY:
       schemaAggregation = createRecentActivityAggr(populate);
       break;
-    case 'Inspection':
+    case constants.INSPECTION:
       schemaAggregation = createInspectionAggr(populate);
       break;
-    case 'InspectionElement':
+    case constants.INSPECTION_ELEMENT:
       schemaAggregation = createInspectionElementAggr(populate);
       break;
-    case 'NotificationProject':
+    case constants.NOTIFICATION_PROJECT:
       schemaAggregation = createNotificationProjectAggr(populate);
       break;
     default:
@@ -339,14 +340,6 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   });
 };
 
-exports.publicGet = async function (args, res, next) {
-  executeQuery(args, res, next);
-};
-
-exports.protectedGet = function (args, res, next) {
-  executeQuery(args, res, next);
-};
-
 const executeQuery = async function (args, res, next) {
   const _id = args.swagger.params._id ? args.swagger.params._id.value : null;
   const roles = args.swagger.params.auth_payload ? args.swagger.params.auth_payload.realm_access.roles : ['public'];
@@ -396,21 +389,22 @@ const executeQuery = async function (args, res, next) {
   defaultLog.info("sortDirection:", sortDirection);
 
   if (dataset !== 'Item') {
-    const itemData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue);
+    const collectionData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue);
     
-    if (dataset === 'Comment') {
+    // TODO: this should be moved into the aggregation.
+    if (dataset === constants.COMMENT) {
       // Filter
-      _.each(itemData[0].searchResults, function (item) {
+      _.each(collectionData[0].searchResults, function (item) {
         if (item.isAnonymous === true) {
           delete item.author;
         }
       });
     }
-    return Actions.sendResponse(res, 200, itemData);
+
+    return Actions.sendResponse(res, 200, collectionData);
 
   } else if (dataset === 'Item') {
-    var collectionObj = mongoose.model(args.swagger.params._schemaName.value);
-    console.log("ITEM GET", { _id: args.swagger.params._id.value });
+    const collectionObj = mongoose.model(args.swagger.params._schemaName.value);
 
     let aggregation = [
       {
@@ -525,9 +519,9 @@ const createSortingPagingAggr = function(schemaName, sortValues, sortField, sort
   const searchResultAggregation = [];
   let defaultTwoSorts = false;
 
-  if (schemaName == "Document" &&  sortValues['datePosted'] === -1 || sortValues['score'] === -1){
+  if (schemaName === constants.DOCUMENT &&  sortValues['datePosted'] === -1 || sortValues['score'] === -1){
     defaultTwoSorts = true;
-  } else if (schemaName == "Document" && Object.keys(sortValues).length > 1 ){
+  } else if (schemaName === constants.DOCUMENT && Object.keys(sortValues).length > 1 ){
     // If there are more than two values, but they're not the default values ignore the second value
     const keysArr = Object.keys(sortValues);
     const tempSortValue = {};
@@ -576,6 +570,19 @@ const createSortingPagingAggr = function(schemaName, sortValues, sortField, sort
   return searchResultAggregation;
 };
 
+/**
+ * Create an aggregation that sets the matching criteria.
+ * 
+ * @param {string} schemaName Schema being searched on
+ * @param {string} projectId Project ID
+ * @param {string} keywords List of keywords to search on
+ * @param {boolean} caseSensitive Case sensitive search?
+ * @param {array} orModifier Search criteria for an 'or' search
+ * @param {array} andModifier Search criteria for an 'and' search
+ * @param {array} roles User's roles
+ * 
+ * @returns {array} Aggregation for a match
+ */
 const createMatchAggr = async function(schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, roles) {
   const aggregation = [];
   let projectModifier;
@@ -618,6 +625,16 @@ const createMatchAggr = async function(schemaName, projectId, keywords, caseSens
   });
 
   return aggregation;
+};
+
+
+/***** Exported functions  *****/
+exports.publicGet = async function (args, res, next) {
+  executeQuery(args, res, next);
+};
+
+exports.protectedGet = function (args, res, next) {
+  executeQuery(args, res, next);
 };
 
 exports.protectedOptions = function (args, res, next) {

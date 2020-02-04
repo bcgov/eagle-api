@@ -1,3 +1,9 @@
+/**
+ * Creates an aggregate for looking up recent activity.
+ * 
+ * @param {boolean} populate Flag indicating if fields need a look up
+ * @returns {array} Aggregate for recent activity
+ */
 exports.createRecentActivityAggr = (populate) => {
   let aggregation = [];
 
@@ -52,6 +58,12 @@ exports.createRecentActivityAggr = (populate) => {
   return aggregation;
 };
 
+/**
+ * Creates an aggregation with the default project year set as the root.
+ * 
+ * @param {boolean} projectOnly Flag that indicates if the project should be set as root.
+ * @returns {array} Aggregate with the default year set.
+ */
 const setProjectDefault = (projectOnly) => {
   const aggregation = [];
 

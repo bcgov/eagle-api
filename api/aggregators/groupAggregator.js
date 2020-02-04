@@ -1,3 +1,9 @@
+/**
+ * Creates aggregation required for groups.
+ * 
+ * @param {boolean} populate Flag to unwind linked schemas
+ * @returns {array} Aggregation
+ */
 exports.createGroupAggr = (populate) => {
   const aggregation = [];
 

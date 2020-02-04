@@ -1,3 +1,9 @@
+/**
+ * Creates aggregation required for projects.
+ * 
+ * @param {string} projectLegislation Project legislation year
+ * @returns {array} Aggregation
+ */
 exports.createProjectAggr = (projectLegislation) => {
   let aggregation = [];
 
@@ -20,6 +26,12 @@ exports.createProjectAggr = (projectLegislation) => {
   return aggregation;
 };
 
+/**
+ * Gets the correct legislation key for the year.
+ * 
+ * @param {string} legislation Project legislation year
+ * @returns {object} Legislation key and ID
+ */
 const getProjectLegislationInfo = (legislation) => {
   let projectLegislationDataKey;
   switch (legislation) {
@@ -42,6 +54,12 @@ const getProjectLegislationInfo = (legislation) => {
   return {projectLegislationDataKey, projectLegislationDataIdKey: projectLegislationDataKey + "._id"};
 };
 
+/**
+ * Creates an aggregation with the default project year set as the root.
+ * 
+ * @param {boolean} projectOnly Flag that indicates if the project should be set as root.
+ * @returns {array} Aggregate with the default year set.
+ */
 const setProjectDefault = (projectOnly) => {
   const aggregation = [];
 
@@ -103,6 +121,12 @@ const setProjectDefault = (projectOnly) => {
   return aggregation;
 };
 
+/**
+ * Creates an aggregate of the main fields that need to have a lookup occur on them.
+ * 
+ * @param {string} dataKey Legislation year key
+ * @returns {array} Aggregate that unwinds the linked properties of a project
+ */
 const addProjectLookupAggrs = (dataKey) => {
   const ceeaInvolvementField = `${dataKey}.CEAAInvolvement`;
   const eacDecisionField = `${dataKey}.eacDecision`;
@@ -185,6 +209,14 @@ const addProjectLookupAggrs = (dataKey) => {
   return aggregation;
 };
 
+/**
+ * Creates an aggregate of lookups for the desired legislation year.
+ * 
+ * @param {string} projectLegislationDataKey Legislation year key
+ * @param {string} projectLegislationDataIdKey Legislation year key with ID
+ * @param {string} projectLegislation Desired project year
+ * @returns {array} Aggregate with the desired legislation year set
+ */
 const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation) => {
   const aggregation = addProjectLookupAggrs(projectLegislationDataKey);
 

@@ -1,3 +1,10 @@
+/**
+ * Creates an aggregation for documents.
+ * 
+ * @param {boolean} populate Flag to create lookups
+ * @param {array} roles Set of user roles
+ * @returns {array} Aggregate for documents.
+ */
 exports.createDocumentAggr = (populate, roles) => {
   let aggregation = [];
 
@@ -94,7 +101,12 @@ exports.createDocumentAggr = (populate, roles) => {
   return aggregation;
 };
 
-
+/**
+ * Creates an aggregation with the default project year set as the root.
+ * 
+ * @param {boolean} projectOnly Flag that indicates if the project should be set as root.
+ * @returns {array} Aggregate with the default year set.
+ */
 const setProjectDefault = (projectOnly) => {
   const aggregation = [];
 

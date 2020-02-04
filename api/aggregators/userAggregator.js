@@ -1,3 +1,9 @@
+/**
+ * Creates aggregation required for users.
+ * 
+ * @param {boolean} populate Flag to unwind linked schemas
+ * @returns {array} Aggregation
+ */
 exports.createUserAggr = (populate) => {
   const aggregation = [];
 

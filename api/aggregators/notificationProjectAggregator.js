@@ -1,3 +1,9 @@
+/**
+ * Creates aggregation required for notifications.
+ * 
+ * @param {boolean} populate Flag to unwind linked schemas
+ * @returns {array} Aggregation
+ */
 exports.createNotificationProjectAggr = (populate) => {
   const aggregation = [];
 

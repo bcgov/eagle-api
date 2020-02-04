@@ -1,3 +1,9 @@
+/**
+ * Creates an aggregate for an inspection.
+ * 
+ * @param {boolean} populate Flag indicating if fields need a look up
+ * @returns {array} Aggregate for inspections
+ */
 exports.createInspectionAggr = (populate) => {
   let aggregation = [];
 
@@ -40,7 +46,13 @@ exports.createInspectionAggr = (populate) => {
   return aggregation;
 };
 
-exports.createInspectionAggr = (populate) => {
+/**
+ * Creates an aggregate for an inspection element
+ * 
+ * @param {boolean} populate Flag indicating if fields need a look up
+ * @returns {array} Aggregate for inspection elements
+ */
+exports.createInspectionElementAggr = (populate) => {
   let aggregation = [];
 
   if (populate) {
@@ -54,7 +66,7 @@ exports.createInspectionAggr = (populate) => {
         }
       }
     );
-    
+
     // Handle project.
     aggregation.push(
       {
