@@ -3,7 +3,6 @@ var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
-var qs = require('qs');
 
 const constants = require('../helpers/constants').schemaTypes;
 const createDocumentAggr = require('../aggregators/documentAggregator').createDocumentAggr;
@@ -14,228 +13,8 @@ const createRecentActivityAggr = require('../aggregators/recentActivityAggregato
 const createInspectionAggr = require('../aggregators/inspectionAggregator').createInspectionAggr;
 const createInspectionElementAggr = require('../aggregators/inspectionAggregator').createInspectionElementAggr;
 const createNotificationProjectAggr = require('../aggregators/notificationProjectAggregator').createNotificationProjectAggr;
-
-const isEmpty = function(obj) {
-  for (var key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key))
-      return false;
-  }
-  return true;
-}
-
-//Helper to validate a string as object ID
-// needed since mongoose will validate any 12 char string as valid id. Ie. 'municipality'
-const isValidObjectId = function(str) {
-  if (typeof str !== 'string') {
-    return false;
-  }
-  return str.match(/^[a-f\d]{24}$/i);
-};
-
-const generateExpArray = async function (field, roles, schemaName) {
-  var expArray = [];
-  if (field && field != undefined) {
-    var queryString = qs.parse(field);
-    console.log("queryString:", queryString);
-    // Note that we need map and not forEach here because Promise.all uses
-    // the returned array!
-    await Promise.all(Object.keys(queryString).map(async item => {
-      var entry = queryString[item];
-      console.log("item:", item, entry);
-      var orArray = [];
-      if (item === 'pcp') {
-        await handlePCPItem(roles, expArray, entry);
-      } else if (Array.isArray(entry)) {
-        // Arrays are a list of options so will always be ors
-        if (schemaName === constants.PROJECT) {
-          var fields = handleProjectTerms(item);
-          fields.map(field => {
-            entry.map(element => {
-              orArray.push(getConvertedValue(field, element));
-            });
-          })
-        } else {
-          entry.map(element => {
-            orArray.push(getConvertedValue(item, element));
-          });
-        }
-        expArray.push({ $or: orArray });
-      } else {
-        let fields = []
-        if (schemaName === constants.PROJECT) {
-          fields = handleProjectTerms(item);
-        } else {
-          fields.push(item)
-        }
-        switch (item) {
-          case 'decisionDateStart':
-            for(let field of fields) {
-              handleDateStartItem(orArray, field, entry);
-            }
-            break;
-          case 'decisionDateEnd':
-            for(let field of fields) {
-              handleDateEndItem(orArray, field, entry);
-            }
-            break;
-          case 'datePostedStart':
-            handleDateStartItem(orArray, ['datePosted'], entry);
-            break;
-          case 'datePostedEnd':
-            handleDateEndItem(orArray, ['datePosted'], entry);
-            break;
-          default:
-            if (schemaName === constants.PROJECT) {
-              for(let field of fields) {
-                orArray.push(getConvertedValue(field, entry));
-              }
-              break;
-            } else {
-              orArray.push(getConvertedValue(fields[0], entry));
-              break;
-            }
-        }
-        expArray.push({ $or: orArray });
-      }
-    }));
-  }
-  console.log("expArray:", expArray);
-  return expArray;
-};
-
-const handleProjectTerms = function(item) {
-  let legislation_items = [];
-  //leave _id as is, for project details calls
-  if (item === '_id') {
-    legislation_items.push(item)
-    return legislation_items;
-  }
-
-  if (item === 'decisionDateStart' || item === 'decisionDateEnd') {
-    item = 'decisionDate';
-  }
-  // prepend for embedded fields
-  let legislations = ['legislation_1996', 'legislation_2002', 'legislation_2018'];
-  for (let legis of legislations) {
-    legislation_items.push(legis + '.' + item)
-  }
-  return legislation_items;
-}
-
-const getConvertedValue = function (item, entry) {
-  if (isNaN(entry)) {
-    if (isValidObjectId(entry)) {
-      console.log("objectid");
-      // ObjectID
-      return { [item]: mongoose.Types.ObjectId(entry) };
-    } else if (entry === 'true') {
-      console.log("bool");
-      // Bool
-      var tempObj = {};
-      tempObj[item] = true;
-      tempObj.active = true;
-      return tempObj;
-    } else if (entry === 'false') {
-      console.log("bool");
-      // Bool
-      return { [item]: false };
-    } else {
-      console.log("string");
-      return { [item]: entry };
-    }
-  } else {
-    console.log("number");
-    return { [item]: parseInt(entry) };
-  }
-};
-
-const handlePCPItem = async function (roles, expArray, value) {
-  if (Array.isArray(value)) {
-    // Arrays are a list of options so will always be ors
-    var orArray = [];
-    // Note that we need map and not forEach here because Promise.all uses
-    // the returned array!
-    await Promise.all(value.map(async entry => {
-      orArray.push(await getPCPValue(roles, entry));
-    }));
-    expArray.push({ $or: orArray });
-  } else {
-    expArray.push(await getPCPValue(roles, value));
-  }
-};
-
-const getPCPValue = async function (roles, entry) {
-  console.log('pcp: ', entry);
-
-  var query = null;
-  var now = new Date();
-
-  switch (entry) {
-    case 'pending':
-      var in7days = new Date();
-      in7days.setDate(now.getDate() + 7);
-
-      query = {
-        _schemaName: constants.COMMENT_PERIOD,
-        $and: [
-          { dateStarted: { $gt: now } },
-          { dateStarted: { $lte: in7days } }
-        ]
-      };
-      break;
-
-    case 'open':
-      query = {
-        _schemaName: constants.COMMENT_PERIOD,
-        $and: [
-          { dateStarted: { $lte: now } },
-          { dateCompleted: { $gt: now } }
-        ]
-      };
-      break;
-
-    case 'closed':
-      query = {
-        _schemaName: constants.COMMENT_PERIOD,
-        dateCompleted: { $lt: now }
-      };
-      break;
-
-    default:
-      console.log('Unknown PCP entry');
-  }
-
-  var pcp = {};
-
-  if (query) {
-    var data = await Utils.runDataQuery(constants.COMMENT_PERIOD, roles, query, ['project'], null, null, null, null, false, null);
-    var ids = _.map(data, 'project');
-    pcp = { _id: { $in: ids } };
-  }
-
-  console.log('pcp', pcp);
-  return pcp;
-};
-
-const handleDateStartItem = function (expArray, field, entry) {
-  var date = new Date(entry);
-
-  // Validate: valid date?
-  if (!isNaN(date)) {
-    var start = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-    expArray.push({ [field]: { $gte: start } });
-  }
-};
-
-const handleDateEndItem = function (expArray, field, entry) {
-  var date = new Date(entry);
-
-  // Validate: valid date?
-  if (!isNaN(date)) {
-    var end = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1);
-    expArray.push({ [field]: { $lt: end } });
-  }
-};
+const createItemAggr = require('../aggregators/itemAggregator').createItemAggr;
+const searchAggregator = require('../aggregators/searchAggregator');
 
 const searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue) {
   const aggregateCollation = {
@@ -246,7 +25,8 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   defaultLog.info('collation:', aggregateCollation);
   defaultLog.info('populate:', populate);
   
-  let aggregation = await createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles)
+  // Create main matching aggregation.
+  let aggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles)
 
   // Create appropriate aggregations for the schema.
   let schemaAggregation;
@@ -280,53 +60,11 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
       break;
   }
 
-  // Combine aggregations;
-  aggregation = [...aggregation, ...schemaAggregation];
+  // Create the sorting and paging aggregations.
+  const sortingPagingAggr = searchAggregator.createSortingPagingAggr(schemaName, sortingValue, sortField, sortDirection, pageNum, pageSize);
 
-  aggregation.push({
-    $redact: {
-      $cond: {
-        if: {
-          // This way, if read isn't present, we assume public no roles array.
-          $and: [
-            { $cond: { if: "$read", then: true, else: false } },
-            {
-              $anyElementTrue: {
-                $map: {
-                  input: "$read",
-                  as: "fieldTag",
-                  in: { $setIsSubset: [["$$fieldTag"], roles] }
-                }
-              }
-            }
-          ]
-        },
-        then: "$$KEEP",
-        else: {
-          $cond: { if: "$read", then: "$$PRUNE", else: "$$DESCEND" }
-        }
-      }
-    }
-  });
-
-  aggregation.push({
-    $addFields: {
-      score: { $meta: "textScore" }
-    }
-  });
-
-  const sortingPagingAggr = createSortingPagingAggr(schemaName, sortingValue, sortField, sortDirection, pageNum, pageSize);
-
-  aggregation.push({
-    $facet: {
-      searchResults: sortingPagingAggr,
-      meta: [
-        {
-          $count: "searchResultsTotal"
-        }
-      ]
-    }
-  });
+  // Combine all the aggregations.
+  aggregation = [...aggregation, ...schemaAggregation, ...sortingPagingAggr];
 
   return new Promise(function (resolve, reject) {
     var collectionObj = mongoose.model(schemaName);
@@ -340,7 +78,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   });
 };
 
-const executeQuery = async function (args, res, next) {
+const executeQuery = async function (args, res) {
   const _id = args.swagger.params._id ? args.swagger.params._id.value : null;
   const roles = args.swagger.params.auth_payload ? args.swagger.params.auth_payload.realm_access.roles : ['public'];
   const keywords = args.swagger.params.keywords.value;
@@ -388,7 +126,7 @@ const executeQuery = async function (args, res, next) {
   defaultLog.info("sortField:", sortField);
   defaultLog.info("sortDirection:", sortDirection);
 
-  if (dataset !== 'Item') {
+  if (dataset !== constants.ITEM) {
     const collectionData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue);
     
     // TODO: this should be moved into the aggregation.
@@ -403,86 +141,13 @@ const executeQuery = async function (args, res, next) {
 
     return Actions.sendResponse(res, 200, collectionData);
 
-  } else if (dataset === 'Item') {
+  } else if (dataset === constants.ITEM) {
     const collectionObj = mongoose.model(args.swagger.params._schemaName.value);
+    const aggregation = createItemAggr(args.swagger.params._id.value, args.swagger.params._schemaName.value, roles);
 
-    let aggregation = [
-      {
-        "$match": { _id: mongoose.Types.ObjectId(args.swagger.params._id.value) }
-      },
-      {
-        $redact: {
-          $cond: {
-            if: {
-              // This way, if read isn't present, we assume public no roles array.
-              $and: [
-                { $cond: { if: "$read", then: true, else: false } },
-                {
-                  $anyElementTrue: {
-                    $map: {
-                      input: "$read",
-                      as: "fieldTag",
-                      in: { $setIsSubset: [["$$fieldTag"], roles] }
-                    }
-                  }
-                }
-              ]
-            },
-            then: "$$KEEP",
-            else: {
-              $cond: { if: "$read", then: "$$PRUNE", else: "$$DESCEND" }
-            }
-          }
-        }
-      }
-    ];
+    let data = await collectionObj.aggregate(aggregation);
 
-    if (args.swagger.params._schemaName.value === 'Inspection') {
-      // pop elements and their items.
-      aggregation.push(
-        {
-          '$lookup': {
-            "from": "epic",
-            "localField": "elements",
-            "foreignField": "_id",
-            "as": "elements"
-          }
-        }
-      );
-      aggregation.push({
-        "$lookup": {
-          "from": "epic",
-          "localField": "project",
-          "foreignField": "_id",
-          "as": "project"
-        }
-      });
-      aggregation.push({
-        "$addFields": {
-          project: "$project",
-        }
-      });
-      aggregation.push({
-        "$unwind": {
-          "path": "$project",
-          "preserveNullAndEmptyArrays": true
-        }
-      });
-    } else if (args.swagger.params._schemaName.value === 'InspectionElement') {
-      aggregation.push(
-        {
-          '$lookup': {
-            "from": "epic",
-            "localField": "items",
-            "foreignField": "_id",
-            "as": "items"
-          }
-        }
-      );
-    }
-    var data = await collectionObj.aggregate(aggregation);
-
-    if (args.swagger.params._schemaName.value === 'Comment') {
+    if (args.swagger.params._schemaName.value === constants.COMMENT) {
       // Filter
       _.each(data, function (item) {
         if (item.isAnonymous === true) {
@@ -491,142 +156,17 @@ const executeQuery = async function (args, res, next) {
       });
     }
 
-    if (args.swagger.params._schemaName.value === 'Project') {
+    if (args.swagger.params._schemaName.value === constants.PROJECT) {
       // If we are a project, and we are not authed, we need to sanitize some fields.
       data = Utils.filterData(args.swagger.params._schemaName.value, data, roles);
     }
+
     return Actions.sendResponse(res, 200, data);
   } else {
     console.log('Bad Request');
     return Actions.sendResponse(res, 400, {});
   }
 };
-
-
-/**
- * Create an aggregation that sets the sorting and paging for a query.
- * 
- * @param {string} schemaName Schema being searched on
- * @param {array} sortValues Values to sort by
- * @param {string} sortField Single field to sort by
- * @param {number} sortDirection Direction of sort
- * @param {number} pageNum Page number to offset results by
- * @param {number} pageSize Result set size
- * 
- * @returns {array} Aggregation of sorting and paging
- */
-const createSortingPagingAggr = function(schemaName, sortValues, sortField, sortDirection, pageNum, pageSize) {
-  const searchResultAggregation = [];
-  let defaultTwoSorts = false;
-
-  if (schemaName === constants.DOCUMENT &&  sortValues['datePosted'] === -1 || sortValues['score'] === -1){
-    defaultTwoSorts = true;
-  } else if (schemaName === constants.DOCUMENT && Object.keys(sortValues).length > 1 ){
-    // If there are more than two values, but they're not the default values ignore the second value
-    const keysArr = Object.keys(sortValues);
-    const tempSortValue = {};
-    tempSortValue[keysArr[0]] = sortValues[keysArr[0]];
-    sortValues = tempSortValue;
-  }else {
-    sortValues = {};
-    sortValues[sortField] = sortDirection;
-  }
-
-  // We don't want to have sort in the aggregation if the front end doesn't need sort.
-  if (sortField && sortDirection) {
-
-    if (defaultTwoSorts){
-      searchResultAggregation.push(
-
-        { $addFields: {
-          "date": 
-            { $dateToString: {
-              "format": "%Y-%m-%d", "date": "$datePosted"
-            }}
-          
-        }},
-        { "$sort": { "date": -1, "displayName": 1 }}
-
-      );
-    } else {
-      searchResultAggregation.push(
-        {
-          $sort: sortValues
-        }
-      );
-    }
-
-  }
-
-  searchResultAggregation.push(
-    {
-      $skip: pageNum * pageSize
-    },
-    {
-      $limit: pageSize
-    }
-  );
-
-  return searchResultAggregation;
-};
-
-/**
- * Create an aggregation that sets the matching criteria.
- * 
- * @param {string} schemaName Schema being searched on
- * @param {string} projectId Project ID
- * @param {string} keywords List of keywords to search on
- * @param {boolean} caseSensitive Case sensitive search?
- * @param {array} orModifier Search criteria for an 'or' search
- * @param {array} andModifier Search criteria for an 'and' search
- * @param {array} roles User's roles
- * 
- * @returns {array} Aggregation for a match
- */
-const createMatchAggr = async function(schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, roles) {
-  const aggregation = [];
-  let projectModifier;
-  let keywordModifier;
-
-  if (projectId) {
-    projectModifier = { project: mongoose.Types.ObjectId(projectId) };
-  }
-
-  if (keywords) {
-    keywordModifier = { $text: { $search: keywords, $caseSensitive: caseSensitive } };
-  }
-
-  // query modifiers
-  const andExpArray = await generateExpArray(andModifier, roles, schemaName);
-
-  // filters
-  const orExpArray = await generateExpArray(orModifier, roles, schemaName);
-
-  let modifier = {};
-  if (andExpArray.length > 0 && orExpArray.length > 0) {
-    modifier = { $and: [{ $and: andExpArray }, { $or: orExpArray }] };
-  } else if (andExpArray.length === 0 && orExpArray.length > 0) {
-    modifier = { $and: orExpArray };
-  } else if (andExpArray.length > 0 && orExpArray.length === 0) {
-    modifier = { $and: andExpArray };
-  }
-
-  aggregation.push({
-    $match: {
-      _schemaName: schemaName,
-      ...(isEmpty(modifier) ? undefined : modifier),
-      ...(projectModifier ? projectModifier : undefined),
-      ...(keywordModifier ? keywordModifier : undefined),
-      $or: [
-        { isDeleted: { $exists: false } },
-        { isDeleted: false },
-      ]
-    } 
-  });
-
-  return aggregation;
-};
-
 
 /***** Exported functions  *****/
 exports.publicGet = async function (args, res, next) {
@@ -637,6 +177,6 @@ exports.protectedGet = function (args, res, next) {
   executeQuery(args, res, next);
 };
 
-exports.protectedOptions = function (args, res, next) {
+exports.protectedOptions = function (args, res) {
   res.status(200).send();
 };
