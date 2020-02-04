@@ -59,11 +59,11 @@ def getChangeLog(pastBuilds) {
   return log;
 }
 
-String testPodLabel = "node-tester-static";
-println testPodLabel;
 def nodejsTester () {
   openshift.withCluster() {
     openshift.withProject() {
+      String testPodLabel = "node-tester-${UUID.randomUUID().toString()}";
+      println testPodLabel;
       podTemplate(
         label: testPodLabel,
         name: testPodLabel,
