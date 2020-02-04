@@ -127,7 +127,6 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
 
   // We don't want to have sort in the aggregation if the front end doesn't need sort.
   if (sortField && sortDirection) {
-
     if (defaultTwoSorts){
       searchResultAggregation.push(
 
@@ -175,22 +174,22 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
 };
 
 const generateExpArray = async (field, roles, schemaName) => {
-  var expArray = [];
-  if (field && field != undefined) {
-    var queryString = qs.parse(field);
+  const expArray = [];
+  if (field) {
+    const queryString = qs.parse(field);
     console.log("queryString:", queryString);
-    // Note that we need map and not forEach here because Promise.all uses
-    // the returned array!
+
     await Promise.all(Object.keys(queryString).map(async item => {
-      var entry = queryString[item];
+      const entry = queryString[item];
       console.log("item:", item, entry);
-      var orArray = [];
+      const orArray = [];
+
       if (item === 'pcp') {
         await handlePCPItem(roles, expArray, entry);
       } else if (Array.isArray(entry)) {
         // Arrays are a list of options so will always be ors
         if (schemaName === constants.PROJECT) {
-          var fields = handleProjectTerms(item);
+          const fields = handleProjectTerms(item);
           fields.map(field => {
             entry.map(element => {
               orArray.push(getConvertedValue(field, element));
@@ -201,6 +200,7 @@ const generateExpArray = async (field, roles, schemaName) => {
             orArray.push(getConvertedValue(item, element));
           });
         }
+
         expArray.push({ $or: orArray });
       } else {
         let fields = []
@@ -209,6 +209,7 @@ const generateExpArray = async (field, roles, schemaName) => {
         } else {
           fields.push(item)
         }
+
         switch (item) {
           case 'decisionDateStart':
             for(let field of fields) {
@@ -237,10 +238,12 @@ const generateExpArray = async (field, roles, schemaName) => {
               break;
             }
         }
+
         expArray.push({ $or: orArray });
       }
     }));
   }
+
   console.log("expArray:", expArray);
   return expArray;
 };
@@ -249,18 +252,20 @@ const handleProjectTerms = (item) => {
   let legislation_items = [];
   //leave _id as is, for project details calls
   if (item === '_id') {
-    legislation_items.push(item)
+    legislation_items.push(item);
     return legislation_items;
   }
 
   if (item === 'decisionDateStart' || item === 'decisionDateEnd') {
     item = 'decisionDate';
   }
+
   // prepend for embedded fields
   let legislations = ['legislation_1996', 'legislation_2002', 'legislation_2018'];
   for (let legis of legislations) {
-    legislation_items.push(legis + '.' + item)
+    legislation_items.push(legis + '.' + item);
   }
+
   return legislation_items;
 }
 
@@ -273,7 +278,7 @@ const getConvertedValue = (item, entry) => {
     } else if (entry === 'true') {
       console.log("bool");
       // Bool
-      var tempObj = {};
+      const tempObj = {};
       tempObj[item] = true;
       tempObj.active = true;
       return tempObj;
@@ -294,7 +299,7 @@ const getConvertedValue = (item, entry) => {
 const handlePCPItem = async (roles, expArray, value) => {
   if (Array.isArray(value)) {
     // Arrays are a list of options so will always be ors
-    var orArray = [];
+    const orArray = [];
     // Note that we need map and not forEach here because Promise.all uses
     // the returned array!
     await Promise.all(value.map(async entry => {
@@ -318,12 +323,12 @@ const isValidObjectId = (str) => {
 const getPCPValue = async (roles, entry) => {
   console.log('pcp: ', entry);
 
-  var query = null;
-  var now = new Date();
+  let query = null;
+  const now = new Date();
+  const in7days = new Date();
 
   switch (entry) {
     case 'pending':
-      var in7days = new Date();
       in7days.setDate(now.getDate() + 7);
 
       query = {
@@ -359,8 +364,8 @@ const getPCPValue = async (roles, entry) => {
   var pcp = {};
 
   if (query) {
-    var data = await Utils.runDataQuery(constants.COMMENT_PERIOD, roles, query, ['project'], null, null, null, null, false, null);
-    var ids = _.map(data, 'project');
+    const data = await Utils.runDataQuery(constants.COMMENT_PERIOD, roles, query, ['project'], null, null, null, null, false, null);
+    const ids = _.map(data, 'project');
     pcp = { _id: { $in: ids } };
   }
 
@@ -369,27 +374,27 @@ const getPCPValue = async (roles, entry) => {
 };
 
 const handleDateStartItem = (expArray, field, entry) => {
-  var date = new Date(entry);
+  const date = new Date(entry);
 
   // Validate: valid date?
   if (!isNaN(date)) {
-    var start = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    const start = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
     expArray.push({ [field]: { $gte: start } });
   }
 };
 
 const handleDateEndItem = (expArray, field, entry) => {
-  var date = new Date(entry);
+  const date = new Date(entry);
 
   // Validate: valid date?
   if (!isNaN(date)) {
-    var end = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1);
+    const end = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1);
     expArray.push({ [field]: { $lt: end } });
   }
 };
 
 const isEmpty = (obj) => {
-  for (var key in obj) {
+  for (let key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key))
       return false;
   }
