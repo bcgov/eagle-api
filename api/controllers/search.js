@@ -445,6 +445,7 @@ var searchCollection = async function (roles, keywords, schemaName, pageNum, pag
   // optional search keys
   var searchProperties = undefined;
   if (keywords) {
+    keywords = decodeURIComponent(keywords);
     searchProperties = { $text: { $search: keywords, $caseSensitive: caseSensitive } };
   }
 
