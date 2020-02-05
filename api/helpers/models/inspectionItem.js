@@ -28,5 +28,6 @@ module.exports = require ('../models')('InspectionItem', {
     internalExt      : { type:String, default:'' },
     internalSize     : { type:String, default:'' },
     internalMime     : { type:String, default:'' },
+    itemId           : { type:String, index: true }
 
 }, 'epic');

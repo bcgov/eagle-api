@@ -43,6 +43,7 @@ factory.define(factoryName, Inspection, buildOptions => {
     , elements  : [require('mongoose').Types.ObjectId(), require('mongoose').Types.ObjectId(), require('mongoose').Types.ObjectId()]
     , customProjectName: ''
     , project   : require('mongoose').Types.ObjectId()
+    , inspectionId: "abc123-abc123-abc123"
   };
   return attrs;
 });

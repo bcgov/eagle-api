@@ -25,5 +25,7 @@ module.exports = require ('../models')('Inspection', {
     endDate   : { type: Date, default: Date.now() },
     elements  : [{ type: 'ObjectId', ref:'InspectionElement', default:null }],
     customProjectName     : { type:String, default:'' },
-    project   : { type:'ObjectId', ref:'Project', default:null }
+    project   : { type:'ObjectId', ref:'Project', default:null },
+    // Inspection ID from the mobile app perspective.
+    inspectionId   : { type:'String', index: true }
 }, 'epic');
