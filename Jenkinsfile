@@ -73,7 +73,7 @@ def nodejsTester () {
         containers: [
           containerTemplate(
             name: 'jnlp',
-            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7:v3.11.161',
+            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
             resourceRequestCpu: '500m',
             resourceLimitCpu: '1000m',
             resourceRequestMemory: '2Gi',
