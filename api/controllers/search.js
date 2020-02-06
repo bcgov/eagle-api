@@ -58,6 +58,98 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     default:
       schemaAggregation = [];
       break;
+<<<<<<< HEAD
+=======
+    }
+    return {projectLegislationDataKey, projectLegislationDataIdKey: projectLegislationDataKey + "._id"};
+
+};
+
+// TODO: make more generic
+var setProjectDefault = function(aggregation, projectOnly) {
+  if (projectOnly) {
+    // variables are tricky for fieldpaths ie. "default"
+    aggregation.push(
+      {
+        $addFields: {
+          "default": {
+            $switch: {
+              branches: [
+                { 
+                  case: { $eq: [ "$currentLegislationYear", 'legislation_1996' ]},
+                  then: "$legislation_1996"
+                },
+                {
+                  case: { $eq: [ "$currentLegislationYear", 'legislation_2002' ]},
+                  then: "$legislation_2002"
+                },
+                {
+                  case: { $eq: [ "$currentLegislationYear", 'legislation_2018' ]},
+                  then: "$legislation_2018"
+                }
+              ], default: "$legislation_2002"
+            }
+          }
+        }
+      }
+    );
+  } else {
+    aggregation.push(
+      {
+        $addFields: {
+          'project.default': {
+            $switch: {
+              branches: [
+                { 
+                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_1996' ]},
+                  then: "$project.legislation_1996"
+                },
+                {
+                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2002' ]},
+                  then: "$project.legislation_2002"
+                },
+                {
+                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2018' ]},
+                  then: "$project.legislation_2018"
+                }
+              //TODO: watch out for the default case. If we hit this then we will have empty projects
+              ], default: "$project.legislation_2002"
+            }
+          }
+        }
+      }
+    );
+  }
+}
+
+var searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue) {
+  var properties = undefined;
+  var defaultTwoSorts = false;
+  if (project) {
+    properties = { project: mongoose.Types.ObjectId(project) };
+  }
+
+  // optional search keys
+  var searchProperties = undefined;
+  if (keywords) {
+    keywords = decodeURIComponent(keywords);
+    searchProperties = { $text: { $search: keywords, $caseSensitive: caseSensitive } };
+  }
+
+  // query modifiers
+  var andExpArray = await generateExpArray(and, roles, schemaName);
+
+  // filters
+  var orExpArray = await generateExpArray(or, roles, schemaName);
+
+  var modifier = {};
+  if (andExpArray.length > 0 && orExpArray.length > 0) {
+    modifier = { $and: [{ $and: andExpArray }, { $or: orExpArray }] };
+  } else if (andExpArray.length === 0 && orExpArray.length > 0) {
+    modifier = { $and: orExpArray };
+  } else if (andExpArray.length > 0 && orExpArray.length === 0) {
+    modifier = { $and: andExpArray };
+>>>>>>> b4bb01e58027fed1625b3a3bcbcb0afc5c6e9554
   }
 
   // Create the sorting and paging aggregations.

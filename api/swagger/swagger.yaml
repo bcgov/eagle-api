@@ -2707,6 +2707,11 @@ paths:
           required: false
           type: string
           description: "Type"
+        - name: itemId
+          in: formData
+          required: true
+          type: string
+          description: "Unique ID of the item in the mobile device"
         - name: caption
           in: formData
           required: false

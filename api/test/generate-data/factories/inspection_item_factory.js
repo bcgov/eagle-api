@@ -48,6 +48,7 @@ factory.define(factoryName, InspectionItem, buildOptions => {
     , internalExt      : ""
     , internalSize     : ""
     , internalMime     : ""
+    , itemId: "abc789-abc789-abc789"
   };
 
   switch(attrs.type) {
