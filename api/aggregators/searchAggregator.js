@@ -197,7 +197,7 @@ const generateExpArray = async (field, roles, schemaName) => {
           })
         } else {
           entry.map(element => {
-            orArray.push(getConvertedValue(item, element));
+            return orArray.push(getConvertedValue(item, element));
           });
         }
 
@@ -241,6 +241,7 @@ const generateExpArray = async (field, roles, schemaName) => {
 
         expArray.push({ $or: orArray });
       }
+      return null;
     }));
   }
 
@@ -303,7 +304,7 @@ const handlePCPItem = async (roles, expArray, value) => {
     // Note that we need map and not forEach here because Promise.all uses
     // the returned array!
     await Promise.all(value.map(async entry => {
-      orArray.push(await getPCPValue(roles, entry));
+      return orArray.push(await getPCPValue(roles, entry));
     }));
     expArray.push({ $or: orArray });
   } else {
