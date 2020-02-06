@@ -23,5 +23,6 @@ module.exports = require ('../models')('InspectionElement', {
     timestamp   : { type: Date, default: Date.now() },
     // Items
     items: [{ type:'ObjectId', ref:'InspectionItems', default:null }],
+    elementId: { type:'String', index: true }
 
 }, 'epic');

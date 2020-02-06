@@ -66,15 +66,6 @@ const projectBuilds = [
     , "new"
 ];
 
-const currentPhaseNames = [
-    "Decision"
-    , "Determination"
-    , "Intake"
-    , "Post-Certification"
-    , "Review"
-    , "Scope"
-];
-
 const regions = [
     "Cariboo"
     , "Kootenay"
@@ -184,7 +175,8 @@ factory.define(factoryName, Project, buildOptions =>{
         , CEAALink                : "https://www.ceaa-acee.gc.ca/050/evaluations/proj/" + faker.random.number(99999) + "?culture=en-CA"
         , code                    : projectName.replace(/[^A-Z0-9]/ig, "-").replace(/(\-)(\1+)/, "-").toLowerCase()
         , commodity               : ""
-        , currentPhaseName        : faker.random.arrayElement(currentPhaseNames)
+        , currentPhaseName        : mongTypes.ObjectId()
+        , phaseHistory            : [mongTypes.ObjectId()]
         , dateAdded               : dateAdded
         , dateCommentsClosed      : null
         , dateCommentsOpen        : null
