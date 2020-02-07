@@ -290,6 +290,10 @@ exports.publicDownload = function (args, res, next) {
       if (data && data.length === 1) {
         var blob = data[0];
 
+        // Make the filename returned match dislplay name, not blob name
+        // make sure the filename is VALID!
+        // Add project name to front, date uploaded to back if it will fit! 240 chars max
+
         var fileName = blob.documentFileName;
         var fileType = blob.internalExt;
         if (fileName.slice(- fileType.length) !== fileType) {
