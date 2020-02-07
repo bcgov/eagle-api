@@ -68,6 +68,7 @@ var tagList = [
   'projLead',
   'execProjectDirector',
   'complianceLead',
+  'featuredDocuments',
   'review180Start',
   'review45Start',
   'reviewSuspensions',

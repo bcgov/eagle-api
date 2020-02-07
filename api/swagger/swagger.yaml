@@ -157,6 +157,7 @@ definitions:
       - read
       - build
       - nature
+      - featuredDocuments
   TopicSortByFields:
     type: string
     description: "Optional fields to sort by (prefixed with + or - for order)"

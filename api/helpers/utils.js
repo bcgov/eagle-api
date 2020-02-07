@@ -172,6 +172,12 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
             "default.read": '$read'
           }
         },
+        // Add the featuredDocuments to the default group
+        (modelType === 'Project') &&  {
+          '$addFields': {
+            "default.featuredDocuments": "$featuredDocuments"
+          }
+        },
         (modelType === 'Project') && {
           "$replaceRoot": { newRoot:  "$default" }
         },
@@ -234,6 +240,11 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
             "project.default.pinsRead": '$project.pinsRead',
             "project.default._id": '$project._id',
             "project.default.read": '$project.read'
+          }
+        },
+        (modelType === 'Project' & populateProject) &&  {
+          '$addFields': {
+            "default.featuredDocuments": "$featuredDocuments"
           }
         },
         (modelType !== 'Project' && populateProject) && {
