@@ -167,12 +167,12 @@ const executeQuery = async function (args, res) {
 };
 
 /***** Exported functions  *****/
-exports.publicGet = async function (args, res, next) {
-  executeQuery(args, res, next);
+exports.publicGet = async function (args, res) {
+  executeQuery(args, res);
 };
 
-exports.protectedGet = function (args, res, next) {
-  executeQuery(args, res, next);
+exports.protectedGet = function (args, res) {
+  executeQuery(args, res);
 };
 
 exports.protectedOptions = function (args, res) {
