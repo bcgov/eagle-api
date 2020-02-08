@@ -46,6 +46,7 @@ module.exports = require ('../models')('Document', {
     legislationYearVetted : { type: Boolean, default: false },
 
     // TODO
-    labels           : [{ type: Mixed, default: {} }]
+    labels           : [{ type: Mixed, default: {} }],
+    isFeatured       : { type: Boolean, default: false }
 
 }, 'epic');

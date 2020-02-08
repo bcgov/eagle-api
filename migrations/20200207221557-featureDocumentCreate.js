@@ -26,11 +26,11 @@ exports.up = function(db)
     mClient = mClientInst;
     let p = mClient.collection('epic');
 
-    const query = { _schemaName: 'Project'};
-    const update = { $set: { featuredDocuments: [] }};
+    const query = { _schemaName: 'Document'};
+    const update = { $set: { isFeatured: false }};
     const options = { "upsert": false };
 
-    console.log('Adding featuredDocuments attribute to all project resources...');
+    console.log('Adding isFeatured attribute to all document resources...');
 
     p.updateMany(query, update, options)
     .then(result => {
@@ -38,7 +38,7 @@ exports.up = function(db)
       return result
     })
     .catch(err => { 
-      console.error(`Failed to update Project resources: ${err}`); 
+      console.error(`Failed to update document resources: ${err}`); 
       mClient.close() 
     });
   });

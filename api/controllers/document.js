@@ -676,3 +676,55 @@ exports.protectedDelete = async function (args, res, next) {
     return Actions.sendResponse(res, 400, e);
   }
 };
+
+exports.featureDocument = async function (args, res, next) {
+  try
+  {
+    if (args.swagger.params.docId && args.swagger.params.docId.value) 
+    {
+      let document = await mongoose.model('Document').findById(mongoose.Types.ObjectId(args.swagger.params.docId.value));
+      let project = await mongoose.model('Project').findById(mongoose.Types.ObjectId(document.project));
+      
+      if(project)
+      {
+        let featuredDocumentsCount = await mongoose.model('Document').count({ project: project._id, isFeatured: true }); 
+
+        // Move the magic number into a config
+        if(featuredDocumentsCount <= 5)
+        {
+          document.isFeatured = true;
+          document.save();
+
+          return Actions.sendResponse(res, 200, document);
+        }
+      }
+    } 
+
+    return Actions.sendResponse(res, 404, {});
+  }
+  catch(e)
+  {
+    return Actions.sendResponse(res, 500, {});
+  }
+};
+
+exports.unfeatureDocument = async function (args, res, next) {
+  try
+  {
+    if (args.swagger.params.docId && args.swagger.params.docId.value) 
+    {
+      let document = await mongoose.model('Document').findById(mongoose.Types.ObjectId(args.swagger.params.docId.value));
+      
+      document.isFeatured = false;
+      document.save();
+
+      return Actions.sendResponse(res, 200, document);
+    }
+
+    return Actions.sendResponse(res, 404, {});
+  }
+  catch(e)
+  {
+    return Actions.sendResponse(res, 500, {});
+  }
+};

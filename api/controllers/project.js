@@ -202,6 +202,10 @@ exports.publicGet = async function (args, res, next) {
     Utils.recordAction('Get', 'Project', 'public', args.swagger.params.projId && args.swagger.params.projId.value ? args.swagger.params.projId.value : null);
     // Sanitize for public.
     let sanitizedData = Utils.filterData('Project', data, ['public']);
+
+    // attach projects featuredDocument IDs
+    sanitizedData = Utils.attachFeaturedDocuments(sanitizedData);
+
     console.log("DA:", JSON.stringify(sanitizedData));
     return Actions.sendResponse(res, 200, sanitizedData);
   } catch (e) {
@@ -286,6 +290,10 @@ exports.protectedGet = async function (args, res, next) {
       commentPeriodPipeline);
     Utils.recordAction('Get', 'Project', args.swagger.params.auth_payload.preferred_username, args.swagger.params.projId && args.swagger.params.projId.value ? args.swagger.params.projId.value : null);
     serializeProjectVirtuals(data);
+
+    // attach projects featuredDocument IDs
+    data = Utils.attachFeaturedDocuments(data);
+
     defaultLog.info('Got comment project(s):', data);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
@@ -1336,10 +1344,8 @@ exports.getFeaturedDocumentsSecure = async function (args, res, next) {
   
       return Actions.sendResponse(res, 200, featuredDocs);
     } 
-    else 
-    {
-      return Actions.sendResponse(res, 404, {});
-    }
+
+    return Actions.sendResponse(res, 404, {});
   }
   catch(e)
   {
@@ -1350,21 +1356,10 @@ exports.getFeaturedDocumentsSecure = async function (args, res, next) {
 var fetchFeaturedDocuments = async function(project, sanitizeForPublic) {
   try 
   {
-    let documents = [];
-    
-    if(project.featuredDocuments)
-    {
-      for(let idx in project.featuredDocuments)
-      {
-        let documentId = project.featuredDocuments[idx];
-        let document = await mongoose.model('Document').findById(mongoose.Types.ObjectId(documentId));
+    let documents = await mongoose.model('Document').find({ project: project._id, isFeatured: true });
 
-        // Do we need to clean up any fields for the public side?
-        // if (sanitizeForPublic) {}
-
-        documents.push(document);
-      }
-    }
+    // Sanitize documets for public side?
+    // if(sanitizeForPublic) { }
 
     return documents;
   } 

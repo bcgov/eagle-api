@@ -363,6 +363,26 @@ exports.filterData = function (collection, data, roles) {
   }
 }
 
+exports.attachFeaturedDocuments = async function (projects) {
+  for(let itemIdx in projects)
+  {
+    let item = projects[itemIdx];
+    // attach the featuredDocuments
+    let featuredDocuments = await mongoose.model('Document').find({ project: item._id, isFeatured: true }); 
+    if (featuredDocuments) 
+    {
+      item.featuredDocuments = [];
+      
+      for(let docIdx in featuredDocuments) {
+        let doc = featuredDocuments[docIdx];
+        item.featuredDocuments.push(doc._id);
+      }
+    }
+  }
+
+  return projects;
+};
+
 // Generates all unique search terms up to a word limit.
 exports.generateSearchTerms = function (name, maxWordLimit) {
   if (!name) {
