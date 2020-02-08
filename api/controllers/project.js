@@ -1300,3 +1300,76 @@ var serializeProjectVirtuals = function (data) {
     }
   });
 }
+
+exports.getFeaturedDocuments = async function (args, res, next) {
+  try
+  {
+    if (args.swagger.params.projId && args.swagger.params.projId.value) 
+    {
+      var projectModel = mongoose.model('Project');
+      projectModel.findOne({ _id: args.swagger.params.projId.value }, async function (err, project) 
+      {
+        let featuredDocs = await fetchFeaturedDocuments(project, true);
+  
+        return Actions.sendResponse(res, 200, featuredDocs);
+      });
+    } 
+    else 
+    {
+      return Actions.sendResponse(res, 404, {});
+    }
+  }
+  catch(e)
+  {
+    return Actions.sendResponse(res, 500, {});
+  }
+};
+
+exports.getFeaturedDocumentsSecure = async function (args, res, next) {
+  try
+  {
+    if (args.swagger.params.projId && args.swagger.params.projId.value) 
+    {
+      let project = await mongoose.model('Project').findById(mongoose.Types.ObjectId(args.swagger.params.projId.value));
+      
+      let featuredDocs = await fetchFeaturedDocuments(project, false);
+  
+      return Actions.sendResponse(res, 200, featuredDocs);
+    } 
+    else 
+    {
+      return Actions.sendResponse(res, 404, {});
+    }
+  }
+  catch(e)
+  {
+    return Actions.sendResponse(res, 500, {});
+  }
+};
+
+var fetchFeaturedDocuments = async function(project, sanitizeForPublic) {
+  try 
+  {
+    let documents = [];
+    
+    if(project.featuredDocuments)
+    {
+      for(let idx in project.featuredDocuments)
+      {
+        let documentId = project.featuredDocuments[idx];
+        let document = await mongoose.model('Document').findById(mongoose.Types.ObjectId(documentId));
+
+        // Do we need to clean up any fields for the public side?
+        // if (sanitizeForPublic) {}
+
+        documents.push(document);
+      }
+    }
+
+    return documents;
+  } 
+  catch(e) 
+  {
+    throw Error(e);
+  }
+}
