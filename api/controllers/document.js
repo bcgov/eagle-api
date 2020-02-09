@@ -701,7 +701,7 @@ exports.featureDocument = async function (args, res, next) {
       }
     } 
 
-    return Actions.sendResponse(res, 404, {});
+    return Actions.sendResponse(res, 403, {});
   }
   catch(e)
   {
