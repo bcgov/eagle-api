@@ -204,7 +204,7 @@ exports.publicGet = async function (args, res, next) {
     let sanitizedData = Utils.filterData('Project', data, ['public']);
 
     // attach projects featuredDocument IDs
-    sanitizedData = Utils.attachFeaturedDocuments(sanitizedData);
+    sanitizedData = await Utils.attachFeaturedDocuments(sanitizedData);
 
     console.log("DA:", JSON.stringify(sanitizedData));
     return Actions.sendResponse(res, 200, sanitizedData);

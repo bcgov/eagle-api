@@ -694,9 +694,9 @@ exports.featureDocument = async function (args, res, next) {
         if(featuredDocumentsCount < 5)
         {
           document.isFeatured = true;
-          document.save();
+          let result = await document.save();
 
-          return Actions.sendResponse(res, 200, document);
+          return Actions.sendResponse(res, 200, result);
         }
       }
     } 
@@ -717,9 +717,9 @@ exports.unfeatureDocument = async function (args, res, next) {
       let document = await mongoose.model('Document').findById(mongoose.Types.ObjectId(args.swagger.params.docId.value));
       
       document.isFeatured = false;
-      document.save();
+      let result = await document.save();
 
-      return Actions.sendResponse(res, 200, document);
+      return Actions.sendResponse(res, 200, result);
     }
 
     return Actions.sendResponse(res, 404, {});

@@ -112,31 +112,12 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   const searchResultAggregation = [];
   let defaultTwoSorts = false;
 
-  if (schemaName === constants.DOCUMENT &&  sortValues['datePosted'] === -1 || sortValues['score'] === -1) {
+  if (schemaName === constants.DOCUMENT && sortValues['datePosted'] === -1 || sortValues['score'] === -1) {
     defaultTwoSorts = true;
-  } else if (schemaName === constants.DOCUMENT && Object.keys(sortValues).length > 1 ) {
-    // If there are more than two values, but they're not the default values ignore the second value
-    const keysArr = Object.keys(sortValues);
-    const tempSortValue = {};
-    tempSortValue[keysArr[0]] = sortValues[keysArr[0]];
-    sortValues = tempSortValue;
   } else {
-    sortValues = {};
-    // if sortField is null, this would create a broken sort
+    // if sortField is null, this would create a broken sort, so ignore it if its null
     if(sortField) {
       sortValues[sortField] = sortDirection;
-    }
-  }
-
-  // If this is a document search, enforce filtering
-  // by isFeatured. Featured documents should always
-  // be the first set of documents
-
-  if (schemaName === constants.DOCUMENT && !sortValues.hasOwnProperty('isFeatured')) {
-    sortValues.isFeatured = -1;
-    if (!sortField) {
-      sortField = 'isFeatured';
-      sortDirection = -1;
     }
   }
 
@@ -152,7 +133,8 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
             }}
           
         }},
-        { "$sort": { "date": -1, "displayName": 1 }}
+        { $sort: { isFeatured: -1, date: -1, displayName: 1 }}
+        // Also add isFeatured to the default document sort
 
       );
     } else {
@@ -162,7 +144,6 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
         }
       );
     }
-
   }
 
   searchResultAggregation.push(
@@ -184,7 +165,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
       ]
     }
   }];
-  
+    
   return combinedAggregation;
 };
 
