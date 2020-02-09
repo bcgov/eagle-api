@@ -132,7 +132,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   // by isFeatured. Featured documents should always
   // be the first set of documents
 
-  if (schemaName === constants.DOCUMENT) {
+  if (schemaName === constants.DOCUMENT && !sortValues.hasOwnProperty('isFeatured')) {
     sortValues.isFeatured = -1;
     if (!sortField) {
       sortField = 'isFeatured';
