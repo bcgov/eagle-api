@@ -73,7 +73,7 @@ exports.publicGet = async function (args, res, next) {
       query,
       getSanitizedFields(args.swagger.params.fields.value), // Fields
       null, // sort warmup
-      null, // sort
+      { isFeatured : -1 }, // sort
       null, // skip
       null, // limit
       false); // count
@@ -253,7 +253,7 @@ exports.protectedGet = async function (args, res, next) {
       query,
       getSanitizedFields(args.swagger.params.fields.value), // Fields
       null, // sort warmup
-      sort, // sort
+      { isFeatured : -1 }, // sort
       skip, // skip
       limit, // limit
       count); // count

@@ -122,7 +122,22 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
     sortValues = tempSortValue;
   } else {
     sortValues = {};
-    sortValues[sortField] = sortDirection;
+    // if sortField is null, this would create a broken sort
+    if(sortField) {
+      sortValues[sortField] = sortDirection;
+    }
+  }
+
+  // If this is a document search, enforce filtering
+  // by isFeatured. Featured documents should always
+  // be the first set of documents
+
+  if (schemaName === constants.DOCUMENT) {
+    sortValues.isFeatured = -1;
+    if (!sortField) {
+      sortField = 'isFeatured';
+      sortDirection = -1;
+    }
   }
 
   // We don't want to have sort in the aggregation if the front end doesn't need sort.
