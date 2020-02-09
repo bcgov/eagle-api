@@ -44,7 +44,8 @@ var getSanitizedFields = function (fields) {
       'description',
       'keywords',
       'isPublished',
-      'internalMime'], f) !== -1);
+      'internalMime',
+      'isFeatured'], f) !== -1);
   });
 }
 
@@ -690,7 +691,7 @@ exports.featureDocument = async function (args, res, next) {
         let featuredDocumentsCount = await mongoose.model('Document').count({ project: project._id, isFeatured: true }); 
 
         // Move the magic number into a config
-        if(featuredDocumentsCount <= 5)
+        if(featuredDocumentsCount < 5)
         {
           document.isFeatured = true;
           document.save();
