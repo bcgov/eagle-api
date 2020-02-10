@@ -37,7 +37,8 @@ var projectDataDefinition = {
   CEAALink                : { type: String, default: '' },
   code                    : { type: String, default: '' },
   commodity               : { type: String, default: '' },
-  currentPhaseName        : { type: String, default: '' },
+  currentPhaseName        : { type: 'ObjectId', default: null },
+  phaseHistory            : { type: Mixed, default: '' },
   dateAdded               : { type: String, default: '' },
   dateCommentsClosed      : { type: String, default: '' },
   dateCommentsOpen        : { type: String, default: '' },
@@ -89,7 +90,7 @@ var projectDataDefinition = {
   // Compliance & Enforcement Lead
   complianceLead          : { type: 'ObjectId', ref: 'User', default: null, index: true },
   //////////////////////
-  groups                   : [{ type: 'ObjectId', ref: 'Group', default: null, index: true }],
+  groups                   : [{ type: 'ObjectId', ref: 'Group', default: null, index: true }]
 };
 
 // actual project schema
@@ -108,7 +109,10 @@ var projectDefinition = {
   pins                    : [{ type: 'ObjectId', ref: 'Pin', index: true }],
   pinsRead                : [{ type: String, trim: true, default: '["project-system-admin"]' }],
   pinsHistory             : [{ type: Mixed, default: {} }],
-  links: [{ type: Mixed }]
+  links                   : [{ type: Mixed }],
+  // Featured Documents DocID list
+  featuredDocuments       : [{ type: 'ObjectId', ref: 'Document', default: [], index: true }]
+
 }
 
 var buildToNature = {};
