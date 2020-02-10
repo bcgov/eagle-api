@@ -26,7 +26,10 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   defaultLog.info('populate:', populate);
   
   // Create main matching aggregation.
-  let aggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles)
+  let aggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles);
+  const pagingAggregation = await searchAggregator.createPagingAggr(pageNum, pageSize);
+
+  aggregation = [...aggregation, ...pagingAggregation];
 
   // Create appropriate aggregations for the schema.
   let schemaAggregation;
@@ -61,7 +64,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   }
 
   // Create the sorting and paging aggregations.
-  const sortingPagingAggr = searchAggregator.createSortingPagingAggr(schemaName, sortingValue, sortField, sortDirection, pageNum, pageSize);
+  const sortingPagingAggr = searchAggregator.createSortingAggr(schemaName, sortingValue, sortField, sortDirection);
 
   // Combine all the aggregations.
   aggregation = [...aggregation, ...schemaAggregation, ...sortingPagingAggr];

@@ -97,19 +97,19 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
 };
 
 /**
- * Create an aggregation that sets the sorting and paging for a query.
+ * Create an aggregation that sets the sorting for a query.
  * 
  * @param {string} schemaName Schema being searched on
  * @param {array} sortValues Values to sort by
  * @param {string} sortField Single field to sort by
  * @param {number} sortDirection Direction of sort
- * @param {number} pageNum Page number to offset results by
- * @param {number} pageSize Result set size
  * 
  * @returns {array} Aggregation of sorting and paging
  */
- exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, sortDirection, pageNum, pageSize) {
-  const searchResultAggregation = [];
+ exports.createSortingAggr = function(schemaName, sortValues, sortField, sortDirection) {
+   // The aggregation must default to a blank match. This is because if no sort is added below
+   // an empty aggregation cannot be used with $facet. This will just match all documents.
+  const searchResultAggregation = [{ $match: {} }];
   let defaultTwoSorts = false;
 
   if (schemaName === constants.DOCUMENT &&  sortValues['datePosted'] === -1 || sortValues['score'] === -1) {
@@ -144,20 +144,10 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
       searchResultAggregation.push(
         {
           $sort: sortValues
-        }
+        },
       );
     }
-
   }
-
-  searchResultAggregation.push(
-    {
-      $skip: pageNum * pageSize
-    },
-    {
-      $limit: pageSize
-    },
-  );
 
   const combinedAggregation = [{
     $facet: {
@@ -171,6 +161,27 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   }];
   
   return combinedAggregation;
+};
+
+/**
+ * Sets the paging for a query.
+ * 
+ * @param {number} pageNum Page number to offset results by
+ * @param {number} pageSize Result set size
+ * 
+ * @returns {array} Aggregation of paging
+ */
+exports.createPagingAggr = function(pageNum, pageSize) {
+  const aggregation = [
+    {
+      $skip: pageNum * pageSize
+    },
+    {
+      $limit: pageSize
+    },
+  ];
+
+  return aggregation;
 };
 
 const generateExpArray = async (field, roles, schemaName) => {
