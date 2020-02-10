@@ -14,18 +14,18 @@ const SECURE_ROLES = ['sysadmin', 'staff'];
 // Exports
 
 // OPTIONS
-exports.publicOptions = function (args, res, rest) 
+exports.pinOptions = function (args, res, rest) 
 {
   res.status(200).send();
 };
 
-exports.protectedOptions = function (args, res, rest) 
+exports.pinOptionsProtected = function (args, res, rest) 
 {
   res.status(200).send();
 };
 
 // GET (Public, getPin)
-exports.publicPinGet = async function (args, res, next)
+exports.fetchPins = async function (args, res, next)
 {
     defaultLog.debug('>>> {GET}/Public/Projects/{id}/Pins');
 
@@ -72,7 +72,7 @@ exports.publicPinGet = async function (args, res, next)
 };
 
 // GET (Protected Only, getPin)
-exports.protectedPinGet = async function (args, res, next)
+exports.fetchPinsProtected = async function (args, res, next)
 {
     defaultLog.debug('>>> {GET}/Projects/{id}/Pins');
 
@@ -119,7 +119,7 @@ exports.protectedPinGet = async function (args, res, next)
 };
 
 // POST (Protected Only, createPin)
-exports.protectedPinCreate = async function (args, res, next)
+exports.pinCreate = async function (args, res, next)
 {
     defaultLog.debug('>>> {POST}/Projects/{id}/Pins');
 
@@ -171,7 +171,7 @@ exports.protectedPinCreate = async function (args, res, next)
 };
 
 // PUT (Protected Only, publishPin)
-exports.protectedPublishPin = async function (args, res, next)
+exports.publishPin = async function (args, res, next)
 {
     defaultLog.debug('>>> {PUT}/Projects/{id}/Pins/Publish');
 
@@ -214,7 +214,7 @@ exports.protectedPublishPin = async function (args, res, next)
 };
 
 // PUT (Protected Only, unPublishPin)
-exports.protectedUnPublishPin = async function (args, res, next)
+exports.unpublishPin = async function (args, res, next)
 {
     defaultLog.debug('>>> {PUT}/Projects/{id}/Pins/Unpublish');
 
@@ -257,7 +257,7 @@ exports.protectedUnPublishPin = async function (args, res, next)
 };
 
 // DELETE (Protected Only, deletePin)
-exports.protectedPinDelete = async function (args, res, next)
+exports.deletePin = async function (args, res, next)
 {
     defaultLog.debug('>>> {DELETE}/Projects/{projId}/Pins/{pinId}');
 

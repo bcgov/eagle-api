@@ -15,12 +15,12 @@ const SECURE_ROLES = ['sysadmin', 'staff'];
 // Exports
 
 // OPTIONS
-exports.publicOptions = function (args, res, rest) 
+exports.projectGroupOptions = function (args, res, rest) 
 {
   res.status(200).send();
 };
 
-exports.protectedOptions = function (args, res, rest) 
+exports.projectGroupOptionsProtected = function (args, res, rest) 
 {
   res.status(200).send();
 };
@@ -30,7 +30,7 @@ exports.protectedOptions = function (args, res, rest)
 // ? no getMemeber (resource)
 
 // POST (Protected only createGroup)
-exports.protectedAddGroup = async function (args, res, rest) 
+exports.createGroup = async function (args, res, rest) 
 {
     defaultLog.debug('>>> {POST} /Projects/{id}/Groups');
 
@@ -74,7 +74,7 @@ exports.protectedAddGroup = async function (args, res, rest)
 };
 
 // DELETE (Protected only deleteGroup)
-exports.protectedGroupDelete = async function (args, res, rest) 
+exports.deleteGroup = async function (args, res, rest) 
 {
     defaultLog.debug('>>> {DELETE} /Projects/{projId}/Groups/{groupId}');
 
@@ -118,7 +118,7 @@ exports.protectedGroupDelete = async function (args, res, rest)
 };
 
 // PUT (Protected only updateGroup)
-exports.protectedGroupPut = async function (args, res, rest) 
+exports.updateGroup = async function (args, res, rest) 
 {
     defaultLog.debug('>>> {PUT} /Projects/{projId}/Groups/{groupId}');
 
@@ -163,7 +163,7 @@ exports.protectedGroupPut = async function (args, res, rest)
 };
 
 // POST (Protected only createGroupMember)
-exports.protectedAddGroupMembers = async function (args, res, rest) 
+exports.createGroupMemeber = async function (args, res, rest) 
 {
     defaultLog.debug('>>> {POST} /Projects/{projId}/Groups/{groupId}/members');
 
@@ -209,7 +209,7 @@ exports.protectedAddGroupMembers = async function (args, res, rest)
 };
 
 // GET (Protected only getGroupMembers)
-exports.protectedGroupGetMembers = async function (args, res, rest) 
+exports.fetchGroupMemebers = async function (args, res, rest) 
 {
     defaultLog.debug('>>> {GET} /Projects/{projId}/Groups/{groupId}/members');
 
@@ -257,7 +257,7 @@ exports.protectedGroupGetMembers = async function (args, res, rest)
 };
 
 // DELETE (Protected only deleteGroupMember)
-exports.protectedDeleteGroupMembers = async function (args, res, rest) 
+exports.deleteGroupMember = async function (args, res, rest) 
 {
     defaultLog.debug('>>> {DELETE} /Projects/{projId}/Groups/{groupId}/members/{memberId}');
 

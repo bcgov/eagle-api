@@ -11,12 +11,7 @@ const Actions    = require('../helpers/actions');
 // Exports
 
 // OPTIONS
-exports.publicOptions = function (args, res, rest) 
-{
-  res.status(200).send();
-};
-
-exports.protectedOptions = function (args, res, rest) 
+exports.topLevelOptions = function (args, res, rest) 
 {
   res.status(200).send();
 };

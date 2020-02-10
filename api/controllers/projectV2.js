@@ -45,18 +45,18 @@ async function getProjectHandler(roles, params)
 // Exports
 
 // OPTIONS
-exports.publicOptions = function (args, res, rest) 
+exports.projectOptions = function (args, res, rest) 
 {
   res.status(200).send();
 };
 
-exports.protectedOptions = function (args, res, rest) 
+exports.projectOptionsProtected = function (args, res, rest) 
 {
   res.status(200).send();
 };
 
 // HEAD
-exports.publicHead = async function (args, res, next) 
+exports.projectHead = async function (args, res, next) 
 {
     defaultLog.debug('>>> {HEAD}/Public/Projects');
 
@@ -78,7 +78,7 @@ exports.publicHead = async function (args, res, next)
     }
 };
 
-exports.protectedHead = async function (args, res, next) 
+exports.projectHeadProtected = async function (args, res, next) 
 {
     defaultLog.debug('>>> {HEAD}/Projects');
 
@@ -101,7 +101,7 @@ exports.protectedHead = async function (args, res, next)
 };
 
 // GET (Public/Protected)
-exports.publicGet = async function (args, res, next) 
+exports.fetchProjects = async function (args, res, next) 
 {
     defaultLog.debug('>>> {GET}/Public/Projects');
 
@@ -123,7 +123,7 @@ exports.publicGet = async function (args, res, next)
     }
 };
 
-exports.protectedGet = async function (args, res, next) 
+exports.fetchProjectsProtected = async function (args, res, next) 
 {
     defaultLog.debug('>>> {GET}/Projects');
 
@@ -146,7 +146,7 @@ exports.protectedGet = async function (args, res, next)
 };
 
 // POST (Protected Only, createProject)
-exports.protectedPost = async function (args, res, next) 
+exports.createProject = async function (args, res, next) 
 {
     defaultLog.debug('>>> {POST}/Projects');
 
@@ -190,7 +190,7 @@ exports.protectedPost = async function (args, res, next)
 };
 
 // PUT (Protected Only updateProject)
-exports.protectedPut = async function (args, res, next) 
+exports.updateProject = async function (args, res, next) 
 {
     defaultLog.debug('>>> {PUT}/Projects');
 
@@ -234,7 +234,7 @@ exports.protectedPut = async function (args, res, next)
 };
 
 // DELETE (Protected Only, deleteProject)
-exports.protectedDelete = async function (args, res, next) 
+exports.deleteProject = async function (args, res, next) 
 {
     defaultLog.debug('>>> {DELETE}/Projects');
 
@@ -280,7 +280,7 @@ exports.protectedDelete = async function (args, res, next)
 };
 
 // PUT (Protected Only, publishProject)
-exports.protectedPublish = async function (args, res, next) 
+exports.publishProject = async function (args, res, next) 
 {
     defaultLog.debug('>>> {PUT}/Projects{id}/Publish');
 
@@ -322,7 +322,7 @@ exports.protectedPublish = async function (args, res, next)
 };
 
 // PUT (Protected Only, unPublishProject)
-exports.protectedUnPublish = async function (args, res, next) 
+exports.unPublishProject = async function (args, res, next) 
 {
     defaultLog.debug('>>> {PUT}/Projects{id}/Unpublish');
 
@@ -367,7 +367,7 @@ exports.protectedUnPublish = async function (args, res, next)
 // these could also be broken out of project controller and put into an extension controller
 
 // POST (Protected Only, createExtension)
-exports.protectedExtensionAdd = async function (args, res, next)
+exports.createProjectExtension = async function (args, res, next)
 {
     defaultLog.debug('>>> {POST}/Projects/{id}/Extensions');
 
@@ -411,7 +411,7 @@ exports.protectedExtensionAdd = async function (args, res, next)
 };
 
 // PUT (Protected Only, updateExtension)
-exports.protectedExtensionUpdate = async function (args, res, next)
+exports.updateProjectExtension = async function (args, res, next)
 {
     defaultLog.debug('>>> {PUT}/Projects/{id}/Extensions');
 
@@ -455,7 +455,7 @@ exports.protectedExtensionUpdate = async function (args, res, next)
 };
 
 // DELETE (Protected Only, deleteExtension)
-exports.protectedExtensionDelete = async function (args, res, next)
+exports.deleteProjectExtension = async function (args, res, next)
 {
     defaultLog.debug('>>> {DELETE}/Projects/{id}/Extensions');
 
@@ -497,3 +497,63 @@ exports.protectedExtensionDelete = async function (args, res, next)
         defaultLog.debug('<<< {DELETE}/Projects/{id}/Extensions');
     }
 };
+
+exports.fetchFeaturedDocuments = async function (args, res, next) 
+{
+    try
+    {
+        if (args.swagger.params.projId && args.swagger.params.projId.value) 
+        {
+            let projectModel = mongoose.model('Project');
+            projectModel.findOne({ _id: args.swagger.params.projId.value }, async function (err, project) 
+            {
+            let featuredDocs = await getFeaturedDocuments(project, true);
+        
+            return Actions.sendResponse(res, 200, featuredDocs);
+            });
+        } 
+        else 
+        {
+            return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found'});
+        }
+    }
+    catch(e)
+    {
+        return Actions.sendResponse(res, 500, {});
+    }
+};
+  
+exports.fetchFeaturedDocumentsSecure = async function (args, res, next) 
+{
+    try
+    {
+        if (args.swagger.params.projId && args.swagger.params.projId.value) 
+        {
+            let project = await mongoose.model('Project').findById(mongoose.Types.ObjectId(args.swagger.params.projId.value));
+            
+            let featuredDocs = await getFeaturedDocuments(project, false);
+        
+            return Actions.sendResponse(res, 200, featuredDocs);
+        } 
+    
+        return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found'});
+    }
+    catch(e)
+    {
+        return Actions.sendResponse(res, 500, {});
+    }
+};
+  
+var getFeaturedDocuments = async function(project, sanitizeForPublic) 
+{
+    try 
+    {
+        let documents = await mongoose.model('Document').find({ project: project._id, isFeatured: true });
+    
+        return documents;
+    } 
+    catch(e) 
+    {
+        throw Error(e);
+    }
+}

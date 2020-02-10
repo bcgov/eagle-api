@@ -6559,7 +6559,7 @@ paths:
       tags:
         - EPIC
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: topLevelOptions
       description: "Options on Project Route"
       responses:
         "200":
@@ -6591,7 +6591,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: projectOptions
       description: "Options on Project Route"
       responses:
         "200":
@@ -6606,7 +6606,7 @@ paths:
       tags:
         - project
       summary: "Retrieve META associated with an project."
-      operationId: protectedHead
+      operationId: projectHead
       description: "Get META from the request, without returning the payload in question."
       security:
         - Bearer: []
@@ -6625,7 +6625,7 @@ paths:
       tags:
         - project
       summary: "Get a list of projects"
-      operationId: publicGet
+      operationId: fetchProjects
       description: "Public access to retreiving projects."
       parameters:
         - in: query
@@ -6669,7 +6669,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: projectOptionsProtected
       description: "Options on Project Route"
       responses:
         "200":
@@ -6684,7 +6684,7 @@ paths:
       tags:
         - project
       summary: "Create a new project"
-      operationId: protectedPost
+      operationId: createProject
       description: "Create a new project object."
       security:
         - Bearer: []
@@ -6710,7 +6710,7 @@ paths:
       tags:
         - project
       summary: "Retrieve META associated with an project."
-      operationId: protectedHead
+      operationId: projectHeadProtected
       description: "Get META from the request, without returning the payload in question."
       security:
         - Bearer: []
@@ -6729,7 +6729,7 @@ paths:
       tags:
         - project
       summary: "Get a list of projects"
-      operationId: protectedGet
+      operationId: fetchProjectsProtected
       description: "Authenticated access to retreiving projects."
       parameters:
         - in: query
@@ -6778,7 +6778,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: projectOptionsProtected
       description: "Options on Project GET Route"
       parameters:
         - name: projId
@@ -6799,7 +6799,7 @@ paths:
       tags:
         - project
       summary: "Get a project"
-      operationId: publicGet
+      operationId: fetchProjects
       description: "Public access to retreiving projects."
       parameters:
         - name: projId
@@ -6823,7 +6823,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: projectOptionsProtected
       description: "Options on Project GET Route"
       parameters:
         - name: projId
@@ -6844,7 +6844,7 @@ paths:
       tags:
         - project
       summary: "Get a project"
-      operationId: protectedGet
+      operationId: fetchProjectsProtected
       description: "Public access to retreiving projects."
       parameters:
         - name: projId
@@ -6865,7 +6865,7 @@ paths:
       tags:
         - project
       summary: "Update a project"
-      operationId: protectedPut
+      operationId: updateProject
       description: "Public access to retreiving projects."
       parameters:
         - name: projId
@@ -6886,7 +6886,7 @@ paths:
       tags:
         - project
       summary: "delete a project"
-      operationId: protectedDelete
+      operationId: deleteProject
       description: "Public access to retreiving projects."
       parameters:
         - name: projId
@@ -6910,7 +6910,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: projectOptionsProtected
       description: "Options on Project Route"
       parameters:
         - name: projId
@@ -6931,7 +6931,7 @@ paths:
       tags:
         - project
       summary: "Publish a project"
-      operationId: protectedPublish
+      operationId: publishProject
       description: "Adds the singular instance of the 'public' role to a project."
       security:
         - Bearer: []
@@ -6965,7 +6965,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: projectOptionsProtected
       description: "Options on Project Route"
       parameters:
         - name: projId
@@ -6986,7 +6986,7 @@ paths:
       tags:
         - project
       summary: "UnPublish a project"
-      operationId: protectedUnPublish
+      operationId: unPublishProject
       description: "Removes the singular instance of the 'public' role to a project."
       security:
         - Bearer: []
@@ -7015,7 +7015,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: pinOptions
       description: "Options on Project Route"
       parameters:
         - name: projId
@@ -7036,7 +7036,7 @@ paths:
       tags:
         - project
       summary: "Get pins on a project"
-      operationId: publicPinGet
+      operationId: fetchPins
       description: "Authenticated access to retreiving pins on a project."
       parameters:
         - name: projId
@@ -7077,7 +7077,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: pinOptionsProtected
       description: "Options on Project Route"
       parameters:
         - name: projId
@@ -7098,7 +7098,7 @@ paths:
       tags:
         - project
       summary: "Get pins on a project"
-      operationId: protectedPinGet
+      operationId: fetchPinsProtected
       description: "Authenticated access to retreiving pins on a project."
       security:
         - Bearer: []
@@ -7142,7 +7142,7 @@ paths:
       tags:
         - project
       summary: "Add Pins to a project"
-      operationId: protectedPinCreate
+      operationId: pinCreate
       description: "Adds pins to a project."
       security:
         - Bearer: []
@@ -7176,7 +7176,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: pinOptionsProtected
       description: "Options on Project Route"
       parameters:
         - name: projId
@@ -7197,7 +7197,7 @@ paths:
       tags:
         - pin
       summary: "Publish a Participating Indigineous Nation on a project"
-      operationId: protectedPublishPin
+      operationId: publishPin
       description: "Adds the 'public' role to the project pinsRead field"
       security:
         - Bearer: []
@@ -7225,7 +7225,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: pinOptionsProtected
       description: "Options on Project Route"
       parameters:
         - name: projId
@@ -7246,7 +7246,7 @@ paths:
       tags:
         - pin
       summary: "Unpublish a Participating Indigineous Nation on a project"
-      operationId: protectedUnPublishPin
+      operationId: unpublishPin
       description: "Removes the singular instance of the 'public' role to a project's pins."
       security:
         - Bearer: []
@@ -7274,7 +7274,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: pinOptionsProtected
       description: "Options on Project Route"
       parameters:
         - name: projId
@@ -7300,7 +7300,7 @@ paths:
       tags:
         - project
       summary: "Delete a PIN"
-      operationId: protectedPinDelete
+      operationId: deletePin
       description: "Delete specific PINS."
       security:
         - Bearer: []
@@ -7333,7 +7333,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: projectOptionsProtected
       description: "Options on Project Route"
       parameters:
         - name: projId
@@ -7354,7 +7354,7 @@ paths:
       tags:
         - project
       summary: "Add Extension/Suspension to a project"
-      operationId: protectedExtensionAdd
+      operationId: createProjectExtension
       description: "Adds Extension/Suspension to a project."
       security:
         - Bearer: []
@@ -7385,7 +7385,7 @@ paths:
       tags:
         - project
       summary: "Update Extension/Suspension on a project"
-      operationId: protectedExtensionUpdate
+      operationId: updateProjectExtension
       description: "Adds Extension/Suspension on a project."
       security:
         - Bearer: []
@@ -7416,7 +7416,7 @@ paths:
       tags:
         - project
       summary: "Delete Extension/Suspension on a project"
-      operationId: protectedExtensionDelete
+      operationId: deleteProjectExtension
       description: "Adds Extension/Suspension on a project."
       security:
         - Bearer: []
@@ -7449,7 +7449,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: projectGroupOptionsProtected
       description: "Options on Project Route"
       parameters:
         - name: projId
@@ -7470,7 +7470,7 @@ paths:
       tags:
         - project
       summary: "Add Groups to a project"
-      operationId: protectedAddGroup
+      operationId: createGroup
       description: "Adds group to a project."
       security:
         - Bearer: []
@@ -7504,7 +7504,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: projectGroupOptionsProtected
       description: "Options on Project Route"
       parameters:
         - name: projId
@@ -7530,7 +7530,7 @@ paths:
       tags:
         - project
       summary: "Delete a Group"
-      operationId: protectedGroupDelete
+      operationId: deleteGroup
       description: "Delete specific group."
       security:
         - Bearer: []
@@ -7562,7 +7562,7 @@ paths:
       tags:
         - project
       summary: "Update a group"
-      operationId: protectedGroupPut
+      operationId: updateGroup
       description: "Update a group"
       security:
         - Bearer: []
@@ -7601,7 +7601,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: projectGroupOptionsProtected
       description: "Options on Project Route"
       parameters:
         - name: projId
@@ -7627,7 +7627,7 @@ paths:
       tags:
         - project
       summary: "Add Contact to a project group"
-      operationId: protectedAddGroupMembers
+      operationId: createGroupMemeber
       description: "Adds contact to a project group."
       security:
         - Bearer: []
@@ -7664,7 +7664,7 @@ paths:
       tags:
         - project
       summary: "Get a Group"
-      operationId: protectedGroupGetMembers
+      operationId: fetchGroupMemebers
       description: "Get specific group."
       security:
         - Bearer: []
@@ -7698,7 +7698,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: protectedOptions
+      operationId: projectGroupOptionsProtected
       description: "Options on Project Route"
       parameters:
         - name: projId
@@ -7729,7 +7729,7 @@ paths:
       tags:
         - project
       summary: "Delete a member from a group"
-      operationId: protectedDeleteGroupMembers
+      operationId: deleteGroupMember
       description: "Delete specific members from a project group."
       security:
         - Bearer: []
@@ -7758,6 +7758,146 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
+  /V2/Public/project/{projId}/FeaturedDocuments:
+    x-swagger-router-controller: projectV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: projectOptionsProtected
+      description: "Options on Project GET Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    head:
+      tags:
+        - project
+      summary: "Retrieve META associated with an project."
+      operationId: projectHeadProtected
+      description: "Get META from the request, without returning the payload in question."
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - project
+      summary: "Get a projects featured documents"
+      operationId: fetchFeaturedDocuments
+      description: "Retreiving project featuredDocuments"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /project/{projId}/FeaturedDocuments:
+    x-swagger-router-controller: projectV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: projectOptionsProtected
+      description: "Options on Project GET Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    head:
+      tags:
+        - project
+      summary: "Retrieve META associated with an project."
+      operationId: projectHeadProtected
+      description: "Get META from the request, without returning the payload in question."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - project
+      summary: "Get a projects featured documents"
+      operationId: fetchFeaturedDocumentsSecure
+      description: "Retreiving project featuredDocuments"
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
         "403":
           description: "Access Denied"
           schema:
