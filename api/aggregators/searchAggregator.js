@@ -112,17 +112,13 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   const searchResultAggregation = [];
   let defaultTwoSorts = false;
 
-  if (schemaName === constants.DOCUMENT &&  sortValues['datePosted'] === -1 || sortValues['score'] === -1) {
+  if (schemaName === constants.DOCUMENT && sortValues['datePosted'] === -1 || sortValues['score'] === -1) {
     defaultTwoSorts = true;
-  } else if (schemaName === constants.DOCUMENT && Object.keys(sortValues).length > 1 ) {
-    // If there are more than two values, but they're not the default values ignore the second value
-    const keysArr = Object.keys(sortValues);
-    const tempSortValue = {};
-    tempSortValue[keysArr[0]] = sortValues[keysArr[0]];
-    sortValues = tempSortValue;
   } else {
-    sortValues = {};
-    sortValues[sortField] = sortDirection;
+    // if sortField is null, this would create a broken sort, so ignore it if its null
+    if(sortField) {
+      sortValues[sortField] = sortDirection;
+    }
   }
 
   // We don't want to have sort in the aggregation if the front end doesn't need sort.
@@ -137,8 +133,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
             }}
           
         }},
-        { "$sort": { "date": -1, "displayName": 1 }}
-
+        { $sort: { date: -1, displayName: 1 }}
       );
     } else {
       searchResultAggregation.push(
@@ -147,7 +142,6 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
         }
       );
     }
-
   }
 
   searchResultAggregation.push(
@@ -169,7 +163,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
       ]
     }
   }];
-  
+    
   return combinedAggregation;
 };
 

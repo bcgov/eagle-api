@@ -90,8 +90,7 @@ var projectDataDefinition = {
   // Compliance & Enforcement Lead
   complianceLead          : { type: 'ObjectId', ref: 'User', default: null, index: true },
   //////////////////////
-  groups                   : [{ type: 'ObjectId', ref: 'Group', default: null, index: true }],
-  
+  groups                   : [{ type: 'ObjectId', ref: 'Group', default: null, index: true }]
 };
 
 // actual project schema
@@ -110,6 +109,8 @@ var projectDefinition = {
   pins                    : [{ type: 'ObjectId', ref: 'Pin', index: true }],
   pinsRead                : [{ type: String, trim: true, default: '["project-system-admin"]' }],
   pinsHistory             : [{ type: Mixed, default: {} }],
+  // Featured Documents DocID list
+  featuredDocuments            : [{ type: 'ObjectId', ref: 'Document', default: [], index: true }]
 }
 
 var buildToNature = {};
