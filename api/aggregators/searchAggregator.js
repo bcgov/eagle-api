@@ -107,9 +107,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
  * @returns {array} Aggregation of sorting and paging
  */
  exports.createSortingAggr = function(schemaName, sortValues, sortField, sortDirection) {
-   // The aggregation must default to a blank match. This is because if no sort is added below
-   // an empty aggregation cannot be used with $facet. This will just match all documents.
-  const searchResultAggregation = [{ $match: {} }];
+  const searchResultAggregation = [];
   let defaultTwoSorts = false;
 
   if (schemaName === constants.DOCUMENT &&  sortValues['datePosted'] === -1 || sortValues['score'] === -1) {
@@ -149,18 +147,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
     }
   }
 
-  const combinedAggregation = [{
-    $facet: {
-      searchResults: searchResultAggregation,
-      meta: [
-        {
-          $count: "searchResultsTotal"
-        }
-      ]
-    }
-  }];
-  
-  return combinedAggregation;
+  return searchResultAggregation;
 };
 
 /**
@@ -179,6 +166,21 @@ exports.createPagingAggr = function(pageNum, pageSize) {
     {
       $limit: pageSize
     },
+  ];
+
+  return aggregation;
+};
+
+/**
+ * Creates the count aggregation
+ * 
+ * @returns {array} Aggregation of total count
+ */
+exports.createCountAggr = function() {
+  const aggregation = [
+    {
+      $count: "searchResultsTotal"
+    }
   ];
 
   return aggregation;

@@ -17,6 +17,9 @@ const createItemAggr = require('../aggregators/itemAggregator').createItemAggr;
 const searchAggregator = require('../aggregators/searchAggregator');
 
 const searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue) {
+  let dataAggregation = [];
+  let countAggregation = [];
+
   const aggregateCollation = {
     locale: 'en',
     strength: 2
@@ -26,10 +29,15 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   defaultLog.info('populate:', populate);
   
   // Create main matching aggregation.
-  let aggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles);
+  const matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles);
+  // Create the sorting and paging aggregations.
+  const sortingPagingAggr = searchAggregator.createSortingAggr(schemaName, sortingValue, sortField, sortDirection);
+
   const pagingAggregation = await searchAggregator.createPagingAggr(pageNum, pageSize);
 
-  aggregation = [...aggregation, ...pagingAggregation];
+  dataAggregation = [...matchAggregation, ...pagingAggregation];
+
+  countAggregation = [...matchAggregation];
 
   // Create appropriate aggregations for the schema.
   let schemaAggregation;
@@ -63,22 +71,42 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
       break;
   }
 
-  // Create the sorting and paging aggregations.
-  const sortingPagingAggr = searchAggregator.createSortingAggr(schemaName, sortingValue, sortField, sortDirection);
+  // Add the count aggregation.
+  const countAggr = searchAggregator.createCountAggr();
+
+  countAggregation = [...countAggregation, ...countAggr];
 
   // Combine all the aggregations.
-  aggregation = [...aggregation, ...schemaAggregation, ...sortingPagingAggr];
+  dataAggregation = [...dataAggregation, ...schemaAggregation];
 
-  return new Promise(function (resolve, reject) {
-    var collectionObj = mongoose.model(schemaName);
+  const collectionObj = mongoose.model(schemaName);
 
-    collectionObj.aggregate(aggregation)
+  const dataPromise =  new Promise(function (resolve, reject) {
+    collectionObj.aggregate(dataAggregation)
       .collation(aggregateCollation)
       .exec()
       .then(function (data) {
         resolve(Utils.filterData(schemaName, data, roles));
       }, reject);
   });
+
+  const countPromise = new Promise(function (resolve, reject) {
+    collectionObj.aggregate(countAggregation)
+      .collation(aggregateCollation)
+      .exec()
+      .then(function (data) {
+        resolve(Utils.filterData(schemaName, data, roles));
+      }, reject);
+  });
+
+  const [data, count] = await Promise.all([dataPromise, countPromise]);
+
+  // Keeping the same shape that was originally returned.
+  // TODO: Update the shape to remove the unnecessary arrays.
+  return [{
+    searchResults: data,
+    meta: count,
+  }]
 };
 
 const executeQuery = async function (args, res) {
