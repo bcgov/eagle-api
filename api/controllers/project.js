@@ -1314,7 +1314,7 @@ exports.getFeaturedDocuments = async function (args, res, next) {
   {
     if (args.swagger.params.projId && args.swagger.params.projId.value) 
     {
-      var projectModel = mongoose.model('Project');
+      let projectModel = mongoose.model('Project');
       projectModel.findOne({ _id: args.swagger.params.projId.value }, async function (err, project) 
       {
         let featuredDocs = await fetchFeaturedDocuments(project, true);
@@ -1324,7 +1324,7 @@ exports.getFeaturedDocuments = async function (args, res, next) {
     } 
     else 
     {
-      return Actions.sendResponse(res, 404, {});
+      return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found'});
     }
   }
   catch(e)
@@ -1345,7 +1345,7 @@ exports.getFeaturedDocumentsSecure = async function (args, res, next) {
       return Actions.sendResponse(res, 200, featuredDocs);
     } 
 
-    return Actions.sendResponse(res, 404, {});
+    return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found'});
   }
   catch(e)
   {
@@ -1357,9 +1357,6 @@ var fetchFeaturedDocuments = async function(project, sanitizeForPublic) {
   try 
   {
     let documents = await mongoose.model('Document').find({ project: project._id, isFeatured: true });
-
-    // Sanitize documets for public side?
-    // if(sanitizeForPublic) { }
 
     return documents;
   } 

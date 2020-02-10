@@ -158,7 +158,7 @@ definitions:
       - build
       - nature
       - featuredDocuments
-  TopicSortByFields:
+  ProjectSortByFields:
     type: string
     description: "Optional fields to sort by (prefixed with + or - for order)"
     example: +name,-name
@@ -457,9 +457,6 @@ definitions:
     #TODO: Fix enums
     enum: &organizationFields
       - name
-    enum: &organizationSortByFields
-      - +name
-      - -name
 
 ### NotificationProject Definitions
   NotificationProjectId:
@@ -1927,15 +1924,6 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-      responses:
-        "200":
-          description: "Success"
-          schema:
-            $ref: "#/definitions/RecentActivityObject"
-        "403":
-          description: "Access Denied"
-          schema:
-            $ref: "#/definitions/Error"
     get:
       tags:
         - project
@@ -2463,10 +2451,6 @@ paths:
       summary: "Retrieve META associated with an project."
       operationId: protectedHead
       description: "Get META from the request, without returning the payload in question."
-      security:
-        - Bearer: []
-      x-security-scopes:
-        - project-system-admin
       parameters:
         - name: projId
           in: path
@@ -2488,11 +2472,6 @@ paths:
       summary: "Get a projects featured documents"
       operationId: getFeaturedDocuments
       description: "Retreiving project featuredDocuments"
-      security:
-        - Bearer: []
-      x-security-scopes:
-        - staff
-        - sysadmin
       parameters:
         - name: projId
           in: path
@@ -3183,7 +3162,6 @@ paths:
       summary: "Create a new document"
       operationId: protectedPost
       description: "Create a new document object."
-      summary: "Create a new document object."
       security:
         - Bearer: []
       x-security-scopes:
@@ -3248,14 +3226,14 @@ paths:
           required: false
           type: string
         - name: description
+          type: string
           in: formData
           description: "The description of the file."
           required: false
-          name: keywords
+        - name: keywords
           in: formData
           description: "The keywords of the file."
           required: false
-          type: string
           type: string
         - name: labels
           in: formData
@@ -3933,7 +3911,6 @@ paths:
       summary: "Create a new document from public"
       operationId: unProtectedPost
       description: "Create a new document object from public."
-      summary: "Create a new document object from public."
       consumes:
         - multipart/form-data
       parameters:
@@ -4416,7 +4393,6 @@ paths:
           type: array
           items:
             type: string
-            enum: *organizationSortByFields
       responses:
         "200":
           description: "Success"
@@ -4847,7 +4823,6 @@ paths:
       summary: "Create a new comment"
       operationId: protectedPost
       description: "Create a new comment object."
-      summary: "Create a new comment object."
       security:
         - Bearer: []
       x-security-scopes:
@@ -5107,7 +5082,6 @@ paths:
       summary: "Create a new comment"
       operationId: unProtectedPost
       description: "Create a new comment object."
-      summary: "Create a new comment object."
       parameters:
         - name: comment
           in: body
@@ -5293,7 +5267,6 @@ paths:
       summary: "Create a new commentperiod"
       operationId: protectedPost
       description: "Create a new commentperiod object."
-      summary: "Create a new commentperiod object."
       security:
         - Bearer: []
       x-security-scopes:

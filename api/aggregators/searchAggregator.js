@@ -133,9 +133,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
             }}
           
         }},
-        { $sort: { isFeatured: -1, date: -1, displayName: 1 }}
-        // Also add isFeatured to the default document sort
-
+        { $sort: { date: -1, displayName: 1 }}
       );
     } else {
       searchResultAggregation.push(

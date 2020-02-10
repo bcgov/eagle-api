@@ -1,18 +1,21 @@
-var auth = require("../helpers/auth");
-var _ = require('lodash');
-var defaultLog = require('winston').loggers.get('default');
-var mongoose = require('mongoose');
-var mime = require('mime-types');
-var Actions = require('../helpers/actions');
-var Utils = require('../helpers/utils');
-var FlakeIdGen = require('flake-idgen'),
-  intformat = require('biguint-format'),
-  generator = new FlakeIdGen;
-var fs = require('fs');
-var uploadDir = process.env.UPLOAD_DIRECTORY || "./uploads/";
-var ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING || false;
-var MinioController = require('../helpers/minio');
-var rp = require('request-promise-native');
+const rp              = require('request-promise-native');
+const _               = require('lodash');
+const defaultLog      = require('winston').loggers.get('default');
+const mongoose        = require('mongoose');
+const mime            = require('mime-types');
+const FlakeIdGen      = require('flake-idgen');
+const intformat       = require('biguint-format');
+const fs              = require('fs');
+const uploadDir       = process.env.UPLOAD_DIRECTORY || "./uploads/";
+const constants       = require('../helpers/constants');
+const Actions         = require('../helpers/actions');
+const Utils           = require('../helpers/utils');
+const MinioController = require('../helpers/minio');
+const auth            = require("../helpers/auth");
+
+const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING || false;
+
+const generator = new FlakeIdGen;
 
 var getSanitizedFields = function (fields) {
   return _.remove(fields, function (f) {
@@ -74,7 +77,7 @@ exports.publicGet = async function (args, res, next) {
       query,
       getSanitizedFields(args.swagger.params.fields.value), // Fields
       null, // sort warmup
-      { isFeatured : -1 }, // sort
+      null, // sort
       null, // skip
       null, // limit
       false); // count
@@ -254,7 +257,7 @@ exports.protectedGet = async function (args, res, next) {
       query,
       getSanitizedFields(args.swagger.params.fields.value), // Fields
       null, // sort warmup
-      { isFeatured : -1 }, // sort
+      null, // sort
       skip, // skip
       limit, // limit
       count); // count
@@ -691,17 +694,21 @@ exports.featureDocument = async function (args, res, next) {
         let featuredDocumentsCount = await mongoose.model('Document').count({ project: project._id, isFeatured: true }); 
 
         // Move the magic number into a config
-        if(featuredDocumentsCount < 5)
+        if(featuredDocumentsCount < constants.MAX_FEATURE_DOCS)
         {
           document.isFeatured = true;
           let result = await document.save();
 
           return Actions.sendResponse(res, 200, result);
         }
+        else 
+        {
+          return Actions.sendResponse(res, 403, { status: 403, message: 'Feature document limit reached', limit: constants.MAX_FEATURE_DOCS});
+        }
       }
     } 
 
-    return Actions.sendResponse(res, 403, {});
+    return Actions.sendResponse(res, 404, { status: 404, message: 'Document does not exist'});
   }
   catch(e)
   {

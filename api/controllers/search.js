@@ -112,15 +112,6 @@ const executeQuery = async function (args, res) {
   let sortField = undefined;
   const sortingValue = {};
 
-  // if this is a document, and a request to sort by isFeatured hasn't been requested,
-  // we add it in... UNLESS we're also filtering by a specific set of types
-  // that reference certificate or amendment tab documents in public...
-  // this condition may break with filters (which also break the public requirement)
-  // so it has not been included at this point
-  if (dataset === constants.DOCUMENT && !sortingValue.hasOwnProperty('isFeatured')) {
-    sortingValue.isFeatured = -1;
-  }
-
   sortBy.forEach((value) => {
     sortDirection = value.charAt(0) === '-' ? -1 : 1;
     sortField = value.slice(1);
