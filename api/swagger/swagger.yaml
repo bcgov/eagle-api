@@ -6005,6 +6005,11 @@ paths:
           required: false
           description: "Query: multiple parameter instances are supported using OR."
           type: string
+        - in: query
+          name: categorized
+          required: false
+          description: "Query: indicating if a documents should be categorized or not"
+          type: boolean
       responses:
         "200":
           description: "Success"
