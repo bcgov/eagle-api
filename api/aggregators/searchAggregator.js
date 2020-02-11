@@ -1,9 +1,7 @@
 const mongoose = require('mongoose');
-const qs = require('qs');
-const _ = require('lodash');
 
 const constants = require('../helpers/constants').schemaTypes;
-const Utils = require('../helpers/utils');
+const aggregateHelper = require('../helpers/aggregators');
 
 /**
  * Create an aggregation that sets the matching criteria for search.
@@ -32,10 +30,10 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   }
 
   // query modifiers
-  const andExpArray = await generateExpArray(andModifier, roles, schemaName);
+  const andExpArray = await aggregateHelper.generateExpArray(andModifier, roles, schemaName);
 
   // filters
-  const orExpArray = await generateExpArray(orModifier, roles, schemaName);
+  const orExpArray = await aggregateHelper.generateExpArray(orModifier, roles, schemaName);
 
   let modifier = {};
   if (andExpArray.length > 0 && orExpArray.length > 0) {
@@ -49,7 +47,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   aggregation.push({
     $match: {
       _schemaName: schemaName,
-      ...(isEmpty(modifier) ? undefined : modifier),
+      ...(aggregateHelper.isEmpty(modifier) ? undefined : modifier),
       ...(projectModifier ? projectModifier : undefined),
       ...(keywordModifier ? keywordModifier : undefined),
       $or: [
@@ -166,6 +164,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
     
   return combinedAggregation;
 };
+<<<<<<< HEAD
 
 const generateExpArray = async (field, roles, schemaName) => {
   const expArray = [];
@@ -397,3 +396,5 @@ const isEmpty = (obj) => {
   }
   return true;
 };
+=======
+>>>>>>> Fixes item search
