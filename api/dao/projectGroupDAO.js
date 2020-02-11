@@ -21,10 +21,10 @@ exports.groupHateoas = function(group, roles)
     return group;
 };
 
-exports.createGroup = async function(user, group, project)
+exports.createGroup = async function(user, groupName, project)
 {
     let groupModel = mongoose.model('Group');
-    let newGroup = new groupModel({ project: mongoose.Types.ObjectId(project._id), name: group.group });
+    let newGroup = new groupModel({ project: mongoose.Types.ObjectId(project._id), name: groupName });
 
     ['project-system-admin', 'sysadmin', 'staff'].forEach(item => 
     {

@@ -17,27 +17,6 @@ const SECURE_ROLES = ['sysadmin', 'staff'];
 
 describe('API Testing - Project DAO', () => 
 {  
-    let adminUser = factory_helper.generateFakePerson('Stanley', '', 'Adminington');
-    let publicUser = factory_helper.generateFakePerson('Joe', '', 'Schmo');
-    const usersData = [
-        {firstName: adminUser.firstName, middleName: adminUser.middleName, lastName: adminUser.lastName, displayName: adminUser.fullName, email: adminUser.emailAddress, read: adminUser.read, write: adminUser.write, delete: adminUser.delete}
-       ,{firstName: publicUser.firstName, middleName: publicUser.middleName, lastName: publicUser.lastName, displayName: publicUser.fullName, email: publicUser.emailAddress, read: publicUser.read, write: publicUser.write, delete: publicUser.delete}
-    ];
-
-    // Default params
-    const params = 
-    {
-        pageNumber: 1,
-        pageSize: 10,
-        sortBy: '',
-        query: '',
-        keywords: ''
-    }
-
-    const emptyParams = test_helper.buildParams({});
-    const testUser = 'testUser';
-
-    let createdProject = null;
     let testProject = new project();
 
     testProject.CEAAInvolvement     = null; //oid
@@ -110,165 +89,131 @@ describe('API Testing - Project DAO', () =>
     testProject.complianceLead      = null; // oid
     testProject.groups              = null;
 
-    // test options requests
-    test('OPTION `/api/V2/project` returns 200', done => 
+    test('Project CRUD tests', async () => 
     {
-        app.options('/api/V2/project', (req, res) => 
-        {
-            return projectController.projectOptionsProtected(emptyParams, res);
-        });
-
-        request(app)
-        .options('/api/V2/project')
-        .expect(200, done);
-    });
-
-    test('OPTION `/api/V2/public/project` returns 200', done => 
-    {
-        app.options('/api/V2/public/project', (req, res) => 
-        {
-            return projectController.projectOptions(emptyParams, res);
-        });
-
-        request(app)
-        .options('/api/V2/public/project')
-        .expect(200, done);
-    });
-
-    // test create a project
-    test('POST `/api/V2/project` returns 201', done => 
-    {
-        app.post('/api/V2/project', (req, res) => 
-        {
-            let testParams = 
-            {
-                swagger: 
-                {
-                    params:
-                    {
-                        project: { value: testProject },
-                        auth_payload: { preferred_username: 'Test User' }
-                    }
-                }
-            };
-
-            return projectController.createProject(testParams, res);
-        });
-
-        request(app)
-        .post('/api/V2/project')
-        .expect(201)
-        .end((err, res) => 
-        {
-            if (err) 
-            {
-              return done(err);
-            }
-
-            createdProject = res.body;
-
-            expect(res.body.id).not.toEqual(null);
-            expect(res.body._schemaName).toEqual('Project');
-
-            return done();
-        });
-    });
-
-    /*
-    // test fetching projects
-    test('GET `/api/V2/public/project` returns 200', done => 
-    {
-        app.get('/api/V2//public/project', (req, res) => 
-        {
-            let testParams = 
-            {
-                swagger: 
-                {
-                    params:
-                    {
-                        auth_payload: { preferred_username: 'Test User' }
-                    }
-                }
-            };
-
-            return projectController.fetchProjects(testParams, res);
-        });
-
-        request(app)
-        .get('/api/V2/project')
-        .expect(200)
-        .end((err, res) => 
-        {
-            if (err) 
-            {
-              return done(err);
-            }
-
-            console.log(res);
-            console.log(res.body);
-
-            return done();
-        });
-    });
-*/
-
-    /*
-    // get projects
-    test('Projects DAO (public and secure methods)', done => 
-    {
-        console.log('Starting tests');
-
-        // Create test projects
-        let testProject = {};
-
-        let createdProject = await projectDAO.createProject(adminUser.displayName, testProject);
-        expect(createdProject).not.toEqual(null);
-        // test that both root and created project details match
-
-        // Update test projects
-        let updatedProject = createdProject;
-        let finalUpdatedProject = await projectDAO.updateProject(adminUser.displayName, createdProject, updatedProject );
-
-        expect(finalUpdatedProject).not.toEqual(null);
-        // test that root updated and finalUpdated projects match
-
-        // Fetch test project publically and securely
-        let pubResult = await projectDAO.getProjects(PUBLIC_ROLES, params.pageNumber, params.pageSize, params.sortBy, params.keywords, params.query);
-        let secureResult = await projectDAO.getProjects(SECURE_ROLES, params.pageNumber, params.pageSize, params.sortBy, params.keywords, params.query);
-
-        expect(pubResult).not.toEqual(null);
-        expect(secureResult).not.toEqual(null);
-        expect(pubResult[0].searchResults).not.toEqual(null);
-        expect(secureResult[0].searchResults).not.toEqual(null);
-        expect(pubResult[0].searchResults.length).toEqual(1);
-        expect(secureResult[0].searchResults.length).toEqual(1);
-        expect(pubResult[0].searchResults[0]._id).toEqual(secureResult[0].searchResults[0]._id);
-
-        // create group
-        let newGroup = {};
-        let createdGroup = await projectGroupDAO.createGroup(adminUser.displayName, newGroup, finalUpdatedProject);
+        // Create
+        let createdProject = await projectDAO.createProject('Test User', testProject);
         
-        expect(createdGroup).not.toEqual(null);
+        expect(createdProject.id).not.toEqual(null);
 
-        // fetch groups
-        let fetchedGroup = await projectGroupDAO.getGroup(createdGroup._id);
-        expect(fetchedGroup).not.toEqual(null);
+        let loadedProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
 
-        // delete group
-        let deletedGroup = await projectGroupDAO.deleteGroup(adminUser.displayName, fetchedGroup, finalUpdatedProject);
-        expect(deletedGroup).not.toEqual(null);
+        expect(loadedProject).not.toEqual(null);
+        expect(loadedProject._id).toEqual(createdProject._id);
 
-        // create pin
-        let newPin = {};
-        let createdPin = await pinDAO.createPin(adminUser.displayName, finalUpdatedProject, newPin);
-        expect(createdPin).not.toEqual(null);
+        loadedProject.shortName = 'Changed Short Name!';
 
-        // delete pin
-        let deletedPin = await pinDAO.deletePin(adminUser.displayName, createdPin._id, finalUpdatedProject);
-        expect(deletedPin).not.toEqual(null);
+        let updatedProject = await projectDAO.updateProject('Test User', createdProject, loadedProject);
 
-        // delete test project(s)
-        let deletedProject = await projectDAO.deleteProject(adminUser.displayName, finalUpdatedProject);
+        expect(updatedProject).not.toEqual(null);
+        expect(updatedProject._id).toEqual(createdProject._id);
+
+        let deletedProject = await projectDAO.deleteProject('Test User', createdProject, updatedProject);
+
         expect(deletedProject).not.toEqual(null);
-    }); */
+        expect(deletedProject._id).toEqual(createdProject._id);
+    });
+
+    test('Project Pin tests', async () => 
+    {
+        let createdProject = await projectDAO.createProject('Test User', testProject);
+        expect(createdProject.id).not.toEqual(null);
+
+        let pins = { value: [123, 456, 789]};
+        let result = await pinDAO.createPin('Test User', createdProject, pins);
+        expect(result).not.toEqual(null);
+        expect(result.nModified).toBeGreaterThan(0);
+
+        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+
+        result = await pinDAO.publishPins('Test', createdProject);
+        expect(result.nModified).toBeGreaterThan(0);
+        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+
+        result = await pinDAO.unPublishPins('Test', createdProject);
+        expect(result.nModified).toBeGreaterThan(0);
+        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+
+        result = await pinDAO.deletePin('Test', createdProject.pins[2], createdProject);
+        expect(result.nModified).toBeGreaterThan(0);
+        result = await pinDAO.deletePin('Test', createdProject.pins[1], createdProject);
+        expect(result.nModified).toBeGreaterThan(0);
+        result = await pinDAO.deletePin('Test', createdProject.pins[0], createdProject);
+        expect(result.nModified).toBeGreaterThan(0);
+
+        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+        expect(createdProject.pins.length).toEqual(0);
+    });
+
+    // ? Include group add members once the Users endpoints for v2 have been created
+    test('Project Group tests', async () => 
+    {
+        // Create
+        let createdProject = await projectDAO.createProject('Test User', testProject);
+        expect(createdProject.id).not.toEqual(null);
+
+        let result = await projectGroupDAO.createGroup('Test', 'Test', createdProject);
+        expect(result).not.toEqual(null);
+        expect(result.project).toEqual(createdProject._id);
+        expect(result.name).toEqual('Test');
+
+        let editedGroup = 
+        {
+            name: 'Edited Test',
+            members: result.members,
+            project: result.project,
+            read: result.read,
+            write: result.write,
+            delete: result.delete,
+            _schemaName: 'Group',
+            _id: result._id,
+            __v: result.__v,
+            id: result.id
+        }
+
+        result = await projectGroupDAO.updateGroup('Test', editedGroup, result);
+        expect(result).not.toEqual(null);
+        expect(result.project).toEqual(createdProject._id);
+        expect(result.name).toEqual('Edited Test');
+
+        let fetchedResult = await projectGroupDAO.getGroup(result._id);
+        expect(fetchedResult).not.toEqual(null);
+        expect(fetchedResult).toMatchObject(result);
+
+        result = await projectGroupDAO.deleteGroup('Test', fetchedResult, createdProject);
+        result = await projectGroupDAO.getGroup(fetchedResult._id);
+        expect(result).toEqual(null);
+    });
+
+    // ? Extensions appear to be removed from the Admin UI
+    // ?  These tests will be disabled until these are readded
+    /*test('Project Extension tests', async () => 
+    {
+        let createdProject = await projectDAO.createProject('Test User', testProject);
+        expect(createdProject.id).not.toEqual(null);
+
+        let extension = 
+        {
+            type: 'Extension',
+            appliedTo: {},
+            start: new Date(),
+            end: new Date()
+        };
+
+        let result = await projectDAO.addExtension('Test', extension, createdProject);
+        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+        expect(result.nModified).toBeGreaterThan(0);
+        expect(createdProject.reviewExtensions).not.toEqual(null);
+        expect(createdProject.reviewExtensions.length).toBeGreaterThan(0);
+
+        createdProject.reviewExtensions[0].description = 'This is an update';
+        result = await projectDAO.updateExtension('Test', extension, createdProject);
+        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+        expect(result.nModified).toBeGreaterThan(0);
+        expect(createdProject.reviewExtensions).not.toEqual(null);
+        expect(createdProject.reviewExtensions.length).toBeGreaterThan(0);
+
+        result = await projectDAO.deleteExtension('Test', extension, createdProject);
+        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+    });*/
 });

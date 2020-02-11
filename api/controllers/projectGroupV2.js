@@ -48,7 +48,7 @@ exports.createGroup = async function (args, res, rest)
 
             if(project)
             {
-                let savedGroup = await projectGroupDAO.createGroup(args.swagger.params.auth_payload.preferred_username, group, project);
+                let savedGroup = await projectGroupDAO.createGroup(args.swagger.params.auth_payload.preferred_username, group.name, project);
                 savedGroup = projectGroupDAO.groupHateoas(savedGroup, SECURE_ROLES);
                 return Actions.sendResponseV2(res, 201, savedGroup);
             }

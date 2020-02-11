@@ -477,9 +477,6 @@ exports.updateProject = async function(user, sourceProject, updatedProject)
     }
     filteredData.proponent = updatedProject.proponent;
 
-    console.log("Updating with:", filteredData);
-    console.log("--------------------------");
-
     if (projectLegislationYear == 2018) {
       sourceProject.legislation_2018 = filteredData;
     } else if (projectLegislationYear == 2002) {
@@ -488,10 +485,10 @@ exports.updateProject = async function(user, sourceProject, updatedProject)
       sourceProject.legislation_1996 = filteredData;
     }
 
-    var doc = await Project.findOneAndUpdate({ _id: mongoose.Types.ObjectId(objId) }, sourceProject, { upsert: false, new: true });
+    var doc = await mongoose.model('Project').findOneAndUpdate({ _id: mongoose.Types.ObjectId(sourceProject._id) }, sourceProject, { upsert: false, new: true });
     // Project.update({ _id: mongoose.Types.ObjectId(objId) }, { $set: updateObj }, function (err, o) {
     if (doc) {
-      Utils.recordAction('Put', 'Project', user, objId);
+      Utils.recordAction('Put', 'Project', user, doc._id);
     } else {
       defaultLog.info("Couldn't find that object!");
       throw Error('Failed to update project');
@@ -571,6 +568,7 @@ exports.addExtension = async function(user, extension, project)
     } 
     catch (e) 
     {
+      console.log(e);
         throw Error('Project extension could not be added: ', e);
     }
 };
