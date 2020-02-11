@@ -157,7 +157,8 @@ definitions:
       - read
       - build
       - nature
-  TopicSortByFields:
+      - featuredDocuments
+  ProjectSortByFields:
     type: string
     description: "Optional fields to sort by (prefixed with + or - for order)"
     example: +name,-name
@@ -230,6 +231,7 @@ definitions:
       - internalURL
       - internalMime
       - internalSize
+      - isFeatured
 
 ### Comment Definitions
   CommentId:
@@ -455,9 +457,6 @@ definitions:
     #TODO: Fix enums
     enum: &organizationFields
       - name
-    enum: &organizationSortByFields
-      - +name
-      - -name
 
 ### NotificationProject Definitions
   NotificationProjectId:
@@ -1925,15 +1924,6 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-      responses:
-        "200":
-          description: "Success"
-          schema:
-            $ref: "#/definitions/RecentActivityObject"
-        "403":
-          description: "Access Denied"
-          schema:
-            $ref: "#/definitions/Error"
     get:
       tags:
         - project
@@ -2432,7 +2422,145 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-
+  /Public/project/{projId}/FeaturedDocuments:
+    x-swagger-router-controller: project
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project GET Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    head:
+      tags:
+        - project
+      summary: "Retrieve META associated with an project."
+      operationId: protectedHead
+      description: "Get META from the request, without returning the payload in question."
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - project
+      summary: "Get a projects featured documents"
+      operationId: getFeaturedDocuments
+      description: "Retreiving project featuredDocuments"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /project/{projId}/FeaturedDocuments:
+    x-swagger-router-controller: project
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project GET Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    head:
+      tags:
+        - project
+      summary: "Retrieve META associated with an project."
+      operationId: protectedHead
+      description: "Get META from the request, without returning the payload in question."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - project
+      summary: "Get a projects featured documents"
+      operationId: getFeaturedDocumentsSecure
+      description: "Retreiving project featuredDocuments"
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
 ### Inspections
   /inspection:
     x-swagger-router-controller: inspection
@@ -3034,7 +3162,6 @@ paths:
       summary: "Create a new document"
       operationId: protectedPost
       description: "Create a new document object."
-      summary: "Create a new document object."
       security:
         - Bearer: []
       x-security-scopes:
@@ -3099,14 +3226,14 @@ paths:
           required: false
           type: string
         - name: description
+          type: string
           in: formData
           description: "The description of the file."
           required: false
-          name: keywords
+        - name: keywords
           in: formData
           description: "The keywords of the file."
           required: false
-          type: string
           type: string
         - name: labels
           in: formData
@@ -3513,6 +3640,106 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+  /document/{docId}/feature:
+    x-swagger-router-controller: document
+    options:
+      tags:
+        - document
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Document GET Route"
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      tags:
+        - document
+      summary: "Flag a document as featured"
+      operationId: featureDocument
+      description: "set the document isFeatured to true. Will check to ensure max featured docs is enforced"
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+        # TODO: Define publish roles.
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to update"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /document/{docId}/unfeature:
+    x-swagger-router-controller: document
+    options:
+      tags:
+        - document
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Document GET Route"
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      tags:
+        - document
+      summary: "UnPublish a document"
+      operationId: unfeatureDocument
+      description: "sets the isFeatured value to false"
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+        # TODO: Define unpublish roles.
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to update"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
   /document/{docId}/download:
     x-swagger-router-controller: document
     options:
@@ -3684,7 +3911,6 @@ paths:
       summary: "Create a new document from public"
       operationId: unProtectedPost
       description: "Create a new document object from public."
-      summary: "Create a new document object from public."
       consumes:
         - multipart/form-data
       parameters:
@@ -4167,7 +4393,6 @@ paths:
           type: array
           items:
             type: string
-            enum: *organizationSortByFields
       responses:
         "200":
           description: "Success"
@@ -4598,7 +4823,6 @@ paths:
       summary: "Create a new comment"
       operationId: protectedPost
       description: "Create a new comment object."
-      summary: "Create a new comment object."
       security:
         - Bearer: []
       x-security-scopes:
@@ -4858,7 +5082,6 @@ paths:
       summary: "Create a new comment"
       operationId: unProtectedPost
       description: "Create a new comment object."
-      summary: "Create a new comment object."
       parameters:
         - name: comment
           in: body
@@ -5044,7 +5267,6 @@ paths:
       summary: "Create a new commentperiod"
       operationId: protectedPost
       description: "Create a new commentperiod object."
-      summary: "Create a new commentperiod object."
       security:
         - Bearer: []
       x-security-scopes:

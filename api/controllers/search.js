@@ -115,7 +115,7 @@ const executeQuery = async function (args, res) {
   sortBy.forEach((value) => {
     sortDirection = value.charAt(0) === '-' ? -1 : 1;
     sortField = value.slice(1);
-    if (!Object.prototype.hasOwnProperty.call(sortingValue, sortField)) {
+    if (!Object.prototype.hasOwnProperty.call(sortingValue, sortField) && sortField && sortField !== '') {
       sortingValue[sortField] = sortDirection;
     }
   });
@@ -135,6 +135,11 @@ const executeQuery = async function (args, res) {
           delete item.author;
         }
       });
+    }
+
+    // attach featured documents ID's
+    if (dataset === constants.PROJECT) {
+      collectionData[0].searchResults = await Utils.attachFeaturedDocuments(collectionData[0].searchResults);
     }
 
     return Actions.sendResponse(res, 200, collectionData);
@@ -157,6 +162,7 @@ const executeQuery = async function (args, res) {
     if (args.swagger.params._schemaName.value === constants.PROJECT) {
       // If we are a project, and we are not authed, we need to sanitize some fields.
       data = Utils.filterData(args.swagger.params._schemaName.value, data, roles);
+      data = await Utils.attachFeaturedDocuments(data);
     }
 
     return Actions.sendResponse(res, 200, data);

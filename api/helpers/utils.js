@@ -172,6 +172,12 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
             "default.read": '$read'
           }
         },
+        // Add the featuredDocuments to the default group
+        (modelType === 'Project') &&  {
+          '$addFields': {
+            "default.featuredDocuments": "$featuredDocuments"
+          }
+        },
         (modelType === 'Project') && {
           "$replaceRoot": { newRoot:  "$default" }
         },
@@ -234,6 +240,11 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
             "project.default.pinsRead": '$project.pinsRead',
             "project.default._id": '$project._id',
             "project.default.read": '$project.read'
+          }
+        },
+        (modelType === 'Project' & populateProject) &&  {
+          '$addFields': {
+            "default.featuredDocuments": "$featuredDocuments"
           }
         },
         (modelType !== 'Project' && populateProject) && {
@@ -351,6 +362,26 @@ exports.filterData = function (collection, data, roles) {
     return data;
   }
 }
+
+exports.attachFeaturedDocuments = async function (projects) {
+  for(let itemIdx in projects)
+  {
+    let item = projects[itemIdx];
+    // attach the featuredDocuments
+    let featuredDocuments = await mongoose.model('Document').find({ project: item._id, isFeatured: true }); 
+    if (featuredDocuments) 
+    {
+      item.featuredDocuments = [];
+      
+      for(let docIdx in featuredDocuments) {
+        let doc = featuredDocuments[docIdx];
+        item.featuredDocuments.push(doc._id);
+      }
+    }
+  }
+
+  return projects;
+};
 
 // Generates all unique search terms up to a word limit.
 exports.generateSearchTerms = function (name, maxWordLimit) {
