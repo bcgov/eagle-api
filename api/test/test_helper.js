@@ -18,7 +18,7 @@ let mongoUri = "";  // not initializing to localhost here on purpose - would rat
 mongoose.Promise = global.Promise;
 setupAppServer();
 
-jest.setTimeout(5000);
+jest.setTimeout(10000);
 
 beforeAll(async () => {
   let genSettings = await dataGenerationSettings;
