@@ -165,7 +165,7 @@ exports.createProject = async function (args, res, next)
                 // If the resource was successfully created, fetch it and return it
                 project = await projectDAO.getProject(SECURE_ROLES, project._id);
                 
-                project = projectDAO.projectHateoas(project, roles);
+                project = projectDAO.projectHateoas(project, SECURE_ROLES);
                 return Actions.sendResponseV2(res, 201, project);
             }
             else
@@ -490,7 +490,7 @@ exports.deleteProjectExtension = async function (args, res, next)
     catch (e)
     {
         defaultLog.error('### Error in {DELETE}/Projects/{id}/Extensions :', e);
-        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Extensions' });        
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/Extensions' });
     }
     finally
     {
@@ -500,6 +500,8 @@ exports.deleteProjectExtension = async function (args, res, next)
 
 exports.fetchFeaturedDocuments = async function (args, res, next) 
 {
+    defaultLog.debug('>>> {GET}/Public/Projects/{id}/FeaturedDocuments');
+
     try
     {
         if (args.swagger.params.projId && args.swagger.params.projId.value) 
@@ -509,22 +511,29 @@ exports.fetchFeaturedDocuments = async function (args, res, next)
             {
             let featuredDocs = await getFeaturedDocuments(project, true);
         
-            return Actions.sendResponse(res, 200, featuredDocs);
+            return Actions.sendResponseV2(res, 200, featuredDocs);
             });
         } 
         else 
         {
-            return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found'});
+            return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project not found'});
         }
     }
     catch(e)
     {
-        return Actions.sendResponse(res, 500, {});
+        defaultLog.error('### Error in {GET}/Public/Projects/{id}/FeaturedDocuments :', e);
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects{id}/FeaturedDocuments' });
+    }
+    finally
+    {
+        defaultLog.debug('<<< {GET}/Public/Projects/{id}/FeaturedDocuments');
     }
 };
   
 exports.fetchFeaturedDocumentsSecure = async function (args, res, next) 
 {
+    defaultLog.debug('>>> {GET}/Projects/{id}/FeaturedDocuments');
+
     try
     {
         if (args.swagger.params.projId && args.swagger.params.projId.value) 
@@ -533,14 +542,19 @@ exports.fetchFeaturedDocumentsSecure = async function (args, res, next)
             
             let featuredDocs = await getFeaturedDocuments(project, false);
         
-            return Actions.sendResponse(res, 200, featuredDocs);
+            return Actions.sendResponseV2(res, 200, featuredDocs);
         } 
     
-        return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found'});
+        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project not found'});
     }
     catch(e)
     {
-        return Actions.sendResponse(res, 500, {});
+        defaultLog.error('### Error in {GET}/Projects/{id}/FeaturedDocuments :', e);
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/FeaturedDocuments' });
+    }
+    finally
+    {
+        defaultLog.debug('<<< {GET}/Projects/{id}/FeaturedDocuments');
     }
 };
   
@@ -549,8 +563,15 @@ var getFeaturedDocuments = async function(project, sanitizeForPublic)
     try 
     {
         let documents = await mongoose.model('Document').find({ project: project._id, isFeatured: true });
-    
-        return documents;
+        
+        if(documents)
+        {
+            return documents;
+        }
+        else
+        {
+            throw Error('Featured documents could not be loaded.');
+        }
     } 
     catch(e) 
     {

@@ -18,11 +18,11 @@ let mongoUri = "";  // not initializing to localhost here on purpose - would rat
 mongoose.Promise = global.Promise;
 setupAppServer();
 
-jest.setTimeout(10000000);
+jest.setTimeout(5000);
 
 beforeAll(async () => {
   let genSettings = await dataGenerationSettings;
-  if (2 < genSettings.projects) jest.setTimeout(5000000 * genSettings.projects);
+  if (2 < genSettings.projects) jest.setTimeout(5000 * genSettings.projects);
   if (!genSettings.save_to_persistent_mongo) mongoServer = instantiateInMemoryMongoServer();
   await mongooseConnect();
   if (genSettings.generate) await checkMigrations(runMigrations);
