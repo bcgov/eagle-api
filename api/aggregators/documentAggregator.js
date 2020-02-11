@@ -16,7 +16,7 @@ const aggregateHelper = require('../helpers/aggregators');
  * 
  * @returns {array} Aggregation for a document match
  */
- exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, categorized, roles) => {
+ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, roles) => {
   const aggregation = [];
   let projectModifier;
   let keywordModifier;
@@ -44,57 +44,16 @@ const aggregateHelper = require('../helpers/aggregators');
     modifier = { $and: andExpArray };
   }
 
-  // Create aggregate for uncategorized or categorized documents.
-  // If the flag is missing then all documents will be returned.
-  let deletedModifier = {
-    $or: [
-      { isDeleted: { $exists: false } },
-      { isDeleted: false },
-    ]
-  };
-  let categorizedModifier;
-  if (categorized === true) {
-    categorizedModifier = {
-      type: { $nin: [null, ''] },
-      milestone: { $nin: [null, ''] },
-      documentAuthorType: { $nin: [null, ''] },
-    };
-  } else if (categorized === false) {
-    deletedModifier = {
-      $and: [
-        {
-          $or: [
-            { isDeleted: { $exists: false } },
-            { isDeleted: false },
-          ]
-        },
-        {
-          $or: [
-            { type: { $in: [null, ''] } },
-            { milestone: { $in: [null, ''] } },
-            { documentAuthorType: { $in: [null, ''] } },
-          ]
-        }
-      ]
-    };
-
-    // Must combine the two 'and' clauses otherwise they will override each other.
-    deletedModifier = {
-      $and: [
-        ...deletedModifier.$and,
-        ...modifier.$and
-      ]
-    }
-  }
-
   aggregation.push({
     $match: {
       _schemaName: schemaName,
       ...(aggregateHelper.isEmpty(modifier) ? undefined : modifier),
       ...(projectModifier ? projectModifier : undefined),
       ...(keywordModifier ? keywordModifier : undefined),
-      ...(categorizedModifier && categorized === true ? categorizedModifier : undefined),
-      ...deletedModifier,
+      $or: [
+        { isDeleted: { $exists: false } },
+        { isDeleted: false },
+      ]
     } 
   });
 

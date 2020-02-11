@@ -35,7 +35,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   let matchAggregation;
   switch (schemaName) {
     case constants.DOCUMENT:
-      matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, categorized, roles);
+      matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles);
       schemaAggregation = documentAggregator.createDocumentAggr(populate, roles,);
       break;
     case constants.PROJECT:
