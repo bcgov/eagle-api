@@ -174,7 +174,9 @@ const generateExpArray = async (field, roles, schemaName) => {
     console.log("queryString:", queryString);
 
     await Promise.all(Object.keys(queryString).map(async item => {
-      const entry = queryString[item];
+      // make sure the entry isn't URL encoded. Also, shift any ampersand
+      // values from %26 to &
+      const entry = decodeURI(queryString[item]).replace('%26', "&");
       console.log("item:", item, entry);
       const orArray = [];
 
