@@ -229,6 +229,7 @@ exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywor
         }
       }
     });
+
     // Score, Misc.
     queryAggregates.push(
     { 
@@ -277,15 +278,6 @@ exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywor
 
     // sanitize based on roles
     resultSet = Utils.filterData('Project', resultSet, roles);
-
-    // hateoas
-
-    for(let projectIndex in resultSet[0].searchResults)
-    {
-        let project = resultSet[0].searchResults[projectIndex];
-
-        project = this.projectHateoas(project, roles);
-    }
 
     return resultSet;
 };
@@ -496,7 +488,7 @@ exports.deleteProject = async function(user, project)
 {
     return Actions.delete(project).then(function (deleted) 
     {
-      Utils.recordAction('Delete', 'Project', user, project.projId);
+      Utils.recordAction('Delete', 'Project', user, project._id);
 
       return deleted;
     }, function (err) 

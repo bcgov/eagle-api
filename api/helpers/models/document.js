@@ -47,6 +47,6 @@ module.exports = require ('../models')('Document', {
 
     // TODO
     labels           : [{ type: Mixed, default: {} }],
-    isFeatured       : { type: Boolean, default: false }
-
+    isFeatured       : { type: Boolean, default: false },
+    links            : [{ type: Mixed }]
 }, 'epic');

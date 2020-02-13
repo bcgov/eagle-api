@@ -32,6 +32,8 @@ exports.getTopLevel = async function (args, res, next)
             [
                 { rel: 'self', title: 'API Top Level', method: 'GET', href: '/api/v2/' },
                 { rel: 'fetch', title: 'Public Projects List', method: 'GET', href: '/api/v2/Public/Projects' },
+                { rel: 'fetch', title: 'Public Documents List', method: 'GET', href: '/api/v2/Public/Documents' },
+                { rel: 'create', title: 'Public Documents Create', method: 'POST', href: '/api/v2/Public/Documents' }
             ]
         };
 
@@ -40,7 +42,9 @@ exports.getTopLevel = async function (args, res, next)
         {
             topLevelData.links.push({ rel: 'fetch', title: 'Secure Projects List', method: 'GET', href: '/api/v2/Projects' });
             topLevelData.links.push({ rel: 'create', title: 'Secure Projects Create', method: 'POST', href: '/api/v2/Projects' });
-            
+            topLevelData.links.push({ rel: 'fetch', title: 'Secure Documents List', method: 'GET', href: '/api/v2/Documents' });
+            topLevelData.links.push({ rel: 'create', title: 'Secure Documents Create', method: 'POST', href: '/api/v2/Documents' });
+
             /* Endpoints without a bindable link (we don't return PIN or MEMBER(user) resources yet)
             topLevelData.links.push({ name: 'Secure Project Pins Delete', type: 'DELETE', uri: '/api/v2/Projects/{id}/Pins/{id}' });
             topLevelData.links.push({ name: 'Secure Project Delete Group Member', type: 'DELETE', uri: '/api/v2/Projects/Groups/{id}/Members/{id}' });*/
