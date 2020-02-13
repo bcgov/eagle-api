@@ -182,36 +182,4 @@ describe('API Testing - Project DAO', () =>
         result = await projectGroupDAO.getGroup(fetchedResult._id);
         expect(result).toEqual(null);
     });
-
-    // ? Extensions appear to be removed from the Admin UI
-    // ?  These tests will be disabled until these are readded
-    /*test('Project Extension tests', async () => 
-    {
-        let createdProject = await projectDAO.createProject('Test User', testProject);
-        expect(createdProject.id).not.toEqual(null);
-
-        let extension = 
-        {
-            type: 'Extension',
-            appliedTo: {},
-            start: new Date(),
-            end: new Date()
-        };
-
-        let result = await projectDAO.addExtension('Test', extension, createdProject);
-        createdProject = await projectDAO.getProject(constants.SECURE_ROLES, createdProject._id);
-        expect(result.nModified).toBeGreaterThan(0);
-        expect(createdProject.reviewExtensions).not.toEqual(null);
-        expect(createdProject.reviewExtensions.length).toBeGreaterThan(0);
-
-        createdProject.reviewExtensions[0].description = 'This is an update';
-        result = await projectDAO.updateExtension('Test', extension, createdProject);
-        createdProject = await projectDAO.getProject(constants.SECURE_ROLES, createdProject._id);
-        expect(result.nModified).toBeGreaterThan(0);
-        expect(createdProject.reviewExtensions).not.toEqual(null);
-        expect(createdProject.reviewExtensions.length).toBeGreaterThan(0);
-
-        result = await projectDAO.deleteExtension('Test', extension, createdProject);
-        createdProject = await projectDAO.getProject(constants.SECURE_ROLES, createdProject._id);
-    });*/
 });

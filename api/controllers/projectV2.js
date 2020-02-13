@@ -532,7 +532,7 @@ exports.fetchFeaturedDocumentsSecure = async function (args, res, next)
     {
         if (args.swagger.params.projId && args.swagger.params.projId.value) 
         {
-            let project = await mongoose.model('Project').findById(mongoose.Types.ObjectId(args.swagger.params.projId.value));
+            let project = await projectDAO.getProject(args.swagger.params.projId.value);
             
             let featuredDocs = await getFeaturedDocuments(project, false);
         

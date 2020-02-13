@@ -3,6 +3,7 @@ const defaultLog = require('winston').loggers.get('default');
 const mongoose   = require('mongoose');
 const Utils      = require('../helpers/utils');
 const projectDAO = require('../dao/projectDAO');
+const constants  = require('../helpers/constants');
 
 exports.getProjectPins = async function(user, roles, project, pageNumber, pageSize, sortBy)
 {
@@ -126,7 +127,7 @@ exports.createPin = async function(user, project, pins)
     if (doc) 
     {
         Utils.recordAction('Add', 'Pin', user, project._id);
-        return projectDAO.projectHateoas(doc, ['sysadmin', 'staff']);;
+        return projectDAO.projectHateoas(doc, constants.SECURE_ROLES);
     } 
     else 
     {
