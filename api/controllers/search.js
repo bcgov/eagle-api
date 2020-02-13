@@ -25,8 +25,11 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   defaultLog.info('collation:', aggregateCollation);
   defaultLog.info('populate:', populate);
   
+  // Decode any parameters here that may arrive encoded.
+  const decodedKeywords = keywords ? decodeURIComponent(keywords) : undefined;
+
   // Create main matching aggregation.
-  let aggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles)
+  let aggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles)
 
   // Create appropriate aggregations for the schema.
   let schemaAggregation;
