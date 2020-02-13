@@ -292,16 +292,11 @@ exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywor
 
 exports.getProject = async function(roles, projectId)
 {
-    let result = mongoose.model('Project').findById(mongoose.Types.ObjectId(projectId));
+    let result = await mongoose.model('Project').findById(mongoose.Types.ObjectId(projectId));
     
-    // sanitize based on roles
-    if (result && roles.includes('public'))
-    {
-        delete result.review180Start;
-        delete result.review45Start;
-        delete result.reviewSuspensions;
-        delete result.reviewExtensions;
-    }
+    // sanitize based on roles. Return the first result
+    // as we will only ever have one.
+    result = Utils.filterData('Project', [result], roles)[0];
 
     return result;
 };

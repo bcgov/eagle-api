@@ -3,23 +3,15 @@ const defaultLog = require('winston').loggers.get('default');
 const Actions    = require('../helpers/actions');
 const projectDAO = require('../dao/projectDAO');
 const pinDAO     = require('../dao/pinDAO');
-
-// Constants
-const PUBLIC_ROLES = ['public'];
-const SECURE_ROLES = ['sysadmin', 'staff'];
-// Vars
-/* put any needed local variables here */
-// functions
-/* put any needed local functions here */
-// Exports
+const constants  = require('../helpers/constants');
 
 // OPTIONS
-exports.pinOptions = function (args, res, rest) 
+exports.pinOptions = function (args, res, next)
 {
   res.status(200).send();
 };
 
-exports.pinOptionsProtected = function (args, res, rest) 
+exports.pinOptionsProtected = function (args, res, next)
 {
   res.status(200).send();
 };
@@ -37,7 +29,7 @@ exports.fetchPins = async function (args, res, next)
                 
             defaultLog.debug(' Fetching pins for project: ' + projectId);
             
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let project = await projectDAO.getProject(constants.PUBLIC_ROLES, projectId);
 
             if(project)
             {
@@ -45,7 +37,7 @@ exports.fetchPins = async function (args, res, next)
                 let pageSize   = args.swagger.params.hasOwnProperty('pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
                 let sortBy     = args.swagger.params.hasOwnProperty('sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
     
-                let data = await pinDAO.getProjectPins(PUBLIC_ROLES, project, pageNumber, pageSize, sortBy);
+                let data = await pinDAO.getProjectPins('Public User', constants.PUBLIC_ROLES, project, pageNumber, pageSize, sortBy);
     
                 return data ? Actions.sendResponseV2(res, 200, data) 
                             : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project pins were not found'});
@@ -84,7 +76,7 @@ exports.fetchPinsProtected = async function (args, res, next)
                 
             defaultLog.debug(' Fetching pins for project: ' + projectId);
             
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
             if(project)
             {
@@ -92,7 +84,7 @@ exports.fetchPinsProtected = async function (args, res, next)
                 let pageSize   = args.swagger.params.hasOwnProperty('pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
                 let sortBy     = args.swagger.params.hasOwnProperty('sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
     
-                let data = await pinDAO.getProjectPins(args.swagger.params.auth_payload.preferred_username, SECURE_ROLES, project, pageNumber, pageSize, sortBy);
+                let data = await pinDAO.getProjectPins(args.swagger.params.auth_payload.preferred_username, constants.SECURE_ROLES, project, pageNumber, pageSize, sortBy);
     
                 return data ? Actions.sendResponseV2(res, 200, data) 
                             : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project pins were not found'});
@@ -131,7 +123,7 @@ exports.pinCreate = async function (args, res, next)
                 
             defaultLog.debug(' Creating pin for project: ' + projectId);
             
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
             if(project)
             {
@@ -183,7 +175,7 @@ exports.publishPin = async function (args, res, next)
                 
             defaultLog.debug(' Publishing pins for project: ' + projectId);
             
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
             if(project)
             {
@@ -226,7 +218,7 @@ exports.unpublishPin = async function (args, res, next)
                 
             defaultLog.debug(' Un-Publishing pins for project: ' + projectId);
             
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
             if(project)
             {
@@ -270,7 +262,7 @@ exports.deletePin = async function (args, res, next)
 
             defaultLog.debug(' Deleting pin ' + pinId + ' for project: ' + projectId);
             
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
             if(project)
             {

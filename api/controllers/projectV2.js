@@ -2,13 +2,8 @@
 const defaultLog = require('winston').loggers.get('default');
 const Actions    = require('../helpers/actions');
 const projectDAO = require('../dao/projectDAO');
+const constants  = require('../helpers/constants');
 
-// Constants
-const PUBLIC_ROLES = ['public'];
-const SECURE_ROLES = ['sysadmin', 'staff'];
-// Vars
-/* put any needed local variables here */
-// functions
 async function getProjectHandler(roles, params)
 {
     let data = {};
@@ -45,12 +40,12 @@ async function getProjectHandler(roles, params)
 // Exports
 
 // OPTIONS
-exports.projectOptions = function (args, res, rest) 
+exports.projectOptions = function (args, res, next)
 {
   res.status(200).send();
 };
 
-exports.projectOptionsProtected = function (args, res, rest) 
+exports.projectOptionsProtected = function (args, res, next)
 {
   res.status(200).send();
 };
@@ -62,7 +57,7 @@ exports.projectHead = async function (args, res, next)
 
     try
     {
-        let data = await getProjectHandler(PUBLIC_ROLES, args.swagger.params);
+        let data = await getProjectHandler(constants.PUBLIC_ROLES, args.swagger.params);
 
         return data ? Actions.sendResponseV2(res, 200, data) 
                     : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found'});
@@ -84,7 +79,7 @@ exports.projectHeadProtected = async function (args, res, next)
 
     try
     {
-        let data = await getProjectHandler(SECURE_ROLES, args.swagger.params);
+        let data = await getProjectHandler(constants.SECURE_ROLES, args.swagger.params);
 
         return data ? Actions.sendResponseV2(res, 200, data) 
                     : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found'});
@@ -107,7 +102,7 @@ exports.fetchProjects = async function (args, res, next)
 
     try
     {
-        let data = await getProjectHandler(PUBLIC_ROLES, args.swagger.params);
+        let data = await getProjectHandler(constants.PUBLIC_ROLES, args.swagger.params);
 
         return data ? Actions.sendResponseV2(res, 200, data)
                     : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found'});
@@ -129,7 +124,7 @@ exports.fetchProjectsProtected = async function (args, res, next)
 
     try
     {
-        let data = await getProjectHandler(SECURE_ROLES, args.swagger.params);
+        let data = await getProjectHandler(constants.SECURE_ROLES, args.swagger.params);
 
         return data ? Actions.sendResponseV2(res, 200, data) 
                     : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found'});
@@ -163,9 +158,9 @@ exports.createProject = async function (args, res, next)
             if(project)
             {
                 // If the resource was successfully created, fetch it and return it
-                project = await projectDAO.getProject(SECURE_ROLES, project._id);
+                project = await projectDAO.getProject(constants.SECURE_ROLES, project._id);
                 
-                project = projectDAO.projectHateoas(project, SECURE_ROLES);
+                project = projectDAO.projectHateoas(project, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 201, project);
             }
             else
@@ -202,7 +197,7 @@ exports.updateProject = async function (args, res, next)
             
             defaultLog.debug(' Updating project ' + projectId);
             
-            let sourceProject = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let sourceProject = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
             let updatedProject = args.swagger.params.project.value;
 
             if(sourceProject && updateProject)
@@ -246,7 +241,7 @@ exports.deleteProject = async function (args, res, next)
             
             defaultLog.debug(' Deleting project ' + projectId);
             
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
             if(project)
             {
@@ -292,7 +287,7 @@ exports.publishProject = async function (args, res, next)
             
             defaultLog.debug(' Publishing project ' + projectId);
             
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
             if(project)
             {
@@ -334,7 +329,7 @@ exports.unPublishProject = async function (args, res, next)
             
             defaultLog.debug(' Un-Publishing project ' + projectId);
             
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
             if(project)
             {
@@ -381,7 +376,7 @@ exports.createProjectExtension = async function (args, res, next)
             defaultLog.debug(' Adding extension to project ' + projectId);
             defaultLog.debug(' Extension: ' + JSON.stringify(extension));
 
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
             if(project)
             {
@@ -425,7 +420,7 @@ exports.updateProjectExtension = async function (args, res, next)
             defaultLog.debug(' Updating extension on project ' + projectId);
             defaultLog.debug(' Extension: ' + JSON.stringify(extension));
 
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
             if(project)
             {
@@ -469,7 +464,7 @@ exports.deleteProjectExtension = async function (args, res, next)
             defaultLog.debug(' Updating extension on project ' + projectId);
             defaultLog.debug(' Extension: ' + JSON.stringify(extension));
 
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
             if(project)
             {
@@ -507,12 +502,11 @@ exports.fetchFeaturedDocuments = async function (args, res, next)
         if (args.swagger.params.projId && args.swagger.params.projId.value) 
         {
             let projectModel = mongoose.model('Project');
-            projectModel.findOne({ _id: args.swagger.params.projId.value }, async function (err, project) 
-            {
+
+            let project = await projectDAO.getProject(constants.PUBLIC_ROLES, args.swagger.params.projId);
             let featuredDocs = await getFeaturedDocuments(project, true);
-        
+
             return Actions.sendResponseV2(res, 200, featuredDocs);
-            });
         } 
         else 
         {

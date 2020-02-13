@@ -6,14 +6,12 @@ const projectDAO = require('../../../dao/projectDAO');
 const projectGroupDAO = require('../../../dao/projectGroupDAO');
 const pinDAO = require('../../../dao/pinDAO');
 const factory_helper = require('../../generate-data/factories/factory_helper');
+const constants = require('../../../helpers/constants');
 
 const group = require('../../../helpers/models/group');
 const project = require('../../../helpers/models/project');
 
 const app = test_helper.app;
-
-const PUBLIC_ROLES = ['public'];
-const SECURE_ROLES = ['sysadmin', 'staff'];
 
 describe('API Testing - Project DAO', () => 
 {  
@@ -96,7 +94,7 @@ describe('API Testing - Project DAO', () =>
         
         expect(createdProject.id).not.toEqual(null);
 
-        let loadedProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+        let loadedProject = await projectDAO.getProject(constants.SECURE_ROLES, createdProject._id);
 
         expect(loadedProject).not.toEqual(null);
         expect(loadedProject._id).toEqual(createdProject._id);
@@ -124,15 +122,15 @@ describe('API Testing - Project DAO', () =>
         expect(result).not.toEqual(null);
         expect(result.nModified).toBeGreaterThan(0);
 
-        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+        createdProject = await projectDAO.getProject(constants.SECURE_ROLES, createdProject._id);
 
         result = await pinDAO.publishPins('Test', createdProject);
         expect(result.nModified).toBeGreaterThan(0);
-        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+        createdProject = await projectDAO.getProject(constants.SECURE_ROLES, createdProject._id);
 
         result = await pinDAO.unPublishPins('Test', createdProject);
         expect(result.nModified).toBeGreaterThan(0);
-        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+        createdProject = await projectDAO.getProject(constants.SECURE_ROLES, createdProject._id);
 
         result = await pinDAO.deletePin('Test', createdProject.pins[2], createdProject);
         expect(result.nModified).toBeGreaterThan(0);
@@ -141,7 +139,7 @@ describe('API Testing - Project DAO', () =>
         result = await pinDAO.deletePin('Test', createdProject.pins[0], createdProject);
         expect(result.nModified).toBeGreaterThan(0);
 
-        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+        createdProject = await projectDAO.getProject(constants.SECURE_ROLES, createdProject._id);
         expect(createdProject.pins.length).toEqual(0);
     });
 
@@ -201,19 +199,19 @@ describe('API Testing - Project DAO', () =>
         };
 
         let result = await projectDAO.addExtension('Test', extension, createdProject);
-        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+        createdProject = await projectDAO.getProject(constants.SECURE_ROLES, createdProject._id);
         expect(result.nModified).toBeGreaterThan(0);
         expect(createdProject.reviewExtensions).not.toEqual(null);
         expect(createdProject.reviewExtensions.length).toBeGreaterThan(0);
 
         createdProject.reviewExtensions[0].description = 'This is an update';
         result = await projectDAO.updateExtension('Test', extension, createdProject);
-        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+        createdProject = await projectDAO.getProject(constants.SECURE_ROLES, createdProject._id);
         expect(result.nModified).toBeGreaterThan(0);
         expect(createdProject.reviewExtensions).not.toEqual(null);
         expect(createdProject.reviewExtensions.length).toBeGreaterThan(0);
 
         result = await projectDAO.deleteExtension('Test', extension, createdProject);
-        createdProject = await projectDAO.getProject(SECURE_ROLES, createdProject._id);
+        createdProject = await projectDAO.getProject(constants.SECURE_ROLES, createdProject._id);
     });*/
 });

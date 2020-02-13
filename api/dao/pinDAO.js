@@ -49,10 +49,7 @@ exports.getProjectPins = async function(user, roles, project, pageNumber, pageSi
           return [{ total_items: 0 }];
         }
 
-        data[0].pins.map(pin => 
-        {
-            thePins.push(mongoose.Types.ObjectId(pin));
-        })
+        thePins = data[0].pins.map(pin => mongoose.Types.ObjectId(pin));
         
         query = { _id: { $in: thePins } }
         const read = data[0].pinsRead;
@@ -85,7 +82,7 @@ exports.getProjectPins = async function(user, roles, project, pageNumber, pageSi
                                                     sort, // sort
                                                     skip, // skip
                                                     limit, // limit
-                                                    true); // count
+                                                    false); // count
 
             //Add out pinsread field to our response
             if (orgData && orgData.length > 0) 

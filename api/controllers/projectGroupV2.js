@@ -4,23 +4,13 @@ const Actions    = require('../helpers/actions');
 const projectDAO = require('../dao/projectDAO');
 const projectGroupDAO = require('../dao/projectGroupDAO');
 
-// Constants
-const PUBLIC_ROLES = ['public'];
-const SECURE_ROLES = ['sysadmin', 'staff'];
-// Vars
-/* put any needed local variables here */
-// functions
-/* put any needd local function here */
-
-// Exports
-
 // OPTIONS
-exports.projectGroupOptions = function (args, res, rest) 
+exports.projectGroupOptions = function (args, res, next)
 {
   res.status(200).send();
 };
 
-exports.projectGroupOptionsProtected = function (args, res, rest) 
+exports.projectGroupOptionsProtected = function (args, res, next)
 {
   res.status(200).send();
 };
@@ -30,7 +20,7 @@ exports.projectGroupOptionsProtected = function (args, res, rest)
 // ? no getMemeber (resource)
 
 // POST (Protected only createGroup)
-exports.createGroup = async function (args, res, rest) 
+exports.createGroup = async function (args, res, next)
 {
     defaultLog.debug('>>> {POST} /Projects/{id}/Groups');
 
@@ -44,12 +34,12 @@ exports.createGroup = async function (args, res, rest)
             defaultLog.debug(' Creating group for project ' + projectId);
             defaultLog.debug(' group: ' + JSON.stringify(group));
 
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
+            let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
             if(project)
             {
                 let savedGroup = await projectGroupDAO.createGroup(args.swagger.params.auth_payload.preferred_username, group.name, project);
-                savedGroup = projectGroupDAO.groupHateoas(savedGroup, SECURE_ROLES);
+                savedGroup = projectGroupDAO.groupHateoas(savedGroup, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 201, savedGroup);
             }
             else
@@ -74,7 +64,7 @@ exports.createGroup = async function (args, res, rest)
 };
 
 // DELETE (Protected only deleteGroup)
-exports.deleteGroup = async function (args, res, rest) 
+exports.deleteGroup = async function (args, res, next)
 {
     defaultLog.debug('>>> {DELETE} /Projects/{projId}/Groups/{groupId}');
 
@@ -87,13 +77,16 @@ exports.deleteGroup = async function (args, res, rest)
 
             defaultLog.debug(' Deleting group ' + groupId + ' from project ' + projectId);
 
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
-            let group = await projectGroupDAO.getGroup(groupId);
+            let resources = await Promise.all([projectDAO.getProject(constants.SECURE_ROLES, projectId),
+                                               projectGroupDAO.getGroup(groupId)]);
+
+            let project = resources[0];
+            let group = resources[1];
 
             if(project && group)
             {
                 group = await projectGroupDAO.deleteGroup(args.swagger.params.auth_payload.preferred_username, group, project);
-                group = projectGroupDAO.groupHateoas(group, SECURE_ROLES);
+                group = projectGroupDAO.groupHateoas(group, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 200, group);
             }
             else
@@ -118,7 +111,7 @@ exports.deleteGroup = async function (args, res, rest)
 };
 
 // PUT (Protected only updateGroup)
-exports.updateGroup = async function (args, res, rest) 
+exports.updateGroup = async function (args, res, next)
 {
     defaultLog.debug('>>> {PUT} /Projects/{projId}/Groups/{groupId}');
 
@@ -132,13 +125,16 @@ exports.updateGroup = async function (args, res, rest)
 
             defaultLog.debug(' Updating group ' + groupId + ' from project ' + projectId);
 
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
-            let sourceGroup = await projectGroupDAO.getGroup(groupId);
+            let resources = await Promise.all([projectDAO.getProject(constants.SECURE_ROLES, projectId),
+                                               projectGroupDAO.getGroup(groupId)]);
+
+            let project = resources[0];
+            let sourceGroup = resources[1];
 
             if(project && updatedGroup && sourceGroup)
             {
                 updatedGroup = await projectGroupDAO.updateGroup(args.swagger.params.auth_payload.preferred_username, updatedGroup, sourceGroup);
-                updatedGroup = projectGroupDAO.groupHateoas(updatedGroup, SECURE_ROLES);
+                updatedGroup = projectGroupDAO.groupHateoas(updatedGroup, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 200, updatedGroup);
             }
             else
@@ -163,7 +159,7 @@ exports.updateGroup = async function (args, res, rest)
 };
 
 // POST (Protected only createGroupMember)
-exports.createGroupMemeber = async function (args, res, rest) 
+exports.createGroupMemeber = async function (args, res, next)
 {
     defaultLog.debug('>>> {POST} /Projects/{projId}/Groups/{groupId}/members');
 
@@ -178,13 +174,16 @@ exports.createGroupMemeber = async function (args, res, rest)
             defaultLog.debug(' Creating group ' + groupId + ' members');
             defaultLog.debug(' Members: ' + JSON.stringify(members));
 
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
-            let group = await projectGroupDAO.getGroup(groupId);
+            let resources = await Promise.all([projectDAO.getProject(constants.SECURE_ROLES, projectId),
+                                            projectGroupDAO.getGroup(groupId)]);
+
+            let project = resources[0];
+            let group = resources[1];
 
             if(project && group && members)
             {
                 updatedGroup = await projectGroupDAO.addGroupMember(args.swagger.params.auth_payload.preferred_username, group, members);
-                updatedGroup = projectGroupDAO.groupHateoas(updatedGroup, SECURE_ROLES);
+                updatedGroup = projectGroupDAO.groupHateoas(updatedGroup, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 201, updatedGroup);
             }
             else
@@ -209,7 +208,7 @@ exports.createGroupMemeber = async function (args, res, rest)
 };
 
 // GET (Protected only getGroupMembers)
-exports.fetchGroupMemebers = async function (args, res, rest) 
+exports.fetchGroupMemebers = async function (args, res, next)
 {
     defaultLog.debug('>>> {GET} /Projects/{projId}/Groups/{groupId}/members');
 
@@ -222,8 +221,11 @@ exports.fetchGroupMemebers = async function (args, res, rest)
 
             defaultLog.debug(' Fetching group ' + groupId + ' members from project ' + projectId);
 
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
-            let group = await projectGroupDAO.getGroup(groupId);
+            let resources = await Promise.all([projectDAO.getProject(constants.SECURE_ROLES, projectId),
+                                               projectGroupDAO.getGroup(groupId)]);
+
+            let project = resources[0];
+            let group = resources[1];
 
             if(project && group)
             {
@@ -231,8 +233,8 @@ exports.fetchGroupMemebers = async function (args, res, rest)
                 let pageSize   = args.swagger.params.hasOwnProperty('pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
                 let sortBy     = args.swagger.params.hasOwnProperty('sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
 
-                let members = await projectGroupDAO.getGroupMembers(SECURE_ROLES, args.swagger.params.auth_payload.preferred_username, group, sortBy, pageSize, pageNumber);
-                members = projectGroupDAO.groupHateoas(members, SECURE_ROLES);
+                let members = await projectGroupDAO.getGroupMembers(constants.SECURE_ROLES, args.swagger.params.auth_payload.preferred_username, group, sortBy, pageSize, pageNumber);
+                members = projectGroupDAO.groupHateoas(members, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 200, members);
             }
             else
@@ -257,7 +259,7 @@ exports.fetchGroupMemebers = async function (args, res, rest)
 };
 
 // DELETE (Protected only deleteGroupMember)
-exports.deleteGroupMember = async function (args, res, rest) 
+exports.deleteGroupMember = async function (args, res, next)
 {
     defaultLog.debug('>>> {DELETE} /Projects/{projId}/Groups/{groupId}/members/{memberId}');
 
@@ -271,14 +273,18 @@ exports.deleteGroupMember = async function (args, res, rest)
 
             defaultLog.debug(' Deleting member ' + memberId + ' from group ' + groupId + ' from project ' + projectId);
 
-            let project = await projectDAO.getProject(SECURE_ROLES, projectId);
-            let group = await projectGroupDAO.getGroup(groupId);
-            let member = await projectGroupDAO.getGroupMember(memberId); // this will duplicate getUser?
+            let resources = await Promise.all([projectDAO.getProject(constants.SECURE_ROLES, projectId), 
+                                               projectGroupDAO.getGroup(groupId), 
+                                               projectGroupDAO.getGroupMember(memberId)]);
+
+            let project = resources[0];
+            let group = resources[1];
+            let member = resources[2];
 
             if(project && group && member)
             {
                 let updatedGroup = await projectGroupDAO.deleteGroupMember(args.swagger.params.auth_payload.preferred_username, group, member);
-                data = projectGroupDAO.groupHateoas(data, SECURE_ROLES);
+                data = projectGroupDAO.groupHateoas(data, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 200, updatedGroup);
             }
             else
