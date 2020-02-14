@@ -292,7 +292,7 @@ exports.protectedGet = async function (args, res, next) {
     serializeProjectVirtuals(data);
 
     // attach projects featuredDocument IDs
-    data = Utils.attachFeaturedDocuments(data);
+    data = await Utils.attachFeaturedDocuments(data);
 
     defaultLog.info('Got comment project(s):', data);
     return Actions.sendResponse(res, 200, data);

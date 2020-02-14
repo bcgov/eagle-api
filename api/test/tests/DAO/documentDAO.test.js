@@ -7,6 +7,8 @@ const documentDAO        = require('../../../dao/documentDAO');
 const factory_helper     = require('../../generate-data/factories/factory_helper');
 const constants          = require('../../../helpers/constants');
 const document           = require('../../../helpers/models/document');
+const project            = require('../../../helpers/models/project');
+const fs                 = require('fs');
 
 const app = test_helper.app;
 
@@ -88,13 +90,51 @@ describe('API Testing - Documents DAO', () =>
     {
         // create a dummy project
         let project = await projectDAO.createProject('Test User', testProject);
+        // let comment = Waiting for Comment v2 controller and handlers
+        
+        // get a couple of dummy file handles for upload
+        //const publicFile = new File(['(⌐□_□)'], 'testPublicFile.png', { type: 'image/png' })
+        const secureFile = fs.readFileSync('../test_docs/Oahu.png');
+        //let publicDocumentDetails = 
+        //{
+        //    originalName       : 'testPublicFile',
+        //    displayName        : fileName,
+        //    documentSource     : 'COMMENT',
+        //    documentAuthor     : 'Johnny Awesome',
+        //    documentAuthorType : null,
+        //};
 
-        // create Public
-        let pubDocument = await documentDAO.createDocument('Test User', project._id, null, ?, {}, true);
+        let secureDocumentDetails = 
+        {
+            originalName       : 'testSecureFile',
+            fileName           : originalName,
+            displayName        : fileName,
+            legislation        : null,
+            documentSource     : 'PROJECT',
+            eaoStatus          : 'Published',
+            publish            : false,
+            milestone          : null,
+            type               : null,
+            documentAuthor     : 'Johnny Awesome',
+            documentAuthorType : null,
+            dateUploaded       : new Date(),
+            datePosted         : new Date(),
+            description        : 'Testing, testing, 1, 2, 3',
+            projectPhase       : null
+        };
+
+        // create Public ? Waiting for comment v2 enpoints
+        // let pubDocument = await documentDAO.createDocument('Test User', null, comment, ?, publicDocumentDetails, true);
+
+        console.log(secureFile);
+        console.log(JSON.stringify(secureFile));
+
+        expect(0).toEqual(1);
+
         // create Secure
-        let secureDocument = await documentDAO.createDocument('Test User', project._id, null, ?, {}, false);
+        let secureDocument = await documentDAO.createDocument('Test User', project._id, null, secureFile, secureDocumentDetails, false);
         // update
-        let updatedDocument = await documentDAO.updateDocument('Test User', secureDocument, secureDocument.project, ?, {});
+        let updatedDocument = await documentDAO.updateDocument('Test User', secureDocument, secureDocument.project, secureFile, {});
         // publish
         updatedDocument = await documentDAO.publishDocument('Test User', updatedDocument);
         // unpublish
@@ -107,10 +147,10 @@ describe('API Testing - Documents DAO', () =>
         let meta = await documentDAO.downloadDocumentGetMeta(constants.SECURE_ROLES, 'Test User', updatedDocument, 'good_name');
         // delete
         updatedDocument = await documentDAO.deleteDocument('Test User', updatedDocument);
-        pubDocument = await documentDAO.deleteDocument('Test User', pubDocument);
+        //pubDocument = await documentDAO.deleteDocument('Test User', pubDocument);
         // delete the temp documents from Minio as well!
         // public
-        MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, updatedDocument.project, updatedDocument.internalURL);
+        //MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, updatedDocument.project, updatedDocument.internalURL);
         // secure
         MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, pubDocument.project, pubDocument.internalURL);               
     });
