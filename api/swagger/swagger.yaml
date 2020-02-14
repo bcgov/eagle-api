@@ -6779,7 +6779,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: projectOptionsProtected
+      operationId: projectOptions
       description: "Options on Project GET Route"
       parameters:
         - name: projId
@@ -6813,6 +6813,76 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
+  /v2/public/projects/{projId}/documents:
+    x-swagger-router-controller: projectV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: projectOptions
+      description: "Options on Project GET Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - project
+      summary: "Get a project"
+      operationId: fetchDocuments
+      description: "Public access to retreiving projects."
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+        - in: query
+          name: pageNumber
+          type: number
+          required: false
+          description: "Page number (ignored if pageSize is set to 0, defaults to 1)"
+        - in: query
+          name: pageSize
+          type: number
+          required: false
+          description: "Number of results per page (a value of 0 will fetch all, defaults to 10)"
+        - in: query
+          name: sortBy
+          description: "Fields to sort by."
+          required: false
+          type: string
+        - in: query
+          name: keywords
+          description: "keywords search filter."
+          required: false
+          type: string
+        - in: query
+          name: query
+          description: "Custom query KVP object."
+          required: false
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
         "403":
           description: "Access Denied"
           schema:
@@ -6900,6 +6970,76 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
+  /v2/projects/{projId}/documents:
+    x-swagger-router-controller: projectV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: projectOptionsProtected
+      description: "Options on Project GET Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - project
+      summary: "Get a project"
+      operationId: fetchDocumentsSecure
+      description: "Public access to retreiving projects."
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+        - in: query
+          name: pageNumber
+          type: number
+          required: false
+          description: "Page number (ignored if pageSize is set to 0, defaults to 1)"
+        - in: query
+          name: pageSize
+          type: number
+          required: false
+          description: "Number of results per page (a value of 0 will fetch all, defaults to 10)"
+        - in: query
+          name: sortBy
+          description: "Fields to sort by."
+          required: false
+          type: string
+        - in: query
+          name: keywords
+          description: "keywords search filter."
+          required: false
+          type: string
+        - in: query
+          name: query
+          description: "Custom query KVP object."
+          required: false
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
         "403":
           description: "Access Denied"
           schema:

@@ -68,7 +68,7 @@ exports.createDocumentSecure = async function (args, res, next)
                 projectPhase       : args.swagger.params.projectPhase ? mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null
             }
 
-            let document = await documentDAO.createDocument(userName, projecId, comment, uploadedFile, documentDetails);
+            let document = await documentDAO.createDocument(userName, projecId, comment, uploadedFile, documentDetails, false);
             document = documentDAO.documentHateoas(document, constants.SECURE_ROLES);
             
             return Actions.sendResponseV2(res, 201, document);
@@ -392,7 +392,7 @@ exports.unfeatureDocument = async function (args, res, next)
 };
 
 // GET (Secure, downloadDocument)
-exports.downloadDocumentSecure = function(args, res, next)
+exports.downloadDocumentSecure = async function(args, res, next)
 {
     defaultLog.debug('>>> {GET}/Documents/{id}/Download');
 
@@ -455,7 +455,7 @@ exports.createDocument = async function (args, res, next)
                 documentSource     : 'COMMENT'
             }
 
-            let document = await documentDAO.createDocument(userName, projecId, comment, uploadedFile, documentDetails);
+            let document = await documentDAO.createDocument(userName, projecId, comment, uploadedFile, documentDetails, true);
             document = documentDAO.documentHateoas(document, constants.PUBLIC_ROLES);
             
             return Actions.sendResponseV2(res, 201, document);
@@ -530,7 +530,7 @@ exports.fetchDocument = async function (args, res, next)
 };
 
 // GET (Public, downloadDocument)
-exports.downloadDocument = function(args, res, next)
+exports.downloadDocument = async function(args, res, next)
 {
     defaultLog.debug('>>> {GET}/Public/Documents/{id}/Download');
 

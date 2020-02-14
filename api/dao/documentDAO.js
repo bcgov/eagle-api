@@ -31,7 +31,7 @@ exports.documentHateoas = function(document, roles)
         document.links.push({ rel: 'fetch', title: 'secure Document Download', method: 'GET', href: '/api/v2/Documents/' + document._id + '/Download' });
     }
 
-    return project;
+    return document;
 };
 
 exports.createDocument = async function(userName, projectId, comment, uploadedFile, documentDetails, isPublic)
@@ -202,12 +202,7 @@ exports.fetchDocuments = async function(pageNumber, pageSize, sortBy, query, key
         };
     }
 
-    // Score, Misc.
-    queryAggregates.push(
-    { 
-        $addFields: { score:{ $meta: 'textScore' } }
-    });
-
+    // Misc.
     let collation = 
     {
         locale: 'en',
@@ -391,6 +386,10 @@ exports.downloadDocumentGetMeta = async function (roles, userName, document, fil
     {
         fileName = fileName + '.' + fileType;
     }
+
+    // ? validate file name. Make sure it's not going to explode when it hits the user
+    // ? Something like:
+    // ^(?:[\w]\:|\\)(\\[a-z_\-\s0-9\.]+)+\.(txt|png|gif|jpg|jpeg|pdf|doc|docx|xls|xlsx)$
 
     return MinioController.statObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, document.internalURL)
                           .then(function (objectMeta) 

@@ -1,8 +1,9 @@
 // Imports
-const defaultLog = require('winston').loggers.get('default');
-const Actions    = require('../helpers/actions');
-const projectDAO = require('../dao/projectDAO');
-const constants  = require('../helpers/constants');
+const defaultLog  = require('winston').loggers.get('default');
+const Actions     = require('../helpers/actions');
+const projectDAO  = require('../dao/projectDAO');
+const documentDAO = require('../dao/documentDAO');
+const constants   = require('../helpers/constants');
 
 async function getProjectHandler(roles, params)
 {
@@ -501,9 +502,7 @@ exports.fetchFeaturedDocuments = async function (args, res, next)
     {
         if (args.swagger.params.projId && args.swagger.params.projId.value) 
         {
-            let projectModel = mongoose.model('Project');
-
-            let project = await projectDAO.getProject(constants.PUBLIC_ROLES, args.swagger.params.projId);
+            let project = await projectDAO.getProject(constants.PUBLIC_ROLES, args.swagger.params.projId.value);
             let featuredDocs = await getFeaturedDocuments(project, true);
 
             return Actions.sendResponseV2(res, 200, featuredDocs);
@@ -572,3 +571,71 @@ var getFeaturedDocuments = async function(project, sanitizeForPublic)
         throw Error(e);
     }
 }
+
+exports.fetchDocuments = async function (args, res, next) 
+{
+    defaultLog.debug('>>> {GET}/Public/Projects/{id}/Documents');
+
+    try
+    {
+        if (args.swagger.params.projId && args.swagger.params.projId.value) 
+        {
+            let pageNumber = args.swagger.params.hasOwnProperty('pageNumber') && args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
+            let pageSize   = args.swagger.params.hasOwnProperty('pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
+            let sortBy     = args.swagger.params.hasOwnProperty('sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
+            let query      = args.swagger.params.hasOwnProperty('query')      && args.swagger.params.query.value      ? args.swagger.params.query.value      : '';
+            let keywords   = args.swagger.params.hasOwnProperty('keywords')   && args.swagger.params.keywords.value   ? args.swagger.params.keywords.value   : '';
+
+            let documents = await documentDAO.fetchDocuments(pageNumber, pageSize, sortBy, query, keywords, [args.swagger.params.projId.value], [], constants.PUBLIC_ROLES);
+
+            return Actions.sendResponseV2(res, 200, documents);
+        } 
+        else 
+        {
+            return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project not found'});
+        }
+    }
+    catch(e)
+    {
+        defaultLog.error('### Error in {GET}/Public/Projects/{id}/Documents :', e);
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects{id}/Documents' });
+    }
+    finally
+    {
+        defaultLog.debug('<<< {GET}/Public/Projects/{id}/Documents');
+    }
+};
+
+exports.fetchDocumentsSecure = async function (args, res, next) 
+{
+    defaultLog.debug('>>> {GET}/Projects/{id}/Documents');
+
+    try
+    {
+        if (args.swagger.params.projId && args.swagger.params.projId.value) 
+        {
+            let pageNumber = args.swagger.params.hasOwnProperty('pageNumber') && args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
+            let pageSize   = args.swagger.params.hasOwnProperty('pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
+            let sortBy     = args.swagger.params.hasOwnProperty('sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
+            let query      = args.swagger.params.hasOwnProperty('query')      && args.swagger.params.query.value      ? args.swagger.params.query.value      : '';
+            let keywords   = args.swagger.params.hasOwnProperty('keywords')   && args.swagger.params.keywords.value   ? args.swagger.params.keywords.value   : '';
+
+            let documents = await documentDAO.fetchDocuments(pageNumber, pageSize, sortBy, query, keywords, [args.swagger.params.projId.value], [], constants.SECURE_ROLES);
+
+            return Actions.sendResponseV2(res, 200, documents);
+        } 
+        else 
+        {
+            return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project not found'});
+        }
+    }
+    catch(e)
+    {
+        defaultLog.error('### Error in {GET}/Projects/{id}/Documents :', e);
+        return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects/{id}/Documents' });
+    }
+    finally
+    {
+        defaultLog.debug('<<< {GET}/Projects/{id}/Documents');
+    }
+};
