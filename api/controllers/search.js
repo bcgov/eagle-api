@@ -84,7 +84,6 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   const sortingPagingAggr = searchAggregator.createSortingPagingAggr(schemaName, sortingValue, sortField, sortDirection, pageNum, pageSize);
 
   // Combine all the aggregations.
-  let aggregation;
   if (!schemaAggregation) {
     aggregation = [...matchAggregation, ...sortingPagingAggr];
   } else {
