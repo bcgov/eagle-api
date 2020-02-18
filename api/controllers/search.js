@@ -27,47 +27,44 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   // Decode any parameters here that may arrive encoded.
   const decodedKeywords = keywords ? decodeURIComponent(keywords) : undefined;
 
-  // Create main matching aggregation.
-  let aggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles)
-
   // Create appropriate aggregations for the schema.
   let schemaAggregation;
   let matchAggregation;
   switch (schemaName) {
     case constants.DOCUMENT:
-      matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, categorized, roles);
+      matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, categorized, roles);
       schemaAggregation = documentAggregator.createDocumentAggr(populate, roles,);
       break;
     case constants.PROJECT:
-      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles);
+      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
       schemaAggregation = projectAggregator.createProjectAggr(projectLegislation);
       break;
     case constants.GROUP:
-      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles);
+      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
       schemaAggregation = groupAggregator.createGroupAggr(populate);
       break;
     case constants.USER:
-      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles);
+      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
       schemaAggregation = userAggregator.createUserAggr(populate);
       break;
     case constants.RECENT_ACTIVITY:
-      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles);
+      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
       schemaAggregation = recentActivityAggregator.createRecentActivityAggr(populate);
       break;
     case constants.INSPECTION:
-      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles);
+      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
       schemaAggregation = inspectionAggregator.createInspectionAggr(populate);
       break;
     case constants.INSPECTION_ELEMENT:
-      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles);
+      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
       schemaAggregation = inspectionAggregator.createInspectionElementAggr(populate);
       break;
     case constants.NOTIFICATION_PROJECT:
-      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles);
+      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
       schemaAggregation = notificationProjectAggregator.createNotificationProjectAggr(populate);
       break;
     case constants.LIST:
-      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, keywords, caseSensitive, or, and, roles);
+      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
       break;
     default:
       matchAggregation = null
@@ -84,6 +81,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   const sortingPagingAggr = searchAggregator.createSortingPagingAggr(schemaName, sortingValue, sortField, sortDirection, pageNum, pageSize);
 
   // Combine all the aggregations.
+  let aggregation;
   if (!schemaAggregation) {
     aggregation = [...matchAggregation, ...sortingPagingAggr];
   } else {
