@@ -176,7 +176,7 @@ const generateExpArray = async (field, roles, schemaName) => {
     await Promise.all(Object.keys(queryString).map(async item => {
       // make sure the entry isn't URL encoded. Also, shift any ampersand
       // values from %26 to &
-      const entry = decodeURIComponent(queryString[item]);
+      let entry = decodeURIComponent(queryString[item]);
       console.log("item:", item, entry);
       const orArray = [];
 
@@ -277,12 +277,13 @@ const getConvertedValue = (item, entry) => {
       // Bool
       const tempObj = {};
       tempObj[item] = true;
-      tempObj.active = true;
       return tempObj;
     } else if (entry === 'false') {
       console.log("bool");
       // Bool
-      return { [item]: false };
+      const tempObj = {};
+      tempObj[item] = false;
+      return tempObj;
     } else {
       console.log("string");
       return { [item]: entry };
