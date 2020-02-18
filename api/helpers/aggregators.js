@@ -322,12 +322,14 @@ const getConvertedValue = (item, entry) => {
       // Bool
       const tempObj = {};
       tempObj[item] = true;
-      tempObj.active = true;
       return tempObj;
     } else if (entry === 'false') {
       console.log("bool");
       // Bool
-      return { [item]: false };
+      console.log("bool");
+      // Bool
+      const tempObj = {};
+      tempObj[item] = false;
     } else {
       console.log("string");
       return { [item]: entry };
