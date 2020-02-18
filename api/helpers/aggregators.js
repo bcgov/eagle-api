@@ -314,26 +314,19 @@ const handleProjectTerms = (item) => {
 const getConvertedValue = (item, entry) => {
   if (isNaN(entry)) {
     if (isValidObjectId(entry)) {
-      console.log("objectid");
       // ObjectID
       return { [item]: mongoose.Types.ObjectId(entry) };
-    } else if (entry === 'true') {
-      console.log("bool");
-      // Bool
+    } else if (entry.toLowerCase() === 'true') {
       const tempObj = {};
       tempObj[item] = true;
-      tempObj.active = true;
       return tempObj;
-    } else if (entry === 'false') {
-      console.log("bool");
-      // Bool
-      return { [item]: false };
+    } else if (entry.toLowerCase() === 'false') {
+      const tempObj = {};
+      tempObj[item] = false;
     } else {
-      console.log("string");
       return { [item]: entry };
     }
   } else {
-    console.log("number");
     return { [item]: parseInt(entry) };
   }
 };
