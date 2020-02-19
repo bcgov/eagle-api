@@ -243,3 +243,4 @@ function generateSingleFactory(modelName, numberToGenerate, buildOptions = {}) {
 exports.uss = uniqueStaticSeeds; // external shorthand alias for brevity
 exports.generateEntireDatabase = generateEntireDatabase;
 exports.generateSingleFactory = generateSingleFactory;
+exports.generateProjects = generateProjects;

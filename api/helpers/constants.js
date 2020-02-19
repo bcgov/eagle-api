@@ -15,3 +15,6 @@ exports.schemaTypes = Object.freeze({
 });
 
 exports.MAX_FEATURE_DOCS = 5;
+
+exports.PUBLIC_ROLES = ['public'];
+exports.SECURE_ROLES = ['sysadmin', 'staff'];
