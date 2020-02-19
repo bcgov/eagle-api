@@ -221,24 +221,24 @@ const generateExpArray = async (field, roles, schemaName) => {
     console.log("queryString:", queryString);
 
     await Promise.all(Object.keys(queryString).map(async item => {
-      const entry = decodeURIComponent(queryString[item]);
+      let entry = queryString[item];
       console.log("item:", item, entry);
       const orArray = [];
 
       if (item === 'pcp') {
-        await handlePCPItem(roles, expArray, entry);
+        await handlePCPItem(roles, expArray, decodeURIComponent(entry));
       } else if (Array.isArray(entry)) {
         // Arrays are a list of options so will always be ors
         if (schemaName === constants.PROJECT) {
           const fields = handleProjectTerms(item);
           fields.map(field => {
             entry.map(element => {
-              orArray.push(getConvertedValue(field, element));
+              orArray.push(getConvertedValue(field, decodeURIComponent(element)));
             });
           })
         } else {
           entry.map(element => {
-            return orArray.push(getConvertedValue(item, element));
+            return orArray.push(getConvertedValue(item, decodeURIComponent(element)));
           });
         }
 
@@ -254,28 +254,28 @@ const generateExpArray = async (field, roles, schemaName) => {
         switch (item) {
           case 'decisionDateStart':
             for(let field of fields) {
-              handleDateStartItem(orArray, field, entry);
+              handleDateStartItem(orArray, field, decodeURIComponent(entry));
             }
             break;
           case 'decisionDateEnd':
             for(let field of fields) {
-              handleDateEndItem(orArray, field, entry);
+              handleDateEndItem(orArray, field, decodeURIComponent(entry));
             }
             break;
           case 'datePostedStart':
-            handleDateStartItem(orArray, ['datePosted'], entry);
+            handleDateStartItem(orArray, ['datePosted'], decodeURIComponent(entry));
             break;
           case 'datePostedEnd':
-            handleDateEndItem(orArray, ['datePosted'], entry);
+            handleDateEndItem(orArray, ['datePosted'], decodeURIComponent(entry));
             break;
           default:
             if (schemaName === constants.PROJECT) {
               for(let field of fields) {
-                orArray.push(getConvertedValue(field, entry));
+                orArray.push(getConvertedValue(field, decodeURIComponent(entry)));
               }
               break;
             } else {
-              orArray.push(getConvertedValue(fields[0], entry));
+              orArray.push(getConvertedValue(fields[0], decodeURIComponent(entry)));
               break;
             }
         }
