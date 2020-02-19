@@ -66,6 +66,9 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     case constants.LIST:
       matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
       break;
+    case constants.ORGANIZATION:
+      matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
+      break;
     default:
       matchAggregation = null
       schemaAggregation = null
