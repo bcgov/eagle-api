@@ -221,7 +221,7 @@ const generateExpArray = async (field, roles, schemaName) => {
     console.log("queryString:", queryString);
 
     await Promise.all(Object.keys(queryString).map(async item => {
-      const entry = queryString[item];
+      const entry = decodeURIComponent(queryString[item]);
       console.log("item:", item, entry);
       const orArray = [];
 
