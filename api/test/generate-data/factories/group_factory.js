@@ -27,7 +27,7 @@ factory.define(factoryName, Group, buildOptions => {
     , read             : faker.random.arrayElement(["public", "sysadmin", ["public", "sysadmin"]])
     , write            : faker.random.arrayElement(["public", "sysadmin", ["public", "sysadmin"]])
     , delete           : faker.random.arrayElement(["public", "sysadmin", ["public", "sysadmin"]])
-
+    , links: []
   };
   return attrs;
 });

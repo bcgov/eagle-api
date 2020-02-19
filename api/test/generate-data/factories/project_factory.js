@@ -288,7 +288,8 @@ factory.define(factoryName, Project, buildOptions =>{
       , delete                    : ["sysadmin", "staff", "project-system-admin", "project-intake"]
       , pins                      : [mongTypes.ObjectId()]
       , pinsRead: ["sysadmin", "staff", "project-proponent", "project-admin", "system-eao", "project-intake", "project-team", "project-system-admin", "public"]
-      , pinsHistory               : {} 
+      , pinsHistory               : {}
+      , links: []
     };
 
     if (legislationYearList.includes(1996)) attrs.legislation_1996 = projectDataLeg1996;
