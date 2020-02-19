@@ -68,6 +68,7 @@ var tagList = [
   'projLead',
   'execProjectDirector',
   'complianceLead',
+  'featuredDocuments',
   'review180Start',
   'review45Start',
   'reviewSuspensions',
@@ -201,6 +202,10 @@ exports.publicGet = async function (args, res, next) {
     Utils.recordAction('Get', 'Project', 'public', args.swagger.params.projId && args.swagger.params.projId.value ? args.swagger.params.projId.value : null);
     // Sanitize for public.
     let sanitizedData = Utils.filterData('Project', data, ['public']);
+
+    // attach projects featuredDocument IDs
+    sanitizedData = await Utils.attachFeaturedDocuments(sanitizedData);
+
     console.log("DA:", JSON.stringify(sanitizedData));
     return Actions.sendResponse(res, 200, sanitizedData);
   } catch (e) {
@@ -285,6 +290,10 @@ exports.protectedGet = async function (args, res, next) {
       commentPeriodPipeline);
     Utils.recordAction('Get', 'Project', args.swagger.params.auth_payload.preferred_username, args.swagger.params.projId && args.swagger.params.projId.value ? args.swagger.params.projId.value : null);
     serializeProjectVirtuals(data);
+
+    // attach projects featuredDocument IDs
+    data = await Utils.attachFeaturedDocuments(data);
+
     defaultLog.info('Got comment project(s):', data);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
@@ -1298,4 +1307,61 @@ var serializeProjectVirtuals = function (data) {
       item.nature = project.get('nature');
     }
   });
+}
+
+exports.getFeaturedDocuments = async function (args, res, next) {
+  try
+  {
+    if (args.swagger.params.projId && args.swagger.params.projId.value) 
+    {
+      let projectModel = mongoose.model('Project');
+      projectModel.findOne({ _id: args.swagger.params.projId.value }, async function (err, project) 
+      {
+        let featuredDocs = await fetchFeaturedDocuments(project, true);
+  
+        return Actions.sendResponse(res, 200, featuredDocs);
+      });
+    } 
+    else 
+    {
+      return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found'});
+    }
+  }
+  catch(e)
+  {
+    return Actions.sendResponse(res, 500, {});
+  }
+};
+
+exports.getFeaturedDocumentsSecure = async function (args, res, next) {
+  try
+  {
+    if (args.swagger.params.projId && args.swagger.params.projId.value) 
+    {
+      let project = await mongoose.model('Project').findById(mongoose.Types.ObjectId(args.swagger.params.projId.value));
+      
+      let featuredDocs = await fetchFeaturedDocuments(project, false);
+  
+      return Actions.sendResponse(res, 200, featuredDocs);
+    } 
+
+    return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found'});
+  }
+  catch(e)
+  {
+    return Actions.sendResponse(res, 500, {});
+  }
+};
+
+var fetchFeaturedDocuments = async function(project, sanitizeForPublic) {
+  try 
+  {
+    let documents = await mongoose.model('Document').find({ project: project._id, isFeatured: true });
+
+    return documents;
+  } 
+  catch(e) 
+  {
+    throw Error(e);
+  }
 }
