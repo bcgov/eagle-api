@@ -92,6 +92,8 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
 
   }
 
+  console.log(JSON.stringify(aggregation));
+
   return new Promise(function (resolve, reject) {
     var collectionObj = mongoose.model(schemaName);
 
@@ -142,10 +144,14 @@ const executeQuery = async function (args, res) {
   sortBy.forEach((value) => {
     sortDirection = value.charAt(0) === '-' ? -1 : 1;
     sortField = value.slice(1);
-    if (!Object.prototype.hasOwnProperty.call(sortingValue, sortField) && sortField && sortField !== '') {
+    if (!Object.prototype.hasOwnProperty.call(sortingValue, sortField) && sortField && sortField !== '') {      
       sortingValue[sortField] = sortDirection;
     }
   });
+
+  if (sortField === '') {
+    sortField = sortBy[0];
+  }
 
   defaultLog.info("sortingValue:", sortingValue);
   defaultLog.info("sortField:", sortField);

@@ -7,6 +7,7 @@ const FlakeIdGen      = require('flake-idgen');
 const uploadDir       = process.env.UPLOAD_DIRECTORY || "./uploads/";
 const MinioController = require('../helpers/minio');
 const constants       = require('../helpers/constants');
+const mime            = require('mime-types');
 
 const generator = new FlakeIdGen;
 const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING || false;
@@ -40,6 +41,8 @@ exports.createDocument = async function(userName, projectId, comment, uploadedFi
     let ext = mime.extension(uploadedFile.mimetype);
     let tempFilePath = uploadDir + guid + "." + ext;
 
+    console.log(tempFilePath);
+
     try 
     {
         Promise.resolve()
@@ -59,18 +62,20 @@ exports.createDocument = async function(userName, projectId, comment, uploadedFi
             if (!valid) 
             {
                 defaultLog.warn("File failed virus check.");
-                return Actions.sendResponseV2(res, 400, { status: 400, messag: 'File failed virus check.' });
+                throw Error('File failed virus check.');
             } 
             else 
             {
+                console.log('Writing temp file');
                 defaultLog.debug('Writing temp document file...');
                 fs.writeFileSync(tempFilePath, uploadedFile.buffer);
                 defaultLog.debug('Completed writing file. Starting Minio');
                 defaultLog.debug(MinioController.BUCKETS.DOCUMENTS_BUCKET, mongoose.Types.ObjectId(projectId), documentDetails.fileName, tempFilePath)
-  
+                console.log('Minio time!');
                 MinioController.putDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, projectId, documentDetails.fileName, tempFilePath)
                 .then(async function (minioFile) 
                 {
+                    console.log('Create doc');
                     defaultLog.debug("putDocument:", minioFile);
                     defaultLog.debug('Deleting temp document file...');
                     fs.unlinkSync(tempFilePath);

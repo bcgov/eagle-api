@@ -94,7 +94,7 @@ describe('API Testing - Documents DAO', () =>
         
         // get a couple of dummy file handles for upload
         //const publicFile = new File(['(⌐□_□)'], 'testPublicFile.png', { type: 'image/png' })
-        const secureFile = fs.readFileSync('../test_docs/Oahu.png');
+        const secureFile = fs.readFileSync('./api/test/tests/test_docs/Oahu.png');
         //let publicDocumentDetails = 
         //{
         //    originalName       : 'testPublicFile',
@@ -107,8 +107,8 @@ describe('API Testing - Documents DAO', () =>
         let secureDocumentDetails = 
         {
             originalName       : 'testSecureFile',
-            fileName           : originalName,
-            displayName        : fileName,
+            fileName           : 'testSecureFile',
+            displayName        : 'testSecureFile',
             legislation        : null,
             documentSource     : 'PROJECT',
             eaoStatus          : 'Published',
@@ -125,14 +125,10 @@ describe('API Testing - Documents DAO', () =>
 
         // create Public ? Waiting for comment v2 enpoints
         // let pubDocument = await documentDAO.createDocument('Test User', null, comment, ?, publicDocumentDetails, true);
-
-        console.log(secureFile);
-        console.log(JSON.stringify(secureFile));
-
-        expect(0).toEqual(1);
-
         // create Secure
         let secureDocument = await documentDAO.createDocument('Test User', project._id, null, secureFile, secureDocumentDetails, false);
+
+        secureDocument.fileName = 'Updated test file name';
         // update
         let updatedDocument = await documentDAO.updateDocument('Test User', secureDocument, secureDocument.project, secureFile, {});
         // publish

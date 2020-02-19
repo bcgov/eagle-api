@@ -1,8 +1,8 @@
-const defaultLog = require('winston').loggers.get('default');
-const Actions    = require('../helpers/actions');
-const projectDAO = require('../dao/projectDAO');
+const defaultLog  = require('winston').loggers.get('default');
+const Actions     = require('../helpers/actions');
+const projectDAO  = require('../dao/projectDAO');
 const documentDAO = require('../dao/documentDAO');
-const constants  = require('../helpers/constants');
+const constants   = require('../helpers/constants');
 
 async function getDocuments(roles, params)
 {
