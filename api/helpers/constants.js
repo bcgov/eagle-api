@@ -11,6 +11,7 @@ exports.schemaTypes = Object.freeze({
   LIST: 'List',
   COMMENT: 'Comment',
   COMMENT_PERIOD: 'CommentPeriod',
+  ORGANIZATION: 'Organization',
 });
 
 exports.MAX_FEATURE_DOCS = 5;
