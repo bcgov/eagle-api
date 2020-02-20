@@ -94,7 +94,17 @@ describe('API Testing - Documents DAO', () =>
         
         // get a couple of dummy file handles for upload
         //const publicFile = new File(['(⌐□_□)'], 'testPublicFile.png', { type: 'image/png' })
-        const secureFile = fs.readFileSync('./api/test/tests/test_docs/Oahu.png');
+        const secureFileBuffer = fs.readFileSync('./api/test/tests/test_docs/Oahu.png');
+        let secureFile = 
+        {
+            buffer: secureFileBuffer,
+            encoding: '7bit',
+            fieldname: 'upfile',
+            mimetype: 'image/png',
+            originalname: 'Oahu.png',
+            size: 12345
+        };
+
         //let publicDocumentDetails = 
         //{
         //    originalName       : 'testPublicFile',
@@ -126,23 +136,50 @@ describe('API Testing - Documents DAO', () =>
         // create Public ? Waiting for comment v2 enpoints
         // let pubDocument = await documentDAO.createDocument('Test User', null, comment, ?, publicDocumentDetails, true);
         // create Secure
-        let secureDocument = await documentDAO.createDocument('Test User', project._id, null, secureFile, secureDocumentDetails, false);
+        let secureDocument = await documentDAO.createDocument('Test User', project._id, null, secureFile, 'png', secureDocumentDetails, false);
 
+        expect(secureDocument).not.toEqual(null);
+        expect(secureDocument.fileName).toEqual('testSecureFile');
+
+        // Update
         secureDocument.fileName = 'Updated test file name';
-        // update
         let updatedDocument = await documentDAO.updateDocument('Test User', secureDocument, secureDocument.project, secureFile, {});
+
+        expect(updatedDocument).not.toEqual(null);
+        expect(updatedDocument.fileName).toEqual('Updated test file name');
+
         // publish
         updatedDocument = await documentDAO.publishDocument('Test User', updatedDocument);
+
+        expect(updatedDocument).not.toEqual(null);
+        expect(updatedDocument.eaoStatus).toEqual('Published');
+
         // unpublish
         updatedDocument = await documentDAO.unPublishDocument('Test User', updatedDocument);
+
+        expect(updatedDocument).not.toEqual(null);
+        expect(updatedDocument.eaoStatus).toEqual('Rejected');
+
         // feature
         updatedDocument = await documentDAO.featureDocument(updatedDocument, project);
+
+        expect(updatedDocument).not.toEqual(null);
+        expect(updatedDocument.isFeatured).toEqual(true);
+
         // unfeature
         updatedDocument = await documentDAO.unfeatureDocument(updatedDocument, project);
+
+        expect(updatedDocument).not.toEqual(null);
+        expect(updatedDocument.isFeatured).toEqual(false);
+
         // download
         let meta = await documentDAO.downloadDocumentGetMeta(constants.SECURE_ROLES, 'Test User', updatedDocument, 'good_name');
+
         // delete
         updatedDocument = await documentDAO.deleteDocument('Test User', updatedDocument);
+
+        expect(updatedDocument).not.toEqual(null);
+
         //pubDocument = await documentDAO.deleteDocument('Test User', pubDocument);
         // delete the temp documents from Minio as well!
         // public

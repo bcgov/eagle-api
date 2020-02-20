@@ -92,8 +92,6 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
 
   }
 
-  console.log(JSON.stringify(aggregation));
-
   return new Promise(function (resolve, reject) {
     var collectionObj = mongoose.model(schemaName);
 

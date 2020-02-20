@@ -3,6 +3,7 @@ const Actions     = require('../helpers/actions');
 const projectDAO  = require('../dao/projectDAO');
 const documentDAO = require('../dao/documentDAO');
 const constants   = require('../helpers/constants');
+const mime        = require('mime-types');
 
 async function getDocuments(roles, params)
 {
@@ -68,7 +69,9 @@ exports.createDocumentSecure = async function (args, res, next)
                 projectPhase       : args.swagger.params.projectPhase ? mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null
             }
 
-            let document = await documentDAO.createDocument(userName, projecId, comment, uploadedFile, documentDetails, false);
+            let ext = mime.extension(uploadedFile.mimetype);
+
+            let document = await documentDAO.createDocument(userName, projecId, comment, uploadedFile, ext, documentDetails, false);
             document = documentDAO.documentHateoas(document, constants.SECURE_ROLES);
             
             return Actions.sendResponseV2(res, 201, document);
@@ -455,7 +458,9 @@ exports.createDocument = async function (args, res, next)
                 documentSource     : 'COMMENT'
             }
 
-            let document = await documentDAO.createDocument(userName, projecId, comment, uploadedFile, documentDetails, true);
+            let ext = mime.extension(uploadedFile.mimetype);
+            
+            let document = await documentDAO.createDocument(userName, projecId, comment, uploadedFile, ext, documentDetails, true);
             document = documentDAO.documentHateoas(document, constants.PUBLIC_ROLES);
             
             return Actions.sendResponseV2(res, 201, document);

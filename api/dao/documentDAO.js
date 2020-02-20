@@ -8,6 +8,7 @@ const uploadDir       = process.env.UPLOAD_DIRECTORY || "./uploads/";
 const MinioController = require('../helpers/minio');
 const constants       = require('../helpers/constants');
 const mime            = require('mime-types');
+const fs              = require('fs');
 
 const generator = new FlakeIdGen;
 const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING || false;
@@ -35,13 +36,10 @@ exports.documentHateoas = function(document, roles)
     return document;
 };
 
-exports.createDocument = async function(userName, projectId, comment, uploadedFile, documentDetails, isPublic)
+exports.createDocument = async function(userName, projectId, comment, uploadedFile, ext, documentDetails, isPublic)
 {
     let guid = intformat(generator.next(), 'dec');
-    let ext = mime.extension(uploadedFile.mimetype);
     let tempFilePath = uploadDir + guid + "." + ext;
-
-    console.log(tempFilePath);
 
     try 
     {
@@ -66,19 +64,21 @@ exports.createDocument = async function(userName, projectId, comment, uploadedFi
             } 
             else 
             {
-                console.log('Writing temp file');
                 defaultLog.debug('Writing temp document file...');
+                
                 fs.writeFileSync(tempFilePath, uploadedFile.buffer);
+                
                 defaultLog.debug('Completed writing file. Starting Minio');
                 defaultLog.debug(MinioController.BUCKETS.DOCUMENTS_BUCKET, mongoose.Types.ObjectId(projectId), documentDetails.fileName, tempFilePath)
-                console.log('Minio time!');
+                
                 MinioController.putDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, projectId, documentDetails.fileName, tempFilePath)
                 .then(async function (minioFile) 
                 {
-                    console.log('Create doc');
                     defaultLog.debug("putDocument:", minioFile);
                     defaultLog.debug('Deleting temp document file...');
+
                     fs.unlinkSync(tempFilePath);
+                    
                     defaultLog.debug('Deleted! Starting to create document resource');
   
                     var documentModel = mongoose.model('Document');
@@ -143,12 +143,19 @@ exports.createDocument = async function(userName, projectId, comment, uploadedFi
                                 
                                 throw Error(error);
                             });
+                }).catch(function (error) 
+                {
+                    defaultLog.debug('Document creation failed: ', error);
+                    defaultLog.debug('Rolling back document from Minio');
+
+                    throw Error(error);
                 });
             }
         });
     } 
     catch (error) 
     {
+        console.log('### Barf ###');
         delete e['path']; // ? why?
         throw Error(error);
     }
