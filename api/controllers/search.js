@@ -142,7 +142,7 @@ const executeQuery = async function (args, res) {
   sortBy.forEach((value) => {
     sortDirection = value.charAt(0) === '-' ? -1 : 1;
     sortField = value.slice(1);
-    if (!Object.prototype.hasOwnProperty.call(sortingValue, sortField) && sortField && sortField !== '') {      
+    if (!Object.prototype.hasOwnProperty.call(sortingValue, sortField) && sortField && sortField !== '') {
       sortingValue[sortField] = sortDirection;
     }
   });
@@ -150,7 +150,7 @@ const executeQuery = async function (args, res) {
   if (sortField === '') {
     sortField = sortBy[0];
   }
-
+  
   defaultLog.info("sortingValue:", sortingValue);
   defaultLog.info("sortField:", sortField);
   defaultLog.info("sortDirection:", sortDirection);
