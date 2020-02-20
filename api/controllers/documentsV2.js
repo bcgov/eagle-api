@@ -4,6 +4,7 @@ const projectDAO  = require('../dao/projectDAO');
 const documentDAO = require('../dao/documentDAO');
 const constants   = require('../helpers/constants');
 const mime        = require('mime-types');
+const mongoose        = require('mongoose');
 
 async function getDocuments(roles, params)
 {

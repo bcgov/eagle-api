@@ -43,120 +43,107 @@ exports.createDocument = async function(userName, projectId, comment, uploadedFi
 
     try 
     {
-        Promise.resolve()
-        .then(function () 
+        let virusScanSuccessful = false;
+
+        if (ENABLE_VIRUS_SCANNING == 'true') 
         {
-            if (ENABLE_VIRUS_SCANNING == 'true') 
-            {
-                return Utils.avScan(uploadedFile.buffer);
-            } 
-            else 
-            {
-                return true;
-            }
-        })
-        .then(function (valid) 
+            virusScanSuccessful = Utils.avScan(uploadedFile.buffer);
+        } 
+        else 
         {
-            if (!valid) 
+            virusScanSuccessful = true;
+        }
+
+        if (!virusScanSuccessful) 
+        {
+            defaultLog.warn("File failed virus check.");
+            throw Error('File failed virus check.');
+        } 
+        else 
+        {
+            defaultLog.debug('Writing temp document file...');
+            
+            fs.writeFileSync(tempFilePath, uploadedFile.buffer);
+            
+            defaultLog.debug('Completed writing file. Starting Minio');
+            defaultLog.debug(MinioController.BUCKETS.DOCUMENTS_BUCKET, mongoose.Types.ObjectId(projectId), documentDetails.fileName, tempFilePath)
+            
+            let minioFile = await MinioController.putDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, projectId, documentDetails.fileName, tempFilePath)
+
+            defaultLog.debug("putDocument:", minioFile);
+            defaultLog.debug('Deleting temp document file...');
+
+            fs.unlinkSync(tempFilePath);
+            
+            defaultLog.debug('Deleted! Starting to create document resource');
+
+            let documentModel = mongoose.model('Document');
+            let document = new documentModel();
+            // Metadata
+            document.project              = mongoose.Types.ObjectId(projectId);
+            document._comment             = comment;
+            document._addedBy             = userName;
+            document._createdDate         = new Date();
+            document.read                 = ['sysadmin', 'staff'];
+            document.write                = ['sysadmin', 'staff'];
+            document.delete               = ['sysadmin', 'staff'];
+            document.internalURL          = minioFile.path;
+            document.internalExt          = minioFile.extension;
+            document.internalSize         = uploadedFile.size;
+            document.passedAVCheck        = true;
+            document.internalMime         = uploadedFile.mimetype;
+            document.internalOriginalName = documentDetails.originalName;
+            document.displayName          = documentDetails.displayName;
+            document.documentFileName     = documentDetails.fileName;
+            document.dateUploaded         = documentDetails.dateUploaded ? documentDetails.dateUploaded : new Date();
+            document.datePosted           = documentDetails.datePosted ? documentDetails.datePosted : new Date();
+            document.documentAuthor       = documentDetails.documentAuthor;
+            document.documentAuthorType   = documentDetails.documentAuthorType;
+            document.documentSource       = documentDetails.documentSource;
+
+            // Secure create attributes
+            if (isPublic)
             {
-                defaultLog.warn("File failed virus check.");
-                throw Error('File failed virus check.');
-            } 
-            else 
-            {
-                defaultLog.debug('Writing temp document file...');
-                
-                fs.writeFileSync(tempFilePath, uploadedFile.buffer);
-                
-                defaultLog.debug('Completed writing file. Starting Minio');
-                defaultLog.debug(MinioController.BUCKETS.DOCUMENTS_BUCKET, mongoose.Types.ObjectId(projectId), documentDetails.fileName, tempFilePath)
-                
-                MinioController.putDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, projectId, documentDetails.fileName, tempFilePath)
-                .then(async function (minioFile) 
-                {
-                    defaultLog.debug("putDocument:", minioFile);
-                    defaultLog.debug('Deleting temp document file...');
-
-                    fs.unlinkSync(tempFilePath);
-                    
-                    defaultLog.debug('Deleted! Starting to create document resource');
-  
-                    var documentModel = mongoose.model('Document');
-                    var document = new documentModel();
-                    // Metadata
-                    document.project              = mongoose.Types.ObjectId(projectId);
-                    document._comment             = comment;
-                    document._addedBy             = userName;
-                    document._createdDate         = new Date();
-                    document.read                 = ['sysadmin', 'staff'];
-                    document.write                = ['sysadmin', 'staff'];
-                    document.delete               = ['sysadmin', 'staff'];
-                    document.internalURL          = minioFile.path;
-                    document.internalExt          = minioFile.extension;
-                    document.internalSize         = uploadedFile.size;
-                    document.passedAVCheck        = true;
-                    document.internalMime         = uploadedFile.mimetype;
-                    document.internalOriginalName = documentDetails.originalName;
-                    document.displayName          = documentDetails.displayName;
-                    document.documentFileName     = documentDetails.fileName;
-                    document.dateUploaded         = documentDetails.dateUploaded ? documentDetails.dateUploaded : new Date();
-                    document.datePosted           = documentDetails.datePosted ? documentDetails.datePosted : new Date();
-                    document.documentAuthor       = documentDetails.documentAuthor;
-                    document.documentAuthorType   = documentDetails.documentAuthorType;
-                    document.documentSource       = documentDetails.documentSource;
-
-                    // Secure create attributes
-                    if (isPublic)
-                    {
-                        // public user can only create documents from comments
-                        document.documentSource = "COMMENT";
-                    }
-                    else
-                    {
-                        document.legislation          = parseInt(documentDetails.legislation, 10);
-                        // doc.labels = JSON.parse(args.swagger.params.labels.value);
-                        document.milestone            = documentDetails.milestone;
-                        document.type                 = documentDetails.type;
-                        document.description          = documentDetails.description;
-                        document.projectPhase         = documentDetails.projectPhase;
-                        document.eaoStatus            = documentDetails.eaoStatus;
-
-                        if ((documentDetails.eaoStatus && documentDetails.eaoStatus === 'Published') || 
-                            (documentDetails.publish))
-                        {
-                            document.read.push('public');
-                        }
-                    }
-  
-                    document.save()
-                            .then(function (createdDocument) 
-                            {
-                                defaultLog.info("Created new document object:", createdDocument._id);
-                                Utils.recordAction('Post', 'Document', username, createdDocument._id);
-                                return createdDocument;
-                            })
-                            .catch(function (error) 
-                            {
-                                defaultLog.debug('Document creation failed: ', error);
-                                defaultLog.debug('Rolling back document from Minio');
-                                MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, document.project, document.internalURL);
-                                
-                                throw Error(error);
-                            });
-                }).catch(function (error) 
-                {
-                    defaultLog.debug('Document creation failed: ', error);
-                    defaultLog.debug('Rolling back document from Minio');
-
-                    throw Error(error);
-                });
+                // public user can only create documents from comments
+                document.documentSource = "COMMENT";
             }
-        });
+            else
+            {
+                document.legislation          = parseInt(documentDetails.legislation);
+                // doc.labels = JSON.parse(args.swagger.params.labels.value);
+                document.milestone            = documentDetails.milestone;
+                document.type                 = documentDetails.type;
+                document.description          = documentDetails.description;
+                document.projectPhase         = documentDetails.projectPhase;
+                document.eaoStatus            = documentDetails.eaoStatus;
+
+                if ((documentDetails.eaoStatus && documentDetails.eaoStatus === 'Published') || 
+                    (documentDetails.publish))
+                {
+                    document.read.push('public');
+                }
+            }
+
+            return document.save()
+            .then(function (createdDocument) 
+            {
+                defaultLog.info("Created new document object:", createdDocument._id);
+                Utils.recordAction('Post', 'Document', userName, createdDocument._id);
+                return createdDocument;
+            })
+            .catch(function (error) 
+            {
+                defaultLog.debug('Document creation failed: ', error);
+                defaultLog.debug('Rolling back document from Minio');
+                MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, document.project, document.internalURL);
+                
+                throw Error(error);
+            });
+        }
     } 
     catch (error) 
     {
-        console.log('### Barf ###');
-        delete e['path']; // ? why?
+        delete error['path'];
         throw Error(error);
     }
 };
@@ -278,18 +265,18 @@ exports.updateDocument = async function(userName, originalDocument, projectId, u
 
     try 
     {
-        originalDocument._updatedBy = username;
-        originalDocument.displayName = documentDetails.displayName;
-        originalDocument.milestone = documentDetails.milestone;
-        originalDocument.type = documentDetails.type;
-        originalDocument.documentAuthorType = adocumentDetails.documentAuthorType;
-        originalDocument.projectPhase = documentDetails.projectPhase;
-        originalDocument.dateUploaded = documentDetails.dateUploaded;
-        originalDocument.datePosted = documentDetails.datePosted;
-        originalDocument.description = documentDetails.description;
-        originalDocument.keywords = documentDetails.keywords;
-        originalDocument.legislation = parseInt(documentDetails.legislation, 10);
-        originalDocument.eaoStatus = documentDetails.eaoStatus;
+        originalDocument._updatedBy         = userName;
+        originalDocument.displayName        = documentDetails.displayName;
+        originalDocument.milestone          = documentDetails.milestone;
+        originalDocument.type               = documentDetails.type;
+        originalDocument.documentAuthorType = documentDetails.documentAuthorType;
+        originalDocument.projectPhase       = documentDetails.projectPhase;
+        originalDocument.dateUploaded       = documentDetails.dateUploaded;
+        originalDocument.datePosted         = documentDetails.datePosted;
+        originalDocument.description        = documentDetails.description;
+        originalDocument.keywords           = documentDetails.keywords;
+        originalDocument.legislation        = parseInt(documentDetails.legislation);
+        originalDocument.eaoStatus          = documentDetails.eaoStatus;
 
         if (documentDetails.eaoStatus === 'Published') 
         {
