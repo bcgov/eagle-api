@@ -144,6 +144,7 @@ describe('API Testing - Documents DAO', () =>
 
         // Update
         secureDocument.documentFileName = 'Updated test file name';
+        secureDocument.internalExt = 'png';
         let updatedDocument = await documentDAO.updateDocument('Test User', secureDocument, secureDocument.project, secureFile, secureDocument);
 
         expect(updatedDocument).not.toEqual(null);
@@ -174,7 +175,9 @@ describe('API Testing - Documents DAO', () =>
         expect(updatedDocument.isFeatured).toEqual(false);
 
         // download (don't need on a mock, so how to test this?)
-        //let meta = await documentDAO.downloadDocumentGetMeta(constants.SECURE_ROLES, 'Test User', updatedDocument, 'good_name');
+        let meta = await documentDAO.downloadDocumentGetMeta(constants.SECURE_ROLES, 'Test User', updatedDocument, 'good_name');
+        expect(meta).not.toEqual(null);
+        expect(meta.fileName).toEqual('good_name.png');
 
         // delete
         updatedDocument = await documentDAO.deleteDocument('Test User', updatedDocument);

@@ -406,9 +406,9 @@ exports.downloadDocumentGetMeta = async function (roles, userName, document, fil
                               let documentMeta = 
                               { 
                                   fileName: fileName, 
-                                  size: fileMeta.size, 
-                                  metaData: fileMeta.metaData, 
-                                  url: documentUrl 
+                                  size: fileMeta && fileMeta.hasOwnProperty('size') ? fileMeta.size : 0, 
+                                  metaData: fileMeta && fileMeta.hasOwnProperty('metaData') ? fileMeta.metaData : {}, 
+                                  url: documentURL 
                               };
 
                               return documentMeta;

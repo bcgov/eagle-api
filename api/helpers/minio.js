@@ -24,6 +24,8 @@ exports.BUCKETS = BUCKETS;
 
 var isMockService = function()
 {
+    // If our host is set to the default configuration, assume that we're not running
+    // a local minio client and just ignore all minio calls
     return minioClient.host === 'foo.pathfinder.gov.bc.ca';
 }
 
