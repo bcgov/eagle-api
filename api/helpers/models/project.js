@@ -111,8 +111,12 @@ var projectDefinition = {
   pinsHistory             : [{ type: Mixed, default: {} }],
   links                   : [{ type: Mixed }],
   // Featured Documents DocID list
-  featuredDocuments       : [{ type: 'ObjectId', ref: 'Document', default: [], index: true }]
+  featuredDocuments       : [{ type: 'ObjectId', ref: 'Document', default: [], index: true }],
 
+  // CAC
+  projectCAC : { type: Boolean, default: false },
+  cacMembers : [{ type: 'ObjectId', ref: 'CACUser' }],
+  cacEmail   : { type: String, default: 'noreply@projects.eao.gov.bc.ca' },
 }
 
 var buildToNature = {};
