@@ -109,8 +109,10 @@ var projectDefinition = {
   pins                    : [{ type: 'ObjectId', ref: 'Pin', index: true }],
   pinsRead                : [{ type: String, trim: true, default: '["project-system-admin"]' }],
   pinsHistory             : [{ type: Mixed, default: {} }],
+  links                   : [{ type: Mixed }],
   // Featured Documents DocID list
-  featuredDocuments            : [{ type: 'ObjectId', ref: 'Document', default: [], index: true }]
+  featuredDocuments       : [{ type: 'ObjectId', ref: 'Document', default: [], index: true }]
+
 }
 
 var buildToNature = {};
