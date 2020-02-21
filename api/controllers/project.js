@@ -1050,6 +1050,7 @@ exports.protectedPut = async function (args, res, next) {
     // fall through
   }
   filteredData.proponent = projectObj.proponent;
+  filteredData.currentPhaseName = projectObj.currentPhaseName;
 
   console.log("Updating with:", filteredData);
   console.log("--------------------------");
