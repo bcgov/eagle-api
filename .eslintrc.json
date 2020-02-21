@@ -19,6 +19,8 @@
         "api/test/generate-data/factories"
     ],
     "rules": {
+        "block-scoped-var": "error",
+        "indent": ["error", 2]
     },
     "globals": {
         "Atomics": "readonly",

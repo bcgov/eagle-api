@@ -98,7 +98,7 @@ function _verifySecret (currentScopes, tokenString, secret, req, callback, sendE
       defaultLog.info("ISSUER", ISSUER);
       defaultLog.info("issuerMatch", issuerMatch);
 
-   // if (roleMatch && issuerMatch) {
+      // if (roleMatch && issuerMatch) {
       if (issuerMatch) {
         // add the token to the request so that we can access it in the endpoint code if necessary
         req.swagger.params.auth_payload = decodedToken;
@@ -117,8 +117,8 @@ function _verifySecret (currentScopes, tokenString, secret, req, callback, sendE
 }
 
 exports.issueToken = function(user,
-                              deviceId,
-                              scopes) {
+  deviceId,
+  scopes) {
   defaultLog.info("user:",user);
   defaultLog.info("deviceId:",deviceId);
   defaultLog.info("scopes:",scopes);
@@ -140,8 +140,8 @@ exports.issueToken = function(user,
   };
 
   var token = jwt.sign(payload,
-                        SECRET,
-                        {expiresIn: JWT_SIGN_EXPIRY + 'm'});
+    SECRET,
+    {expiresIn: JWT_SIGN_EXPIRY + 'm'});
   defaultLog.info("ISSUING NEW TOKEN:expiresIn:", JWT_SIGN_EXPIRY + 'm');
 
   return token;

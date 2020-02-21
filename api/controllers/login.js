@@ -24,7 +24,7 @@ exports.loginPost = function(args, res) {
       var scopes = user.roles;
       var token = auth.issueToken(user, deviceId, scopes);
       return res.status(200).send({
-          accessToken: token
+        accessToken: token
       });
     }
   });

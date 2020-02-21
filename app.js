@@ -29,13 +29,13 @@ var express_server;
 
 // Logging middleware
 winston.loggers.add('default', {
-    console: {
-        colorize: 'true',
-        handleExceptions: true,
-        json: false,
-        level: 'silly',
-        label: 'default',
-    }
+  console: {
+    colorize: 'true',
+    handleExceptions: true,
+    json: false,
+    level: 'silly',
+    label: 'default',
+  }
 });
 var defaultLog = winston.loggers.get('default');
 
@@ -87,7 +87,7 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
   // Make sure uploads directory exists
   try {
     if (!fs.existsSync(uploadDir)){
-        fs.mkdirSync(uploadDir);
+      fs.mkdirSync(uploadDir);
     }
   } catch (e) {
     // Fall through - uploads will continue to fail until this is resolved locally.
@@ -106,8 +106,8 @@ function shutdown() {
   if (express_server) {
     console.log('Shutting down gracefully');
     express_server.close(() => {
-        console.log('Closed out remaining connections');
-        process.exit(0);
+      console.log('Closed out remaining connections');
+      process.exit(0);
     });
   }
 }

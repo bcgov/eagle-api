@@ -46,15 +46,15 @@ exports.protectedPostInspection = async function (args, res) {
       return Actions.sendResponse(res, 200, elementDocument);
     } else {
       inspection.save()
-      .then(function (doc) {
-        Utils.recordAction('Post', 'Inspection', args.swagger.params.auth_payload.preferred_username, doc._id);
-        doc.status = 'Uploading';
-        return Actions.sendResponse(res, 200, doc);
-      })
-      .catch(function (err) {
-        console.log("Error in API:", err);
-        return Actions.sendResponse(res, 400, err);
-      });
+        .then(function (doc) {
+          Utils.recordAction('Post', 'Inspection', args.swagger.params.auth_payload.preferred_username, doc._id);
+          doc.status = 'Uploading';
+          return Actions.sendResponse(res, 200, doc);
+        })
+        .catch(function (err) {
+          console.log("Error in API:", err);
+          return Actions.sendResponse(res, 400, err);
+        });
     }
   } catch (err) {
     console.log("Error in API:", err);
@@ -113,7 +113,7 @@ exports.protectedPostElement = async function (args, res) {
         console.log("Error in API:", err);
         return Actions.sendResponse(res, 400, err);
       });
-    }
+  }
 };
 
 // Create element item

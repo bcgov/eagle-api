@@ -11,7 +11,7 @@ describe('Generate Test Data', () => {
   let adminUser = factory_helper.generateFakePerson('Stanley', '', 'Adminington');
   let publicUser = factory_helper.generateFakePerson('Joe', '', 'Schmo');
   const usersData = [
-      {firstName: adminUser.firstName, middleName: adminUser.middleName, lastName: adminUser.lastName, displayName: adminUser.fullName, email: adminUser.emailAddress, read: adminUser.read, write: adminUser.write, delete: adminUser.delete}
+    {firstName: adminUser.firstName, middleName: adminUser.middleName, lastName: adminUser.lastName, displayName: adminUser.fullName, email: adminUser.emailAddress, read: adminUser.read, write: adminUser.write, delete: adminUser.delete}
     , {firstName: publicUser.firstName, middleName: publicUser.middleName, lastName: publicUser.lastName, displayName: publicUser.fullName, email: publicUser.emailAddress, read: publicUser.read, write: publicUser.write, delete: publicUser.delete}
   ];
 
@@ -32,20 +32,20 @@ describe('Generate Test Data', () => {
             projects.map((project) => {
               expect(project._id).toEqual(jasmine.any(Object));
               switch (project.currentLegislationYear) {
-                case "1996":
-                  console.log('Project [id, name]: [' + project._id + ', ' + project.legislation_1996.name + ']');
-                  expect(project.legislation_1996.CELeadEmail).toEqual("eao.compliance@gov.bc.ca");
-                  break;
-                case "2002":
-                  console.log('Project [id, name]: [' + project._id + ', ' + project.legislation_2002.name + ']');
-                  expect(project.legislation_2002.CELeadEmail).toEqual("eao.compliance@gov.bc.ca");
-                  break;
-                case "2018":
-                  console.log('Project [id, name]: [' + project._id + ', ' + project.legislation_2018.name + ']');
-                  expect(project.legislation_2018.CELeadEmail).toEqual("eao.compliance@gov.bc.ca");
-                  break;
-                default:
-                  expect(project.CELeadEmail).toEqual("legislation not set properly");  // this will fail
+              case "1996":
+                console.log('Project [id, name]: [' + project._id + ', ' + project.legislation_1996.name + ']');
+                expect(project.legislation_1996.CELeadEmail).toEqual("eao.compliance@gov.bc.ca");
+                break;
+              case "2002":
+                console.log('Project [id, name]: [' + project._id + ', ' + project.legislation_2002.name + ']');
+                expect(project.legislation_2002.CELeadEmail).toEqual("eao.compliance@gov.bc.ca");
+                break;
+              case "2018":
+                console.log('Project [id, name]: [' + project._id + ', ' + project.legislation_2018.name + ']');
+                expect(project.legislation_2018.CELeadEmail).toEqual("eao.compliance@gov.bc.ca");
+                break;
+              default:
+                expect(project.CELeadEmail).toEqual("legislation not set properly");  // this will fail
               }
               
               //TODO:: Check the outputted deterministic data fields against the database model.  Some fields will always have randomness so tests will have to be designed around that.

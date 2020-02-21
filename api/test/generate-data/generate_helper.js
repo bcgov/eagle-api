@@ -25,7 +25,7 @@ let gd = require('./generated_data');
 
 // Used to generate random values in the range [0 to CeilingValue] for correspondingly named objects
 let generatorCeilings = {
-    extraUsers: 50
+  extraUsers: 50
   , documentsPerProject: 20
   , commentPeriodsPerProject: 2
   , documentsPerCommentPeriod: 3
@@ -36,7 +36,7 @@ let generatorCeilings = {
 let gc = generatorCeilings;
 
 const uniqueStaticSeeds = {
-    audit: 1
+  audit: 1
   , guaranteedUser: 234
   , extraUser: 106
   , project: 345
@@ -62,50 +62,50 @@ const groupTemplate = new ft.FactoryTemplate(groupFactory.name, generateGroupSet
 function generateEntireDatabase(usersData) {
   // generate an Audit object needed by the app models, a mix of constant (test entry points) and random Users, and a number of Projects
   return generateProjects(usersData)
-  .then(generatedData => { 
+    .then(generatedData => { 
     // foreach Project, generate the Groups relating to it
-    return new Promise(function(resolve) {
-      generateChildSets(generatedData.projects, generatedData.users, groupTemplate).then(groups => {
-        generatedData.groups = groups;
-        resolve(generatedData);
+      return new Promise(function(resolve) {
+        generateChildSets(generatedData.projects, generatedData.users, groupTemplate).then(groups => {
+          generatedData.groups = groups;
+          resolve(generatedData);
+        });
       });
-    });
-  })
-  .then(generatedData => { 
+    })
+    .then(generatedData => { 
     // foreach Project, generate the Comment Periods relating to it
-    return new Promise(function(resolve) {
-      generateChildSets(generatedData.projects, generatedData.users, commentPeriodTemplate).then(commentPeriods => {
-        generatedData.commentPeriods = commentPeriods;
-        resolve(generatedData);
+      return new Promise(function(resolve) {
+        generateChildSets(generatedData.projects, generatedData.users, commentPeriodTemplate).then(commentPeriods => {
+          generatedData.commentPeriods = commentPeriods;
+          resolve(generatedData);
+        });
       });
-    });
-  })
-  .then(generatedData => { 
+    })
+    .then(generatedData => { 
     // foreach Comment Period, generate the Comments relating to it
-    return new Promise(function(resolve) {
-      generateChildSets(generatedData.commentPeriods, generatedData.users, commentTemplate).then(comments => {
-        generatedData.comments = comments;
-        resolve(generatedData);
+      return new Promise(function(resolve) {
+        generateChildSets(generatedData.commentPeriods, generatedData.users, commentTemplate).then(comments => {
+          generatedData.comments = comments;
+          resolve(generatedData);
+        });
       });
-    });
-  })
-  .then(generatedData => { 
+    })
+    .then(generatedData => { 
     // foreach Comment Period, generate the Documents relating to it
-    return new Promise(function(resolve) {
-      generateChildSets(generatedData.commentPeriods, generatedData.users, commentPeriodDocumentTemplate).then(commentPeriodDocuments => {
-        generatedData.commentPeriodDocuments = commentPeriodDocuments;
-        resolve(generatedData);
+      return new Promise(function(resolve) {
+        generateChildSets(generatedData.commentPeriods, generatedData.users, commentPeriodDocumentTemplate).then(commentPeriodDocuments => {
+          generatedData.commentPeriodDocuments = commentPeriodDocuments;
+          resolve(generatedData);
+        });
       });
-    });
-  }).then(generatedData => { 
+    }).then(generatedData => { 
     // foreach Project, generate the Documents relating to it
-    return new Promise(function(resolve) {
-      generateChildSets(generatedData.projects, generatedData.users, projectDocumentTemplate).then(projectDocuments => {
-        generatedData.projectDocuments = projectDocuments;
-        resolve(generatedData);
+      return new Promise(function(resolve) {
+        generateChildSets(generatedData.projects, generatedData.users, projectDocumentTemplate).then(projectDocuments => {
+          generatedData.projectDocuments = projectDocuments;
+          resolve(generatedData);
+        });
       });
     });
-  });
 }
 
 function generateGroupSetForProject(factoryKey, project, buildOptions, groupsToGen) {
@@ -151,7 +151,7 @@ function generateDocumentSetForProject(factoryKey, project, buildOptions, projec
 
 function generateDocumentSetForCommentPeriod(factoryKey, commentPeriod, buildOptions, commentPeriodDocumentsToGen) {
   return new Promise(function(resolve) {
-  let customDocumentSettings = { documentSource: "COMMENT", project: mongTypes.ObjectId(commentPeriod.project), _comment: mongTypes.ObjectId(commentPeriod._id) };  // note that the document._comment field actually refers to a commentPeriod id
+    let customDocumentSettings = { documentSource: "COMMENT", project: mongTypes.ObjectId(commentPeriod.project), _comment: mongTypes.ObjectId(commentPeriod._id) };  // note that the document._comment field actually refers to a commentPeriod id
     factory.createMany(factoryKey, commentPeriodDocumentsToGen, customDocumentSettings, buildOptions).then(documents => {
       resolve(documents);
     });

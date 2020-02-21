@@ -76,11 +76,11 @@ exports.publicGet = async function (args, res) {
       var sort_by = value.slice(1);
       // only accept certain fields
       switch (sort_by) {
-        case 'dateStarted':
-        case 'dateCompleted':
-        case 'author':
-          sort[sort_by] = order_by;
-          break;
+      case 'dateStarted':
+      case 'dateCompleted':
+      case 'author':
+        sort[sort_by] = order_by;
+        break;
       }
     }, this);
   }

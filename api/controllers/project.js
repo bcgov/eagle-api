@@ -517,7 +517,7 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
         }]);
       }
       data[0].pins.map(pin => {
-          thePins.push(mongoose.Types.ObjectId(pin));
+        thePins.push(mongoose.Types.ObjectId(pin));
       })
       
       query = { _id: { $in: thePins } }

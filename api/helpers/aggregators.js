@@ -11,7 +11,7 @@ const Utils = require('../helpers/utils');
  * @param {boolean} projectOnly Flag that indicates if the project should be set as root.
  * @returns {array} Aggregate with the default year set.
  */
- const setProjectDefault = (projectOnly) => {
+const setProjectDefault = (projectOnly) => {
   const aggregation = [];
 
   if (projectOnly) {
@@ -81,7 +81,7 @@ const Utils = require('../helpers/utils');
  * @param {string} projectLegislation Desired project year
  * @returns {array} Aggregate with the desired legislation year set
  */
- const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation) => {
+const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation) => {
   const aggregation = addProjectLookupAggrs(null, projectLegislationDataKey);
 
   // If project legislation is missing then use the legislationDefault key on the project model
@@ -120,7 +120,7 @@ const Utils = require('../helpers/utils');
       {
         "$addFields": {
           "project": { "$mergeObjects": ["$project",  "$" + projectLegislationDataKey]},
-       }
+        }
       }
     );
 
@@ -144,7 +144,7 @@ const Utils = require('../helpers/utils');
  * @param {string} dataKey Legislation year key
  * @returns {array} Aggregate that unwinds the linked properties of a project
  */
- const addProjectLookupAggrs = (aggregation, dataKey) => {
+const addProjectLookupAggrs = (aggregation, dataKey) => {
   const ceeaInvolvementField = `${dataKey}.CEAAInvolvement`;
   const eacDecisionField = `${dataKey}.eacDecision`;
   const proponentField = `${dataKey}.proponent`;
@@ -254,32 +254,32 @@ const generateExpArray = async (field, roles, schemaName) => {
         }
 
         switch (item) {
-          case 'decisionDateStart':
+        case 'decisionDateStart':
+          for(let field of fields) {
+            handleDateStartItem(orArray, field, decodeURIComponent(entry));
+          }
+          break;
+        case 'decisionDateEnd':
+          for(let field of fields) {
+            handleDateEndItem(orArray, field, decodeURIComponent(entry));
+          }
+          break;
+        case 'datePostedStart':
+          handleDateStartItem(orArray, ['datePosted'], decodeURIComponent(entry));
+          break;
+        case 'datePostedEnd':
+          handleDateEndItem(orArray, ['datePosted'], decodeURIComponent(entry));
+          break;
+        default:
+          if (schemaName === constants.PROJECT) {
             for(let field of fields) {
-              handleDateStartItem(orArray, field, decodeURIComponent(entry));
+              orArray.push(getConvertedValue(field, decodeURIComponent(entry)));
             }
             break;
-          case 'decisionDateEnd':
-            for(let field of fields) {
-              handleDateEndItem(orArray, field, decodeURIComponent(entry));
-            }
+          } else {
+            orArray.push(getConvertedValue(fields[0], decodeURIComponent(entry)));
             break;
-          case 'datePostedStart':
-            handleDateStartItem(orArray, ['datePosted'], decodeURIComponent(entry));
-            break;
-          case 'datePostedEnd':
-            handleDateEndItem(orArray, ['datePosted'], decodeURIComponent(entry));
-            break;
-          default:
-            if (schemaName === constants.PROJECT) {
-              for(let field of fields) {
-                orArray.push(getConvertedValue(field, decodeURIComponent(entry)));
-              }
-              break;
-            } else {
-              orArray.push(getConvertedValue(fields[0], decodeURIComponent(entry)));
-              break;
-            }
+          }
         }
 
         expArray.push({ $or: orArray });
@@ -365,37 +365,37 @@ const getPCPValue = async (roles, entry) => {
   const in7days = new Date();
 
   switch (entry) {
-    case 'pending':
-      in7days.setDate(now.getDate() + 7);
+  case 'pending':
+    in7days.setDate(now.getDate() + 7);
 
-      query = {
-        _schemaName: constants.COMMENT_PERIOD,
-        $and: [
-          { dateStarted: { $gt: now } },
-          { dateStarted: { $lte: in7days } }
-        ]
-      };
-      break;
+    query = {
+      _schemaName: constants.COMMENT_PERIOD,
+      $and: [
+        { dateStarted: { $gt: now } },
+        { dateStarted: { $lte: in7days } }
+      ]
+    };
+    break;
 
-    case 'open':
-      query = {
-        _schemaName: constants.COMMENT_PERIOD,
-        $and: [
-          { dateStarted: { $lte: now } },
-          { dateCompleted: { $gt: now } }
-        ]
-      };
-      break;
+  case 'open':
+    query = {
+      _schemaName: constants.COMMENT_PERIOD,
+      $and: [
+        { dateStarted: { $lte: now } },
+        { dateCompleted: { $gt: now } }
+      ]
+    };
+    break;
 
-    case 'closed':
-      query = {
-        _schemaName: constants.COMMENT_PERIOD,
-        dateCompleted: { $lt: now }
-      };
-      break;
+  case 'closed':
+    query = {
+      _schemaName: constants.COMMENT_PERIOD,
+      dateCompleted: { $lt: now }
+    };
+    break;
 
-    default:
-      console.log('Unknown PCP entry');
+  default:
+    console.log('Unknown PCP entry');
   }
 
   var pcp = {};

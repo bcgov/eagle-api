@@ -43,14 +43,14 @@ exports.publicGet = async function (args, res) {
   _.assignIn(query, { "_schemaName": "Organization" });
 
   var data = await Utils.runDataQuery('Organization',
-      ['public'],
-      query,
-      getSanitizedFields(args.swagger.params.fields.value), // Fields
-      null, // sort warmup
-      sort, // sort
-      null, // skip
-      null, // limit
-      false) // count
+    ['public'],
+    query,
+    getSanitizedFields(args.swagger.params.fields.value), // Fields
+    null, // sort warmup
+    sort, // sort
+    null, // skip
+    null, // limit
+    false) // count
   Utils.recordAction('Get', 'Organization', 'public', args.swagger.params.orgId && args.swagger.params.orgId.value ? args.swagger.params.orgId.value : null);
   return Actions.sendResponse(res, 200, data);
 };
@@ -77,14 +77,14 @@ exports.protectedGet = async function (args, res) {
   _.assignIn(query, { "_schemaName": "Organization" });
 
   var data = await Utils.runDataQuery('Organization',
-      args.swagger.params.auth_payload.realm_access.roles,
-      query,
-      getSanitizedFields(args.swagger.params.fields.value), // Fields
-      null, // sort warmup
-      sort, // sort
-      null, // skip
-      null, // limit
-      false) // count
+    args.swagger.params.auth_payload.realm_access.roles,
+    query,
+    getSanitizedFields(args.swagger.params.fields.value), // Fields
+    null, // sort warmup
+    sort, // sort
+    null, // skip
+    null, // limit
+    false) // count
   Utils.recordAction('Get', 'Organization', args.swagger.params.auth_payload.preferred_username, args.swagger.params.orgId && args.swagger.params.orgId.value ? args.swagger.params.orgId.value : null);
   return Actions.sendResponse(res, 200, data);
 };

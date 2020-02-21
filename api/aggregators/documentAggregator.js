@@ -16,7 +16,7 @@ const aggregateHelper = require('../helpers/aggregators');
  * 
  * @returns {array} Aggregation for a document match
  */
- exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, categorized, roles) => {
+exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, categorized, roles) => {
   const aggregation = [];
   let projectModifier;
   let keywordModifier;

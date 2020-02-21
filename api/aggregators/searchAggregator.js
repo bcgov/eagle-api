@@ -106,7 +106,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
  * 
  * @returns {array} Aggregation of sorting and paging
  */
- exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, sortDirection, pageNum, pageSize) {
+exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, sortDirection, pageNum, pageSize) {
   const searchResultAggregation = [];
   let defaultTwoSorts = false;
 

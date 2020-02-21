@@ -35,33 +35,33 @@ var getSanitizedFields = function (fields) {
 var setPermissionsFromEaoStatus = function (status, comment) {
   console.log(status);
   switch (status) {
-    case 'Published':
-      defaultLog.info('Publishing Comment');
-      comment.eaoStatus = 'Published';
-      comment.read = ['public', 'staff', 'sysadmin'];
-      break;
-    case 'Pending':
-      defaultLog.info('Pending Comment');
-      comment.eaoStatus = 'Pending';
-      comment.read = ['staff', 'sysadmin'];
-      break;
-    case 'Deferred':
-      defaultLog.info('Deferring Comment');
-      comment.eaoStatus = 'Deferred';
-      comment.read = ['staff', 'sysadmin'];
-      break;
-    case 'Rejected':
-      defaultLog.info('Rejecting Comment');
-      comment.eaoStatus = 'Rejected';
-      comment.read = ['staff', 'sysadmin'];
-      break;
-    case 'Reset':
-      defaultLog.info('Resetting Comment Status');
-      comment.eaoStatus = 'Pending';
-      comment.read = ['staff', 'sysadmin'];
-      break;
-    default:
-      break;
+  case 'Published':
+    defaultLog.info('Publishing Comment');
+    comment.eaoStatus = 'Published';
+    comment.read = ['public', 'staff', 'sysadmin'];
+    break;
+  case 'Pending':
+    defaultLog.info('Pending Comment');
+    comment.eaoStatus = 'Pending';
+    comment.read = ['staff', 'sysadmin'];
+    break;
+  case 'Deferred':
+    defaultLog.info('Deferring Comment');
+    comment.eaoStatus = 'Deferred';
+    comment.read = ['staff', 'sysadmin'];
+    break;
+  case 'Rejected':
+    defaultLog.info('Rejecting Comment');
+    comment.eaoStatus = 'Rejected';
+    comment.read = ['staff', 'sysadmin'];
+    break;
+  case 'Reset':
+    defaultLog.info('Resetting Comment Status');
+    comment.eaoStatus = 'Pending';
+    comment.read = ['staff', 'sysadmin'];
+    break;
+  default:
+    break;
   }
   return comment;
 }
@@ -466,10 +466,10 @@ exports.protectedStatus = async function (args, res) {
 
 function formatDate(date) {
   if (date){
-      var d = new Date(date),
-        month = '' + (d.getMonth() + 1),
-        day = '' + d.getDate(),
-        year = d.getFullYear();
+    var d = new Date(date),
+      month = '' + (d.getMonth() + 1),
+      day = '' + d.getDate(),
+      year = d.getFullYear();
 
     if (month.length < 2) month = '0' + month;
     if (day.length < 2) day = '0' + day;
@@ -572,23 +572,45 @@ exports.protectedExport = async function (args, res) {
 
   transform(data, function (d) {
 
-      // Translate documents into links.
-      let docLinks = [];
+    // Translate documents into links.
+    let docLinks = [];
 
-      if (d.documents && d.documents.length > 0) {
-        d.documents.map((theDoc) => {
-          docLinks.push(basePath + '/api/document/' + theDoc + '/fetch');
-        });
-      }
+    if (d.documents && d.documents.length > 0) {
+      d.documents.map((theDoc) => {
+        docLinks.push(basePath + '/api/document/' + theDoc + '/fetch');
+      });
+    }
 
-      //Remove anonymous users
-      let sanitizedAuthor = 'Anonymous'
-      if (!d.isAnonymous) {
-        sanitizedAuthor = d.author;
-      }
+    //Remove anonymous users
+    let sanitizedAuthor = 'Anonymous'
+    if (!d.isAnonymous) {
+      sanitizedAuthor = d.author;
+    }
 
-      // Populate csv with fields relevant to staff
-      if (format == 'staff'){
+    // Populate csv with fields relevant to staff
+    if (format == 'staff'){
+
+      return {
+        Comment_No: d.commentId,
+        Submitted: formatDate(d.dateAdded),
+        Author: sanitizedAuthor,
+        Location: d.location,
+        Comment: d.comment,
+        Attachments: docLinks,
+        Published: formatDate(d.datePosted),
+        Status: d.eaoStatus,
+        Rejected_Reason: d.rejectedReason,
+        Rejected_Notes: d.rejectedNotes,
+        EAO_Notes: d.eaoNotes,
+        Project: projectName,
+        PCP_Title: commentPeriodName,
+        Export_Date: exportDate
+      };
+
+      // Populate csv with fields relevant to proponents
+    } else if (format == 'proponent') {
+      let read = d.read;
+      if (read.includes('public')) {
 
         return {
           Comment_No: d.commentId,
@@ -598,38 +620,16 @@ exports.protectedExport = async function (args, res) {
           Comment: d.comment,
           Attachments: docLinks,
           Published: formatDate(d.datePosted),
-          Status: d.eaoStatus,
-          Rejected_Reason: d.rejectedReason,
-          Rejected_Notes: d.rejectedNotes,
-          EAO_Notes: d.eaoNotes,
+          Pillar: d.pillars,
           Project: projectName,
           PCP_Title: commentPeriodName,
           Export_Date: exportDate
         };
-
-      // Populate csv with fields relevant to proponents
-      } else if (format == 'proponent') {
-        let read = d.read;
-        if (read.includes('public')) {
-
-          return {
-            Comment_No: d.commentId,
-            Submitted: formatDate(d.dateAdded),
-            Author: sanitizedAuthor,
-            Location: d.location,
-            Comment: d.comment,
-            Attachments: docLinks,
-            Published: formatDate(d.datePosted),
-            Pillar: d.pillars,
-            Project: projectName,
-            PCP_Title: commentPeriodName,
-            Export_Date: exportDate
-          };
-        } else {
-          return null;
-        }
+      } else {
+        return null;
       }
-    })
+    }
+  })
     .pipe(csv.stringify({ header: true }))
     .pipe(res);
 }
