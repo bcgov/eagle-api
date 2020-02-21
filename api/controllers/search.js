@@ -147,6 +147,10 @@ const executeQuery = async function (args, res) {
     }
   });
 
+  if (sortField === '') {
+    sortField = sortBy[0];
+  }
+  
   defaultLog.info("sortingValue:", sortingValue);
   defaultLog.info("sortField:", sortField);
   defaultLog.info("sortDirection:", sortDirection);
