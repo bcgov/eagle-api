@@ -5,7 +5,7 @@ const aggregateHelper = require('../helpers/aggregators');
 
 /**
  * Create an aggregation that sets the matching criteria for a document search.
- * 
+ *
  * @param {string} schemaName Schema being searched on
  * @param {string} projectId Project ID
  * @param {string} keywords List of keywords to search on
@@ -13,7 +13,7 @@ const aggregateHelper = require('../helpers/aggregators');
  * @param {array} orModifier Search criteria for an 'or' search
  * @param {array} andModifier Search criteria for an 'and' search
  * @param {array} roles User's roles
- * 
+ *
  * @returns {array} Aggregation for a document match
  */
 exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, categorized, roles) => {
@@ -84,7 +84,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
         ...deletedModifier.$and,
         ...modifier.$and
       ]
-    }
+    };
   }
 
   aggregation.push({
@@ -95,7 +95,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
       ...(keywordModifier ? keywordModifier : undefined),
       ...(categorizedModifier && categorized === true ? categorizedModifier : undefined),
       ...deletedModifier,
-    } 
+    }
   });
 
   // Check document permissions
@@ -137,7 +137,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
 
 /**
  * Creates an aggregation for documents.
- * 
+ *
  * @param {boolean} populate Flag to create lookups
  * @param {array} roles Set of user roles
  * @returns {array} Aggregate for documents.
@@ -174,7 +174,7 @@ exports.createDocumentAggr = (populate, roles) => {
     }
   );
 
-  // if we're coming in from the public endpoint, and we're fetching documents, 
+  // if we're coming in from the public endpoint, and we're fetching documents,
   // we MUST add a match to enforce eaoStatus='Published', regardless of filter
   // ensure this occurs after the main filters
 

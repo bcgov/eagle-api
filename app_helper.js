@@ -38,7 +38,7 @@ function log(logger, msg) {
     console.log(msg);
   }
 }
-  
+
 async function loadMongoose(dbConnection, credentials, logger) {
   var options = require('./config/mongoose_options').mongooseOptions;
   if (!_.isEmpty(credentials)) {

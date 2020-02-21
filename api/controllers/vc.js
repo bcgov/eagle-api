@@ -19,7 +19,7 @@ var getSanitizedFields = function (fields) {
   return _.remove(fields, function (f) {
     return (_.indexOf(tagList, f) !== -1);
   });
-}
+};
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
@@ -42,7 +42,7 @@ exports.protectedPost = async function (args, res) {
   vc.delete = ['project-system-admin', 'staff'];
 
   // Define security tag defaults
-  var theVc = await vc.save()
+  var theVc = await vc.save();
   Utils.recordAction('Post', 'Vc', args.swagger.params.auth_payload.preferred_username, theVc._id);
   return Actions.sendResponse(res, 200, theVc);
 };
@@ -79,7 +79,7 @@ exports.protectedGet = async function (args, res) {
     sort, // sort
     skip, // skip
     limit, // limit
-    true) // count
+    true); // count
   Utils.recordAction('Get', 'Vc', args.swagger.params.auth_payload.preferred_username, args.swagger.params.vcId && args.swagger.params.vcId.value ? args.swagger.params.vcId.value : null);
   return Actions.sendResponse(res, 200, data);
 };
@@ -98,7 +98,7 @@ exports.protectedPut = async function (args, res) {
   var data = await valuedComponent.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).exec();
   Utils.recordAction('Put', 'Vc', args.swagger.params.auth_payload.preferred_username, objId);
   return Actions.sendResponse(res, 200, data);
-}
+};
 
 exports.protectedDelete = async function (args, res) {
   var objId = args.swagger.params.vcId.value;

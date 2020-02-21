@@ -113,7 +113,7 @@ var projectDefinition = {
   // Featured Documents DocID list
   featuredDocuments       : [{ type: 'ObjectId', ref: 'Document', default: [], index: true }]
 
-}
+};
 
 var buildToNature = {};
 buildToNature.new = 'New Construction';
@@ -133,7 +133,7 @@ nature.set = function (nature) {
   try {
     this.set('build', (_.invert(buildToNature))[nature]);
   } catch (error) {
-    console.log('Failed to parse nature: "' + nature + '" with error: "' + error + '"')
+    console.log('Failed to parse nature: "' + nature + '" with error: "' + error + '"');
     this.set('build', null);
   }
 };

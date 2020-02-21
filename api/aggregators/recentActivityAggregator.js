@@ -2,7 +2,7 @@ const { setProjectDefault } = require('../helpers/aggregators');
 
 /**
  * Creates an aggregate for looking up recent activity.
- * 
+ *
  * @param {boolean} populate Flag indicating if fields need a look up
  * @returns {array} Aggregate for recent activity
  */
@@ -36,7 +36,7 @@ exports.createRecentActivityAggr = (populate) => {
     // Here we have documents with a nested Project and a nested legislation key
     const defaultAggr = setProjectDefault(false);
     aggregation = [...aggregation, ...defaultAggr];
-  
+
     // We need to merge the legislation key with the Project while preserving the _id and the rest of the document info
     // TODO: Abstract these types of stages, as we will need to do this a lot")
     aggregation.push(

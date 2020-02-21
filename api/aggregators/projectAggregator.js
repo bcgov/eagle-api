@@ -2,7 +2,7 @@ const { setProjectDefault, unwindProjectData, addProjectLookupAggrs } = require(
 
 /**
  * Creates aggregation required for projects.
- * 
+ *
  * @param {string} projectLegislation Project legislation year
  * @returns {array} Aggregation
  */
@@ -13,7 +13,7 @@ exports.createProjectAggr = (projectLegislation) => {
   const { projectLegislationDataKey, projectLegislationDataIdKey } = getProjectLegislationInfo(projectLegislation);
 
   if (projectLegislation === "all") {
-    projectLegislationDataKey.forEach ( dataKey => {  
+    projectLegislationDataKey.forEach ( dataKey => {
       aggregation = addProjectLookupAggrs(aggregation, dataKey);
     });
   } else if (!projectLegislation || projectLegislation === "default") {
@@ -30,7 +30,7 @@ exports.createProjectAggr = (projectLegislation) => {
 
 /**
  * Gets the correct legislation key for the year.
- * 
+ *
  * @param {string} legislation Project legislation year
  * @returns {object} Legislation key and ID
  */

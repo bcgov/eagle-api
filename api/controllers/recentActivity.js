@@ -21,10 +21,10 @@ var getSanitizedFields = function (fields) {
       'headline'
     ], f) !== -1);
   });
-}
+};
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
-}
+};
 
 exports.publicGet = async function (args, res) {
   var fields = ['_schemaName',
@@ -96,7 +96,7 @@ exports.publicGet = async function (args, res) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
 exports.protectedDelete = function (args, res) {
   defaultLog.info("Deleting a RecentActivity(s)");
@@ -123,7 +123,7 @@ exports.protectedDelete = function (args, res) {
       return Actions.sendResponse(res, 400, err);
     }
   });
-}
+};
 
 //  Create a new RecentActivity
 exports.protectedPost = async function (args, res) {
@@ -185,4 +185,4 @@ exports.protectedPut = async function (args, res) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};

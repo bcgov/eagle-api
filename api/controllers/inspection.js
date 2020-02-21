@@ -10,7 +10,7 @@ var rp = require('request-promise-native');
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
-}
+};
 
 //  Create a new inspection
 exports.protectedPostInspection = async function (args, res) {
@@ -120,7 +120,7 @@ exports.protectedPostElement = async function (args, res) {
 exports.protectedPostElementItem = async function (args, res) {
   var upfile = args.swagger.params.upfile.value;
   var guid = args.swagger.params.itemId.value;
-  var project = null
+  var project = null;
   if (args.swagger.params.project.value) {
     project = args.swagger.params.project.value;
   }
@@ -220,7 +220,7 @@ exports.protectedPostElementItem = async function (args, res) {
               return Actions.sendResponse(res, 400, error);
             });
         }
-      })
+      });
   } else {
     // Just a text element.
     var InspectionItem = mongoose.model('InspectionItem');
@@ -282,13 +282,13 @@ exports.protectedPostElementItem = async function (args, res) {
         });
     }
   }
-}
+};
 
 exports.protectedElementItemGet = function (args, res) {
   var self = this;
   self.scopes = args.swagger.params.auth_payload.realm_access.roles;
 
-  self.thumbnail = args.swagger.params.thumbnail && args.swagger.params.thumbnail.value === 'true' ? true : false
+  self.thumbnail = args.swagger.params.thumbnail && args.swagger.params.thumbnail.value === 'true' ? true : false;
   if (args.swagger.params.filename && args.swagger.params.filename.value) {
     self.filename = args.swagger.params.filename.value;
   }
@@ -342,7 +342,7 @@ exports.protectedElementItemGet = function (args, res) {
               console.log("Getting full");
               return rp(docURL).pipe(res);
             } else {
-              var axios = require('axios')
+              var axios = require('axios');
               // Setup a downloader function.
               const download = url => axios({
                 method: 'get',
@@ -367,7 +367,7 @@ exports.protectedElementItemGet = function (args, res) {
         return Actions.sendResponse(res, 404, {});
       }
     });
-}
+};
 
 const isNumeric = n => !isNaN(parseFloat(n)) && isFinite(n);
 
@@ -411,4 +411,4 @@ const transform = ({
     quality: isNumeric(quality) ? Math.max(1, Math.min(100, quality)) : 80,
   });
   return sharpObj;
-}
+};

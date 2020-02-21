@@ -6,8 +6,7 @@ const constants = require('../../../helpers/constants');
 const project = require('../../../helpers/models/project');
 
 
-describe('API Testing - Project DAO', () => 
-{  
+describe('API Testing - Project DAO', () => {
   let testProject = new project();
 
   testProject.CEAAInvolvement     = null; //oid
@@ -80,11 +79,10 @@ describe('API Testing - Project DAO', () =>
   testProject.complianceLead      = null; // oid
   testProject.groups              = null;
 
-  test('Project CRUD tests', async () => 
-  {
+  test('Project CRUD tests', async () => {
     // Create
     let createdProject = await projectDAO.createProject('Test User', testProject);
-        
+
     expect(createdProject.id).not.toEqual(null);
 
     let loadedProject = await projectDAO.getProject(constants.SECURE_ROLES, createdProject._id);
@@ -105,8 +103,7 @@ describe('API Testing - Project DAO', () =>
     expect(deletedProject._id).toEqual(createdProject._id);
   });
 
-  test('Project Pin tests', async () => 
-  {
+  test('Project Pin tests', async () => {
     let createdProject = await projectDAO.createProject('Test User', testProject);
     expect(createdProject.id).not.toEqual(null);
 
@@ -137,8 +134,7 @@ describe('API Testing - Project DAO', () =>
   });
 
   // ? Include group add members once the Users endpoints for v2 have been created
-  test('Project Group tests', async () => 
-  {
+  test('Project Group tests', async () => {
     // Create
     let createdProject = await projectDAO.createProject('Test User', testProject);
     expect(createdProject.id).not.toEqual(null);
@@ -148,7 +144,7 @@ describe('API Testing - Project DAO', () =>
     expect(result.project).toEqual(createdProject._id);
     expect(result.name).toEqual('Test');
 
-    let editedGroup = 
+    let editedGroup =
         {
           name: 'Edited Test',
           members: result.members,
@@ -160,7 +156,7 @@ describe('API Testing - Project DAO', () =>
           _id: result._id,
           __v: result.__v,
           id: result.id
-        }
+        };
 
     result = await projectGroupDAO.updateGroup('Test', editedGroup, result);
     expect(result).not.toEqual(null);

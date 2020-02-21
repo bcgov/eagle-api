@@ -30,7 +30,7 @@ var getSanitizedFields = function (fields) {
       'delete'
     ], f) !== -1);
   });
-}
+};
 
 var setPermissionsFromEaoStatus = function (status, comment) {
   console.log(status);
@@ -64,7 +64,7 @@ var setPermissionsFromEaoStatus = function (status, comment) {
     break;
   }
   return comment;
-}
+};
 
 
 exports.protectedOptions = function (args, res) {
@@ -200,7 +200,7 @@ exports.protectedHead = async function (args, res) {
 };
 
 exports.protectedGet = async function (args, res) {
-  defaultLog.info('Getting comment(s)')
+  defaultLog.info('Getting comment(s)');
 
   var query = {}, sort = {}, skip = null, limit = null, count = false, filter = [];
 
@@ -321,7 +321,7 @@ exports.protectedPost = async function (args, res) {
   comment.comment = obj.comment;
   comment.dateAdded = obj.dateAdded;
   comment.dateUpdated = obj.dateUpdated;
-  comment.documents = docs
+  comment.documents = docs;
   comment.eaoNotes = obj.eaoNotes;
   comment.eaoStatus = obj.eaoStatus;
   comment.isAnonymous = obj.isAnonymous;
@@ -448,7 +448,7 @@ exports.protectedStatus = async function (args, res) {
   var comment = {
     dateUpdated: new Date(),
     updatedBy: args.swagger.params.auth_payload.preferred_username
-  }
+  };
   var Comment = mongoose.model('Comment');
 
   comment = setPermissionsFromEaoStatus(status, comment);
@@ -493,12 +493,12 @@ exports.protectedExport = async function (args, res) {
 
   // get period title
   var commentPeriodModel = mongoose.model('CommentPeriod');
-  var commentPeriod = await commentPeriodModel.findOne({ _id: period })
+  var commentPeriod = await commentPeriodModel.findOne({ _id: period });
   var commentPeriodName = commentPeriod.instructions;
 
   // get project name
   var projectModel = mongoose.model('Project');
-  var project = await projectModel.findOne({ _id: commentPeriod.project })
+  var project = await projectModel.findOne({ _id: commentPeriod.project });
   var projectName = project.name;
 
   var exportDate = formatDate(new Date());
@@ -540,7 +540,7 @@ exports.protectedExport = async function (args, res) {
     }
   });
 
-  var data = await mongoose.model('Comment').aggregate(aggregation)
+  var data = await mongoose.model('Comment').aggregate(aggregation);
 
   const filename = 'export.csv';
   res.setHeader('Content-disposition', `attachment; filename=${filename}`);
@@ -582,7 +582,7 @@ exports.protectedExport = async function (args, res) {
     }
 
     //Remove anonymous users
-    let sanitizedAuthor = 'Anonymous'
+    let sanitizedAuthor = 'Anonymous';
     if (!d.isAnonymous) {
       sanitizedAuthor = d.author;
     }
@@ -632,4 +632,4 @@ exports.protectedExport = async function (args, res) {
   })
     .pipe(csv.stringify({ header: true }))
     .pipe(res);
-}
+};

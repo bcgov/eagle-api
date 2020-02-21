@@ -62,7 +62,7 @@ const groupTemplate = new ft.FactoryTemplate(groupFactory.name, generateGroupSet
 function generateEntireDatabase(usersData) {
   // generate an Audit object needed by the app models, a mix of constant (test entry points) and random Users, and a number of Projects
   return generateProjects(usersData)
-    .then(generatedData => { 
+    .then(generatedData => {
     // foreach Project, generate the Groups relating to it
       return new Promise(function(resolve) {
         generateChildSets(generatedData.projects, generatedData.users, groupTemplate).then(groups => {
@@ -71,7 +71,7 @@ function generateEntireDatabase(usersData) {
         });
       });
     })
-    .then(generatedData => { 
+    .then(generatedData => {
     // foreach Project, generate the Comment Periods relating to it
       return new Promise(function(resolve) {
         generateChildSets(generatedData.projects, generatedData.users, commentPeriodTemplate).then(commentPeriods => {
@@ -80,7 +80,7 @@ function generateEntireDatabase(usersData) {
         });
       });
     })
-    .then(generatedData => { 
+    .then(generatedData => {
     // foreach Comment Period, generate the Comments relating to it
       return new Promise(function(resolve) {
         generateChildSets(generatedData.commentPeriods, generatedData.users, commentTemplate).then(comments => {
@@ -89,7 +89,7 @@ function generateEntireDatabase(usersData) {
         });
       });
     })
-    .then(generatedData => { 
+    .then(generatedData => {
     // foreach Comment Period, generate the Documents relating to it
       return new Promise(function(resolve) {
         generateChildSets(generatedData.commentPeriods, generatedData.users, commentPeriodDocumentTemplate).then(commentPeriodDocuments => {
@@ -97,7 +97,7 @@ function generateEntireDatabase(usersData) {
           resolve(generatedData);
         });
       });
-    }).then(generatedData => { 
+    }).then(generatedData => {
     // foreach Project, generate the Documents relating to it
       return new Promise(function(resolve) {
         generateChildSets(generatedData.projects, generatedData.users, projectDocumentTemplate).then(projectDocuments => {
@@ -114,7 +114,7 @@ function generateGroupSetForProject(factoryKey, project, buildOptions, groupsToG
     factory.createMany(factoryKey, groupsToGen, customGroupSettings, buildOptions).then(groups => {
       let groupIds = [];
       for (let i = 0; i < groups.length; i++) {
-        if (-1 == groupIds.indexOf(mongTypes.ObjectId(groups[i].id))) groupIds.push(mongTypes.ObjectId(groups[i].id)); 
+        if (-1 == groupIds.indexOf(mongTypes.ObjectId(groups[i].id))) groupIds.push(mongTypes.ObjectId(groups[i].id));
       }
       project.groups = groupIds;
       resolve(groups);
@@ -165,11 +165,11 @@ function generateProjects(usersData) {
       let numOfProjsGenned = 0;
       if (isNaN(numOfProjsToGen)) numOfProjsToGen = test_helper.defaultNumberOfProjects;
       console.log('Generating ' + numOfProjsToGen + ' projects.');
-      
+
       factory.create(auditFactory.name, {}, {faker: getSeeded(genSettings.generate_consistent_data, uss.audit)}).then(audit =>{
         factory.createMany(userFactory.name, usersData, {faker: getSeeded(genSettings.generate_consistent_data, uss.guaranteedUser)}).then(guaranteedUsersArray => {
           factory.createMany(userFactory.name, generatorCeilings.extraUsers, {}, {faker: getSeeded(genSettings.generate_consistent_data, uss.extraUser)}).then(extraUsersArray => {
-            let users = guaranteedUsersArray.concat(extraUsersArray);       
+            let users = guaranteedUsersArray.concat(extraUsersArray);
             factory.createMany(organizationFactory.name, generatorCeilings.organizations, {}, {faker: getSeeded(genSettings.generate_consistent_data, uss.organization)}).then(orgsArray => {
               factory.createMany(projectFactory.name, numOfProjsToGen, {}, {faker: getSeeded(genSettings.generate_consistent_data, uss.project), usersPool: users, orgsPool: orgsArray}).then(projectsArray => {
                 numOfProjsGenned = projectsArray.length;
@@ -190,7 +190,7 @@ function generateProjects(usersData) {
         });
       });
     });
-  })
+  });
   return projectGenerator;
 }
 
@@ -198,7 +198,7 @@ function generateChildSets(parents, usersPool, factoryTemplate) {
   if (0 == parents.length) return new Promise(function(resolve) { resolve([]); });
   return new Promise(function(resolve) {
     test_helper.dataGenerationSettings.then(genSettings => {
-      let buildOptions = {faker: getSeeded(genSettings.generate_consistent_data, factoryTemplate.seed), usersPool: usersPool}
+      let buildOptions = {faker: getSeeded(genSettings.generate_consistent_data, factoryTemplate.seed), usersPool: usersPool};
       let childGenerationPromises = parents.map(parent => {
         return generateChildSet(parent, buildOptions, factoryTemplate);
       });

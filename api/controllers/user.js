@@ -6,7 +6,7 @@ var Utils = require('../helpers/utils');
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
-}
+};
 
 //  Create a new user
 exports.protectedPost = async function (args, res) {
@@ -83,7 +83,7 @@ exports.protectedPut = async function (args, res) {
     country: obj.country ? obj.country : '',
     postalCode: obj.postalCode ? obj.postalCode : '',
     notes: obj.notes ? obj.notes : ''
-  }
+  };
 
   user.read = user.orgName === 'Environmental Assessment Office' ? ['staff', 'sysadmin', 'public'] : ['staff', 'sysadmin'];
 
@@ -98,4 +98,4 @@ exports.protectedPut = async function (args, res) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};

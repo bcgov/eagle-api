@@ -33,7 +33,7 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
         strictSsl: true, // Default value
         jwksUri: JWKSURI
       });
-      
+
       const kid = jwt.decode(tokenString, { complete: true }).header.kid;
 
       client.getSigningKey(kid, (err, key) => {
@@ -161,7 +161,7 @@ exports.setPassword = function (user) {
   user.salt = bcrypt.genSaltSync(16);
   user.password = hashPassword(user, user.password);
   return user;
-}
+};
 /**
  * Create instance method for authenticating user
  */

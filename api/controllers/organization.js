@@ -15,11 +15,11 @@ var getSanitizedFields = function (fields) {
   return _.remove(fields, function (f) {
     return (_.indexOf(tagList, f) !== -1);
   });
-}
+};
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
-}
+};
 
 exports.publicGet = async function (args, res) {
   var sort = {};
@@ -50,7 +50,7 @@ exports.publicGet = async function (args, res) {
     sort, // sort
     null, // skip
     null, // limit
-    false) // count
+    false); // count
   Utils.recordAction('Get', 'Organization', 'public', args.swagger.params.orgId && args.swagger.params.orgId.value ? args.swagger.params.orgId.value : null);
   return Actions.sendResponse(res, 200, data);
 };
@@ -84,7 +84,7 @@ exports.protectedGet = async function (args, res) {
     sort, // sort
     null, // skip
     null, // limit
-    false) // count
+    false); // count
   Utils.recordAction('Get', 'Organization', args.swagger.params.auth_payload.preferred_username, args.swagger.params.orgId && args.swagger.params.orgId.value ? args.swagger.params.orgId.value : null);
   return Actions.sendResponse(res, 200, data);
 };
@@ -170,7 +170,7 @@ exports.protectedPut = async function (args, res) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
 // Publish/Unpublish the organization
 exports.protectedPublish = function (args, res) {

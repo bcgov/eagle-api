@@ -5,7 +5,7 @@ var Utils = require('../helpers/utils');
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
-}
+};
 
 //  Create a new Notification Project
 exports.protectedPost = async function (args, res) {
@@ -67,7 +67,7 @@ exports.protectedPut = async function (args, res) {
     description: obj.description ? obj.description : '',
     centroid: obj.centroid ? obj.centroid : ['0', '0'],
     read: obj.read ? obj.read : ['staff', 'sysadmin']
-  }
+  };
 
   if (args.swagger.params.publish && args.swagger.params.publish.value) {
     if (!notificationProject.read.includes('public')) {
@@ -92,4 +92,4 @@ exports.protectedPut = async function (args, res) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};

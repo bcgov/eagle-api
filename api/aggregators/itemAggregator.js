@@ -4,7 +4,7 @@ const constants = require('../helpers/constants').schemaTypes;
 
 /**
  * Creates an aggregate for an item.
- * 
+ *
  * @param {string} itemId Object ID of item to retrieve
  * @param {string} schemaName Name of item schema
  * @param {array} roles List of user roles

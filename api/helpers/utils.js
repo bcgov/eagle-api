@@ -26,7 +26,7 @@ exports.buildQuery = function (property, values, query) {
 
 exports.getBasePath = function (protocol, host) {
   return protocol + '://' + host;
-}
+};
 
 // MBL: TODO Make this event driven instead of synchronous?
 exports.avScan = function (buffer) {
@@ -48,12 +48,10 @@ exports.avScan = function (buffer) {
             if (err) {
               console.log(err);
               resolve(false);
-            }
-            else if (malicious) {
+            } else if (malicious) {
               console.log('Malicious object FOUND');
               resolve(false);
-            }
-            else {
+            } else {
               console.log('Virus scan OK');
               resolve(true);
             }
@@ -61,7 +59,7 @@ exports.avScan = function (buffer) {
       }
     });
   });
-}
+};
 
 exports.getSkipLimitParameters = function (pageSize, pageNum) {
   const params = {};
@@ -91,7 +89,7 @@ exports.recordAction = async function (action, meta, payload, objId = null){
     performedBy: payload
   });
   return await audit.save();
-}
+};
 
 exports.runDataQuery = async function (modelType, role, query, fields, sortWarmUp, sort, skip, limit, count, preQueryPipelineSteps, populateProponent = false, postQueryPipelineSteps = false, populateProject = false) {
   return new Promise(function (resolve, reject) {
@@ -137,7 +135,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
           "default": {
             $switch: {
               branches: [
-                { 
+                {
                   case: { $eq: [ "$currentLegislationYear", 'legislation_1996' ]},
                   then: "$legislation_1996"
                 },
@@ -207,7 +205,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
           "project.default": {
             $switch: {
               branches: [
-                { 
+                {
                   case: { $eq: [ "$project.currentLegislationYear", 'legislation_1996' ]},
                   then: "$project.legislation_1996"
                 },
@@ -258,7 +256,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
       populateProponent && {
         "$unwind": "$proponent"
       },
-       
+
       postQueryPipelineSteps,
       {
         $redact: {
@@ -352,18 +350,16 @@ exports.filterData = function (collection, data, roles) {
   } else {
     return data;
   }
-}
+};
 
 exports.attachFeaturedDocuments = async function (projects) {
-  for(let itemIdx in projects)
-  {
+  for(let itemIdx in projects) {
     let item = projects[itemIdx];
     // attach the featuredDocuments
-    let featuredDocuments = await mongoose.model('Document').find({ project: item._id, isFeatured: true }); 
-    if (featuredDocuments) 
-    {
+    let featuredDocuments = await mongoose.model('Document').find({ project: item._id, isFeatured: true });
+    if (featuredDocuments) {
       item.featuredDocuments = [];
-      
+
       for(let docIdx in featuredDocuments) {
         let doc = featuredDocuments[docIdx];
         item.featuredDocuments.push(doc._id);
@@ -380,7 +376,7 @@ exports.generateSearchTerms = function (name, maxWordLimit) {
     return;
   }
 
-  let searchTerms = []
+  let searchTerms = [];
 
   // Split the name into words.
   const words = name.trim().split(/\s+/);
@@ -393,9 +389,9 @@ exports.generateSearchTerms = function (name, maxWordLimit) {
 
   // Remove any duplicate terms by casting to a set and then back to an array.
   const filteredTerms = [...new Set(searchTerms)];
-  
+
   return filteredTerms;
-}
+};
 
 // Gets all search terms for a single word.
 const getWordSearchTerms = (word) => {
@@ -407,4 +403,4 @@ const getWordSearchTerms = (word) => {
   }
 
   return searchTerms;
-}
+};

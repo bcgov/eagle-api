@@ -17,7 +17,7 @@ describe('Helper Testing - utils', () => {
 
     // Retrieve the record.
     const Audit = mongoose.model('Audit');
-    const testRecord = await Audit.findOne({ 
+    const testRecord = await Audit.findOne({
       _objectSchema: 'Query',
       action: testAction,
       meta: testMeta,

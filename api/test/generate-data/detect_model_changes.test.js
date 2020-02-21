@@ -10,10 +10,10 @@ const stringify_replacer = null;
 const stringify_space = 2;
 
 const options = {
-  folders: { 
+  folders: {
     include: ['./api/helpers/models', './api/test/generate-data/factories']
     , exclude: ['.*', 'controllers', 'fixtures'] },
-  files: { 
+  files: {
     include: ['*.js']
     , exclude: ['*_helper.js', '*.json'] }
 };
@@ -22,9 +22,9 @@ function getLastGoodHashsetFromFile() {
   return new Promise(resolve => {
     let filename = './api/test/generate-data/model_change_watcher_hash.json';
     let fileContents = "";
-    fs.readFileSync(filename).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; })
+    fs.readFileSync(filename).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; });
     resolve(fileContents);
-  });   
+  });
 }
 
 function filterRelevantFolders(apiFolderJsonObj) {
@@ -46,7 +46,7 @@ function filterRelevantFolders(apiFolderJsonObj) {
             if ("factories" == generateDataSub.name) {
               factories = generateDataSub.children;
             }
-          })
+          });
         }
       });
       break;
@@ -104,13 +104,13 @@ describe('Catch Model Changes not done in Factories', () => {
               return {actual: received, message, pass};
             },
           });
-                    
+
           let currentHashset = JSON.parse(currentApiFolderHashset);
           let lastGoodHashset = JSON.parse(lastGoodApiFolderHashset);
           expect(currentHashset.models).toEqual(lastGoodHashset.models);
           expect(currentHashset.factories).toEqual(lastGoodHashset.factories);
           done();
-        })
+        });
       });
     });
   });

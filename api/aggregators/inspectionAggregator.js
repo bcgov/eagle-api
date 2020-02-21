@@ -1,6 +1,6 @@
 /**
  * Creates an aggregate for an inspection.
- * 
+ *
  * @param {boolean} populate Flag indicating if fields need a look up
  * @returns {array} Aggregate for inspections
  */
@@ -48,7 +48,7 @@ exports.createInspectionAggr = (populate) => {
 
 /**
  * Creates an aggregate for an inspection element
- * 
+ *
  * @param {boolean} populate Flag indicating if fields need a look up
  * @returns {array} Aggregate for inspection elements
  */

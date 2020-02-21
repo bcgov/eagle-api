@@ -23,7 +23,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
 
   defaultLog.info('collation:', aggregateCollation);
   defaultLog.info('populate:', populate);
-  
+
   // Decode any parameters here that may arrive encoded.
   const decodedKeywords = keywords ? decodeURIComponent(keywords) : undefined;
 
@@ -70,8 +70,8 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
     break;
   default:
-    matchAggregation = null
-    schemaAggregation = null
+    matchAggregation = null;
+    schemaAggregation = null;
     break;
   }
 
@@ -150,14 +150,14 @@ const executeQuery = async function (args, res) {
   if (sortField === '') {
     sortField = sortBy[0];
   }
-  
+
   defaultLog.info("sortingValue:", sortingValue);
   defaultLog.info("sortField:", sortField);
   defaultLog.info("sortDirection:", sortDirection);
 
   if (dataset !== constants.ITEM) {
     const collectionData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue, categorized);
-    
+
     // TODO: this should be moved into the aggregation.
     if (dataset === constants.COMMENT) {
       // Filter

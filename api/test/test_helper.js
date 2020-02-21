@@ -71,14 +71,14 @@ function getDataGenerationSettings() {
   if (fs.existsSync(filepath)){
     return new Promise(resolve => {
       let fileContents = "";
-      fs.readFileSync(filepath).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; })
+      fs.readFileSync(filepath).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; });
       let jsonObj = JSON.parse(fileContents);
       jsonObj.projects = Number(jsonObj.projects);
       jsonObj.save_to_persistent_mongo = ("Saved" == jsonObj.data_mode);
       jsonObj.generate_consistent_data = ("Static" == jsonObj.seed_mode);
       jsonObj.generate = ("true" == jsonObj.generate);
       resolve(jsonObj);
-    });   
+    });
   } else {
     return new Promise(resolve => {
       let jsonObj = {
@@ -88,7 +88,7 @@ function getDataGenerationSettings() {
         generate_consistent_data: true,
       };
       resolve(jsonObj);
-    });   
+    });
   }
 }
 
@@ -103,7 +103,7 @@ function createSwaggerParams(fieldNames, additionalValues = {}, username = null)
         'x-security-scopes': ['sysadmin', 'public']
       }
     }
-  }
+  };
   return swaggerObject;
 }
 
@@ -113,7 +113,7 @@ function createPublicSwaggerParams(fieldNames, additionalValues = {}) {
     swagger: {
       params: _.merge(defaultParams, additionalValues)
     }
-  }
+  };
   return swaggerObject;
 }
 
@@ -158,7 +158,7 @@ function createSwaggerBodyObj(paramName, bodyObj) {
 }
 
 function buildParams(nameValueMapping) {
-  let paramObj = {}
+  let paramObj = {};
   _.mapKeys(nameValueMapping, function(value, key) {
     paramObj[key] = { value: value };
   });
@@ -172,7 +172,7 @@ async function mongooseConnect() {
       mongoUri = "mongodb://localhost/epic";
     } else {
       if (mongoServer) {
-        mongoUri = await mongoServer.getConnectionString()
+        mongoUri = await mongoServer.getConnectionString();
       }
     }
     checkMongoUri();

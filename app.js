@@ -40,7 +40,7 @@ winston.loggers.add('default', {
 var defaultLog = winston.loggers.get('default');
 
 // Increase postbody sizing
-app.use(bodyParser.json({limit: '10mb', extended: true}))
+app.use(bodyParser.json({limit: '10mb', extended: true}));
 app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
 
 // Enable CORS
@@ -74,7 +74,7 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
       Bearer: auth.verifyToken
     })
   );
-  
+
   var routerConfig = {
     controllers: "./api/controllers",
     useStubs: false

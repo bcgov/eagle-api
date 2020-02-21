@@ -1,5 +1,5 @@
 'use strict';
-const jasmine = require('jasmine')
+const jasmine = require('jasmine');
 const Promise = require("bluebird");
 Promise.longStackTraces();
 const test_helper = require('../test_helper');
@@ -28,7 +28,7 @@ describe('Generate Test Data', () => {
             //console.log('generatedData: [' + generatedData + ']');
             let projects = generatedData.projects;
             console.log('projects: [' + projects + ']');
-  
+
             projects.map((project) => {
               expect(project._id).toEqual(jasmine.any(Object));
               switch (project.currentLegislationYear) {
@@ -47,7 +47,7 @@ describe('Generate Test Data', () => {
               default:
                 expect(project.CELeadEmail).toEqual("legislation not set properly");  // this will fail
               }
-              
+
               //TODO:: Check the outputted deterministic data fields against the database model.  Some fields will always have randomness so tests will have to be designed around that.
               done();
             });

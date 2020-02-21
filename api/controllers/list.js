@@ -12,7 +12,7 @@ var getSanitizedFields = function (fields) {
   return _.remove(fields, function (f) {
     return (_.indexOf(tagList, f) !== -1);
   });
-}
+};
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
@@ -27,13 +27,13 @@ exports.protectedPost = async function (args, res) {
   var Topic = mongoose.model('Topic');
   var topic = new Topic(obj);
   topic._schemaName = 'Topic';
-  topic.read = ['project-system-admin']
+  topic.read = ['project-system-admin'];
 
   // Change this to use guid instead of idir/user
   topic._addedBy = args.swagger.params.auth_payload.preferred_username;
 
   // Define security tag defaults
-  var theTopic = await topic.save()
+  var theTopic = await topic.save();
   Utils.recordAction('Post', 'List', args.swagger.params.auth_payload.preferred_username, theTopic._id);
   return Actions.sendResponse(res, 200, theTopic);
 };
@@ -66,7 +66,7 @@ exports.protectedGet = async function (args, res) {
     sort, // sort
     skip, // skip
     limit, // limit
-    true) // count
+    true); // count
   Utils.recordAction('Get', 'List', args.swagger.params.auth_payload.preferred_username, args.swagger.params.topicId && args.swagger.params.topicId.value ? args.swagger.params.topicId.value : null);
   return Actions.sendResponse(res, 200, data);
 };
@@ -89,7 +89,7 @@ exports.protectedPut = async function (args, res) {
   var data = await topic.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).exec();
   Utils.recordAction('Put', 'List', args.swagger.params.auth_payload.preferred_username, data._id);
   return Actions.sendResponse(res, 200, data);
-}
+};
 
 exports.protectedDelete = async function (args, res) {
   var objId = args.swagger.params.topicId.value;

@@ -50,11 +50,11 @@ var getSanitizedFields = function (fields) {
       'delete'
     ], f) !== -1);
   });
-}
+};
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
-}
+};
 
 exports.publicGet = async function (args, res) {
   defaultLog.info('Public get for comment period');
@@ -150,7 +150,7 @@ exports.protectedHead = async function (args, res) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
 exports.protectedSummary = async function (args, res) {
   defaultLog.info('Head for comment period summaries');
@@ -177,7 +177,7 @@ exports.protectedSummary = async function (args, res) {
       'Deferred': 0,
       'Published': 0,
       'Rejected': 0
-    }
+    };
     await Promise.all(options.map(async (item) => {
       var optionQuery = {};
       _.assignIn(optionQuery, { 'eaoStatus': item, period: mongoose.Types.ObjectId(args.swagger.params.commentPeriodId.value) });
@@ -205,7 +205,7 @@ exports.protectedSummary = async function (args, res) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
 
 exports.protectedGet = async function (args, res) {
@@ -343,7 +343,7 @@ exports.protectedPut = async function (args, res) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
 //  Delete a new CommentPeriod
 exports.protectedDelete = async function (args, res) {

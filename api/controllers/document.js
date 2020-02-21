@@ -49,11 +49,11 @@ var getSanitizedFields = function (fields) {
       'internalMime',
       'isFeatured'], f) !== -1);
   });
-}
+};
 
 exports.protectedOptions = function (args, res,) {
   res.status(200).send();
-}
+};
 
 exports.publicGet = async function (args, res,) {
   // Build match query if on docId route
@@ -228,7 +228,7 @@ exports.protectedHead = function (args, res) {
         return Actions.sendResponse(res, 404, data);
       }
     });
-}
+};
 
 exports.protectedGet = async function (args, res) {
   defaultLog.info('Getting document(s)');
@@ -483,7 +483,7 @@ exports.protectedPost = async function (args, res) {
           console.log(MinioController.BUCKETS.DOCUMENTS_BUCKET,
             mongoose.Types.ObjectId(project),
             args.swagger.params.documentFileName.value,
-            tempFilePath)
+            tempFilePath);
 
           MinioController.putDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET,
             project,
@@ -557,7 +557,7 @@ exports.protectedPost = async function (args, res) {
                   MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
                   return Actions.sendResponse(res, 400, error);
                 });
-            })
+            });
         }
       });
   } catch (e) {
@@ -666,7 +666,7 @@ exports.protectedPut = async function (args, res) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
 //  Delete a Document
 exports.protectedDelete = async function (args, res) {
@@ -687,47 +687,37 @@ exports.protectedDelete = async function (args, res) {
 };
 
 exports.featureDocument = async function (args, res) {
-  try
-  {
-    if (args.swagger.params.docId && args.swagger.params.docId.value) 
-    {
+  try {
+    if (args.swagger.params.docId && args.swagger.params.docId.value) {
       let document = await mongoose.model('Document').findById(mongoose.Types.ObjectId(args.swagger.params.docId.value));
       let project = await mongoose.model('Project').findById(mongoose.Types.ObjectId(document.project));
-      
-      if(project)
-      {
-        let featuredDocumentsCount = await mongoose.model('Document').count({ project: project._id, isFeatured: true }); 
+
+      if(project) {
+        let featuredDocumentsCount = await mongoose.model('Document').count({ project: project._id, isFeatured: true });
 
         // Move the magic number into a config
-        if(featuredDocumentsCount < constants.MAX_FEATURE_DOCS)
-        {
+        if(featuredDocumentsCount < constants.MAX_FEATURE_DOCS) {
           document.isFeatured = true;
           let result = await document.save();
 
           return Actions.sendResponse(res, 200, result);
-        }
-        else 
-        {
+        } else {
           return Actions.sendResponse(res, 403, { status: 403, message: 'Feature document limit reached', limit: constants.MAX_FEATURE_DOCS});
         }
       }
-    } 
+    }
 
     return Actions.sendResponse(res, 404, { status: 404, message: 'Document does not exist'});
-  }
-  catch(e)
-  {
+  } catch(e) {
     return Actions.sendResponse(res, 500, {});
   }
 };
 
 exports.unfeatureDocument = async function (args, res) {
-  try
-  {
-    if (args.swagger.params.docId && args.swagger.params.docId.value) 
-    {
+  try {
+    if (args.swagger.params.docId && args.swagger.params.docId.value) {
       let document = await mongoose.model('Document').findById(mongoose.Types.ObjectId(args.swagger.params.docId.value));
-      
+
       document.isFeatured = false;
       let result = await document.save();
 
@@ -735,9 +725,7 @@ exports.unfeatureDocument = async function (args, res) {
     }
 
     return Actions.sendResponse(res, 404, {});
-  }
-  catch(e)
-  {
+  } catch(e) {
     return Actions.sendResponse(res, 500, {});
   }
 };

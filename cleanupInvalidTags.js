@@ -8,7 +8,7 @@ var ObjectId = require("mongodb").ObjectID;
 // Test
 // MongoClient.connect("mongodb://x:x@localhost:5555/epic", async function(err, client) {
 // Local
-MongoClient.connect("mongodb://localhost/epic", async function(err, client) { 
+MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
   if (!err) {
     console.log("We are connected");
     const db = client.db("epic");

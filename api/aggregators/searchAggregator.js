@@ -5,7 +5,7 @@ const aggregateHelper = require('../helpers/aggregators');
 
 /**
  * Create an aggregation that sets the matching criteria for search.
- * 
+ *
  * @param {string} schemaName Schema being searched on
  * @param {string} projectId Project ID
  * @param {string} keywords List of keywords to search on
@@ -13,7 +13,7 @@ const aggregateHelper = require('../helpers/aggregators');
  * @param {array} orModifier Search criteria for an 'or' search
  * @param {array} andModifier Search criteria for an 'and' search
  * @param {array} roles User's roles
- * 
+ *
  * @returns {array} Aggregation for a match
  */
 exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, roles) => {
@@ -54,7 +54,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
         { isDeleted: { $exists: false } },
         { isDeleted: false },
       ]
-    } 
+    }
   });
 
   // Check document permissions
@@ -96,14 +96,14 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
 
 /**
  * Create an aggregation that sets the sorting and paging for a query.
- * 
+ *
  * @param {string} schemaName Schema being searched on
  * @param {array} sortValues Values to sort by
  * @param {string} sortField Single field to sort by
  * @param {number} sortDirection Direction of sort
  * @param {number} pageNum Page number to offset results by
  * @param {number} pageSize Result set size
- * 
+ *
  * @returns {array} Aggregation of sorting and paging
  */
 exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, sortDirection, pageNum, pageSize) {
@@ -125,11 +125,11 @@ exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, so
       searchResultAggregation.push(
 
         { $addFields: {
-          "date": 
+          "date":
             { $dateToString: {
               "format": "%Y-%m-%d", "date": "$datePosted"
             }}
-          
+
         }},
         { $sort: { date: -1, displayName: 1 }}
       );
@@ -161,6 +161,6 @@ exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, so
       ]
     }
   }];
-    
+
   return combinedAggregation;
 };

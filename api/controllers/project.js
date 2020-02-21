@@ -84,14 +84,14 @@ var getSanitizedFields = function (fields) {
   return _.remove(fields, function (f) {
     return (_.indexOf(tagList, f) !== -1);
   });
-}
+};
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
-}
+};
 
 exports.publicHead = async function (args, res) {
-  defaultLog.info('Getting head for Project')
+  defaultLog.info('Getting head for Project');
 
   // Build match query if on ProjId route
   var query = {};
@@ -150,7 +150,7 @@ exports.publicGet = async function (args, res) {
   var query = {}, skip = null, limit = null;
   var commentPeriodPipeline = null;
   let review180start = args.swagger.params.fields.value;
-  review180start.push('review180Start')
+  review180start.push('review180Start');
   var requestedFields = getSanitizedFields(review180start);
   // Add in the default fields to the projection so that the incoming query will work for any selected fields.
   tagList.push('dateAdded');
@@ -259,7 +259,7 @@ exports.protectedGet = async function (args, res) {
       limit = processedParameters.limit;
 
       // Enable Count
-      count = true
+      count = true;
 
     } catch (error) {
       return Actions.sendResponse(res, 400, { error: error.message });
@@ -375,7 +375,7 @@ exports.protectedDelete = function (args, res) {
       return Actions.sendResponse(res, 404, {});
     }
   });
-}
+};
 
 
 
@@ -418,11 +418,11 @@ exports.protectedPost = function (args, res) {
   projectData.proponent = mongoose.Types.ObjectId(obj.proponent);
   projectData.responsibleEPDId = mongoose.Types.ObjectId(obj.responsibleEPDId);
   projectData.projectLeadId = mongoose.Types.ObjectId(obj.projectLeadId);
-  
+
   // Also need to make sure that the eacDecision and CEAAInvolvement fields are in the project. Hard requirement for public
   projectData.CEAAInvolvement = obj.CEAAInvolvement ? obj.CEAAInvolvement : null;
   projectData.eacDecision = obj.eacDecision ? obj.eacDecision : null;
-  
+
   // Generate search terms for the name.
   projectData.nameSearchTerms = Utils.generateSearchTerms(obj.name, WORDS_TO_ANALYZE);
 
@@ -473,7 +473,7 @@ exports.protectedPinDelete = async function (args, res) {
     defaultLog.info("Couldn't find that object!");
     return Actions.sendResponse(res, 404, {});
   }
-}
+};
 
 const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, username, res) {
   var skip = null, limit = null, sort = null;
@@ -518,9 +518,9 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
       }
       data[0].pins.map(pin => {
         thePins.push(mongoose.Types.ObjectId(pin));
-      })
-      
-      query = { _id: { $in: thePins } }
+      });
+
+      query = { _id: { $in: thePins } };
       const read = data[0].pinsRead;
       // Sort
       if (sortBy && sortBy.value) {
@@ -550,7 +550,7 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
         //Add out pinsread field to our response
         if (orgData && orgData.length > 0) {
           orgData[0].read = (read) ? read.slice() : [];
-        } 
+        }
         Utils.recordAction('Get', 'Pin', username, projectId && projectId.value ? projectId.value : null);
         return Actions.sendResponse(res, 200, orgData);
       } catch (e) {
@@ -561,7 +561,7 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
   } else {
     return Actions.sendResponse(res, 400, 'error');
   }
-}
+};
 
 exports.protectedExtensionAdd = async function (args, res) {
   // Adds an object to the extension/suspension array
@@ -586,7 +586,7 @@ exports.protectedExtensionAdd = async function (args, res) {
     defaultLog.info("Couldn't find that object!");
     return Actions.sendResponse(res, 404, {});
   }
-}
+};
 
 exports.protectedExtensionDelete = async function (args, res) {
   // Delete an object from the extension/suspension array
@@ -611,7 +611,7 @@ exports.protectedExtensionDelete = async function (args, res) {
     defaultLog.info("Couldn't find that object!");
     return Actions.sendResponse(res, 404, {});
   }
-}
+};
 
 exports.protectedExtensionUpdate = async function (args, res) {
   // Edit an object to the extension/suspension array
@@ -648,7 +648,7 @@ exports.protectedExtensionUpdate = async function (args, res) {
     defaultLog.info("Couldn't find that object!");
     return Actions.sendResponse(res, 404, {});
   }
-}
+};
 
 exports.publicPinGet = async function (args, res) {
   handleGetPins(args.swagger.params.projId,
@@ -659,7 +659,7 @@ exports.publicPinGet = async function (args, res) {
     'public',
     res
   );
-}
+};
 
 exports.protectedPinGet = async function (args, res) {
   handleGetPins(args.swagger.params.projId,
@@ -670,7 +670,7 @@ exports.protectedPinGet = async function (args, res) {
     args.swagger.params.auth_payload.preferred_username,
     res
   );
-}
+};
 
 exports.protectedAddPins = async function (args, res) {
   var objId = args.swagger.params.projId.value;
@@ -701,14 +701,14 @@ exports.protectedAddPins = async function (args, res) {
     defaultLog.info("Couldn't find that object!");
     return Actions.sendResponse(res, 404, {});
   }
-}
+};
 
 // pinsRead is on the project level and for all pins on the project
 exports.protectedPublishPin = async function (args, res) {
   var projId = args.swagger.params.projId.value;
-  var Project = require('mongoose').model('Project')
+  var Project = require('mongoose').model('Project');
   try {
-    var project = await Project.findOne({ _id: projId })
+    var project = await Project.findOne({ _id: projId });
     if (project && project.pins) {
       defaultLog.info("Project:", projId);
       var published = await Project.update(
@@ -718,7 +718,7 @@ exports.protectedPublishPin = async function (args, res) {
             "pinsRead": 'public'
           }
         },
-      )
+      );
       Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username);
       return Actions.sendResponse(res, 200, published);
     } else {
@@ -728,13 +728,13 @@ exports.protectedPublishPin = async function (args, res) {
   } catch (e) {
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
 exports.protectedUnPublishPin = async function (args, res) {
   var projId = args.swagger.params.projId.value;
-  var Project = require('mongoose').model('Project')
+  var Project = require('mongoose').model('Project');
   try {
-    var project = await Project.findOne({ _id: projId })
+    var project = await Project.findOne({ _id: projId });
     if (project && project.pins) {
       defaultLog.info("Project:", projId);
       var published = await Project.update(
@@ -744,7 +744,7 @@ exports.protectedUnPublishPin = async function (args, res) {
             "pinsRead": 'public'
           }
         },
-      )
+      );
       Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, projId);
       return Actions.sendResponse(res, 200, published);
     } else {
@@ -754,7 +754,7 @@ exports.protectedUnPublishPin = async function (args, res) {
   } catch (e) {
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
 exports.protectedDeleteGroupMembers = async function (args, res) {
   var projId = args.swagger.params.projId.value;
@@ -775,7 +775,7 @@ exports.protectedDeleteGroupMembers = async function (args, res) {
     defaultLog.info("Couldn't find that object!");
     return Actions.sendResponse(res, 404, {});
   }
-}
+};
 
 exports.protectedAddGroupMembers = async function (args, res) {
   var projectId = args.swagger.params.projId.value;
@@ -808,7 +808,7 @@ exports.protectedAddGroupMembers = async function (args, res) {
     defaultLog.info("Couldn't find that object!");
     return Actions.sendResponse(res, 404, {});
   }
-}
+};
 
 exports.protectedGroupGetMembers = async function (args, res) {
   handleGetGroupMembers(args.swagger.params.groupId,
@@ -819,7 +819,7 @@ exports.protectedGroupGetMembers = async function (args, res) {
     args.swagger.params.auth_payload.preferred_username,
     res
   );
-}
+};
 
 const handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, pageNum, username, res) {
   var skip = null, limit = null, sort = null;
@@ -856,7 +856,7 @@ const handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, 
       }]);
     } else {
       const theUsers = data[0].members.map(user => mongoose.Types.ObjectId(user));
-      query = { _id: { $in: theUsers } }
+      query = { _id: { $in: theUsers } };
       _.assignIn(query, { "_schemaName": "User" });
 
       // Sort
@@ -896,7 +896,7 @@ const handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, 
   } else {
     return Actions.sendResponse(res, 400, 'error');
   }
-}
+};
 
 exports.protectedAddGroup = async function (args, res) {
   var objId = args.swagger.params.projId.value;
@@ -906,7 +906,7 @@ exports.protectedAddGroup = async function (args, res) {
   var Group = mongoose.model('Group');
   var doc = new Group({ project: mongoose.Types.ObjectId(objId), name: groupName.group });
   ['project-system-admin', 'sysadmin', 'staff'].forEach(item => {
-    doc.read.push(item), doc.write.push(item), doc.delete.push(item)
+    doc.read.push(item), doc.write.push(item), doc.delete.push(item);
   });
   // Update who did this?
   doc._addedBy = args.swagger.params.auth_payload.preferred_username;
@@ -916,7 +916,7 @@ exports.protectedAddGroup = async function (args, res) {
       defaultLog.info("Saved new group object:", d);
       return Actions.sendResponse(res, 200, d);
     });
-}
+};
 
 exports.protectedGroupPut = async function (args, res) {
   var projId = args.swagger.params.projId.value;
@@ -933,7 +933,7 @@ exports.protectedGroupPut = async function (args, res) {
     console.log("Error:", e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
 exports.protectedGroupDelete = async function (args, res) {
   var objId = args.swagger.params.projId.value;
@@ -950,7 +950,7 @@ exports.protectedGroupDelete = async function (args, res) {
     console.log("Error:", e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
 // Update an existing project
 exports.protectedPut = async function (args, res) {
@@ -1080,10 +1080,10 @@ exports.protectedPut = async function (args, res) {
     defaultLog.info("Couldn't find that object!");
     return Actions.sendResponse(res, 404, {});
   }
-}
+};
 
 // Publish/Unpublish the project
-// We need to make this publish also update the current legislation year and the year list  
+// We need to make this publish also update the current legislation year and the year list
 exports.protectedPublish = function (args, res) {
   var objId = args.swagger.params.projId.value;
   var ProjObject = args.swagger.params.ProjObject.value;
@@ -1168,7 +1168,7 @@ var handleCommentPeriodForBannerQueryParameters = function (args, projectId) {
   } else {
     return null;
   }
-}
+};
 
 
 var addStandardQueryFilters = function (query, args) {
@@ -1306,7 +1306,7 @@ var addStandardQueryFilters = function (query, args) {
     });
   }
   return query;
-}
+};
 
 var serializeProjectVirtuals = function (data) {
   var Project = mongoose.model('Project');
@@ -1316,61 +1316,47 @@ var serializeProjectVirtuals = function (data) {
       item.nature = project.get('nature');
     }
   });
-}
+};
 
 exports.getFeaturedDocuments = async function (args, res) {
-  try
-  {
-    if (args.swagger.params.projId && args.swagger.params.projId.value) 
-    {
+  try {
+    if (args.swagger.params.projId && args.swagger.params.projId.value) {
       let projectModel = mongoose.model('Project');
-      projectModel.findOne({ _id: args.swagger.params.projId.value }, async function (err, project) 
-      {
+      projectModel.findOne({ _id: args.swagger.params.projId.value }, async function (err, project) {
         let featuredDocs = await fetchFeaturedDocuments(project, true);
-  
+
         return Actions.sendResponse(res, 200, featuredDocs);
       });
-    } 
-    else 
-    {
+    } else {
       return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found'});
     }
-  }
-  catch(e)
-  {
+  } catch(e) {
     return Actions.sendResponse(res, 500, {});
   }
 };
 
 exports.getFeaturedDocumentsSecure = async function (args, res) {
-  try
-  {
-    if (args.swagger.params.projId && args.swagger.params.projId.value) 
-    {
+  try {
+    if (args.swagger.params.projId && args.swagger.params.projId.value) {
       let project = await mongoose.model('Project').findById(mongoose.Types.ObjectId(args.swagger.params.projId.value));
-      
+
       let featuredDocs = await fetchFeaturedDocuments(project, false);
-  
+
       return Actions.sendResponse(res, 200, featuredDocs);
-    } 
+    }
 
     return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found'});
-  }
-  catch(e)
-  {
+  } catch(e) {
     return Actions.sendResponse(res, 500, {});
   }
 };
 
 var fetchFeaturedDocuments = async function(project) {
-  try 
-  {
+  try {
     let documents = await mongoose.model('Document').find({ project: project._id, isFeatured: true });
 
     return documents;
-  } 
-  catch(e) 
-  {
+  } catch(e) {
     throw Error(e);
   }
-}
+};

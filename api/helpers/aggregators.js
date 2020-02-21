@@ -7,7 +7,7 @@ const Utils = require('../helpers/utils');
 
 /**
  * Creates an aggregation with the default project year set as the root.
- * 
+ *
  * @param {boolean} projectOnly Flag that indicates if the project should be set as root.
  * @returns {array} Aggregate with the default year set.
  */
@@ -22,7 +22,7 @@ const setProjectDefault = (projectOnly) => {
           "default": {
             $switch: {
               branches: [
-                { 
+                {
                   case: { $eq: [ "$currentLegislationYear", 'legislation_1996' ]},
                   then: "$legislation_1996"
                 },
@@ -48,7 +48,7 @@ const setProjectDefault = (projectOnly) => {
           'project.default': {
             $switch: {
               branches: [
-                { 
+                {
                   case: { $eq: [ "$project.currentLegislationYear", 'legislation_1996' ]},
                   then: "$project.legislation_1996"
                 },
@@ -75,7 +75,7 @@ const setProjectDefault = (projectOnly) => {
 
 /**
  * Creates an aggregate of lookups for the desired legislation year.
- * 
+ *
  * @param {string} projectLegislationDataKey Legislation year key
  * @param {string} projectLegislationDataIdKey Legislation year key with ID
  * @param {string} projectLegislation Desired project year
@@ -98,7 +98,7 @@ const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKe
         }
       }
     );
-    
+
     aggregation.push(
       {
         "$replaceRoot": { newRoot:  "$" + projectLegislationDataKey }
@@ -140,7 +140,7 @@ const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKe
 
 /**
  * Creates an aggregate of the main fields that need to have a lookup occur on them.
- * 
+ *
  * @param {string} dataKey Legislation year key
  * @returns {array} Aggregate that unwinds the linked properties of a project
  */
@@ -237,7 +237,7 @@ const generateExpArray = async (field, roles, schemaName) => {
             entry.map(element => {
               orArray.push(getConvertedValue(field, decodeURIComponent(element)));
             });
-          })
+          });
         } else {
           entry.map(element => {
             return orArray.push(getConvertedValue(item, decodeURIComponent(element)));
@@ -246,11 +246,11 @@ const generateExpArray = async (field, roles, schemaName) => {
 
         expArray.push({ $or: orArray });
       } else {
-        let fields = []
+        let fields = [];
         if (schemaName === constants.PROJECT) {
           fields = handleProjectTerms(item);
         } else {
-          fields.push(item)
+          fields.push(item);
         }
 
         switch (item) {
@@ -311,7 +311,7 @@ const handleProjectTerms = (item) => {
   }
 
   return legislation_items;
-}
+};
 
 const getConvertedValue = (item, entry) => {
   if (isNaN(entry)) {
