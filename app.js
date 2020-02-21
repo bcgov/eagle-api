@@ -6,7 +6,6 @@ var uploadDir     = process.env.UPLOAD_DIRECTORY || "./uploads/";
 var hostname      = process.env.API_HOSTNAME || "localhost:3000";
 var swaggerTools  = require("swagger-tools");
 var YAML          = require("yamljs");
-var passport      = require("passport");
 var auth          = require("./api/helpers/auth");
 var swaggerConfig = YAML.load("./api/swagger/swagger.yaml");
 var winston       = require('winston');

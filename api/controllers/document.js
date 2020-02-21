@@ -11,7 +11,6 @@ const constants       = require('../helpers/constants');
 const Actions         = require('../helpers/actions');
 const Utils           = require('../helpers/utils');
 const MinioController = require('../helpers/minio');
-const auth            = require("../helpers/auth");
 
 const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING || false;
 
@@ -52,11 +51,11 @@ var getSanitizedFields = function (fields) {
   });
 }
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function (args, res,) {
   res.status(200).send();
 }
 
-exports.publicGet = async function (args, res, next) {
+exports.publicGet = async function (args, res,) {
   // Build match query if on docId route
   var query = {};
   if (args.swagger.params.docId && args.swagger.params.docId.value) {
@@ -90,7 +89,7 @@ exports.publicGet = async function (args, res, next) {
   }
 };
 
-exports.unProtectedPost = async function (args, res, next) {
+exports.unProtectedPost = async function (args, res) {
   console.log("Creating new object");
   var _comment = args.swagger.params._comment.value;
   var project = args.swagger.params.project.value;
@@ -187,7 +186,7 @@ exports.unProtectedPost = async function (args, res, next) {
   }
 };
 
-exports.protectedHead = function (args, res, next) {
+exports.protectedHead = function (args, res) {
   defaultLog.info("args.swagger.params:", args.swagger.params.auth_payload.realm_access.roles);
 
   // Build match query if on docId route
@@ -204,9 +203,8 @@ exports.protectedHead = function (args, res, next) {
   // Unless they specifically ask for it, hide deleted results.
   if (args.swagger.params.isDeleted && args.swagger.params.isDeleted.value != undefined) {
     _.assignIn(query, { isDeleted: args.swagger.params.isDeleted.value });
-  } else {
-
   }
+
   // Set query type
   _.assignIn(query, { "_schemaName": "Document" });
 
@@ -232,10 +230,10 @@ exports.protectedHead = function (args, res, next) {
     });
 }
 
-exports.protectedGet = async function (args, res, next) {
+exports.protectedGet = async function (args, res) {
   defaultLog.info('Getting document(s)');
 
-  var query = {}, sort = {}, skip = null, limit = null, count = false;
+  var query = {}, skip = null, limit = null, count = false;
 
   // Build match query if on docId route
   if (args.swagger.params.docId && args.swagger.params.docId.value) {
@@ -270,7 +268,7 @@ exports.protectedGet = async function (args, res, next) {
   }
 };
 
-exports.publicDownload = function (args, res, next) {
+exports.publicDownload = function (args, res) {
   // Build match query if on docId route
   var query = {};
   if (args.swagger.params.docId && args.swagger.params.docId.value) {
@@ -332,7 +330,7 @@ exports.publicDownload = function (args, res, next) {
     });
 };
 
-exports.protectedDownload = function (args, res, next) {
+exports.protectedDownload = function (args, res) {
   var self = this;
   self.scopes = args.swagger.params.auth_payload.realm_access.roles;
 
@@ -392,7 +390,7 @@ exports.protectedDownload = function (args, res, next) {
     });
 };
 
-exports.protectedOpen = function (args, res, next) {
+exports.protectedOpen = function (args, res) {
   var self = this;
   self.scopes = args.swagger.params.auth_payload.realm_access.roles;
 
@@ -456,7 +454,7 @@ exports.protectedOpen = function (args, res, next) {
 };
 
 //  Create a new document
-exports.protectedPost = async function (args, res, next) {
+exports.protectedPost = async function (args, res) {
   console.log("Creating new protected document object");
   var project = args.swagger.params.project.value;
   var _comment = args.swagger.params._comment.value;
@@ -570,7 +568,7 @@ exports.protectedPost = async function (args, res, next) {
   }
 };
 
-exports.protectedPublish = async function (args, res, next) {
+exports.protectedPublish = async function (args, res) {
   var objId = args.swagger.params.docId.value;
   defaultLog.info("Publish Document:", objId);
 
@@ -585,14 +583,14 @@ exports.protectedPublish = async function (args, res, next) {
       return Actions.sendResponse(res, 200, published);
     } else {
       defaultLog.info("Couldn't find that document!");
-      return Actions.sendResponse(res, 404, e);
+      return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {
     return Actions.sendResponse(res, 400, e);
   }
 };
 
-exports.protectedUnPublish = async function (args, res, next) {
+exports.protectedUnPublish = async function (args, res) {
   var objId = args.swagger.params.docId.value;
   defaultLog.info("UnPublish Document:", objId);
 
@@ -607,7 +605,7 @@ exports.protectedUnPublish = async function (args, res, next) {
       return Actions.sendResponse(res, 200, unPublished);
     } else {
       defaultLog.info("Couldn't find that document!");
-      return Actions.sendResponse(res, 404, e);
+      return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {
     return Actions.sendResponse(res, 400, e);
@@ -615,7 +613,7 @@ exports.protectedUnPublish = async function (args, res, next) {
 };
 
 // Update an existing document
-exports.protectedPut = async function (args, res, next) {
+exports.protectedPut = async function (args, res) {
   console.log("args:", args.swagger.params);
   var objId = args.swagger.params.docId.value;
   var obj = {};
@@ -671,7 +669,7 @@ exports.protectedPut = async function (args, res, next) {
 }
 
 //  Delete a Document
-exports.protectedDelete = async function (args, res, next) {
+exports.protectedDelete = async function (args, res) {
   var objId = args.swagger.params.docId.value;
   defaultLog.info("Delete Document:", objId);
 
@@ -688,7 +686,7 @@ exports.protectedDelete = async function (args, res, next) {
   }
 };
 
-exports.featureDocument = async function (args, res, next) {
+exports.featureDocument = async function (args, res) {
   try
   {
     if (args.swagger.params.docId && args.swagger.params.docId.value) 
@@ -723,7 +721,7 @@ exports.featureDocument = async function (args, res, next) {
   }
 };
 
-exports.unfeatureDocument = async function (args, res, next) {
+exports.unfeatureDocument = async function (args, res) {
   try
   {
     if (args.swagger.params.docId && args.swagger.params.docId.value) 

@@ -13,6 +13,15 @@
     "parserOptions": {
         "ecmaVersion": 2018
     },
+    "ignorePatterns": [
+        "migrations/",
+        "migrations_data/",
+        "migrations_temp/",
+        "one_off_migrations",
+        "openshift/",
+        "seed/",
+        "api/test/generate-data/factories"
+    ],
     "rules": {
     }
 }

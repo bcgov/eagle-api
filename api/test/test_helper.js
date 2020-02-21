@@ -90,7 +90,7 @@ function getDataGenerationSettings() {
       resolve(jsonObj);
     });   
   }
-};
+}
 
 let dataGenerationSettings = getDataGenerationSettings();
 
@@ -173,7 +173,7 @@ async function mongooseConnect() {
     } else {
       if (mongoServer) {
         mongoUri = await mongoServer.getConnectionString()
-      };
+      }
     }
     checkMongoUri();
     await mongoose.connect(mongoUri, mongooseOpts, (err) => {
@@ -181,7 +181,7 @@ async function mongooseConnect() {
     });
     console.log(mongoUri);
   }
-};
+}
 
 async function checkMigrations(callback) {
   checkMongoUri();
@@ -199,7 +199,7 @@ async function checkMigrations(callback) {
 async function runMigrations(migrationCount) {
   if (0 < migrationCount) return;
   checkMongoUri();
-  await exec("./node_modules/db-migrate/bin/db-migrate up", function(err, stdout, stderr) {
+  await exec("./node_modules/db-migrate/bin/db-migrate up", function(err) {
     if (err) console.error(err);
   });
 }

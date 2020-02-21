@@ -22,11 +22,11 @@ var getSanitizedFields = function (fields) {
     ], f) !== -1);
   });
 }
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function (args, res) {
   res.status(200).send();
 }
 
-exports.publicGet = async function (args, res, next) {
+exports.publicGet = async function (args, res) {
   var fields = ['_schemaName',
     'dateUpdated',
     'dateAdded',
@@ -98,7 +98,7 @@ exports.publicGet = async function (args, res, next) {
   }
 }
 
-exports.protectedDelete = function (args, res, next) {
+exports.protectedDelete = function (args, res) {
   defaultLog.info("Deleting a RecentActivity(s)");
   defaultLog.info("args.swagger.params:", args.swagger.operation["x-security-scopes"]);
 
@@ -126,7 +126,7 @@ exports.protectedDelete = function (args, res, next) {
 }
 
 //  Create a new RecentActivity
-exports.protectedPost = async function (args, res, next) {
+exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.recentActivity.value;
   defaultLog.info("Incoming new object:", obj);
 
@@ -157,7 +157,7 @@ exports.protectedPost = async function (args, res, next) {
 };
 
 // Update an existing RecentActivity
-exports.protectedPut = async function (args, res, next) {
+exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.recentActivityId.value;
   defaultLog.info("ObjectID:", args.swagger.params.recentActivityId.value);
 

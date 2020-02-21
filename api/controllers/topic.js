@@ -17,12 +17,12 @@ var getSanitizedFields = function (fields) {
     });
 }
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function (args, res) {
     res.status(200).send();
 };
 
 //  Create a new topic
-exports.protectedPost = async function (args, res, next) {
+exports.protectedPost = async function (args, res) {
     var obj = args.swagger.params.topic.value;
 
     defaultLog.info("Incoming new object:", obj);
@@ -41,7 +41,7 @@ exports.protectedPost = async function (args, res, next) {
     return Actions.sendResponse(res, 200, theTopic);
 };
 
-exports.protectedGet = async function (args, res, next) {
+exports.protectedGet = async function (args, res) {
     var skip = null, limit = null, sort = {}, query = {};
 
     if (args.swagger.params.topicId && args.swagger.params.topicId.value) {
@@ -74,7 +74,7 @@ exports.protectedGet = async function (args, res, next) {
     return Actions.sendResponse(res, 200, data);
 };
 
-exports.protectedPut = async function (args, res, next) {
+exports.protectedPut = async function (args, res) {
     var objId = args.swagger.params.topicId.value;
     defaultLog.info("ObjectID:", args.swagger.params.topicId.value);
     var obj = args.swagger.params.cp.value;
@@ -94,7 +94,7 @@ exports.protectedPut = async function (args, res, next) {
     return Actions.sendResponse(res, 200, data);
 }
 
-exports.protectedDelete = async function (args, res, next) {
+exports.protectedDelete = async function (args, res) {
     var objId = args.swagger.params.topicId.value;
     defaultLog.info("Delete Topic:", objId);
 

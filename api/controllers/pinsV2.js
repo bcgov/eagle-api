@@ -6,24 +6,24 @@ const pinDAO     = require('../dao/pinDAO');
 const constants  = require('../helpers/constants');
 
 // OPTIONS
-exports.pinOptions = function (args, res, next)
+exports.pinOptions = function (args, res)
 {
   res.status(200).send();
 };
 
-exports.pinOptionsProtected = function (args, res, next)
+exports.pinOptionsProtected = function (args, res)
 {
   res.status(200).send();
 };
 
 // GET (Public, getPin)
-exports.fetchPins = async function (args, res, next)
+exports.fetchPins = async function (args, res)
 {
     defaultLog.debug('>>> {GET}/Public/Projects/{id}/Pins');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId'))
         {
             let projectId = args.swagger.params.projId.value;
                 
@@ -33,9 +33,9 @@ exports.fetchPins = async function (args, res, next)
 
             if(project)
             {
-                let pageNumber = args.swagger.params.hasOwnProperty('pageNumber') && args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
-                let pageSize   = args.swagger.params.hasOwnProperty('pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
-                let sortBy     = args.swagger.params.hasOwnProperty('sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
+                let pageNumber = Object.prototype.hasOwnProperty.call(args.swagger.params, 'pageNumber') && args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
+                let pageSize   = Object.prototype.hasOwnProperty.call(args.swagger.params, 'pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
+                let sortBy     = Object.prototype.hasOwnProperty.call(args.swagger.params, 'sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
     
                 let data = await pinDAO.getProjectPins('Public User', constants.PUBLIC_ROLES, project, pageNumber, pageSize, sortBy);
     
@@ -64,13 +64,13 @@ exports.fetchPins = async function (args, res, next)
 };
 
 // GET (Protected Only, getPin)
-exports.fetchPinsProtected = async function (args, res, next)
+exports.fetchPinsProtected = async function (args, res)
 {
     defaultLog.debug('>>> {GET}/Projects/{id}/Pins');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId'))
         {
             let projectId = args.swagger.params.projId.value;
                 
@@ -80,9 +80,9 @@ exports.fetchPinsProtected = async function (args, res, next)
 
             if(project)
             {
-                let pageNumber = args.swagger.params.hasOwnProperty('pageNumber') && args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
-                let pageSize   = args.swagger.params.hasOwnProperty('pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
-                let sortBy     = args.swagger.params.hasOwnProperty('sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
+                let pageNumber = Object.prototype.hasOwnProperty.call(args.swagger.params, 'pageNumber') && args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
+                let pageSize   = Object.prototype.hasOwnProperty.call(args.swagger.params, 'pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
+                let sortBy     = Object.prototype.hasOwnProperty.call(args.swagger.params, 'sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '';
     
                 let data = await pinDAO.getProjectPins(args.swagger.params.auth_payload.preferred_username, constants.SECURE_ROLES, project, pageNumber, pageSize, sortBy);
     
@@ -111,13 +111,13 @@ exports.fetchPinsProtected = async function (args, res, next)
 };
 
 // POST (Protected Only, createPin)
-exports.pinCreate = async function (args, res, next)
+exports.pinCreate = async function (args, res)
 {
     defaultLog.debug('>>> {POST}/Projects/{id}/Pins');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId'))
         {
             let projectId = args.swagger.params.projId.value;
                 
@@ -163,13 +163,13 @@ exports.pinCreate = async function (args, res, next)
 };
 
 // PUT (Protected Only, publishPin)
-exports.publishPin = async function (args, res, next)
+exports.publishPin = async function (args, res)
 {
     defaultLog.debug('>>> {PUT}/Projects/{id}/Pins/Publish');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId'))
         {
             let projectId = args.swagger.params.projId.value;
                 
@@ -206,13 +206,13 @@ exports.publishPin = async function (args, res, next)
 };
 
 // PUT (Protected Only, unPublishPin)
-exports.unpublishPin = async function (args, res, next)
+exports.unpublishPin = async function (args, res)
 {
     defaultLog.debug('>>> {PUT}/Projects/{id}/Pins/Unpublish');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId'))
         {
             let projectId = args.swagger.params.projId.value;
                 
@@ -249,13 +249,13 @@ exports.unpublishPin = async function (args, res, next)
 };
 
 // DELETE (Protected Only, deletePin)
-exports.deletePin = async function (args, res, next)
+exports.deletePin = async function (args, res)
 {
     defaultLog.debug('>>> {DELETE}/Projects/{projId}/Pins/{pinId}');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('pinId'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId') && Object.prototype.hasOwnProperty.call(args.swagger.params, 'pinId'))
         {
             let projectId = args.swagger.params.projId.value;
             let pinId = args.swagger.params.pinId.value;
@@ -268,8 +268,9 @@ exports.deletePin = async function (args, res, next)
             {
                 project = pinDAO.deletePin(args.swagger.params.auth_payload.preferred_username, pinId, project);
 
-                return publishedProject ? Actions.sendResponseV2(res, 200, project) 
-                                        : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project pin was not found or could not be deleted'});
+                // TODO: Fix this!
+                //return publishedProject ? Actions.sendResponseV2(res, 200, project) 
+                //                       : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project pin was not found or could not be deleted'});
             }
             else
             {

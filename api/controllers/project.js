@@ -86,11 +86,11 @@ var getSanitizedFields = function (fields) {
   });
 }
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function (args, res) {
   res.status(200).send();
 }
 
-exports.publicHead = async function (args, res, next) {
+exports.publicHead = async function (args, res) {
   defaultLog.info('Getting head for Project')
 
   // Build match query if on ProjId route
@@ -145,7 +145,7 @@ exports.publicHead = async function (args, res, next) {
   }
 };
 
-exports.publicGet = async function (args, res, next) {
+exports.publicGet = async function (args, res) {
   // Build match query if on projId route
   var query = {}, skip = null, limit = null;
   var commentPeriodPipeline = null;
@@ -214,7 +214,7 @@ exports.publicGet = async function (args, res, next) {
   }
 };
 
-exports.protectedGet = async function (args, res, next) {
+exports.protectedGet = async function (args, res) {
   var skip = null, limit = null, sort = null;
   var count = false;
   var query = {};
@@ -302,7 +302,7 @@ exports.protectedGet = async function (args, res, next) {
   }
 };
 
-exports.protectedHead = function (args, res, next) {
+exports.protectedHead = function (args, res) {
   defaultLog.info("args.swagger.params:", args.swagger.operation["x-security-scopes"]);
 
   // Build match query if on projId route
@@ -325,8 +325,6 @@ exports.protectedHead = function (args, res, next) {
   // Unless they specifically ask for it, hide deleted results.
   if (args.swagger.params.isDeleted && args.swagger.params.isDeleted.value !== undefined) {
     _.assignIn(query, { isDeleted: args.swagger.params.isDeleted.value });
-  } else {
-
   }
 
   // Set query type
@@ -353,7 +351,7 @@ exports.protectedHead = function (args, res, next) {
     });
 };
 
-exports.protectedDelete = function (args, res, next) {
+exports.protectedDelete = function (args, res) {
   var projId = args.swagger.params.projId.value;
   defaultLog.info("Delete Project:", projId);
 
@@ -382,7 +380,7 @@ exports.protectedDelete = function (args, res, next) {
 
 
 //  Create a new project
-exports.protectedPost = function (args, res, next) {
+exports.protectedPost = function (args, res) {
   var obj = args.swagger.params.project.value;
 
   // default project creation is set to 2002 right now for backwards compatibility with other apps that use this api
@@ -457,7 +455,7 @@ exports.protectedPost = function (args, res, next) {
     });
 };
 
-exports.protectedPinDelete = async function (args, res, next) {
+exports.protectedPinDelete = async function (args, res) {
   var projId = args.swagger.params.projId.value;
   var pinId = args.swagger.params.pinId.value;
   defaultLog.info("Delete PIN: ", pinId, " from Project:", projId);
@@ -477,7 +475,7 @@ exports.protectedPinDelete = async function (args, res, next) {
   }
 }
 
-handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, username, res) {
+const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, username, res) {
   var skip = null, limit = null, sort = null;
   var query = {};
 
@@ -565,7 +563,7 @@ handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNum, use
   }
 }
 
-exports.protectedExtensionAdd = async function (args, res, next) {
+exports.protectedExtensionAdd = async function (args, res) {
   // Adds an object to the extension/suspension array
   var projId = args.swagger.params.projId.value;
   var extensionObj = args.swagger.params.extension.value;
@@ -590,7 +588,7 @@ exports.protectedExtensionAdd = async function (args, res, next) {
   }
 }
 
-exports.protectedExtensionDelete = async function (args, res, next) {
+exports.protectedExtensionDelete = async function (args, res) {
   // Delete an object from the extension/suspension array
   try {
     var projId = args.swagger.params.projId.value;
@@ -615,7 +613,7 @@ exports.protectedExtensionDelete = async function (args, res, next) {
   }
 }
 
-exports.protectedExtensionUpdate = async function (args, res, next) {
+exports.protectedExtensionUpdate = async function (args, res) {
   // Edit an object to the extension/suspension array
   // NB: We need both the old and the new in order to update accordingly
   var projId = args.swagger.params.projId.value;
@@ -652,7 +650,7 @@ exports.protectedExtensionUpdate = async function (args, res, next) {
   }
 }
 
-exports.publicPinGet = async function (args, res, next) {
+exports.publicPinGet = async function (args, res) {
   handleGetPins(args.swagger.params.projId,
     ['public'],
     args.swagger.params.sortBy,
@@ -663,7 +661,7 @@ exports.publicPinGet = async function (args, res, next) {
   );
 }
 
-exports.protectedPinGet = async function (args, res, next) {
+exports.protectedPinGet = async function (args, res) {
   handleGetPins(args.swagger.params.projId,
     args.swagger.params.auth_payload.realm_access.roles,
     args.swagger.params.sortBy,
@@ -674,7 +672,7 @@ exports.protectedPinGet = async function (args, res, next) {
   );
 }
 
-exports.protectedAddPins = async function (args, res, next) {
+exports.protectedAddPins = async function (args, res) {
   var objId = args.swagger.params.projId.value;
   defaultLog.info("ObjectID:", args.swagger.params.projId.value);
 
@@ -758,7 +756,7 @@ exports.protectedUnPublishPin = async function (args, res) {
   }
 }
 
-exports.protectedDeleteGroupMembers = async function (args, res, next) {
+exports.protectedDeleteGroupMembers = async function (args, res) {
   var projId = args.swagger.params.projId.value;
   var groupId = args.swagger.params.groupId.value;
   var memberId = args.swagger.params.memberId.value;
@@ -779,7 +777,7 @@ exports.protectedDeleteGroupMembers = async function (args, res, next) {
   }
 }
 
-exports.protectedAddGroupMembers = async function (args, res, next) {
+exports.protectedAddGroupMembers = async function (args, res) {
   var projectId = args.swagger.params.projId.value;
   var groupId = args.swagger.params.groupId.value;
   defaultLog.info("ProjectID:", projectId);
@@ -812,7 +810,7 @@ exports.protectedAddGroupMembers = async function (args, res, next) {
   }
 }
 
-exports.protectedGroupGetMembers = async function (args, res, next) {
+exports.protectedGroupGetMembers = async function (args, res) {
   handleGetGroupMembers(args.swagger.params.groupId,
     args.swagger.params.auth_payload.realm_access.roles,
     args.swagger.params.sortBy,
@@ -823,7 +821,7 @@ exports.protectedGroupGetMembers = async function (args, res, next) {
   );
 }
 
-handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, pageNum, username, res) {
+const handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, pageNum, username, res) {
   var skip = null, limit = null, sort = null;
   var query = {};
 
@@ -900,7 +898,7 @@ handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, pageNu
   }
 }
 
-exports.protectedAddGroup = async function (args, res, next) {
+exports.protectedAddGroup = async function (args, res) {
   var objId = args.swagger.params.projId.value;
   var groupName = args.swagger.params.group.value;
   defaultLog.info("Incoming new group:", groupName);
@@ -920,7 +918,7 @@ exports.protectedAddGroup = async function (args, res, next) {
     });
 }
 
-exports.protectedGroupPut = async function (args, res, next) {
+exports.protectedGroupPut = async function (args, res) {
   var projId = args.swagger.params.projId.value;
   var groupId = args.swagger.params.groupId.value;
   var obj = args.swagger.params.groupObject.value;
@@ -937,7 +935,7 @@ exports.protectedGroupPut = async function (args, res, next) {
   }
 }
 
-exports.protectedGroupDelete = async function (args, res, next) {
+exports.protectedGroupDelete = async function (args, res) {
   var objId = args.swagger.params.projId.value;
   var groupId = args.swagger.params.groupId.value;
   defaultLog.info("Delete Group:", groupId, "from project:", objId);
@@ -955,7 +953,7 @@ exports.protectedGroupDelete = async function (args, res, next) {
 }
 
 // Update an existing project
-exports.protectedPut = async function (args, res, next) {
+exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.projId.value;
   defaultLog.info("ObjectID:", args.swagger.params.projId.value);
 
@@ -1086,7 +1084,7 @@ exports.protectedPut = async function (args, res, next) {
 
 // Publish/Unpublish the project
 // We need to make this publish also update the current legislation year and the year list  
-exports.protectedPublish = function (args, res, next) {
+exports.protectedPublish = function (args, res) {
   var objId = args.swagger.params.projId.value;
   var ProjObject = args.swagger.params.ProjObject.value;
   defaultLog.info("Publish Project:", objId);
@@ -1114,7 +1112,7 @@ exports.protectedPublish = function (args, res, next) {
     }
   });
 };
-exports.protectedUnPublish = function (args, res, next) {
+exports.protectedUnPublish = function (args, res) {
   var objId = args.swagger.params.projId.value;
   defaultLog.info("UnPublish Project:", objId);
 
@@ -1175,7 +1173,7 @@ var handleCommentPeriodForBannerQueryParameters = function (args, projectId) {
 
 var addStandardQueryFilters = function (query, args) {
   if (args.swagger.params.publishDate && args.swagger.params.publishDate.value !== undefined) {
-    var queryString = qs.parse(args.swagger.params.publishDate.value);
+    const queryString = qs.parse(args.swagger.params.publishDate.value);
     if (queryString.since && queryString.until) {
       // Combine queries as logical AND for the dataset.
       _.assignIn(query, {
@@ -1213,8 +1211,8 @@ var addStandardQueryFilters = function (query, args) {
     _.assignIn(query, { cl_file: args.swagger.params.cl_file.value });
   }
   if (args.swagger.params.purpose && args.swagger.params.purpose.value !== undefined) {
-    var queryString = qs.parse(args.swagger.params.purpose.value);
-    var queryArray = [];
+    const queryString = qs.parse(args.swagger.params.purpose.value);
+    let queryArray = [];
     if (Array.isArray(queryString.eq)) {
       queryArray = queryString.eq;
     } else {
@@ -1239,8 +1237,8 @@ var addStandardQueryFilters = function (query, args) {
     _.assignIn(query, { subtype: args.swagger.params.subtype.value });
   }
   if (args.swagger.params.status && args.swagger.params.status.value !== undefined) {
-    var queryString = qs.parse(args.swagger.params.status.value);
-    var queryArray = [];
+    const queryString = qs.parse(args.swagger.params.status.value);
+    let queryArray = [];
     if (Array.isArray(queryString.eq)) {
       queryArray = queryString.eq;
     } else {
@@ -1261,7 +1259,7 @@ var addStandardQueryFilters = function (query, args) {
     _.assignIn(query, { tenureStage: args.swagger.params.tenureStage.value });
   }
   if (args.swagger.params.areaHectares && args.swagger.params.areaHectares.value !== undefined) {
-    var queryString = qs.parse(args.swagger.params.areaHectares.value);
+    const queryString = qs.parse(args.swagger.params.areaHectares.value);
     if (queryString.gte && queryString.lte) {
       // Combine queries as logical AND to compute a Rnage of values.
       _.assignIn(query, {
@@ -1302,7 +1300,7 @@ var addStandardQueryFilters = function (query, args) {
   }
   // Allows filtering of apps that have had their last status change greater than this epoch time.
   if (args.swagger.params.statusHistoryEffectiveDate && args.swagger.params.statusHistoryEffectiveDate !== undefined) {
-    var queryString = qs.parse(args.swagger.params.statusHistoryEffectiveDate.value);
+    const queryString = qs.parse(args.swagger.params.statusHistoryEffectiveDate.value);
     _.assignIn(query, {
       $or: [{ statusHistoryEffectiveDate: null }, { statusHistoryEffectiveDate: { $gte: parseInt(queryString.gte, 10) } }]
     });
@@ -1320,7 +1318,7 @@ var serializeProjectVirtuals = function (data) {
   });
 }
 
-exports.getFeaturedDocuments = async function (args, res, next) {
+exports.getFeaturedDocuments = async function (args, res) {
   try
   {
     if (args.swagger.params.projId && args.swagger.params.projId.value) 
@@ -1344,7 +1342,7 @@ exports.getFeaturedDocuments = async function (args, res, next) {
   }
 };
 
-exports.getFeaturedDocumentsSecure = async function (args, res, next) {
+exports.getFeaturedDocumentsSecure = async function (args, res) {
   try
   {
     if (args.swagger.params.projId && args.swagger.params.projId.value) 
@@ -1364,7 +1362,7 @@ exports.getFeaturedDocumentsSecure = async function (args, res, next) {
   }
 };
 
-var fetchFeaturedDocuments = async function(project, sanitizeForPublic) {
+var fetchFeaturedDocuments = async function(project) {
   try 
   {
     let documents = await mongoose.model('Document').find({ project: project._id, isFeatured: true });

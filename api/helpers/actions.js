@@ -1,9 +1,8 @@
 "use strict";
 var _ = require('lodash');
-var defaultLog = require('winston').loggers.get('default');
 
 exports.publish = async function (o,save=false) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function (resolve) {
       // Need project specific logic to handle legislation keys
         // Object wasn't already published?
         let newReadArray;
@@ -26,7 +25,7 @@ exports.isPublished = async function (o) {
 };
 
 exports.unPublish = async function (o) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function (resolve) {
       // Need project specific logic to handle legislation keys
         // Object wasn't already published?
         let newReadArray;

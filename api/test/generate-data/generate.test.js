@@ -1,4 +1,5 @@
 'use strict';
+const jasmine = require('jasmine')
 const Promise = require("bluebird");
 Promise.longStackTraces();
 const test_helper = require('../test_helper');

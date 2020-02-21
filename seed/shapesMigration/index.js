@@ -8,18 +8,13 @@
 var Promise         = require('es6-promise').Promise;
 var _               = require('lodash');
 var request         = require('request');
-var fs              = require('fs');
-var _applications   = [];
-var _commentPeriods = [];
-var _organizations  = [];
-var _decisions      = [];
-var _comments       = [];
 var username        = '';
 var password        = '';
 var protocol        = 'http';
 var host            = 'localhost';
 var port            = '3000'
 var uri             = '';
+var defaultLog = require('winston').loggers.get('default');
 
 var args = process.argv.slice(2);
 if (args.length !== 5) {
@@ -64,16 +59,6 @@ var login = function (username, password) {
         }
     });
   });
-};
-
-var updateAll = function (collectionName, entries) {
-  if (_.isEmpty(entries)) {
-    return Promise.resolve();
-  }
-  var updates = _.map(entries, function (entry) {
-    return update(collectionName, { _id: entry._id }, entry);
-  });
-  return Promise.all(updates);
 };
 
 var getAllApplications = function (route) {

@@ -15,7 +15,6 @@ var genSchema = function (name, definition) {
     //
     var m = definition.methods__;
     var virtuals = definition.virtuals__;
-    var i = definition.indexes__;
     var s = definition.statics__;
     var pre = definition.presave__;
     var post = definition.postsave__;

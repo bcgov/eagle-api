@@ -100,7 +100,7 @@ var getAllApplications = function (route) {
 };
 
 var getAndSaveFeatures = function (accessToken, item) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function (resolve) {
       Utils.getApplicationByDispositionID(accessToken, item.tantalisID)
       .then(function (obj) {
         // console.log("returning:", obj);
@@ -131,7 +131,6 @@ var getAndSaveFeatures = function (accessToken, item) {
             centroids.features.push(turf.centroid(f));
         });
         // Centroid of all the shapes.
-        var featureCollectionCentroid;
         if (centroids.features.length > 0) {
             item.centroid = turf.centroid(centroids).geometry.coordinates;
         }

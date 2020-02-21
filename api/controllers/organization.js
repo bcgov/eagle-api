@@ -17,11 +17,11 @@ var getSanitizedFields = function (fields) {
   });
 }
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function (args, res) {
   res.status(200).send();
 }
 
-exports.publicGet = async function (args, res, next) {
+exports.publicGet = async function (args, res) {
   var sort = {};
   var query = {};
 
@@ -55,7 +55,7 @@ exports.publicGet = async function (args, res, next) {
   return Actions.sendResponse(res, 200, data);
 };
 
-exports.protectedGet = async function (args, res, next) {
+exports.protectedGet = async function (args, res) {
   var sort = {};
   var query = {};
 
@@ -90,7 +90,7 @@ exports.protectedGet = async function (args, res, next) {
 };
 
 //  Create a new organization
-exports.protectedPost = async function (args, res, next) {
+exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.org.value;
   defaultLog.info("Incoming new object:", obj);
 
@@ -130,7 +130,7 @@ exports.protectedPost = async function (args, res, next) {
 };
 
 // Update an existing organization
-exports.protectedPut = async function (args, res, next) {
+exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.orgId.value;
   var obj = args.swagger.params.org.value;
   defaultLog.info("ObjectID:", args.swagger.params.orgId.value);
@@ -173,7 +173,7 @@ exports.protectedPut = async function (args, res, next) {
 }
 
 // Publish/Unpublish the organization
-exports.protectedPublish = function (args, res, next) {
+exports.protectedPublish = function (args, res) {
   var objId = args.swagger.params.orgId.value;
   defaultLog.info("Publish Organization:", objId);
 
@@ -197,7 +197,7 @@ exports.protectedPublish = function (args, res, next) {
     }
   });
 };
-exports.protectedUnPublish = function (args, res, next) {
+exports.protectedUnPublish = function (args, res) {
   var objId = args.swagger.params.orgId.value;
   defaultLog.info("UnPublish Organization:", objId);
 

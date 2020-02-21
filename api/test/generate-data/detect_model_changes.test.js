@@ -25,7 +25,7 @@ function getLastGoodHashsetFromFile() {
       fs.readFileSync(filename).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; })
       resolve(fileContents);
     });   
-  };
+  }
 
 function filterRelevantFolders(apiFolderJsonObj) {
     let models = "";

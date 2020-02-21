@@ -52,11 +52,11 @@ var getSanitizedFields = function (fields) {
   });
 }
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function (args, res) {
   res.status(200).send();
 }
 
-exports.publicGet = async function (args, res, next) {
+exports.publicGet = async function (args, res) {
   defaultLog.info('Public get for comment period');
 
   // Build match query if on CommentPeriodId route
@@ -107,7 +107,7 @@ exports.publicGet = async function (args, res, next) {
   }
 };
 
-exports.protectedHead = async function (args, res, next) {
+exports.protectedHead = async function (args, res) {
   defaultLog.info('Head for comment period');
 
   // Build match query if on CommentPeriodId route
@@ -152,7 +152,7 @@ exports.protectedHead = async function (args, res, next) {
   }
 }
 
-exports.protectedSummary = async function (args, res, next) {
+exports.protectedSummary = async function (args, res) {
   defaultLog.info('Head for comment period summaries');
 
   // Build match query if on CommentPeriodId route
@@ -208,7 +208,7 @@ exports.protectedSummary = async function (args, res, next) {
 }
 
 
-exports.protectedGet = async function (args, res, next) {
+exports.protectedGet = async function (args, res) {
   defaultLog.info('Getting comment period(s)');
 
   var query = {}, sort = null, skip = null, limit = null, count = false;
@@ -267,7 +267,7 @@ exports.protectedGet = async function (args, res, next) {
 };
 
 //  Create a new CommentPeriod
-exports.protectedPost = async function (args, res, next) {
+exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.period.value;
 
   defaultLog.info('Incoming new comment period:', obj);
@@ -307,7 +307,7 @@ exports.protectedPost = async function (args, res, next) {
 };
 
 // Update an existing CommentPeriod
-exports.protectedPut = async function (args, res, next) {
+exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.commentPeriodId.value;
   var obj = args.swagger.params.cp.value;
   defaultLog.info('Put comment period:', objId);
@@ -346,7 +346,7 @@ exports.protectedPut = async function (args, res, next) {
 }
 
 //  Delete a new CommentPeriod
-exports.protectedDelete = async function (args, res, next) {
+exports.protectedDelete = async function (args, res) {
   var objId = args.swagger.params.commentPeriodId.value;
   defaultLog.info('Delete comment period:', objId);
 
@@ -362,7 +362,7 @@ exports.protectedDelete = async function (args, res, next) {
 };
 
 // Publish/Unpublish the CommentPeriod
-exports.protectedPublish = async function (args, res, next) {
+exports.protectedPublish = async function (args, res) {
   var objId = args.swagger.params.commentPeriodId.value;
   defaultLog.info('Publish comment period:', objId);
 
@@ -380,7 +380,7 @@ exports.protectedPublish = async function (args, res, next) {
   }
 };
 
-exports.protectedUnPublish = async function (args, res, next) {
+exports.protectedUnPublish = async function (args, res) {
   var objId = args.swagger.params.commentPeriodId.value;
   defaultLog.info('UnPublish comment period:', objId);
 

@@ -1,15 +1,14 @@
 var auth        = require("../helpers/auth");
-var _           = require('lodash');
 var defaultLog  = require('winston').loggers.get('default');
 
-exports.loginOptions = function(args, res, next) {
+exports.loginOptions = function(args, res) {
   res.status(200).send();
 };
-exports.loginPost = function(args, res, next) {
+exports.loginPost = function(args, res) {
   var username = args.body.username;
   var password = args.body.password;
 
-  auth.checkAuthentication(username, password, function (err, user, message) {
+  auth.checkAuthentication(username, password, function (err, user) {
     if (err || !user) {
       defaultLog.info("err:", err);
       defaultLog.info("user:", user);

@@ -1,16 +1,14 @@
-var auth = require("../helpers/auth");
-var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function (args, res) {
   res.status(200).send();
 }
 
 //  Create a new Notification Project
-exports.protectedPost = async function (args, res, next) {
+exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.notificationProject.value;
   defaultLog.info("Incoming new object:", obj);
 
@@ -49,7 +47,7 @@ exports.protectedPost = async function (args, res, next) {
 };
 
 // Update an existing user
-exports.protectedPut = async function (args, res, next) {
+exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.notificationProjectId.value;
   var obj = args.swagger.params.notificationProject.value;
   defaultLog.info("ObjectID:", args.swagger.params.notificationProjectId.value);

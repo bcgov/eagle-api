@@ -2,8 +2,6 @@ const _          = require('lodash');
 const mongoose   = require('mongoose');
 const Utils      = require('../helpers/utils');
 
-const WORDS_TO_ANALYZE = 3;
-
 exports.groupHateoas = function(group, roles)
 {
     group.links = [];
@@ -55,11 +53,11 @@ exports.deleteGroup = async function(user, group, project)
 
     try 
     {
-        var group = await groupModel.findOneAndRemove({ _id: group._id });
+        var foundGroup = await groupModel.findOneAndRemove({ _id: group._id });
 
         Utils.recordAction('Delete', 'Group', user, project._id);
 
-        return group;
+        return foundGroup;
     } 
     catch (e) 
     {
@@ -107,7 +105,7 @@ exports.addGroupMember = async function(user, group, members)
     {
         Utils.recordAction('Add', 'GroupMember', user, updatedGroup._id);
 
-        return updateGroup;
+        return updatedGroup;
     } 
     else 
     {

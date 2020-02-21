@@ -1,6 +1,5 @@
 // Retrieve
 var MongoClient = require("mongodb").MongoClient;
-var fs = require("fs");
 var ObjectId = require("mongodb").ObjectID;
 
 // Connect to the db
@@ -60,7 +59,7 @@ MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
 
 
 async function updateType(db, object_id) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve) {
       db.collection("epic")
         .updateOne({ _id: object_id },{ $set: { type: null }})
         .then(async function(data) {
@@ -70,7 +69,7 @@ async function updateType(db, object_id) {
 }
 
 async function updateProjectPhase(db, object_id) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve) {
       db.collection("epic")
         .updateOne({ _id: object_id },{ $set: { projectPhase: null }})
         .then(async function(data) {
@@ -80,7 +79,7 @@ async function updateProjectPhase(db, object_id) {
 }
 
 async function updateMilestone(db, object_id) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve) {
       db.collection("epic")
         .updateOne({ _id: object_id },{ $set: { milestone: null }})
         .then(async function(data) {
@@ -90,7 +89,7 @@ async function updateMilestone(db, object_id) {
 }
 
 async function updateAuthor(db, object_id) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve) {
       db.collection("epic")
         .updateOne({ _id: object_id },{ $set: { documentAuthorType: null }})
         .then(async function(data) {

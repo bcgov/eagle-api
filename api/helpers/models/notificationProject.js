@@ -1,5 +1,4 @@
 var mongoose = require('mongoose');
-var _ = require('underscore');
 var Mixed = mongoose.Schema.Types.Mixed;
 
 module.exports = require('../models')('NotificationProject', {

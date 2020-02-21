@@ -1,6 +1,3 @@
-var mongoose = require('mongoose');
-var Mixed = mongoose.Schema.Types.Mixed;
-
 module.exports = require ('../models')('Inspection', {
     // Tracking
     _schemaName: { type: String, default: 'Inspection' },

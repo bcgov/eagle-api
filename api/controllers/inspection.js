@@ -4,41 +4,16 @@ var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 var mime = require('mime-types');
-var FlakeIdGen = require('flake-idgen'),
-  intformat = require('biguint-format'),
-  generator = new FlakeIdGen;
 var uploadDir = process.env.UPLOAD_DIRECTORY || "./uploads/";
 var MinioController = require('../helpers/minio');
 var rp = require('request-promise-native');
-var moment = require('moment');
 
-var tagList = [
-  'name',
-  'project',
-  'startDate',
-  'endDate',
-  'email',
-  'label',
-  'case'
-];
-
-var getSanitizedFields = function (fields) {
-  return _.remove(fields, function (f) {
-    return (_.indexOf(tagList, f) !== -1);
-  });
-}
-
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function (args, res) {
   res.status(200).send();
 }
 
-// Get an inspection
-exports.protectedGetInspection = function (args, res, next) {
-  // TODO
-}
-
 //  Create a new inspection
-exports.protectedPostInspection = async function (args, res, next) {
+exports.protectedPostInspection = async function (args, res) {
   var obj = args.swagger.params.inspection.value;
 
   defaultLog.info("Incoming new object:", obj);
@@ -65,7 +40,6 @@ exports.protectedPostInspection = async function (args, res, next) {
   // This is an overwrite in case of error from mobile app,
   // otherwise this will create a new record.
   try {
-    var Inspection = mongoose.model('Inspection');
     let elementDocument = await Inspection.findOne({_schemaName: "Inspection", inspectionId: inspection.inspectionId});
     if (elementDocument) {
       // We alrady had this - send it back to them.
@@ -85,16 +59,11 @@ exports.protectedPostInspection = async function (args, res, next) {
   } catch (err) {
     console.log("Error in API:", err);
     return Actions.sendResponse(res, 400, err);
-  };
+  }
 };
 
-// Get an inspection element
-exports.protectedGetElement = function (args, res, next) {
-  // TODO
-}
-
 //  Create a new inspection element
-exports.protectedPostElement = async function (args, res, next) {
+exports.protectedPostElement = async function (args, res) {
   var obj = args.swagger.params.inspection.value;
   var inspId = args.swagger.params.inspId.value;
 
@@ -136,7 +105,7 @@ exports.protectedPostElement = async function (args, res, next) {
           { new: true }
         );
       })
-      .then(function (theInspection) {
+      .then(function () {
         Utils.recordAction('Post', 'InspectionElement', args.swagger.params.auth_payload.preferred_username, theDoc._id);
         return Actions.sendResponse(res, 200, theDoc);
       })
@@ -148,7 +117,7 @@ exports.protectedPostElement = async function (args, res, next) {
 };
 
 // Create element item
-exports.protectedPostElementItem = async function (args, res, next) {
+exports.protectedPostElementItem = async function (args, res) {
   var upfile = args.swagger.params.upfile.value;
   var guid = args.swagger.params.itemId.value;
   var project = null
@@ -214,13 +183,9 @@ exports.protectedPostElementItem = async function (args, res, next) {
         doc.internalSize = upfile.size;
         doc.internalMime = upfile.mimetype;
 
-        // Update who did this?
-        console.log('unlink');
-
-        var InspectionItem = mongoose.model('InspectionItem');
         let itemDocument = await InspectionItem.findOne({_schemaName: "InspectionItem", itemId: doc.itemId});
         if (itemDocument) {
-          // We alrady had this - send it back to them.
+          // We already had this - send it back to them.
           return Actions.sendResponse(res, 200, itemDocument);
         } else {
           var savedDocument = null;
@@ -279,7 +244,6 @@ exports.protectedPostElementItem = async function (args, res, next) {
     doc.geo = JSON.parse(geo);
     doc.markModified('geo');
 
-    var InspectionItem = mongoose.model('InspectionItem');
     let itemDocument = await InspectionItem.findOne({_schemaName: "InspectionItem", itemId: doc.itemId});
     if (itemDocument) {
       // We alrady had this - send it back to them.
@@ -320,7 +284,7 @@ exports.protectedPostElementItem = async function (args, res, next) {
   }
 }
 
-exports.protectedElementItemGet = function (args, res, next) {
+exports.protectedElementItemGet = function (args, res) {
   var self = this;
   self.scopes = args.swagger.params.auth_payload.realm_access.roles;
 
@@ -357,8 +321,6 @@ exports.protectedElementItemGet = function (args, res, next) {
         var blob = data[0];
 
         var fileMeta;
-
-        var fs = require('fs');
 
         // check if the file exists in Minio
         return MinioController.statObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, blob.internalURL)
@@ -399,7 +361,7 @@ exports.protectedElementItemGet = function (args, res, next) {
                   console.log("ERR:", err);
                   res.status(404).send();
                 });
-            };
+            }
           });
       } else {
         return Actions.sendResponse(res, 404, {});

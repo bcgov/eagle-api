@@ -34,7 +34,7 @@ if (args.length !== 6) {
 }
 
 var processUsers = function (users) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function () {
         Promise.resolve()
         .then(function () {
             return users.reduce(function (previousItem, currentItem) {

@@ -4,7 +4,6 @@ const faker = require('faker/locale/en');
 const mongTypes = require('mongoose').Types;
 Promise.longStackTraces();
 const test_helper = require('../test_helper');
-const app = test_helper.app;
 const mongoose = require('mongoose');
 mongoose.Promise = require('bluebird'); // for extra debugging capabilities
 //mongoose.Promise = global.Promise;  // without debugging extras
@@ -65,7 +64,7 @@ function generateEntireDatabase(usersData) {
   return generateProjects(usersData)
   .then(generatedData => { 
     // foreach Project, generate the Groups relating to it
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve) {
       generateChildSets(generatedData.projects, generatedData.users, groupTemplate).then(groups => {
         generatedData.groups = groups;
         resolve(generatedData);
@@ -74,7 +73,7 @@ function generateEntireDatabase(usersData) {
   })
   .then(generatedData => { 
     // foreach Project, generate the Comment Periods relating to it
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve) {
       generateChildSets(generatedData.projects, generatedData.users, commentPeriodTemplate).then(commentPeriods => {
         generatedData.commentPeriods = commentPeriods;
         resolve(generatedData);
@@ -83,7 +82,7 @@ function generateEntireDatabase(usersData) {
   })
   .then(generatedData => { 
     // foreach Comment Period, generate the Comments relating to it
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve) {
       generateChildSets(generatedData.commentPeriods, generatedData.users, commentTemplate).then(comments => {
         generatedData.comments = comments;
         resolve(generatedData);
@@ -92,7 +91,7 @@ function generateEntireDatabase(usersData) {
   })
   .then(generatedData => { 
     // foreach Comment Period, generate the Documents relating to it
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve) {
       generateChildSets(generatedData.commentPeriods, generatedData.users, commentPeriodDocumentTemplate).then(commentPeriodDocuments => {
         generatedData.commentPeriodDocuments = commentPeriodDocuments;
         resolve(generatedData);
@@ -100,64 +99,64 @@ function generateEntireDatabase(usersData) {
     });
   }).then(generatedData => { 
     // foreach Project, generate the Documents relating to it
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve) {
       generateChildSets(generatedData.projects, generatedData.users, projectDocumentTemplate).then(projectDocuments => {
         generatedData.projectDocuments = projectDocuments;
         resolve(generatedData);
       });
     });
   });
-};
+}
 
 function generateGroupSetForProject(factoryKey, project, buildOptions, groupsToGen) {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve) {
     let customGroupSettings = { project: mongTypes.ObjectId(project._id) };
     factory.createMany(factoryKey, groupsToGen, customGroupSettings, buildOptions).then(groups => {
       let groupIds = [];
-      for (i = 0; i < groups.length; i++) {
+      for (let i = 0; i < groups.length; i++) {
         if (-1 == groupIds.indexOf(mongTypes.ObjectId(groups[i].id))) groupIds.push(mongTypes.ObjectId(groups[i].id)); 
       }
       project.groups = groupIds;
       resolve(groups);
     });
   });
-};
+}
 
 function generateCommentPeriodSetForProject(factoryKey, project, buildOptions, commentPeriodsToGen) {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve) {
     let customCommentPeriodSettings = { project: mongTypes.ObjectId(project._id) };
     factory.createMany(factoryKey, commentPeriodsToGen, customCommentPeriodSettings, buildOptions).then(commentPeriods => {
       resolve(commentPeriods);
     });
   });
-};
+}
 
 function generateCommentSetForCommentPeriod(factoryKey, commentPeriod, buildOptions, commentsToGen) {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve) {
     let customCommentSettings = { commentPeriod: mongTypes.ObjectId(commentPeriod._id) };
     factory.createMany(factoryKey, commentsToGen, customCommentSettings, buildOptions).then(comments => {
       resolve(comments);
     });
   });
-};
+}
 
 function generateDocumentSetForProject(factoryKey, project, buildOptions, projectDocumentsToGen) {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve) {
     let customDocumentSettings = { documentSource: "PROJECT", project: mongTypes.ObjectId(project._id) };
     factory.createMany(factoryKey, projectDocumentsToGen, customDocumentSettings, buildOptions).then(documents => {
       resolve(documents);
     });
   });
-};
+}
 
 function generateDocumentSetForCommentPeriod(factoryKey, commentPeriod, buildOptions, commentPeriodDocumentsToGen) {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve) {
   let customDocumentSettings = { documentSource: "COMMENT", project: mongTypes.ObjectId(commentPeriod.project), _comment: mongTypes.ObjectId(commentPeriod._id) };  // note that the document._comment field actually refers to a commentPeriod id
     factory.createMany(factoryKey, commentPeriodDocumentsToGen, customDocumentSettings, buildOptions).then(documents => {
       resolve(documents);
     });
   });
-};
+}
 
 function generateProjects(usersData) {
   let projectGenerator = new Promise(function(resolve, reject) {
@@ -193,11 +192,11 @@ function generateProjects(usersData) {
     });
   })
   return projectGenerator;
-};
+}
 
 function generateChildSets(parents, usersPool, factoryTemplate) {
-  if (0 == parents.length) return new Promise(function(resolve, reject) { resolve([]); });
-  return new Promise(function(resolve, reject) {
+  if (0 == parents.length) return new Promise(function(resolve) { resolve([]); });
+  return new Promise(function(resolve) {
     test_helper.dataGenerationSettings.then(genSettings => {
       let buildOptions = {faker: getSeeded(genSettings.generate_consistent_data, factoryTemplate.seed), usersPool: usersPool}
       let childGenerationPromises = parents.map(parent => {
@@ -207,14 +206,13 @@ function generateChildSets(parents, usersPool, factoryTemplate) {
     });
   }).catch(error => {
     console.log(factoryTemplate.factoryKey + "s error:" + error);
-    reject(error);
   }).finally(function(){
     console.log("Generated all " + factoryTemplate.factoryKey + " sets.");
   });
 }
 
 function generateChildSet(parent, buildOptions, factoryTemplate) {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve) {
     test_helper.dataGenerationSettings.then(genSettings => {
       (genSettings.generate_consistent_data) ? faker.seed(factoryTemplate.seed) : faker.seed();
       let childrenToGen = faker.random.number(factoryTemplate.upperBound).valueOf();
@@ -226,11 +224,10 @@ function generateChildSet(parent, buildOptions, factoryTemplate) {
     });
   }).catch(error => {
     console.log(factoryTemplate.factoryKey + " set generation error:" + error);
-    reject(error);
   }).finally(function(){
     console.log("Generated " + factoryTemplate.factoryKey + " set.");
   });
-};
+}
 
 function getSeeded(setConstant, seed) {
   return (setConstant) ? (require('faker/locale/en')).seed(seed) : (require('faker/locale/en')).seed();

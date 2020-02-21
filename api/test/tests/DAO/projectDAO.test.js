@@ -1,17 +1,10 @@
-const request = require('supertest');
-const test_helper = require('../../test_helper');
-const gh = require('../../generate-data/generate_helper');
-const projectController = require('../../../controllers/projectV2');
 const projectDAO = require('../../../dao/projectDAO');
 const projectGroupDAO = require('../../../dao/projectGroupDAO');
 const pinDAO = require('../../../dao/pinDAO');
-const factory_helper = require('../../generate-data/factories/factory_helper');
 const constants = require('../../../helpers/constants');
 
-const group = require('../../../helpers/models/group');
 const project = require('../../../helpers/models/project');
 
-const app = test_helper.app;
 
 describe('API Testing - Project DAO', () => 
 {  

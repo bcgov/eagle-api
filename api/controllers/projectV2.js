@@ -1,5 +1,6 @@
 // Imports
 const defaultLog = require('winston').loggers.get('default');
+const mongoose   = require('mongoose');
 const Actions    = require('../helpers/actions');
 const projectDAO = require('../dao/projectDAO');
 const constants  = require('../helpers/constants');
@@ -9,7 +10,7 @@ async function getProjectHandler(roles, params)
     let data = {};
 
     // fetch a project, or a list of projects
-    if (params.hasOwnProperty('projId'))
+    if (Object.prototype.hasOwnProperty.call(params, "projId"))
     {
         let projectId = params.projId.value;
         
@@ -19,11 +20,11 @@ async function getProjectHandler(roles, params)
     }
     else
     {
-        let pageNumber = params.hasOwnProperty('pageNumber') && params.pageNumber.value ? params.pageNumber.value : 1;
-        let pageSize   = params.hasOwnProperty('pageSize')   && params.pageSize.value   ? params.pageSize.value   : 10;
-        let sortBy     = params.hasOwnProperty('sortBy')     && params.sortBy.value     ? params.sortBy.value     : '';
-        let query      = params.hasOwnProperty('query')      && params.query.value      ? params.query.value      : '';
-        let keywords   = params.hasOwnProperty('keywords')   && params.keywords.value   ? params.keywords.value   : '';
+        let pageNumber = Object.prototype.hasOwnProperty.call(params,'pageNumber') && params.pageNumber.value ? params.pageNumber.value : 1;
+        let pageSize   = Object.prototype.hasOwnProperty.call(params,'pageSize')   && params.pageSize.value   ? params.pageSize.value   : 10;
+        let sortBy     = Object.prototype.hasOwnProperty.call(params,'sortBy')     && params.sortBy.value     ? params.sortBy.value     : '';
+        let query      = Object.prototype.hasOwnProperty.call(params,'query')      && params.query.value      ? params.query.value      : '';
+        let keywords   = Object.prototype.hasOwnProperty.call(params,'keywords')   && params.keywords.value   ? params.keywords.value   : '';
 
         data = await projectDAO.getProjects(roles, pageNumber, pageSize, sortBy, keywords, query);
 
@@ -40,18 +41,18 @@ async function getProjectHandler(roles, params)
 // Exports
 
 // OPTIONS
-exports.projectOptions = function (args, res, next)
+exports.projectOptions = function (args, res)
 {
   res.status(200).send();
 };
 
-exports.projectOptionsProtected = function (args, res, next)
+exports.projectOptionsProtected = function (args, res)
 {
   res.status(200).send();
 };
 
 // HEAD
-exports.projectHead = async function (args, res, next) 
+exports.projectHead = async function (args, res) 
 {
     defaultLog.debug('>>> {HEAD}/Public/Projects');
 
@@ -73,7 +74,7 @@ exports.projectHead = async function (args, res, next)
     }
 };
 
-exports.projectHeadProtected = async function (args, res, next) 
+exports.projectHeadProtected = async function (args, res) 
 {
     defaultLog.debug('>>> {HEAD}/Projects');
 
@@ -96,7 +97,7 @@ exports.projectHeadProtected = async function (args, res, next)
 };
 
 // GET (Public/Protected)
-exports.fetchProjects = async function (args, res, next) 
+exports.fetchProjects = async function (args, res) 
 {
     defaultLog.debug('>>> {GET}/Public/Projects');
 
@@ -118,7 +119,7 @@ exports.fetchProjects = async function (args, res, next)
     }
 };
 
-exports.fetchProjectsProtected = async function (args, res, next) 
+exports.fetchProjectsProtected = async function (args, res) 
 {
     defaultLog.debug('>>> {GET}/Projects');
 
@@ -141,13 +142,13 @@ exports.fetchProjectsProtected = async function (args, res, next)
 };
 
 // POST (Protected Only, createProject)
-exports.createProject = async function (args, res, next) 
+exports.createProject = async function (args, res) 
 {
     defaultLog.debug('>>> {POST}/Projects');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('project'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'project'))
         {
             defaultLog.debug('Creating new project');
             
@@ -185,13 +186,13 @@ exports.createProject = async function (args, res, next)
 };
 
 // PUT (Protected Only updateProject)
-exports.updateProject = async function (args, res, next) 
+exports.updateProject = async function (args, res) 
 {
     defaultLog.debug('>>> {PUT}/Projects');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('project'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId') && Object.prototype.hasOwnProperty.call(args.swagger.params, 'project'))
         {
             let projectId = args.swagger.params.projId.value;
             
@@ -200,11 +201,11 @@ exports.updateProject = async function (args, res, next)
             let sourceProject = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
             let updatedProject = args.swagger.params.project.value;
 
-            if(sourceProject && updateProject)
+            if(sourceProject && updatedProject)
             {
                 updatedProject = await projectDAO.updateProject(args.swagger.params.auth_payload.preferred_username, sourceProject, updatedProject);
 
-                updatedProject = projectDAO.projectHateoas(updatedProject, roles);
+                updatedProject = projectDAO.projectHateoas(updatedProject, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 200, updatedProject);
             }
             else
@@ -229,13 +230,13 @@ exports.updateProject = async function (args, res, next)
 };
 
 // DELETE (Protected Only, deleteProject)
-exports.deleteProject = async function (args, res, next) 
+exports.deleteProject = async function (args, res) 
 {
     defaultLog.debug('>>> {DELETE}/Projects');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId'))
         {
             let projectId = args.swagger.params.projId.value;
             
@@ -250,7 +251,7 @@ exports.deleteProject = async function (args, res, next)
                 // delete endpoints return the original resource so
                 // 1.) we honour the principle of idempotency and safety
                 // 2.) we can recreate the resource in the event this was done in error
-                project = projectDAO.projectHateoas(project, roles);
+                project = projectDAO.projectHateoas(project, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 200, project);
             }
             else
@@ -275,13 +276,13 @@ exports.deleteProject = async function (args, res, next)
 };
 
 // PUT (Protected Only, publishProject)
-exports.publishProject = async function (args, res, next) 
+exports.publishProject = async function (args, res) 
 {
     defaultLog.debug('>>> {PUT}/Projects{id}/Publish');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId'))
         {
             let projectId = args.swagger.params.projId.value;
             
@@ -292,7 +293,7 @@ exports.publishProject = async function (args, res, next)
             if(project)
             {
                 project = await projectDAO.publishProject(args.swagger.params.auth_payload.preferred_username, project);
-                project = projectDAO.projectHateoas(project, roles);
+                project = projectDAO.projectHateoas(project, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 200, project);
             }
             else
@@ -317,13 +318,13 @@ exports.publishProject = async function (args, res, next)
 };
 
 // PUT (Protected Only, unPublishProject)
-exports.unPublishProject = async function (args, res, next) 
+exports.unPublishProject = async function (args, res) 
 {
     defaultLog.debug('>>> {PUT}/Projects{id}/Unpublish');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId'))
         {
             let projectId = args.swagger.params.projId.value;
             
@@ -334,7 +335,7 @@ exports.unPublishProject = async function (args, res, next)
             if(project)
             {
                 project = await projectDAO.unPublishProject(args.swagger.params.auth_payload.preferred_username, project);
-                project = projectDAO.projectHateoas(project, roles);
+                project = projectDAO.projectHateoas(project, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 200, project);
             }
             else
@@ -362,13 +363,13 @@ exports.unPublishProject = async function (args, res, next)
 // these could also be broken out of project controller and put into an extension controller
 
 // POST (Protected Only, createExtension)
-exports.createProjectExtension = async function (args, res, next)
+exports.createProjectExtension = async function (args, res)
 {
     defaultLog.debug('>>> {POST}/Projects/{id}/Extensions');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('extension'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId') && Object.prototype.hasOwnProperty.call(args.swagger.params, 'extension'))
         {
             let projectId = args.swagger.params.projId.value;
             let extension = args.swagger.params.extension.value;
@@ -381,7 +382,7 @@ exports.createProjectExtension = async function (args, res, next)
             if(project)
             {
                 project = await projectDAO.addExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
-                project = projectDAO.projectHateoas(project, roles);
+                project = projectDAO.projectHateoas(project, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 201, project);
             }
             else
@@ -406,13 +407,13 @@ exports.createProjectExtension = async function (args, res, next)
 };
 
 // PUT (Protected Only, updateExtension)
-exports.updateProjectExtension = async function (args, res, next)
+exports.updateProjectExtension = async function (args, res)
 {
     defaultLog.debug('>>> {PUT}/Projects/{id}/Extensions');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('extension'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId') && Object.prototype.hasOwnProperty.call(args.swagger.params, 'extension'))
         {
             let projectId = args.swagger.params.projId.value;
             let extension = args.swagger.params.extension.value;
@@ -425,7 +426,7 @@ exports.updateProjectExtension = async function (args, res, next)
             if(project)
             {
                 project = await projectDAO.updateExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
-                project = projectDAO.projectHateoas(project, roles);
+                project = projectDAO.projectHateoas(project, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 200, project);
             }
             else
@@ -450,13 +451,13 @@ exports.updateProjectExtension = async function (args, res, next)
 };
 
 // DELETE (Protected Only, deleteExtension)
-exports.deleteProjectExtension = async function (args, res, next)
+exports.deleteProjectExtension = async function (args, res)
 {
     defaultLog.debug('>>> {DELETE}/Projects/{id}/Extensions');
 
     try
     {
-        if (args.swagger.params.hasOwnProperty('projId') && args.swagger.params.hasOwnProperty('extension'))
+        if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId') && Object.prototype.hasOwnProperty.call(args.swagger.params, 'extension'))
         {
             let projectId = args.swagger.params.projId.value;
             let extension = JSON.parse(args.swagger.params.item.value);
@@ -469,7 +470,7 @@ exports.deleteProjectExtension = async function (args, res, next)
             if(project)
             {
                 project = await projectDAO.updateExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
-                project = projectDAO.projectHateoas(project, roles);
+                project = projectDAO.projectHateoas(project, constants.SECURE_ROLES);
                 return Actions.sendResponseV2(res, 200, project);
             }
             else
@@ -493,7 +494,7 @@ exports.deleteProjectExtension = async function (args, res, next)
     }
 };
 
-exports.fetchFeaturedDocuments = async function (args, res, next) 
+exports.fetchFeaturedDocuments = async function (args, res) 
 {
     defaultLog.debug('>>> {GET}/Public/Projects/{id}/FeaturedDocuments');
 
@@ -501,7 +502,6 @@ exports.fetchFeaturedDocuments = async function (args, res, next)
     {
         if (args.swagger.params.projId && args.swagger.params.projId.value) 
         {
-            let projectModel = mongoose.model('Project');
 
             let project = await projectDAO.getProject(constants.PUBLIC_ROLES, args.swagger.params.projId);
             let featuredDocs = await getFeaturedDocuments(project, true);
@@ -524,7 +524,7 @@ exports.fetchFeaturedDocuments = async function (args, res, next)
     }
 };
   
-exports.fetchFeaturedDocumentsSecure = async function (args, res, next) 
+exports.fetchFeaturedDocumentsSecure = async function (args, res) 
 {
     defaultLog.debug('>>> {GET}/Projects/{id}/FeaturedDocuments');
 
@@ -552,7 +552,7 @@ exports.fetchFeaturedDocumentsSecure = async function (args, res, next)
     }
 };
   
-var getFeaturedDocuments = async function(project, sanitizeForPublic) 
+var getFeaturedDocuments = async function(project) 
 {
     try 
     {

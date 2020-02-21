@@ -3,17 +3,8 @@
 var _               = require('lodash');
 var mongoose        = require('mongoose');
 var clamav          = require('clamav.js');
-var fs              = require('fs');
-var request         = require('request');
-var turf            = require('@turf/turf');
-var helpers         = require('@turf/helpers');
-var Wkt             = require('wicket');
 var _serviceHost    = process.env.CLAMAV_SERVICE_HOST || '127.0.0.1';
 var _servicePort    = process.env.CLAMAV_SERVICE_PORT || '3310';
-var _tantalisAPI    = process.env.TTLS_API_ENDPOINT || 'https://api.nrs.gov.bc.ca/ttls-api/v1/';
-var webADEAPI       = process.env.WEBADE_AUTH_ENDPOINT || 'https://api.nrs.gov.bc.ca/oauth2/v1/';
-var username        = process.env.WEBADE_USERNAME || 'TTLS-EXT';
-var password        = process.env.WEBADE_PASSWORD || 'x';
 var MAX_LIMIT       = 1000;
 
 var DEFAULT_PAGESIZE  = 100;
@@ -39,7 +30,7 @@ exports.getBasePath = function (protocol, host) {
 
 // MBL: TODO Make this event driven instead of synchronous?
 exports.avScan = function (buffer) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function (resolve) {
         var stream = require('stream');
         // Initiate the source
         var bufferStream = new stream.PassThrough();
@@ -103,7 +94,7 @@ exports.recordAction = async function (action, meta, payload, objId = null){
 }
 
 exports.runDataQuery = async function (modelType, role, query, fields, sortWarmUp, sort, skip, limit, count, preQueryPipelineSteps, populateProponent = false, postQueryPipelineSteps = false, populateProject = false) {
-    return new Promise(async function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
         var theModel = mongoose.model(modelType);
         var projection = {};
 

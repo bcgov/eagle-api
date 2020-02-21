@@ -33,7 +33,7 @@ exports.projectHateoas = function(project, roles)
     return project;
 };
 
-exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywords, query)
+exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywords)
 {
     let projectModel = mongoose.model('Project');
     let queryAggregates = [];
@@ -247,8 +247,8 @@ exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywor
     {
         let $sort = {};
       
-        sortDirection = sortBy.charAt(0) == '-' ? -1 : 1;
-        sortField = sortBy.slice(1);
+        const sortDirection = sortBy.charAt(0) == '-' ? -1 : 1;
+        const sortField = sortBy.slice(1);
 
         $sort[sortField] = sortDirection;
 
@@ -424,7 +424,7 @@ exports.updateProject = async function(user, sourceProject, updatedProject)
     if (!filteredData) 
     {
       defaultLog.info("Couldn't find that object!");
-      return Actions.sendResponse(res, 404, {});
+      throw new Error("Couldn't find correct project legislation")
     }
 
     delete updatedProject.read;
