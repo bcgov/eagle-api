@@ -1,16 +1,16 @@
-"use strict";
+'use strict';
 
-var app           = require("express")();
+var app           = require('express')();
 var fs            = require('fs');
-var uploadDir     = process.env.UPLOAD_DIRECTORY || "./uploads/";
-var hostname      = process.env.API_HOSTNAME || "localhost:3000";
-var swaggerTools  = require("swagger-tools");
-var YAML          = require("yamljs");
-var auth          = require("./api/helpers/auth");
-var swaggerConfig = YAML.load("./api/swagger/swagger.yaml");
+var uploadDir     = process.env.UPLOAD_DIRECTORY || './uploads/';
+var hostname      = process.env.API_HOSTNAME || 'localhost:3000';
+var swaggerTools  = require('swagger-tools');
+var YAML          = require('yamljs');
+var auth          = require('./api/helpers/auth');
+var swaggerConfig = YAML.load('./api/swagger/swagger.yaml');
 var winston       = require('winston');
 var bodyParser    = require('body-parser');
-var app_helper    = require("./app_helper");
+var app_helper    = require('./app_helper');
 
 var dbConnection  = 'mongodb://'
                     + (process.env.MONGODB_SERVICE_HOST || process.env.DB_1_PORT_27017_TCP_ADDR || 'localhost')
@@ -76,7 +76,7 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
   );
 
   var routerConfig = {
-    controllers: "./api/controllers",
+    controllers: './api/controllers',
     useStubs: false
   };
 
@@ -91,14 +91,14 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
     }
   } catch (e) {
     // Fall through - uploads will continue to fail until this is resolved locally.
-    defaultLog.info("Couldn't create upload folder:", e);
+    defaultLog.info('Couldn\'t create upload folder:', e);
   }
   app_helper.loadMongoose(dbConnection, credentials, defaultLog).then(() => {
     express_server = app.listen(api_default_port, '0.0.0.0', function() {
-      defaultLog.info("Started server on port " + api_default_port);
+      defaultLog.info('Started server on port ' + api_default_port);
     });
   }).catch(function (err) {
-    defaultLog.info("err:", err);
+    defaultLog.info('err:', err);
   });
 });
 

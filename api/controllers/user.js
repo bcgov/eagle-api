@@ -1,4 +1,4 @@
-var auth = require("../helpers/auth");
+var auth = require('../helpers/auth');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
@@ -11,7 +11,7 @@ exports.protectedOptions = function (args, res) {
 //  Create a new user
 exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.user.value;
-  defaultLog.info("Incoming new object:", obj);
+  defaultLog.info('Incoming new object:', obj);
 
   var User = mongoose.model('User');
   var user = new User({
@@ -58,7 +58,7 @@ exports.protectedPost = async function (args, res) {
 exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.userId.value;
   var obj = args.swagger.params.user.value;
-  defaultLog.info("ObjectID:", args.swagger.params.userId.value);
+  defaultLog.info('ObjectID:', args.swagger.params.userId.value);
 
   var User = require('mongoose').model('User');
 
@@ -87,7 +87,7 @@ exports.protectedPut = async function (args, res) {
 
   user.read = user.orgName === 'Environmental Assessment Office' ? ['staff', 'sysadmin', 'public'] : ['staff', 'sysadmin'];
 
-  defaultLog.info("Incoming updated object:", user);
+  defaultLog.info('Incoming updated object:', user);
 
   try {
     var u = await User.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).exec();

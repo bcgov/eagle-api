@@ -10,7 +10,7 @@ exports.protectedOptions = function (args, res) {
 //  Create a new Notification Project
 exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.notificationProject.value;
-  defaultLog.info("Incoming new object:", obj);
+  defaultLog.info('Incoming new object:', obj);
 
   var NotificationProject = mongoose.model('NotificationProject');
   var notificationProject = new NotificationProject({
@@ -50,7 +50,7 @@ exports.protectedPost = async function (args, res) {
 exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.notificationProjectId.value;
   var obj = args.swagger.params.notificationProject.value;
-  defaultLog.info("ObjectID:", args.swagger.params.notificationProjectId.value);
+  defaultLog.info('ObjectID:', args.swagger.params.notificationProjectId.value);
 
   var NotificationProject = require('mongoose').model('NotificationProject');
 
@@ -81,7 +81,7 @@ exports.protectedPut = async function (args, res) {
     }
   }
 
-  defaultLog.info("Incoming updated object:", notificationProject);
+  defaultLog.info('Incoming updated object:', notificationProject);
 
   try {
     var np = await NotificationProject.findOneAndUpdate({ _id: objId }, notificationProject, { upsert: false, new: true }).exec();

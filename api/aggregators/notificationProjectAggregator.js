@@ -11,22 +11,22 @@ exports.createNotificationProjectAggr = (populate) => {
     // Handle project.
     aggregation.push(
       {
-        "$lookup": {
-          "from": "epic",
-          "localField": "project",
-          "foreignField": "_id",
-          "as": "project"
+        '$lookup': {
+          'from': 'epic',
+          'localField': 'project',
+          'foreignField': '_id',
+          'as': 'project'
         }
       },
       {
-        "$addFields": {
-          project: "$project",
+        '$addFields': {
+          project: '$project',
         }
       },
       {
-        "$unwind": {
-          "path": "$project",
-          "preserveNullAndEmptyArrays": true
+        '$unwind': {
+          'path': '$project',
+          'preserveNullAndEmptyArrays': true
         }
       }
     );
@@ -36,7 +36,7 @@ exports.createNotificationProjectAggr = (populate) => {
         $lookup: {
           from: 'epic',
           as: 'documents',
-          let: { project: "$_id", schema: 'Document' },
+          let: { project: '$_id', schema: 'Document' },
           pipeline: [
             {
               $match: {
@@ -54,21 +54,21 @@ exports.createNotificationProjectAggr = (populate) => {
                   if: {
                     // This way, if read isn't present, we assume public no roles array.
                     $and: [
-                      { $cond: { if: "$read", then: true, else: false } },
+                      { $cond: { if: '$read', then: true, else: false } },
                       {
                         $anyElementTrue: {
                           $map: {
-                            input: "$read",
-                            as: "fieldTag",
-                            in: { $setIsSubset: [["$$fieldTag"], ['public']] }
+                            input: '$read',
+                            as: 'fieldTag',
+                            in: { $setIsSubset: [['$$fieldTag'], ['public']] }
                           }
                         }
                       }
                     ]
                   },
-                  then: "$$KEEP",
+                  then: '$$KEEP',
                   else: {
-                    $cond: { if: "$read", then: "$$PRUNE", else: "$$DESCEND" }
+                    $cond: { if: '$read', then: '$$PRUNE', else: '$$DESCEND' }
                   }
                 }
               }

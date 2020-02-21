@@ -117,128 +117,128 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
       },
       (populateProject && modelType !== 'Project') && {
         '$lookup': {
-          "from": "epic",
-          "localField": "project",
-          "foreignField": "_id",
-          "as": "project"
+          'from': 'epic',
+          'localField': 'project',
+          'foreignField': '_id',
+          'as': 'project'
         }
       },
       (populateProject && modelType !== 'Project') && {
-        "$unwind": {
-          "path": "$project",
-          "preserveNullAndEmptyArrays": true
+        '$unwind': {
+          'path': '$project',
+          'preserveNullAndEmptyArrays': true
         }
       },
       // To unpack the legislation data into the project key
       (modelType === 'Project') && {
         $addFields: {
-          "default": {
+          'default': {
             $switch: {
               branches: [
                 {
-                  case: { $eq: [ "$currentLegislationYear", 'legislation_1996' ]},
-                  then: "$legislation_1996"
+                  case: { $eq: [ '$currentLegislationYear', 'legislation_1996' ]},
+                  then: '$legislation_1996'
                 },
                 {
-                  case: { $eq: [ "$currentLegislationYear", 'legislation_2002' ]},
-                  then: "$legislation_2002"
+                  case: { $eq: [ '$currentLegislationYear', 'legislation_2002' ]},
+                  then: '$legislation_2002'
                 },
                 {
-                  case: { $eq: [ "$currentLegislationYear", 'legislation_2018' ]},
-                  then: "$legislation_2018"
+                  case: { $eq: [ '$currentLegislationYear', 'legislation_2018' ]},
+                  then: '$legislation_2018'
                 }
-              ], default: "$legislation_2002"
+              ], default: '$legislation_2002'
             }
           }
         }
       },
       (modelType === 'Project') &&  {
         '$addFields': {
-          "default.pins": '$pins',
-          "default.pinsHistory": '$pinsHistory',
-          "default.pinsRead": '$pinsRead',
-          "default._id": '$_id',
-          "default.read": '$read'
+          'default.pins': '$pins',
+          'default.pinsHistory': '$pinsHistory',
+          'default.pinsRead': '$pinsRead',
+          'default._id': '$_id',
+          'default.read': '$read'
         }
       },
       // Add the featuredDocuments to the default group
       (modelType === 'Project') &&  {
         '$addFields': {
-          "default.featuredDocuments": "$featuredDocuments"
+          'default.featuredDocuments': '$featuredDocuments'
         }
       },
       (modelType === 'Project') && {
-        "$replaceRoot": { newRoot:  "$default" }
+        '$replaceRoot': { newRoot:  '$default' }
       },
       (modelType === 'Project') && {
         '$lookup': {
-          "from": "epic",
-          "localField": "CEAAInvolvement",
-          "foreignField": "_id",
-          "as": "CEAAInvolvement"
+          'from': 'epic',
+          'localField': 'CEAAInvolvement',
+          'foreignField': '_id',
+          'as': 'CEAAInvolvement'
         }
       },
       (modelType === 'Project') && {
-        "$unwind": {
-          "path": "$CEAAInvolvement",
-          "preserveNullAndEmptyArrays": true
+        '$unwind': {
+          'path': '$CEAAInvolvement',
+          'preserveNullAndEmptyArrays': true
         }
       },
       (modelType === 'Project') && {
         '$lookup': {
-          "from": "epic",
-          "localField": "eacDecision",
-          "foreignField": "_id",
-          "as": "eacDecision"
+          'from': 'epic',
+          'localField': 'eacDecision',
+          'foreignField': '_id',
+          'as': 'eacDecision'
         }
       },
       (modelType === 'Project') && {
-        "$unwind": {
-          "path": "$eacDecision",
-          "preserveNullAndEmptyArrays": true
+        '$unwind': {
+          'path': '$eacDecision',
+          'preserveNullAndEmptyArrays': true
         }
       },
       //Unpack the default key inside a nested call with project data
       // To unpack the legislation data into the project key
       (modelType !== 'Project' && populateProject) && {
         $addFields: {
-          "project.default": {
+          'project.default': {
             $switch: {
               branches: [
                 {
-                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_1996' ]},
-                  then: "$project.legislation_1996"
+                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_1996' ]},
+                  then: '$project.legislation_1996'
                 },
                 {
-                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2002' ]},
-                  then: "$project.legislation_2002"
+                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_2002' ]},
+                  then: '$project.legislation_2002'
                 },
                 {
-                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2018' ]},
-                  then: "$project.legislation_2018"
+                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_2018' ]},
+                  then: '$project.legislation_2018'
                 }
-              ], default: "$project.legislation_2002"
+              ], default: '$project.legislation_2002'
             }
           }
         }
       },
       (modelType !== 'Project' && populateProject) &&  {
         '$addFields': {
-          "project.default.pins": '$project.pins',
-          "project.default.pinsHistory": '$project.pinsHistory',
-          "project.default.pinsRead": '$project.pinsRead',
-          "project.default._id": '$project._id',
-          "project.default.read": '$project.read'
+          'project.default.pins': '$project.pins',
+          'project.default.pinsHistory': '$project.pinsHistory',
+          'project.default.pinsRead': '$project.pinsRead',
+          'project.default._id': '$project._id',
+          'project.default.read': '$project.read'
         }
       },
       (modelType === 'Project' & populateProject) &&  {
         '$addFields': {
-          "default.featuredDocuments": "$featuredDocuments"
+          'default.featuredDocuments': '$featuredDocuments'
         }
       },
       (modelType !== 'Project' && populateProject) && {
-        "$addFields": {
-          "project": "$project.default"
+        '$addFields': {
+          'project': '$project.default'
         },
       },
       // Add our projection after we have reformatted project
@@ -247,14 +247,14 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
       },
       populateProponent && {
         '$lookup': {
-          "from": "epic",
-          "localField": "proponent",
-          "foreignField": "_id",
-          "as": "proponent"
+          'from': 'epic',
+          'localField': 'proponent',
+          'foreignField': '_id',
+          'as': 'proponent'
         }
       },
       populateProponent && {
-        "$unwind": "$proponent"
+        '$unwind': '$proponent'
       },
 
       postQueryPipelineSteps,
@@ -264,21 +264,21 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
             if: {
               // This way, if read isn't present, we assume public no roles array.
               $and: [
-                { $cond: { if: "$read", then: true, else: false } },
+                { $cond: { if: '$read', then: true, else: false } },
                 {
                   $anyElementTrue: {
                     $map: {
-                      input: "$read",
-                      as: "fieldTag",
-                      in: { $setIsSubset: [["$$fieldTag"], role] }
+                      input: '$read',
+                      as: 'fieldTag',
+                      in: { $setIsSubset: [['$$fieldTag'], role] }
                     }
                   }
                 }
               ]
             },
-            then: "$$KEEP",
+            then: '$$KEEP',
             else: {
-              $cond: { if: "$read", then: "$$PRUNE", else: "$$DESCEND" }
+              $cond: { if: '$read', then: '$$PRUNE', else: '$$DESCEND' }
             }
           }
         }

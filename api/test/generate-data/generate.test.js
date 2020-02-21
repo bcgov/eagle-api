@@ -1,10 +1,10 @@
 'use strict';
 const jasmine = require('jasmine');
-const Promise = require("bluebird");
+const Promise = require('bluebird');
 Promise.longStackTraces();
 const test_helper = require('../test_helper');
 const factory_helper = require('./factories/factory_helper');
-const generate_helper = require("./generate_helper");
+const generate_helper = require('./generate_helper');
 const gh = generate_helper; // shorthand alias for brevity
 
 describe('Generate Test Data', () => {
@@ -22,9 +22,9 @@ describe('Generate Test Data', () => {
 
         // Default is to not run the data generator when running global tests
         if (genSettings.generate) {
-          console.log("Data Generation is on");
+          console.log('Data Generation is on');
           gh.generateEntireDatabase(usersData).then(generatedData =>{
-            console.log(((genSettings.generate_consistent_data) ? "Consistent" : "Random") + " data generation " + ((genSettings.save_to_persistent_mongo) ? "saved" : "unsaved"));
+            console.log(((genSettings.generate_consistent_data) ? 'Consistent' : 'Random') + ' data generation ' + ((genSettings.save_to_persistent_mongo) ? 'saved' : 'unsaved'));
             //console.log('generatedData: [' + generatedData + ']');
             let projects = generatedData.projects;
             console.log('projects: [' + projects + ']');
@@ -32,20 +32,20 @@ describe('Generate Test Data', () => {
             projects.map((project) => {
               expect(project._id).toEqual(jasmine.any(Object));
               switch (project.currentLegislationYear) {
-              case "1996":
+              case '1996':
                 console.log('Project [id, name]: [' + project._id + ', ' + project.legislation_1996.name + ']');
-                expect(project.legislation_1996.CELeadEmail).toEqual("eao.compliance@gov.bc.ca");
+                expect(project.legislation_1996.CELeadEmail).toEqual('eao.compliance@gov.bc.ca');
                 break;
-              case "2002":
+              case '2002':
                 console.log('Project [id, name]: [' + project._id + ', ' + project.legislation_2002.name + ']');
-                expect(project.legislation_2002.CELeadEmail).toEqual("eao.compliance@gov.bc.ca");
+                expect(project.legislation_2002.CELeadEmail).toEqual('eao.compliance@gov.bc.ca');
                 break;
-              case "2018":
+              case '2018':
                 console.log('Project [id, name]: [' + project._id + ', ' + project.legislation_2018.name + ']');
-                expect(project.legislation_2018.CELeadEmail).toEqual("eao.compliance@gov.bc.ca");
+                expect(project.legislation_2018.CELeadEmail).toEqual('eao.compliance@gov.bc.ca');
                 break;
               default:
-                expect(project.CELeadEmail).toEqual("legislation not set properly");  // this will fail
+                expect(project.CELeadEmail).toEqual('legislation not set properly');  // this will fail
               }
 
               //TODO:: Check the outputted deterministic data fields against the database model.  Some fields will always have randomness so tests will have to be designed around that.
@@ -53,7 +53,7 @@ describe('Generate Test Data', () => {
             });
           });
         } else {
-          console.log("Data Generation is off");
+          console.log('Data Generation is off');
           expect(1).toEqual(1);
           done();
         }

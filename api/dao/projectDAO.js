@@ -305,15 +305,15 @@ exports.createProject = async function (user, project) {
   if (projectLegislationYear == 2018) {
     newProject = new projectModel({legislation_2018: project});
     projectData = newProject.legislation_2018;
-    projectData.legislation = "2018 Environmental Assessment Act";
+    projectData.legislation = '2018 Environmental Assessment Act';
   } else if (projectLegislationYear == 2002) {
     newProject = new projectModel({legislation_2002: project});
     projectData = newProject.legislation_2002;
-    projectData.legislation = "2002 Environmental Assessment Act";
+    projectData.legislation = '2002 Environmental Assessment Act';
   } else if (projectLegislationYear == 1996) {
     newProject = new projectModel({legislation_1996: project});
     projectData = newProject.legislation_1996;
-    projectData.legislation = "1996 Environmental Assessment Act";
+    projectData.legislation = '1996 Environmental Assessment Act';
   }
 
   if (!newProject) {
@@ -321,7 +321,7 @@ exports.createProject = async function (user, project) {
   }
 
   //Need to add this logic to the put because we will only hit a post on a net new project
-  newProject.currentLegislationYear = "legislation_" + projectLegislationYear;
+  newProject.currentLegislationYear = 'legislation_' + projectLegislationYear;
   newProject.legislationYearList.push(projectLegislationYear);
 
   projectData.proponent = mongoose.Types.ObjectId(project.proponent);
@@ -377,23 +377,23 @@ exports.updateProject = async function(user, sourceProject, updatedProject) {
     }
   } else {
     // look up the current project legislation
-    projectLegislationYear = sourceProject.currentLegislationYear.split("_")[1];
+    projectLegislationYear = sourceProject.currentLegislationYear.split('_')[1];
   }
 
   if (projectLegislationYear == 2018) {
     filteredData = sourceProject.legislation_2018;
-    filteredData.legislation = "2018 Environmental Assessment Act";
+    filteredData.legislation = '2018 Environmental Assessment Act';
   } else if (projectLegislationYear == 2002) {
     filteredData = sourceProject.legislation_2002;
-    filteredData.legislation = "2002 Environmental Assessment Act";
+    filteredData.legislation = '2002 Environmental Assessment Act';
   } else if (projectLegislationYear == 1996) {
     filteredData = sourceProject.legislation_1996;
-    filteredData.legislation = "1996 Environmental Assessment Act";
+    filteredData.legislation = '1996 Environmental Assessment Act';
   }
 
   if (!filteredData) {
-    defaultLog.info("Couldn't find that object!");
-    throw new Error("Couldn't find correct project legislation");
+    defaultLog.info('Couldn\'t find that object!');
+    throw new Error('Couldn\'t find correct project legislation');
   }
 
   delete updatedProject.read;
@@ -436,7 +436,7 @@ exports.updateProject = async function(user, sourceProject, updatedProject) {
     filteredData.intake.investmentNotes = updatedProject.intake.notes;
   } catch (e) {
     // Missing info
-    console.log("Missing:", e);
+    console.log('Missing:', e);
     // fall through
   }
   filteredData.proponent = updatedProject.proponent;
@@ -454,7 +454,7 @@ exports.updateProject = async function(user, sourceProject, updatedProject) {
   if (doc) {
     Utils.recordAction('Put', 'Project', user, doc._id);
   } else {
-    defaultLog.info("Couldn't find that object!");
+    defaultLog.info('Couldn\'t find that object!');
     throw Error('Failed to update project');
   }
 
@@ -473,7 +473,7 @@ exports.deleteProject = async function(user, project) {
 
 exports.publishProject = async function(user, project) {
   if (project && project.legislationYear) {
-    project.currentLegislationYear = "legislation_" + project.legislationYear;
+    project.currentLegislationYear = 'legislation_' + project.legislationYear;
   }
 
   return Actions.publish(project, true)

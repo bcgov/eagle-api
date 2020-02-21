@@ -6,7 +6,7 @@ const mime            = require('mime-types');
 const FlakeIdGen      = require('flake-idgen');
 const intformat       = require('biguint-format');
 const fs              = require('fs');
-const uploadDir       = process.env.UPLOAD_DIRECTORY || "./uploads/";
+const uploadDir       = process.env.UPLOAD_DIRECTORY || './uploads/';
 const constants       = require('../helpers/constants');
 const Actions         = require('../helpers/actions');
 const Utils           = require('../helpers/utils');
@@ -59,16 +59,16 @@ exports.publicGet = async function (args, res,) {
   // Build match query if on docId route
   var query = {};
   if (args.swagger.params.docId && args.swagger.params.docId.value) {
-    query = Utils.buildQuery("_id", args.swagger.params.docId.value, query);
+    query = Utils.buildQuery('_id', args.swagger.params.docId.value, query);
   } else if (args.swagger.params.docIds && args.swagger.params.docIds.value && args.swagger.params.docIds.value.length > 0) {
-    query = Utils.buildQuery("_id", args.swagger.params.docIds.value);
+    query = Utils.buildQuery('_id', args.swagger.params.docIds.value);
   }
   if (args.swagger.params.project && args.swagger.params.project.value) {
-    query = Utils.buildQuery("project", args.swagger.params.project.value, query);
+    query = Utils.buildQuery('project', args.swagger.params.project.value, query);
   }
 
   // Set query type
-  _.assignIn(query, { "_schemaName": "Document" });
+  _.assignIn(query, { '_schemaName': 'Document' });
 
   try {
     var data = await Utils.runDataQuery('Document',
@@ -90,13 +90,13 @@ exports.publicGet = async function (args, res,) {
 };
 
 exports.unProtectedPost = async function (args, res) {
-  console.log("Creating new object");
+  console.log('Creating new object');
   var _comment = args.swagger.params._comment.value;
   var project = args.swagger.params.project.value;
   var upfile = args.swagger.params.upfile.value;
   var guid = intformat(generator.next(), 'dec');
   var ext = mime.extension(args.swagger.params.upfile.value.mimetype);
-  var tempFilePath = uploadDir + guid + "." + ext;
+  var tempFilePath = uploadDir + guid + '.' + ext;
   try {
     Promise.resolve()
       .then(async function () {
@@ -108,8 +108,8 @@ exports.unProtectedPost = async function (args, res) {
       })
       .then(async function (valid) {
         if (!valid) {
-          defaultLog.warn("File failed virus check.");
-          return Actions.sendResponse(res, 400, { "message": "File failed virus check." });
+          defaultLog.warn('File failed virus check.');
+          return Actions.sendResponse(res, 400, { 'message': 'File failed virus check.' });
         } else {
           console.log('writing file.');
           fs.writeFileSync(tempFilePath, args.swagger.params.upfile.value.buffer);
@@ -125,7 +125,7 @@ exports.unProtectedPost = async function (args, res) {
             upfile.originalname,
             tempFilePath)
             .then(async function (minioFile) {
-              console.log("putDocument:", minioFile);
+              console.log('putDocument:', minioFile);
 
               // remove file from temp folder
               fs.unlinkSync(tempFilePath);
@@ -150,7 +150,7 @@ exports.unProtectedPost = async function (args, res) {
               doc.passedAVCheck = true;
               doc.internalMime = upfile.mimetype;
 
-              doc.documentSource = "COMMENT";
+              doc.documentSource = 'COMMENT';
 
               doc.displayName = upfile.originalname;
               doc.documentFileName = upfile.originalname;
@@ -161,7 +161,7 @@ exports.unProtectedPost = async function (args, res) {
 
               doc.save()
                 .then(async function (d) {
-                  defaultLog.info("Saved new document object:", d._id);
+                  defaultLog.info('Saved new document object:', d._id);
 
                   var Comment = mongoose.model('Comment');
                   var c = await Comment.update({ _id: _comment }, { $addToSet: { documents: d._id } });
@@ -170,7 +170,7 @@ exports.unProtectedPost = async function (args, res) {
                   return Actions.sendResponse(res, 200, d);
                 })
                 .catch(async function (error) {
-                  console.log("error:", error);
+                  console.log('error:', error);
                   // the model failed to be created - delete the document from minio so the database and minio remain in sync.
                   MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
                   return Actions.sendResponse(res, 400, error);
@@ -179,7 +179,7 @@ exports.unProtectedPost = async function (args, res) {
         }
       });
   } catch (e) {
-    defaultLog.info("Error:", e);
+    defaultLog.info('Error:', e);
     // Delete the path details before we return to the caller.
     delete e['path'];
     return Actions.sendResponse(res, 400, e);
@@ -187,18 +187,18 @@ exports.unProtectedPost = async function (args, res) {
 };
 
 exports.protectedHead = function (args, res) {
-  defaultLog.info("args.swagger.params:", args.swagger.params.auth_payload.realm_access.roles);
+  defaultLog.info('args.swagger.params:', args.swagger.params.auth_payload.realm_access.roles);
 
   // Build match query if on docId route
   var query = {};
   if (args.swagger.params.docId && args.swagger.params.docId.value) {
-    query = Utils.buildQuery("_id", args.swagger.params.docId.value, query);
+    query = Utils.buildQuery('_id', args.swagger.params.docId.value, query);
   }
   if (args.swagger.params._application && args.swagger.params._application.value) {
-    query = Utils.buildQuery("_application", args.swagger.params._application.value, query);
+    query = Utils.buildQuery('_application', args.swagger.params._application.value, query);
   }
   if (args.swagger.params._comment && args.swagger.params._comment.value) {
-    query = Utils.buildQuery("_comment", args.swagger.params._comment.value, query);
+    query = Utils.buildQuery('_comment', args.swagger.params._comment.value, query);
   }
   // Unless they specifically ask for it, hide deleted results.
   if (args.swagger.params.isDeleted && args.swagger.params.isDeleted.value != undefined) {
@@ -206,7 +206,7 @@ exports.protectedHead = function (args, res) {
   }
 
   // Set query type
-  _.assignIn(query, { "_schemaName": "Document" });
+  _.assignIn(query, { '_schemaName': 'Document' });
 
   Utils.runDataQuery('Document',
     args.swagger.params.auth_payload.realm_access.roles,
@@ -239,15 +239,15 @@ exports.protectedGet = async function (args, res) {
   if (args.swagger.params.docId && args.swagger.params.docId.value) {
     _.assignIn(query, { _id: mongoose.Types.ObjectId(args.swagger.params.docId.value) });
   } else if (args.swagger.params.docIds && args.swagger.params.docIds.value && args.swagger.params.docIds.value.length > 0) {
-    query = Utils.buildQuery("_id", args.swagger.params.docIds.value);
+    query = Utils.buildQuery('_id', args.swagger.params.docIds.value);
   }
 
   if (args.swagger.params.project && args.swagger.params.project.value) {
-    query = Utils.buildQuery("project", args.swagger.params.project.value, query);
+    query = Utils.buildQuery('project', args.swagger.params.project.value, query);
   }
 
   // Set query type
-  _.assignIn(query, { "_schemaName": "Document" });
+  _.assignIn(query, { '_schemaName': 'Document' });
 
   try {
     var data = await Utils.runDataQuery('Document',
@@ -272,17 +272,17 @@ exports.publicDownload = function (args, res) {
   // Build match query if on docId route
   var query = {};
   if (args.swagger.params.docId && args.swagger.params.docId.value) {
-    query = Utils.buildQuery("_id", args.swagger.params.docId.value, query);
+    query = Utils.buildQuery('_id', args.swagger.params.docId.value, query);
   } else {
     return Actions.sendResponse(res, 404, {});
   }
   // Set query type
-  _.assignIn(query, { "_schemaName": "Document" });
+  _.assignIn(query, { '_schemaName': 'Document' });
 
   Utils.runDataQuery('Document',
     ['public'],
     query,
-    ["internalURL", "documentFileName", "internalMime", 'internalExt'], // Fields
+    ['internalURL', 'documentFileName', 'internalMime', 'internalExt'], // Fields
     null, // sort warmup
     null, // sort
     null, // skip
@@ -334,20 +334,20 @@ exports.protectedDownload = function (args, res) {
   var self = this;
   self.scopes = args.swagger.params.auth_payload.realm_access.roles;
 
-  defaultLog.info("args.swagger.params:", args.swagger.params.auth_payload.realm_access.roles);
+  defaultLog.info('args.swagger.params:', args.swagger.params.auth_payload.realm_access.roles);
 
   // Build match query if on docId route
   var query = {};
   if (args.swagger.params.docId && args.swagger.params.docId.value) {
-    query = Utils.buildQuery("_id", args.swagger.params.docId.value, query);
+    query = Utils.buildQuery('_id', args.swagger.params.docId.value, query);
   }
   // Set query type
-  _.assignIn(query, { "_schemaName": "Document" });
+  _.assignIn(query, { '_schemaName': 'Document' });
 
   Utils.runDataQuery('Document',
     args.swagger.params.auth_payload.realm_access.roles,
     query,
-    ["internalURL", "documentFileName", "internalMime", 'internalExt'], // Fields
+    ['internalURL', 'documentFileName', 'internalMime', 'internalExt'], // Fields
     null, // sort warmup
     null, // sort
     null, // skip
@@ -394,20 +394,20 @@ exports.protectedOpen = function (args, res) {
   var self = this;
   self.scopes = args.swagger.params.auth_payload.realm_access.roles;
 
-  defaultLog.info("args.swagger.params:", args.swagger.params.auth_payload.realm_access.roles);
+  defaultLog.info('args.swagger.params:', args.swagger.params.auth_payload.realm_access.roles);
 
   // Build match query if on docId route
   var query = {};
   if (args.swagger.params.docId && args.swagger.params.docId.value) {
-    query = Utils.buildQuery("_id", args.swagger.params.docId.value, query);
+    query = Utils.buildQuery('_id', args.swagger.params.docId.value, query);
   }
   // Set query type
-  _.assignIn(query, { "_schemaName": "Document" });
+  _.assignIn(query, { '_schemaName': 'Document' });
 
   Utils.runDataQuery('Document',
     args.swagger.params.auth_payload.realm_access.roles,
     query,
-    ["internalURL", "documentFileName", "internalMime", 'internalExt'], // Fields
+    ['internalURL', 'documentFileName', 'internalMime', 'internalExt'], // Fields
     null, // sort warmup
     null, // sort
     null, // skip
@@ -455,13 +455,13 @@ exports.protectedOpen = function (args, res) {
 
 //  Create a new document
 exports.protectedPost = async function (args, res) {
-  console.log("Creating new protected document object");
+  console.log('Creating new protected document object');
   var project = args.swagger.params.project.value;
   var _comment = args.swagger.params._comment.value;
   var upfile = args.swagger.params.upfile.value;
   var guid = intformat(generator.next(), 'dec');
   var ext = mime.extension(args.swagger.params.upfile.value.mimetype);
-  var tempFilePath = uploadDir + guid + "." + ext;
+  var tempFilePath = uploadDir + guid + '.' + ext;
   try {
     Promise.resolve()
       .then(function () {
@@ -473,8 +473,8 @@ exports.protectedPost = async function (args, res) {
       })
       .then(function (valid) {
         if (!valid) {
-          defaultLog.warn("File failed virus check.");
-          return Actions.sendResponse(res, 400, { "message": "File failed virus check." });
+          defaultLog.warn('File failed virus check.');
+          return Actions.sendResponse(res, 400, { 'message': 'File failed virus check.' });
         } else {
           console.log('writing file.');
           fs.writeFileSync(tempFilePath, args.swagger.params.upfile.value.buffer);
@@ -490,7 +490,7 @@ exports.protectedPost = async function (args, res) {
             args.swagger.params.documentFileName.value,
             tempFilePath)
             .then(async function (minioFile) {
-              console.log("putDocument:", minioFile);
+              console.log('putDocument:', minioFile);
 
               // remove file from temp folder
               fs.unlinkSync(tempFilePath);
@@ -547,12 +547,12 @@ exports.protectedPost = async function (args, res) {
               console.log('unlink');
               doc.save()
                 .then(function (d) {
-                  defaultLog.info("Saved new document object:", d._id);
+                  defaultLog.info('Saved new document object:', d._id);
                   Utils.recordAction('Post', 'Document', args.swagger.params.auth_payload.preferred_username, d._id);
                   return Actions.sendResponse(res, 200, d);
                 })
                 .catch(function (error) {
-                  console.log("error:", error);
+                  console.log('error:', error);
                   // the model failed to be created - delete the document from minio so the database and minio remain in sync.
                   MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
                   return Actions.sendResponse(res, 400, error);
@@ -561,7 +561,7 @@ exports.protectedPost = async function (args, res) {
         }
       });
   } catch (e) {
-    defaultLog.info("Error:", e);
+    defaultLog.info('Error:', e);
     // Delete the path details before we return to the caller.
     delete e['path'];
     return Actions.sendResponse(res, 400, e);
@@ -570,19 +570,19 @@ exports.protectedPost = async function (args, res) {
 
 exports.protectedPublish = async function (args, res) {
   var objId = args.swagger.params.docId.value;
-  defaultLog.info("Publish Document:", objId);
+  defaultLog.info('Publish Document:', objId);
 
   var Document = require('mongoose').model('Document');
   try {
     var document = await Document.findOne({ _id: objId });
     if (document) {
-      defaultLog.info("Document:", document);
-      document.eaoStatus = "Published";
+      defaultLog.info('Document:', document);
+      document.eaoStatus = 'Published';
       var published = await Actions.publish(await document.save());
       Utils.recordAction('Publish', 'Document', args.swagger.params.auth_payload.preferred_username, objId);
       return Actions.sendResponse(res, 200, published);
     } else {
-      defaultLog.info("Couldn't find that document!");
+      defaultLog.info('Couldn\'t find that document!');
       return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {
@@ -592,19 +592,19 @@ exports.protectedPublish = async function (args, res) {
 
 exports.protectedUnPublish = async function (args, res) {
   var objId = args.swagger.params.docId.value;
-  defaultLog.info("UnPublish Document:", objId);
+  defaultLog.info('UnPublish Document:', objId);
 
   var Document = require('mongoose').model('Document');
   try {
     var document = await Document.findOne({ _id: objId });
     if (document) {
-      defaultLog.info("Document:", document);
-      document.eaoStatus = "Rejected";
+      defaultLog.info('Document:', document);
+      document.eaoStatus = 'Rejected';
       var unPublished = await Actions.unPublish(await document.save());
       Utils.recordAction('Unpublish', 'Document', args.swagger.params.auth_payload.preferred_username, objId);
       return Actions.sendResponse(res, 200, unPublished);
     } else {
-      defaultLog.info("Couldn't find that document!");
+      defaultLog.info('Couldn\'t find that document!');
       return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {
@@ -614,7 +614,7 @@ exports.protectedUnPublish = async function (args, res) {
 
 // Update an existing document
 exports.protectedPut = async function (args, res) {
-  console.log("args:", args.swagger.params);
+  console.log('args:', args.swagger.params);
   var objId = args.swagger.params.docId.value;
   var obj = {};
   defaultLog.info('Put document:', objId);
@@ -646,7 +646,7 @@ exports.protectedPut = async function (args, res) {
   // TODO Not Yet
   // obj.labels = JSON.parse(args.swagger.params.labels.value);
 
-  defaultLog.info("ObjectID:", objId);
+  defaultLog.info('ObjectID:', objId);
 
   // Update who did this?
 
@@ -659,7 +659,7 @@ exports.protectedPut = async function (args, res) {
       defaultLog.info('Document updated:', doc);
       return Actions.sendResponse(res, 200, doc);
     } else {
-      defaultLog.info("Couldn't find that object!");
+      defaultLog.info('Couldn\'t find that object!');
       return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {
@@ -671,7 +671,7 @@ exports.protectedPut = async function (args, res) {
 //  Delete a Document
 exports.protectedDelete = async function (args, res) {
   var objId = args.swagger.params.docId.value;
-  defaultLog.info("Delete Document:", objId);
+  defaultLog.info('Delete Document:', objId);
 
   var Document = require('mongoose').model('Document');
   try {
@@ -681,7 +681,7 @@ exports.protectedDelete = async function (args, res) {
     Utils.recordAction('Delete', 'Document', args.swagger.params.auth_payload.preferred_username, objId);
     return Actions.sendResponse(res, 200, {});
   } catch (e) {
-    console.log("Error:", e);
+    console.log('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
 };

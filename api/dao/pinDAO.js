@@ -12,7 +12,7 @@ exports.getProjectPins = async function(user, roles, project, pageNumber, pageSi
 
   let query = {};
 
-  _.assignIn(query, { "_schemaName": "Project" });
+  _.assignIn(query, { '_schemaName': 'Project' });
 
   let fields = ['_id', 'pins', 'name', 'website', 'province', 'pinsRead'];
 
@@ -32,7 +32,7 @@ exports.getProjectPins = async function(user, roles, project, pageNumber, pageSi
     true,
     null);
 
-  _.assignIn(query, { "_schemaName": "Organization" });
+  _.assignIn(query, { '_schemaName': 'Organization' });
 
   let thePins = [];
 
@@ -40,7 +40,7 @@ exports.getProjectPins = async function(user, roles, project, pageNumber, pageSi
     // no pins, return empty result;
     return [{ total_items: 0 }];
   } else {
-    if (data[0].pinsRead && !data[0].pinsRead.includes("public") && user === "public") {
+    if (data[0].pinsRead && !data[0].pinsRead.includes('public') && user === 'public') {
       // This is the case that the public api has asked for these pins but they are not published yet
       return [{ total_items: 0 }];
     }
@@ -127,7 +127,7 @@ exports.publishPins = async function(user, project) {
       let published = await projectModel.update(
         { _id: mongoose.Types.ObjectId(project._id) },
         {
-          $addToSet: { "pinsRead": 'public' }
+          $addToSet: { 'pinsRead': 'public' }
         });
 
       Utils.recordAction('Publish', 'PIN', user);
@@ -145,11 +145,11 @@ exports.unPublishPins = async function(user, project) {
 
   try {
     if (project && project.pins) {
-      defaultLog.info("Project:", project._id);
+      defaultLog.info('Project:', project._id);
 
       var published = await projectModel.update(
         { _id: mongoose.Types.ObjectId(project._id) },
-        { $pull: { "pinsRead": 'public' }});
+        { $pull: { 'pinsRead': 'public' }});
 
       Utils.recordAction('UnPublish', 'PIN', user, project._id);
 

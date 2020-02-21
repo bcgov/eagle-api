@@ -1,5 +1,5 @@
 'use strict';
-const Promise = require("bluebird");
+const Promise = require('bluebird');
 Promise.longStackTraces();
 const { hashElement } = require('folder-hash');
 const _ = require('lodash');
@@ -21,29 +21,29 @@ const options = {
 function getLastGoodHashsetFromFile() {
   return new Promise(resolve => {
     let filename = './api/test/generate-data/model_change_watcher_hash.json';
-    let fileContents = "";
+    let fileContents = '';
     fs.readFileSync(filename).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; });
     resolve(fileContents);
   });
 }
 
 function filterRelevantFolders(apiFolderJsonObj) {
-  let models = "";
-  let factories = "";
+  let models = '';
+  let factories = '';
   apiFolderJsonObj.children.forEach(function(apiSubfolder) {
     switch(apiSubfolder.name) {
-    case "helpers":
+    case 'helpers':
       apiSubfolder.children.forEach(function(helpersSubfolder) {
-        if ("models" == helpersSubfolder.name) {
+        if ('models' == helpersSubfolder.name) {
           models = helpersSubfolder.children;
         }
       });
       break;
-    case "test":
+    case 'test':
       apiSubfolder.children.forEach(function(testSubfolder) {
-        if ("generate-data" == testSubfolder.name) {
+        if ('generate-data' == testSubfolder.name) {
           testSubfolder.children.forEach(generateDataSub => {
-            if ("factories" == generateDataSub.name) {
+            if ('factories' == generateDataSub.name) {
               factories = generateDataSub.children;
             }
           });
@@ -95,11 +95,11 @@ describe('Catch Model Changes not done in Factories', () => {
                     expand: this.expand,
                   });
                   return (
-                    "\n\n" + hintMsg + "\n\n" +
-                                "************** Current Hashset Start **************\n" +
-                                currentApiFolderHashset + "\n" +
-                                "************** Current Hashset End **************\n" +
-                                "Difference:\n\n" + diffString);
+                    '\n\n' + hintMsg + '\n\n' +
+                                '************** Current Hashset Start **************\n' +
+                                currentApiFolderHashset + '\n' +
+                                '************** Current Hashset End **************\n' +
+                                'Difference:\n\n' + diffString);
                 };
               return {actual: received, message, pass};
             },

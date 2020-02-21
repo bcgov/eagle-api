@@ -19,23 +19,23 @@ const setProjectDefault = (projectOnly) => {
     aggregation.push(
       {
         $addFields: {
-          "default": {
+          'default': {
             $switch: {
               branches: [
                 {
-                  case: { $eq: [ "$currentLegislationYear", 'legislation_1996' ]},
-                  then: "$legislation_1996"
+                  case: { $eq: [ '$currentLegislationYear', 'legislation_1996' ]},
+                  then: '$legislation_1996'
                 },
                 {
-                  case: { $eq: [ "$currentLegislationYear", 'legislation_2002' ]},
-                  then: "$legislation_2002"
+                  case: { $eq: [ '$currentLegislationYear', 'legislation_2002' ]},
+                  then: '$legislation_2002'
                 },
                 {
-                  case: { $eq: [ "$currentLegislationYear", 'legislation_2018' ]},
-                  then: "$legislation_2018"
+                  case: { $eq: [ '$currentLegislationYear', 'legislation_2018' ]},
+                  then: '$legislation_2018'
                 }
               ],
-              default: "$legislation_2002"
+              default: '$legislation_2002'
             }
           }
         }
@@ -49,19 +49,19 @@ const setProjectDefault = (projectOnly) => {
             $switch: {
               branches: [
                 {
-                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_1996' ]},
-                  then: "$project.legislation_1996"
+                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_1996' ]},
+                  then: '$project.legislation_1996'
                 },
                 {
-                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2002' ]},
-                  then: "$project.legislation_2002"
+                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_2002' ]},
+                  then: '$project.legislation_2002'
                 },
                 {
-                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2018' ]},
-                  then: "$project.legislation_2018"
+                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_2018' ]},
+                  then: '$project.legislation_2018'
                 }
               //TODO: watch out for the default case. If we hit this then we will have empty projects
-              ], default: "$project.legislation_2002"
+              ], default: '$project.legislation_2002'
             }
           }
         }
@@ -86,22 +86,22 @@ const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKe
 
   // If project legislation is missing then use the legislationDefault key on the project model
   // pop proponent if exists.
-  if (!projectLegislation || projectLegislation == "default") {
+  if (!projectLegislation || projectLegislation == 'default') {
     aggregation.push(
       {
         '$addFields': {
           [projectLegislationDataIdKey]: '$_id',
-          [projectLegislationDataKey + ".read"]: "$read",
-          [projectLegislationDataKey + ".pins"]: "$pins",
-          [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory",
-          [projectLegislationDataKey + ".pinsRead"]: "$pinsRead"
+          [projectLegislationDataKey + '.read']: '$read',
+          [projectLegislationDataKey + '.pins']: '$pins',
+          [projectLegislationDataKey + '.pinsHistory']: '$pinsHistory',
+          [projectLegislationDataKey + '.pinsRead']: '$pinsRead'
         }
       }
     );
 
     aggregation.push(
       {
-        "$replaceRoot": { newRoot:  "$" + projectLegislationDataKey }
+        '$replaceRoot': { newRoot:  '$' + projectLegislationDataKey }
       }
     );
   } else {
@@ -109,28 +109,28 @@ const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKe
       {
         '$addFields': {
           [projectLegislationDataIdKey]: '$_id',
-          [projectLegislationDataKey + ".read"]: "$read",
-          [projectLegislationDataKey + ".pins"]: "$pins",
-          [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory"
+          [projectLegislationDataKey + '.read']: '$read',
+          [projectLegislationDataKey + '.pins']: '$pins',
+          [projectLegislationDataKey + '.pinsHistory']: '$pinsHistory'
         }
       }
     );
 
     aggregation.push(
       {
-        "$addFields": {
-          "project": { "$mergeObjects": ["$project",  "$" + projectLegislationDataKey]},
+        '$addFields': {
+          'project': { '$mergeObjects': ['$project',  '$' + projectLegislationDataKey]},
         }
       }
     );
 
     //Null out the projectLegislationYear
     aggregation.push({
-      "$project": {["project.legislation_" + projectLegislation]: 0 }
+      '$project': {['project.legislation_' + projectLegislation]: 0 }
     });
 
     aggregation.push({
-      "$project": {[projectLegislationDataKey]: 0 }
+      '$project': {[projectLegislationDataKey]: 0 }
     });
   }
 
@@ -220,11 +220,11 @@ const generateExpArray = async (field, roles, schemaName) => {
   const expArray = [];
   if (field) {
     const queryString = qs.parse(field);
-    console.log("queryString:", queryString);
+    console.log('queryString:', queryString);
 
     await Promise.all(Object.keys(queryString).map(async item => {
       let entry = queryString[item];
-      console.log("item:", item, entry);
+      console.log('item:', item, entry);
       const orArray = [];
 
       if (item === 'pcp') {
@@ -288,7 +288,7 @@ const generateExpArray = async (field, roles, schemaName) => {
     }));
   }
 
-  console.log("expArray:", expArray);
+  console.log('expArray:', expArray);
   return expArray;
 };
 

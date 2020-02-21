@@ -15,7 +15,7 @@ exports.createItemAggr = (itemId, schemaName, roles) => {
 
   aggregation.push(
     {
-      "$match": { _id: mongoose.Types.ObjectId(itemId) }
+      '$match': { _id: mongoose.Types.ObjectId(itemId) }
     },
     {
       $redact: {
@@ -23,21 +23,21 @@ exports.createItemAggr = (itemId, schemaName, roles) => {
           if: {
             // This way, if read isn't present, we assume public no roles array.
             $and: [
-              { $cond: { if: "$read", then: true, else: false } },
+              { $cond: { if: '$read', then: true, else: false } },
               {
                 $anyElementTrue: {
                   $map: {
-                    input: "$read",
-                    as: "fieldTag",
-                    in: { $setIsSubset: [["$$fieldTag"], roles] }
+                    input: '$read',
+                    as: 'fieldTag',
+                    in: { $setIsSubset: [['$$fieldTag'], roles] }
                   }
                 }
               }
             ]
           },
-          then: "$$KEEP",
+          then: '$$KEEP',
           else: {
-            $cond: { if: "$read", then: "$$PRUNE", else: "$$DESCEND" }
+            $cond: { if: '$read', then: '$$PRUNE', else: '$$DESCEND' }
           }
         }
       }
@@ -49,29 +49,29 @@ exports.createItemAggr = (itemId, schemaName, roles) => {
     aggregation.push(
       {
         '$lookup': {
-          "from": "epic",
-          "localField": "elements",
-          "foreignField": "_id",
-          "as": "elements"
+          'from': 'epic',
+          'localField': 'elements',
+          'foreignField': '_id',
+          'as': 'elements'
         }
       },
       {
-        "$lookup": {
-          "from": "epic",
-          "localField": "project",
-          "foreignField": "_id",
-          "as": "project"
+        '$lookup': {
+          'from': 'epic',
+          'localField': 'project',
+          'foreignField': '_id',
+          'as': 'project'
         }
       },
       {
-        "$addFields": {
-          project: "$project",
+        '$addFields': {
+          project: '$project',
         }
       },
       {
-        "$unwind": {
-          "path": "$project",
-          "preserveNullAndEmptyArrays": true
+        '$unwind': {
+          'path': '$project',
+          'preserveNullAndEmptyArrays': true
         }
       }
     );
@@ -79,10 +79,10 @@ exports.createItemAggr = (itemId, schemaName, roles) => {
     aggregation.push(
       {
         '$lookup': {
-          "from": "epic",
-          "localField": "items",
-          "foreignField": "_id",
-          "as": "items"
+          'from': 'epic',
+          'localField': 'items',
+          'foreignField': '_id',
+          'as': 'items'
         }
       }
     );

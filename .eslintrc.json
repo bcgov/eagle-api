@@ -23,7 +23,8 @@
         "indent": ["error", 2],
         "semi": ["error", "always"],
         "brace-style": ["error", "1tbs", { "allowSingleLine": true}],
-        "no-trailing-spaces": "error"
+        "no-trailing-spaces": "error",
+        "quotes": ["error", "single"]
     },
     "globals": {
         "Atomics": "readonly",

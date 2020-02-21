@@ -181,7 +181,7 @@ exports.protectedSummary = async function (args, res) {
     await Promise.all(options.map(async (item) => {
       var optionQuery = {};
       _.assignIn(optionQuery, { 'eaoStatus': item, period: mongoose.Types.ObjectId(args.swagger.params.commentPeriodId.value) });
-      console.log("optionQuery:", optionQuery);
+      console.log('optionQuery:', optionQuery);
       var res = await Utils.runDataQuery('CommentPeriod',
         args.swagger.params.auth_payload.realm_access.roles,
         optionQuery,
@@ -192,14 +192,14 @@ exports.protectedSummary = async function (args, res) {
         null, // limit
         true); // count
       Utils.recordAction('Summary', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value ? args.swagger.params.commentPeriodId.value : null);
-      console.log("RES:", res);
+      console.log('RES:', res);
       if (res && res[0]) {
         summary[item] = res[0]['total_items'];
       }
       return summary;
     }));
 
-    console.log("sending summary:", summary);
+    console.log('sending summary:', summary);
     return Actions.sendResponse(res, 200, summary);
   } catch (e) {
     defaultLog.info('Error:', e);

@@ -520,21 +520,21 @@ exports.protectedExport = async function (args, res) {
         if: {
           // This way, if read isn't present, we assume public no roles array.
           $and: [
-            { $cond: { if: "$read", then: true, else: false } },
+            { $cond: { if: '$read', then: true, else: false } },
             {
               $anyElementTrue: {
                 $map: {
-                  input: "$read",
-                  as: "fieldTag",
-                  in: { $setIsSubset: [["$$fieldTag"], roles] }
+                  input: '$read',
+                  as: 'fieldTag',
+                  in: { $setIsSubset: [['$$fieldTag'], roles] }
                 }
               }
             }
           ]
         },
-        then: "$$KEEP",
+        then: '$$KEEP',
         else: {
-          $cond: { if: "$read", then: "$$PRUNE", else: "$$DESCEND" }
+          $cond: { if: '$read', then: '$$PRUNE', else: '$$DESCEND' }
         }
       }
     }

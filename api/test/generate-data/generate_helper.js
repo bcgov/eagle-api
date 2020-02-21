@@ -1,5 +1,5 @@
 'use strict';
-const Promise = require("bluebird");
+const Promise = require('bluebird');
 const faker = require('faker/locale/en');
 const mongTypes = require('mongoose').Types;
 Promise.longStackTraces();
@@ -10,14 +10,14 @@ mongoose.Promise = require('bluebird'); // for extra debugging capabilities
 require('../../helpers/models/audit');
 const factory = require('factory-girl').factory;
 //the following include statements populate the 'factories' collection of factory-girl's singleton factory object
-const auditFactory = require("./factories/audit_factory");
-const userFactory = require("./factories/user_factory");
-const organizationFactory = require("./factories/organization_factory");
-const projectFactory = require("./factories/project_factory");
-const commentPeriodFactory = require("./factories/comment_period_factory");
-const commentFactory = require("./factories/comment_factory");
-const documentFactory = require("./factories/document_factory");
-const groupFactory = require("./factories/group_factory");
+const auditFactory = require('./factories/audit_factory');
+const userFactory = require('./factories/user_factory');
+const organizationFactory = require('./factories/organization_factory');
+const projectFactory = require('./factories/project_factory');
+const commentPeriodFactory = require('./factories/comment_period_factory');
+const commentFactory = require('./factories/comment_factory');
+const documentFactory = require('./factories/document_factory');
+const groupFactory = require('./factories/group_factory');
 require('../../helpers/models/user');
 require('../../helpers/models/project');
 let ft = require('./factory_template');
@@ -142,7 +142,7 @@ function generateCommentSetForCommentPeriod(factoryKey, commentPeriod, buildOpti
 
 function generateDocumentSetForProject(factoryKey, project, buildOptions, projectDocumentsToGen) {
   return new Promise(function(resolve) {
-    let customDocumentSettings = { documentSource: "PROJECT", project: mongTypes.ObjectId(project._id) };
+    let customDocumentSettings = { documentSource: 'PROJECT', project: mongTypes.ObjectId(project._id) };
     factory.createMany(factoryKey, projectDocumentsToGen, customDocumentSettings, buildOptions).then(documents => {
       resolve(documents);
     });
@@ -151,7 +151,7 @@ function generateDocumentSetForProject(factoryKey, project, buildOptions, projec
 
 function generateDocumentSetForCommentPeriod(factoryKey, commentPeriod, buildOptions, commentPeriodDocumentsToGen) {
   return new Promise(function(resolve) {
-    let customDocumentSettings = { documentSource: "COMMENT", project: mongTypes.ObjectId(commentPeriod.project), _comment: mongTypes.ObjectId(commentPeriod._id) };  // note that the document._comment field actually refers to a commentPeriod id
+    let customDocumentSettings = { documentSource: 'COMMENT', project: mongTypes.ObjectId(commentPeriod.project), _comment: mongTypes.ObjectId(commentPeriod._id) };  // note that the document._comment field actually refers to a commentPeriod id
     factory.createMany(factoryKey, commentPeriodDocumentsToGen, customDocumentSettings, buildOptions).then(documents => {
       resolve(documents);
     });
@@ -180,7 +180,7 @@ function generateProjects(usersData) {
                 genData.projects = projectsArray;
                 resolve(genData);
               }).catch(error => {
-                console.log("Project error:" + error);
+                console.log('Project error:' + error);
                 reject(error);
               }).finally(function(){
                 console.log('Generated ' + numOfProjsGenned + ' projects.');
@@ -205,9 +205,9 @@ function generateChildSets(parents, usersPool, factoryTemplate) {
       resolve(Promise.all(childGenerationPromises));
     });
   }).catch(error => {
-    console.log(factoryTemplate.factoryKey + "s error:" + error);
+    console.log(factoryTemplate.factoryKey + 's error:' + error);
   }).finally(function(){
-    console.log("Generated all " + factoryTemplate.factoryKey + " sets.");
+    console.log('Generated all ' + factoryTemplate.factoryKey + ' sets.');
   });
 }
 
@@ -223,9 +223,9 @@ function generateChildSet(parent, buildOptions, factoryTemplate) {
       }
     });
   }).catch(error => {
-    console.log(factoryTemplate.factoryKey + " set generation error:" + error);
+    console.log(factoryTemplate.factoryKey + ' set generation error:' + error);
   }).finally(function(){
-    console.log("Generated " + factoryTemplate.factoryKey + " set.");
+    console.log('Generated ' + factoryTemplate.factoryKey + ' set.');
   });
 }
 

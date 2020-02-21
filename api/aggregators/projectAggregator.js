@@ -12,14 +12,14 @@ exports.createProjectAggr = (projectLegislation) => {
   //Get our project Legislation info. Need this for other spots in the code
   const { projectLegislationDataKey, projectLegislationDataIdKey } = getProjectLegislationInfo(projectLegislation);
 
-  if (projectLegislation === "all") {
+  if (projectLegislation === 'all') {
     projectLegislationDataKey.forEach ( dataKey => {
       aggregation = addProjectLookupAggrs(aggregation, dataKey);
     });
-  } else if (!projectLegislation || projectLegislation === "default") {
+  } else if (!projectLegislation || projectLegislation === 'default') {
     aggregation = setProjectDefault(true);
     // unwind proponents and move embedded data up to root
-    const projectDataAggrs = unwindProjectData("default", "default._id", projectLegislation);
+    const projectDataAggrs = unwindProjectData('default', 'default._id', projectLegislation);
     aggregation = [...aggregation, ...projectDataAggrs];
   } else {
     aggregation = unwindProjectData(projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation);
@@ -38,20 +38,20 @@ const getProjectLegislationInfo = (legislation) => {
   let projectLegislationDataKey;
   switch (legislation) {
   //TODO: Update this to work for future years
-  case "1996":
-  case "2002":
-  case "2018":
-    projectLegislationDataKey = "legislation_" + legislation;
+  case '1996':
+  case '2002':
+  case '2018':
+    projectLegislationDataKey = 'legislation_' + legislation;
     break;
-  case "all":
+  case 'all':
     //TODO: Make this extendable. Pull from a list
-    projectLegislationDataKey = [ "legislation_1996", "legislation_2002", "legislation_2018" ];
+    projectLegislationDataKey = [ 'legislation_1996', 'legislation_2002', 'legislation_2018' ];
     break;
   default:
     //TODO: need to know current legislation, to set proper default
-    projectLegislationDataKey = "default";
+    projectLegislationDataKey = 'default';
     break;
   }
 
-  return {projectLegislationDataKey, projectLegislationDataIdKey: projectLegislationDataKey + "._id"};
+  return {projectLegislationDataKey, projectLegislationDataIdKey: projectLegislationDataKey + '._id'};
 };

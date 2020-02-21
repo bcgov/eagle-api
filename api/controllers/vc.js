@@ -29,13 +29,13 @@ exports.protectedOptions = function (args, res) {
 exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.vc.value;
 
-  defaultLog.info("Incoming new object:", obj);
+  defaultLog.info('Incoming new object:', obj);
 
   var Vc = mongoose.model('Vc');
   var vc = new Vc(obj);
-  console.log("***************************************************");
+  console.log('***************************************************');
   console.log(vc);
-  console.log("***************************************************");
+  console.log('***************************************************');
   vc._schemaName = 'Vc';
   vc.read = ['public', 'project-system-admin', 'staff'];
   vc.write = ['project-system-admin', 'staff'];
@@ -52,7 +52,7 @@ exports.protectedGet = async function (args, res) {
   var query = {};
 
   if (args.swagger.params.vcId && args.swagger.params.vcId.value) {
-    query = Utils.buildQuery("_id", args.swagger.params.vcId.value, query);
+    query = Utils.buildQuery('_id', args.swagger.params.vcId.value, query);
   }
   if (args.swagger.params.projectId && args.swagger.params.projectId.value) {
     _.assignIn(query, { project: mongoose.Types.ObjectId(args.swagger.params.projectId.value) });
@@ -69,7 +69,7 @@ exports.protectedGet = async function (args, res) {
   limit = processedParameters.limit;
 
   // Set query type
-  _.assignIn(query, { "_schemaName": "Vc" });
+  _.assignIn(query, { '_schemaName': 'Vc' });
 
   var data = await Utils.runDataQuery('Vc',
     args.swagger.params.auth_payload.realm_access.roles,
@@ -86,13 +86,13 @@ exports.protectedGet = async function (args, res) {
 
 exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.vcId.value;
-  defaultLog.info("ObjectID:", args.swagger.params.vcId.value);
+  defaultLog.info('ObjectID:', args.swagger.params.vcId.value);
   var obj = args.swagger.params.cp.value;
 
   // Strip security tags - these will not be updated on this route.
   delete obj.tags;
 
-  defaultLog.info("Incoming updated object:", obj);
+  defaultLog.info('Incoming updated object:', obj);
 
   var valuedComponent = require('mongoose').model('Vc');
   var data = await valuedComponent.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).exec();
@@ -102,7 +102,7 @@ exports.protectedPut = async function (args, res) {
 
 exports.protectedDelete = async function (args, res) {
   var objId = args.swagger.params.vcId.value;
-  defaultLog.info("Delete Vc:", objId);
+  defaultLog.info('Delete Vc:', objId);
 
   var commentperiod = require('mongoose').model('Vc');
   var data = await commentperiod.remove({ _id: objId }).exec();

@@ -82,9 +82,9 @@ var genSchema = function (name, definition) {
     // Default - no save hook for audit
     if (name !== 'Audit') {
       // Add the middle ware info
-      definition._updatedBy = { type:String, default: "system" };
-      definition._addedBy = { type:String, default: "system" };
-      definition._deletedBy = { type:String, default: "system" };
+      definition._updatedBy = { type:String, default: 'system' };
+      definition._addedBy = { type:String, default: 'system' };
+      definition._deletedBy = { type:String, default: 'system' };
 
       schema.post('save', function (doc) {
         var Audit = mongoose.model('Audit');

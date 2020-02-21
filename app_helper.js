@@ -1,11 +1,11 @@
-var mongoose      = require("mongoose");
+var mongoose      = require('mongoose');
 var _             = require('lodash');
 
 async function loadModels(dbConnection, options, logger) {
-  log(logger, "Connecting to:" + dbConnection);
+  log(logger, 'Connecting to:' + dbConnection);
   await mongoose.connect(dbConnection, options).then(() => {
-    log(logger, "Database connected");
-    log(logger, "loading db models");
+    log(logger, 'Database connected');
+    log(logger, 'loading db models');
     require('./api/helpers/models/audit');
     require('./api/helpers/models/list');
     require('./api/helpers/models/user');
@@ -23,10 +23,10 @@ async function loadModels(dbConnection, options, logger) {
     require('./api/helpers/models/commentperiod');
     require('./api/helpers/models/topic');
     require('./api/helpers/models/notificationProject');
-    log(logger, "db model loading done.");
+    log(logger, 'db model loading done.');
   },
   err => {
-    log(logger, "err:" + err);
+    log(logger, 'err:' + err);
     return;
   });
 }

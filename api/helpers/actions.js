@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 var _ = require('lodash');
 
 exports.publish = async function (o,save=false) {
@@ -56,7 +56,7 @@ exports.delete = function (o) {
 };
 
 exports.sendResponse = function (res, code, object) {
-  res.writeHead(code, { "Content-Type": "application/json" });
+  res.writeHead(code, { 'Content-Type': 'application/json' });
   return res.end(JSON.stringify(object));
 };
 

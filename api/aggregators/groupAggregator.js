@@ -11,14 +11,14 @@ exports.createGroupAggr = (populate) => {
   aggregation.push(
     {
       '$lookup': {
-        "from": "epic",
-        "localField": "project",
-        "foreignField": "_id",
-        "as": "project"
+        'from': 'epic',
+        'localField': 'project',
+        'foreignField': '_id',
+        'as': 'project'
       }
     },
     {
-      "$unwind": "$project"
+      '$unwind': '$project'
     }
   );
 
@@ -26,22 +26,22 @@ exports.createGroupAggr = (populate) => {
     // Handle project.
     aggregation.push(
       {
-        "$lookup": {
-          "from": "epic",
-          "localField": "project",
-          "foreignField": "_id",
-          "as": "project"
+        '$lookup': {
+          'from': 'epic',
+          'localField': 'project',
+          'foreignField': '_id',
+          'as': 'project'
         }
       },
       {
-        "$addFields": {
-          project: "$project",
+        '$addFields': {
+          project: '$project',
         }
       },
       {
-        "$unwind": {
-          "path": "$project",
-          "preserveNullAndEmptyArrays": true
+        '$unwind': {
+          'path': '$project',
+          'preserveNullAndEmptyArrays': true
         }
       }
     );

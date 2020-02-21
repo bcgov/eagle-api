@@ -120,17 +120,17 @@ const executeQuery = async function (args, res) {
   const or = args.swagger.params.or ? args.swagger.params.or.value : '';
   const categorized = args.swagger.params.categorized ? args.swagger.params.categorized.value : null;
 
-  defaultLog.info("Searching keywords:", keywords);
-  defaultLog.info("Searching datasets:", dataset);
-  defaultLog.info("Searching project:", project);
-  defaultLog.info("pageNum:", pageNum);
-  defaultLog.info("pageSize:", pageSize);
-  defaultLog.info("sortBy:", sortBy);
-  defaultLog.info("caseSensitive:", caseSensitive);
-  defaultLog.info("and:", and);
-  defaultLog.info("or:", or);
-  defaultLog.info("_id:", _id);
-  defaultLog.info("populate:", populate);
+  defaultLog.info('Searching keywords:', keywords);
+  defaultLog.info('Searching datasets:', dataset);
+  defaultLog.info('Searching project:', project);
+  defaultLog.info('pageNum:', pageNum);
+  defaultLog.info('pageSize:', pageSize);
+  defaultLog.info('sortBy:', sortBy);
+  defaultLog.info('caseSensitive:', caseSensitive);
+  defaultLog.info('and:', and);
+  defaultLog.info('or:', or);
+  defaultLog.info('_id:', _id);
+  defaultLog.info('populate:', populate);
   defaultLog.info('roles:', roles);
 
   Utils.recordAction('Search', keywords, args.swagger.params.auth_payload ? args.swagger.params.auth_payload.preferred_username : 'public');
@@ -151,9 +151,9 @@ const executeQuery = async function (args, res) {
     sortField = sortBy[0];
   }
 
-  defaultLog.info("sortingValue:", sortingValue);
-  defaultLog.info("sortField:", sortField);
-  defaultLog.info("sortDirection:", sortDirection);
+  defaultLog.info('sortingValue:', sortingValue);
+  defaultLog.info('sortField:', sortField);
+  defaultLog.info('sortDirection:', sortDirection);
 
   if (dataset !== constants.ITEM) {
     const collectionData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue, categorized);

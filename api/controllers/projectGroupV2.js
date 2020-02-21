@@ -23,7 +23,7 @@ exports.createGroup = async function (args, res) {
   defaultLog.debug('>>> {POST} /Projects/{id}/Groups');
 
   try {
-    if (Object.prototype.hasOwnProperty.call(args.swagger.params, "projId") && Object.prototype.hasOwnProperty.call(args.swagger.params, "group")) {
+    if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId') && Object.prototype.hasOwnProperty.call(args.swagger.params, 'group')) {
       let projectId = args.swagger.params.projId.value;
       let group = JSON.parse(args.swagger.params.group.value);
 
@@ -55,7 +55,7 @@ exports.deleteGroup = async function (args, res) {
   defaultLog.debug('>>> {DELETE} /Projects/{projId}/Groups/{groupId}');
 
   try {
-    if (Object.prototype.hasOwnProperty.call(args.swagger.params, "projId") && Object.prototype.hasOwnProperty.call(args.swagger.params, "groupId")) {
+    if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId') && Object.prototype.hasOwnProperty.call(args.swagger.params, 'groupId')) {
       let projectId = args.swagger.params.projId.value;
       let groupId = args.swagger.params.groupId.value;
 
@@ -90,9 +90,9 @@ exports.updateGroup = async function (args, res) {
   defaultLog.debug('>>> {PUT} /Projects/{projId}/Groups/{groupId}');
 
   try {
-    if (Object.prototype.hasOwnProperty.call(args.swagger.params, "projId") &&
-            Object.prototype.hasOwnProperty.call(args.swagger.params, "groupId") &&
-            Object.prototype.hasOwnProperty.call(args.swagger.params, "updatedGroup")) {
+    if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId') &&
+            Object.prototype.hasOwnProperty.call(args.swagger.params, 'groupId') &&
+            Object.prototype.hasOwnProperty.call(args.swagger.params, 'updatedGroup')) {
       let projectId = args.swagger.params.projId.value;
       let groupId = args.swagger.params.groupId.value;
       let updatedGroup = args.swagger.params.groupObject.value;
@@ -128,9 +128,9 @@ exports.createGroupMemeber = async function (args, res) {
   defaultLog.debug('>>> {POST} /Projects/{projId}/Groups/{groupId}/members');
 
   try {
-    if (Object.prototype.hasOwnProperty.call(args.swagger.params, "projId") &&
-            Object.prototype.hasOwnProperty.call(args.swagger.params, "groupId") &&
-            Object.prototype.hasOwnProperty.call(args.swagger.params, "members")) {
+    if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId') &&
+            Object.prototype.hasOwnProperty.call(args.swagger.params, 'groupId') &&
+            Object.prototype.hasOwnProperty.call(args.swagger.params, 'members')) {
       let projectId = args.swagger.params.projId.value;
       let groupId = args.swagger.params.groupId.value;
       let members = args.swagger.params.members.value;
@@ -168,7 +168,7 @@ exports.fetchGroupMemebers = async function (args, res) {
   defaultLog.debug('>>> {GET} /Projects/{projId}/Groups/{groupId}/members');
 
   try {
-    if (Object.prototype.hasOwnProperty.call(args.swagger.params, "projId") && Object.prototype.hasOwnProperty.call(args.swagger.params, "groupId")) {
+    if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId') && Object.prototype.hasOwnProperty.call(args.swagger.params, 'groupId')) {
       let projectId = args.swagger.params.projId.value;
       let groupId = args.swagger.params.groupId.value;
 
@@ -181,9 +181,9 @@ exports.fetchGroupMemebers = async function (args, res) {
       let group = resources[1];
 
       if(project && group) {
-        let pageNumber = Object.prototype.hasOwnProperty.call(args.swagger.params, "pageNumber") && args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
-        let pageSize   = Object.prototype.hasOwnProperty.call(args.swagger.params, "pageSize") && args.swagger.params.pageSize.value ? args.swagger.params.pageSize.value : 10;
-        let sortBy     = Object.prototype.hasOwnProperty.call(args.swagger.params, "sortBy") && args.swagger.params.sortBy.value ? args.swagger.params.sortBy.value : '';
+        let pageNumber = Object.prototype.hasOwnProperty.call(args.swagger.params, 'pageNumber') && args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
+        let pageSize   = Object.prototype.hasOwnProperty.call(args.swagger.params, 'pageSize') && args.swagger.params.pageSize.value ? args.swagger.params.pageSize.value : 10;
+        let sortBy     = Object.prototype.hasOwnProperty.call(args.swagger.params, 'sortBy') && args.swagger.params.sortBy.value ? args.swagger.params.sortBy.value : '';
 
         let members = await projectGroupDAO.getGroupMembers(constants.SECURE_ROLES, args.swagger.params.auth_payload.preferred_username, group, sortBy, pageSize, pageNumber);
         members = projectGroupDAO.groupHateoas(members, constants.SECURE_ROLES);
@@ -207,9 +207,9 @@ exports.deleteGroupMember = async function (args, res) {
   defaultLog.debug('>>> {DELETE} /Projects/{projId}/Groups/{groupId}/members/{memberId}');
 
   try {
-    if (Object.prototype.hasOwnProperty.call(args.swagger.params, "projId") &&
-            Object.prototype.hasOwnProperty.call(args.swagger.params, "groupId") &&
-            Object.prototype.hasOwnProperty.call(args.swagger.params, "memberId")) {
+    if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId') &&
+            Object.prototype.hasOwnProperty.call(args.swagger.params, 'groupId') &&
+            Object.prototype.hasOwnProperty.call(args.swagger.params, 'memberId')) {
       let projectId = args.swagger.params.projId.value;
       let groupId = args.swagger.params.groupId.value;
       let memberId = args.swagger.params.memberId.value;

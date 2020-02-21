@@ -33,7 +33,7 @@ exports.getTopLevel = async function (args, res) {
         };
 
     // secure links
-    if (Object.prototype.hasOwnProperty.call(args.swagger.params, "auth_payload") && args.swagger.params.auth_payload.preferred_username !== 'public') {
+    if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'auth_payload') && args.swagger.params.auth_payload.preferred_username !== 'public') {
       topLevelData.links.push({ rel: 'fetch', title: 'Secure Projects List', method: 'GET', href: '/api/v2/Projects' });
       topLevelData.links.push({ rel: 'create', title: 'Secure Projects Create', method: 'POST', href: '/api/v2/Projects' });
 

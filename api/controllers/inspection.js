@@ -4,7 +4,7 @@ var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 var mime = require('mime-types');
-var uploadDir = process.env.UPLOAD_DIRECTORY || "./uploads/";
+var uploadDir = process.env.UPLOAD_DIRECTORY || './uploads/';
 var MinioController = require('../helpers/minio');
 var rp = require('request-promise-native');
 
@@ -16,7 +16,7 @@ exports.protectedOptions = function (args, res) {
 exports.protectedPostInspection = async function (args, res) {
   var obj = args.swagger.params.inspection.value;
 
-  defaultLog.info("Incoming new object:", obj);
+  defaultLog.info('Incoming new object:', obj);
 
   var Inspection = mongoose.model('Inspection');
 
@@ -40,7 +40,7 @@ exports.protectedPostInspection = async function (args, res) {
   // This is an overwrite in case of error from mobile app,
   // otherwise this will create a new record.
   try {
-    let elementDocument = await Inspection.findOne({_schemaName: "Inspection", inspectionId: inspection.inspectionId});
+    let elementDocument = await Inspection.findOne({_schemaName: 'Inspection', inspectionId: inspection.inspectionId});
     if (elementDocument) {
       // We alrady had this - send it back to them.
       return Actions.sendResponse(res, 200, elementDocument);
@@ -52,12 +52,12 @@ exports.protectedPostInspection = async function (args, res) {
           return Actions.sendResponse(res, 200, doc);
         })
         .catch(function (err) {
-          console.log("Error in API:", err);
+          console.log('Error in API:', err);
           return Actions.sendResponse(res, 400, err);
         });
     }
   } catch (err) {
-    console.log("Error in API:", err);
+    console.log('Error in API:', err);
     return Actions.sendResponse(res, 400, err);
   }
 };
@@ -67,7 +67,7 @@ exports.protectedPostElement = async function (args, res) {
   var obj = args.swagger.params.inspection.value;
   var inspId = args.swagger.params.inspId.value;
 
-  defaultLog.info("Incoming new object:", obj);
+  defaultLog.info('Incoming new object:', obj);
 
   var InspectionElement = mongoose.model('InspectionElement');
 
@@ -84,7 +84,7 @@ exports.protectedPostElement = async function (args, res) {
   // Based on elementId (as per mobile uuid);  We don't want to modify it in case there
   // are other elements that exist in the elements array
   var Inspection = mongoose.model('Inspection');
-  let elementDocument = await Inspection.findOne({_schemaName: "InspectionElement", elementId: inspectionElement.elementId});
+  let elementDocument = await Inspection.findOne({_schemaName: 'InspectionElement', elementId: inspectionElement.elementId});
   if (elementDocument) {
     // We alrady had this - send it back to them.
     return Actions.sendResponse(res, 200, elementDocument);
@@ -110,7 +110,7 @@ exports.protectedPostElement = async function (args, res) {
         return Actions.sendResponse(res, 200, theDoc);
       })
       .catch(function (err) {
-        console.log("Error in API:", err);
+        console.log('Error in API:', err);
         return Actions.sendResponse(res, 400, err);
       });
   }
@@ -134,7 +134,7 @@ exports.protectedPostElementItem = async function (args, res) {
   var ext, tempFilePath = null;
   if (upfile) {
     ext = mime.extension(args.swagger.params.upfile.value.mimetype);
-    tempFilePath = uploadDir + guid + "." + ext;
+    tempFilePath = uploadDir + guid + '.' + ext;
 
     var fs = require('fs');
     fs.writeFileSync(tempFilePath, args.swagger.params.upfile.value.buffer);
@@ -150,7 +150,7 @@ exports.protectedPostElementItem = async function (args, res) {
       upfile.originalname,
       tempFilePath)
       .then(async function (minioFile) {
-        console.log("putDocument:", minioFile);
+        console.log('putDocument:', minioFile);
 
         // remove file from temp folder
         fs.unlinkSync(tempFilePath);
@@ -183,7 +183,7 @@ exports.protectedPostElementItem = async function (args, res) {
         doc.internalSize = upfile.size;
         doc.internalMime = upfile.mimetype;
 
-        let itemDocument = await InspectionItem.findOne({_schemaName: "InspectionItem", itemId: doc.itemId});
+        let itemDocument = await InspectionItem.findOne({_schemaName: 'InspectionItem', itemId: doc.itemId});
         if (itemDocument) {
           // We already had this - send it back to them.
           return Actions.sendResponse(res, 200, itemDocument);
@@ -191,7 +191,7 @@ exports.protectedPostElementItem = async function (args, res) {
           var savedDocument = null;
           doc.save()
             .then(function (d) {
-              defaultLog.info("Saved new document object:", d._id);
+              defaultLog.info('Saved new document object:', d._id);
               Utils.recordAction('Post', 'InspectionItem', args.swagger.params.auth_payload.preferred_username, d._id);
               savedDocument = d;
               return;
@@ -208,13 +208,13 @@ exports.protectedPostElementItem = async function (args, res) {
                 { new: true }
               );
             }).then(function (theInspection) {
-              console.log("updated insp:", theInspection);
+              console.log('updated insp:', theInspection);
               return theInspection;
             }).then(function () {
               return Actions.sendResponse(res, 200, savedDocument);
             })
             .catch(function (error) {
-              console.log("error:", error);
+              console.log('error:', error);
               // the model failed to be created - delete the document from minio so the database and minio remain in sync.
               MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
               return Actions.sendResponse(res, 400, error);
@@ -244,7 +244,7 @@ exports.protectedPostElementItem = async function (args, res) {
     doc.geo = JSON.parse(geo);
     doc.markModified('geo');
 
-    let itemDocument = await InspectionItem.findOne({_schemaName: "InspectionItem", itemId: doc.itemId});
+    let itemDocument = await InspectionItem.findOne({_schemaName: 'InspectionItem', itemId: doc.itemId});
     if (itemDocument) {
       // We alrady had this - send it back to them.
       return Actions.sendResponse(res, 200, itemDocument);
@@ -252,7 +252,7 @@ exports.protectedPostElementItem = async function (args, res) {
       var savedDocument = null;
       doc.save()
         .then(function (d) {
-          defaultLog.info("Saved new document object:", d._id);
+          defaultLog.info('Saved new document object:', d._id);
           Utils.recordAction('Post', 'InspectionItem', args.swagger.params.auth_payload.preferred_username, d._id);
           savedDocument = d;
           return;
@@ -269,13 +269,13 @@ exports.protectedPostElementItem = async function (args, res) {
             { new: true }
           );
         }).then(function (theInspection) {
-          console.log("updated insp:", theInspection);
+          console.log('updated insp:', theInspection);
           return theInspection;
         }).then(function () {
           return Actions.sendResponse(res, 200, savedDocument);
         })
         .catch(function (error) {
-          console.log("error:", error);
+          console.log('error:', error);
           // the model failed to be created - delete the document from minio so the database and minio remain in sync.
           MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
           return Actions.sendResponse(res, 400, error);
@@ -292,25 +292,25 @@ exports.protectedElementItemGet = function (args, res) {
   if (args.swagger.params.filename && args.swagger.params.filename.value) {
     self.filename = args.swagger.params.filename.value;
   }
-  console.log("self.thumbnail:", self.thumbnail);
-  console.log("self.filename:", self.filename);
+  console.log('self.thumbnail:', self.thumbnail);
+  console.log('self.filename:', self.filename);
 
-  defaultLog.info("args.swagger.params:", args.swagger.params.auth_payload.realm_access.roles);
+  defaultLog.info('args.swagger.params:', args.swagger.params.auth_payload.realm_access.roles);
 
   // Build match query if on elemId route
   var query = {};
   if (args.swagger.params.itemId && args.swagger.params.itemId.value) {
-    query = Utils.buildQuery("_id", args.swagger.params.itemId.value, query);
+    query = Utils.buildQuery('_id', args.swagger.params.itemId.value, query);
   }
   // Set query type
-  _.assignIn(query, { "_schemaName": "InspectionItem" });
+  _.assignIn(query, { '_schemaName': 'InspectionItem' });
 
-  console.log("QE:", query);
+  console.log('QE:', query);
 
   Utils.runDataQuery('InspectionItem',
     args.swagger.params.auth_payload.realm_access.roles,
     query,
-    ["internalURL", "documentFileName", "internalMime", 'internalExt'], // Fields
+    ['internalURL', 'documentFileName', 'internalMime', 'internalExt'], // Fields
     null, // sort warmup
     null, // sort
     null, // skip
@@ -339,7 +339,7 @@ exports.protectedElementItemGet = function (args, res) {
             res.setHeader('Content-Disposition', 'attachment;filename="' + self.filename + '"');
 
             if (!self.thumbnail) {
-              console.log("Getting full");
+              console.log('Getting full');
               return rp(docURL).pipe(res);
             } else {
               var axios = require('axios');
@@ -358,7 +358,7 @@ exports.protectedElementItemGet = function (args, res) {
                   width: parseInt(100, 10),
                 })).pipe(res))
                 .catch(err => {
-                  console.log("ERR:", err);
+                  console.log('ERR:', err);
                   res.status(404).send();
                 });
             }

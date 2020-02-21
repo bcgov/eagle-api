@@ -1,6 +1,6 @@
 // Retrieve
-var MongoClient = require("mongodb").MongoClient;
-var ObjectId = require("mongodb").ObjectID;
+var MongoClient = require('mongodb').MongoClient;
+var ObjectId = require('mongodb').ObjectID;
 
 // Connect to the db
 // Dev
@@ -8,22 +8,22 @@ var ObjectId = require("mongodb").ObjectID;
 // Test
 // MongoClient.connect("mongodb://x:x@localhost:5555/epic", async function(err, client) {
 // Local
-MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
+MongoClient.connect('mongodb://localhost/epic', async function(err, client) {
   if (!err) {
-    console.log("We are connected");
-    const db = client.db("epic");
+    console.log('We are connected');
+    const db = client.db('epic');
 
-    let typeData = require(process.cwd() + "/null_type");
-    console.log("typeData:", typeData.length);
+    let typeData = require(process.cwd() + '/null_type');
+    console.log('typeData:', typeData.length);
 
-    let projectPhaseData = require(process.cwd() + "/null_projectPhase");
-    console.log("projectPhaseData:", projectPhaseData.length);
+    let projectPhaseData = require(process.cwd() + '/null_projectPhase');
+    console.log('projectPhaseData:', projectPhaseData.length);
 
-    let authorData = require(process.cwd() + "/null_author");
-    console.log("authorData:", authorData.length);
+    let authorData = require(process.cwd() + '/null_author');
+    console.log('authorData:', authorData.length);
 
-    let milestoneData = require(process.cwd() + "/null_milestone");
-    console.log("milestoneData:", milestoneData.length);
+    let milestoneData = require(process.cwd() + '/null_milestone');
+    console.log('milestoneData:', milestoneData.length);
 
     const typePromises = [];
     for (let z = 0; z < typeData.length; z++) {
@@ -50,7 +50,7 @@ MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
     }
 
     await Promise.all([projectPromises, authorPromises, milestonePromises, typePromises]);
-    console.log("ALL DONE");
+    console.log('ALL DONE');
     client.close();
   } else{
     console.log(err);
@@ -60,7 +60,7 @@ MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
 
 async function updateType(db, object_id) {
   return new Promise(function(resolve) {
-    db.collection("epic")
+    db.collection('epic')
       .updateOne({ _id: object_id },{ $set: { type: null }})
       .then(async function(data) {
         resolve(data);
@@ -70,7 +70,7 @@ async function updateType(db, object_id) {
 
 async function updateProjectPhase(db, object_id) {
   return new Promise(function(resolve) {
-    db.collection("epic")
+    db.collection('epic')
       .updateOne({ _id: object_id },{ $set: { projectPhase: null }})
       .then(async function(data) {
         resolve(data);
@@ -80,7 +80,7 @@ async function updateProjectPhase(db, object_id) {
 
 async function updateMilestone(db, object_id) {
   return new Promise(function(resolve) {
-    db.collection("epic")
+    db.collection('epic')
       .updateOne({ _id: object_id },{ $set: { milestone: null }})
       .then(async function(data) {
         resolve(data);
@@ -90,7 +90,7 @@ async function updateMilestone(db, object_id) {
 
 async function updateAuthor(db, object_id) {
   return new Promise(function(resolve) {
-    db.collection("epic")
+    db.collection('epic')
       .updateOne({ _id: object_id },{ $set: { documentAuthorType: null }})
       .then(async function(data) {
         resolve(data);

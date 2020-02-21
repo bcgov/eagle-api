@@ -9,7 +9,7 @@ async function getProjectHandler(roles, params) {
   let data = {};
 
   // fetch a project, or a list of projects
-  if (Object.prototype.hasOwnProperty.call(params, "projId")) {
+  if (Object.prototype.hasOwnProperty.call(params, 'projId')) {
     let projectId = params.projId.value;
 
     defaultLog.debug(' Fetching project ' + projectId);

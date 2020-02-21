@@ -65,28 +65,28 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
           if: {
             // This way, if read isn't present, we assume public no roles array.
             $and: [
-              { $cond: { if: "$read", then: true, else: false } },
+              { $cond: { if: '$read', then: true, else: false } },
               {
                 $anyElementTrue: {
                   $map: {
-                    input: "$read",
-                    as: "fieldTag",
-                    in: { $setIsSubset: [["$$fieldTag"], roles] }
+                    input: '$read',
+                    as: 'fieldTag',
+                    in: { $setIsSubset: [['$$fieldTag'], roles] }
                   }
                 }
               }
             ]
           },
-          then: "$$KEEP",
+          then: '$$KEEP',
           else: {
-            $cond: { if: "$read", then: "$$PRUNE", else: "$$DESCEND" }
+            $cond: { if: '$read', then: '$$PRUNE', else: '$$DESCEND' }
           }
         }
       }
     },
     {
       $addFields: {
-        score: { $meta: "textScore" }
+        score: { $meta: 'textScore' }
       }
     }
   );
@@ -125,9 +125,9 @@ exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, so
       searchResultAggregation.push(
 
         { $addFields: {
-          "date":
+          'date':
             { $dateToString: {
-              "format": "%Y-%m-%d", "date": "$datePosted"
+              'format': '%Y-%m-%d', 'date': '$datePosted'
             }}
 
         }},
@@ -156,7 +156,7 @@ exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, so
       searchResults: searchResultAggregation,
       meta: [
         {
-          $count: "searchResultsTotal"
+          $count: 'searchResultsTotal'
         }
       ]
     }

@@ -101,7 +101,7 @@ exports.getGroupMembers = async function(roles, user, group, sortBy, pageSize, p
 
   let query = {};
 
-  _.assignIn(query, { "_schemaName": "Group" });
+  _.assignIn(query, { '_schemaName': 'Group' });
 
   let fields = ['_id', 'members', 'name', 'project'];
 
@@ -127,7 +127,7 @@ exports.getGroupMembers = async function(roles, user, group, sortBy, pageSize, p
     const theUsers = resultData[0].members.map(user => mongoose.Types.ObjectId(user));
 
     query = { _id: { $in: theUsers } };
-    _.assignIn(query, { "_schemaName": "User" });
+    _.assignIn(query, { '_schemaName': 'User' });
 
     // Sort
     if (sortBy && sortBy.value) {

@@ -22,7 +22,7 @@ exports.protectedOptions = function (args, res) {
 exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.topic.value;
 
-  defaultLog.info("Incoming new object:", obj);
+  defaultLog.info('Incoming new object:', obj);
 
   var Topic = mongoose.model('Topic');
   var topic = new Topic(obj);
@@ -42,7 +42,7 @@ exports.protectedGet = async function (args, res) {
   var skip = null, limit = null, sort = {}, query = {};
 
   if (args.swagger.params.topicId && args.swagger.params.topicId.value) {
-    query = Utils.buildQuery("_id", args.swagger.params.topicId.value, query);
+    query = Utils.buildQuery('_id', args.swagger.params.topicId.value, query);
   }
   if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
     args.swagger.params.sortBy.value.forEach(function (value) {
@@ -56,7 +56,7 @@ exports.protectedGet = async function (args, res) {
   limit = processedParameters.limit;
 
   // Set query type
-  _.assignIn(query, { "_schemaName": "Topic" });
+  _.assignIn(query, { '_schemaName': 'Topic' });
 
   var data = await Utils.runDataQuery('Topic',
     args.swagger.params.auth_payload.realm_access.roles,
@@ -73,13 +73,13 @@ exports.protectedGet = async function (args, res) {
 
 exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.topicId.value;
-  defaultLog.info("ObjectID:", args.swagger.params.topicId.value);
+  defaultLog.info('ObjectID:', args.swagger.params.topicId.value);
   var obj = args.swagger.params.cp.value;
 
   // Strip security tags - these will not be updated on this route.
   delete obj.tags;
 
-  defaultLog.info("Incoming updated object:", obj);
+  defaultLog.info('Incoming updated object:', obj);
 
   var topic = require('mongoose').model('Topic');
 
@@ -93,7 +93,7 @@ exports.protectedPut = async function (args, res) {
 
 exports.protectedDelete = async function (args, res) {
   var objId = args.swagger.params.topicId.value;
-  defaultLog.info("Delete Topic:", objId);
+  defaultLog.info('Delete Topic:', objId);
 
   var topic = require('mongoose').model('Topic');
 

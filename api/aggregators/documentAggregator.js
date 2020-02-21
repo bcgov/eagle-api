@@ -106,28 +106,28 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
           if: {
             // This way, if read isn't present, we assume public no roles array.
             $and: [
-              { $cond: { if: "$read", then: true, else: false } },
+              { $cond: { if: '$read', then: true, else: false } },
               {
                 $anyElementTrue: {
                   $map: {
-                    input: "$read",
-                    as: "fieldTag",
-                    in: { $setIsSubset: [["$$fieldTag"], roles] }
+                    input: '$read',
+                    as: 'fieldTag',
+                    in: { $setIsSubset: [['$$fieldTag'], roles] }
                   }
                 }
               }
             ]
           },
-          then: "$$KEEP",
+          then: '$$KEEP',
           else: {
-            $cond: { if: "$read", then: "$$PRUNE", else: "$$DESCEND" }
+            $cond: { if: '$read', then: '$$PRUNE', else: '$$DESCEND' }
           }
         }
       }
     },
     {
       $addFields: {
-        score: { $meta: "textScore" }
+        score: { $meta: 'textScore' }
       }
     }
   );
@@ -149,18 +149,18 @@ exports.createDocumentAggr = (populate, roles) => {
   aggregation.push(
     {
       $addFields: {
-        "status": {
+        'status': {
           $cond: {
             if: {
               // This way, if read isn't present, we assume public no roles array.
               $and: [
-                { $cond: { if: "$read", then: true, else: false } },
+                { $cond: { if: '$read', then: true, else: false } },
                 {
                   $anyElementTrue: {
                     $map: {
-                      input: "$read",
-                      as: "fieldTag",
-                      in: { $setIsSubset: [["$$fieldTag"], ['public']] }
+                      input: '$read',
+                      as: 'fieldTag',
+                      in: { $setIsSubset: [['$$fieldTag'], ['public']] }
                     }
                   }
                 }
@@ -190,22 +190,22 @@ exports.createDocumentAggr = (populate, roles) => {
     // Handle project.
     aggregation.push(
       {
-        "$lookup": {
-          "from": "epic",
-          "localField": "project",
-          "foreignField": "_id",
-          "as": "project"
+        '$lookup': {
+          'from': 'epic',
+          'localField': 'project',
+          'foreignField': '_id',
+          'as': 'project'
         }
       },
       {
-        "$addFields": {
-          project: "$project",
+        '$addFields': {
+          project: '$project',
         }
       },
       {
-        "$unwind": {
-          "path": "$project",
-          "preserveNullAndEmptyArrays": true
+        '$unwind': {
+          'path': '$project',
+          'preserveNullAndEmptyArrays': true
         }
       }
     );
@@ -218,18 +218,18 @@ exports.createDocumentAggr = (populate, roles) => {
     // TODO: Abstract these types of stages, as we will need to do this a lot")
     aggregation.push(
       {
-        "$addFields": {
-          "project": { "$mergeObjects": ["$project", "$project.default"] },
+        '$addFields': {
+          'project': { '$mergeObjects': ['$project', '$project.default'] },
         }
       },
       {
-        "$project": {["project.legislation_2002"]: 0 }
+        '$project': {['project.legislation_2002']: 0 }
       },
       {
-        "$project": {["project.legislation_1996"]: 0 }
+        '$project': {['project.legislation_1996']: 0 }
       },
       {
-        "$project": {["project.default"]: 0 }
+        '$project': {['project.default']: 0 }
       }
     );
 
