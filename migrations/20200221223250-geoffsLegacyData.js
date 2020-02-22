@@ -72,7 +72,8 @@ async function processData(p) {
 
       let document = await mongoose.model('Document').findOne({ internalOriginalName: legacyDocument.DOC_PTR });
 
-      if (document) {
+      // ignore any records that have already been edited by Geoff
+      if (document && (!document.hasOwnProperty('_updatedBy') || document._updatedBy !== 'idir\\gxmcdona')) {
         // set the sort order to match the section number
         document.sortOrder = legacyDocument.SECTION_NUMBER;
         // if dateUploaded is null, set it
