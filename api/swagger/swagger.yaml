@@ -271,7 +271,7 @@ definitions:
       - internalMime
       - internalSize
       - isFeatured
-
+      - sortOrder
 ### Comment Definitions
   CommentId:
     type: object
