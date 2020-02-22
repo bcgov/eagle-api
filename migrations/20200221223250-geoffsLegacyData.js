@@ -96,29 +96,6 @@ async function processData(p) {
       } else {
         notFoundCount++;
       }
-
-      /*
-      // doing multiple queries with update may be slightly faster
-      // but we won't be able to get any stats
-      const query = { 
-                      _schemaName: 'Document', 
-                      internalOriginalName: legacyDocument.DOC_PTR, 
-                      $or: [ { dateUploaded: null }, { datePosted: { $lt: ISODate('1901-12-31T00:00:00Z') } } ] 
-                    };
-      const update = { $set: { sortOrder:      legacyDocument.SECTION_NUMBER, 
-                               datePosted:     legacyDocument.DATE_POSTED, 
-                               dateUploaded:   legacyDocument.DATE_RECEIVED }};
-      const options = { upsert: false };
-
-      p.update(query, update, options)
-      .then(result => {
-        // we probably don't want to log out this much...
-        // console.log('Completed successfully');
-      })
-      .catch(err => { 
-        console.error('Failed to update document ' + legacyDOcument.DOC_PTR + ': ' + ${err}); 
-      });
-      */
     } else {
       notFoundCount++;
     }
