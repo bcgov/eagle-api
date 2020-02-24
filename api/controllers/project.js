@@ -1052,6 +1052,14 @@ exports.protectedPut = async function (args, res, next) {
   filteredData.proponent = projectObj.proponent;
   filteredData.currentPhaseName = projectObj.currentPhaseName;
 
+  // To avoid updating the phaseHistory if the phase hasn't changed
+  if ( JSON.stringify(filteredData.phaseHistory[filteredData.phaseHistory.length-1]) !== JSON.stringify(filteredData.currentPhaseName)){
+    filteredData.phaseHistory.push( filteredData.currentPhaseName );
+  }
+    
+  
+ 
+
   console.log("Updating with:", filteredData);
   console.log("--------------------------");
 
