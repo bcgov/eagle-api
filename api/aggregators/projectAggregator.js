@@ -14,7 +14,7 @@ exports.createProjectAggr = (projectLegislation) => {
 
   if (projectLegislation === "all") {
     projectLegislationDataKey.forEach ( dataKey => {  
-      aggregation = addProjectLookupAggrs(dataKey);
+      aggregation = addProjectLookupAggrs(aggregation, dataKey);
     });
   } else if (!projectLegislation || projectLegislation === "default") {
     aggregation = setProjectDefault(true);
