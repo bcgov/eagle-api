@@ -1056,9 +1056,6 @@ exports.protectedPut = async function (args, res, next) {
   if ( JSON.stringify(filteredData.phaseHistory[filteredData.phaseHistory.length-1]) !== JSON.stringify(filteredData.currentPhaseName)){
     filteredData.phaseHistory.push( filteredData.currentPhaseName );
   }
-    
-  
- 
 
   console.log("Updating with:", filteredData);
   console.log("--------------------------");
