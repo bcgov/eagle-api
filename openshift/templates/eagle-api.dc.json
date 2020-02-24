@@ -225,8 +225,13 @@
                   }
                 },
                 "resources": {
+                  "requests": {
+                    "cpu": "${NODEJS_CPU_REQUEST}",
+                    "memory": "${NODEJS_MEMORY_REQUEST}"
+                  },
                   "limits": {
-                    "memory": "${MEMORY_LIMIT}"
+                    "cpu": "${NODEJS_CPU_LIMIT}",
+                    "memory": "${NODEJS_MEMORY_LIMIT}"
                   }
                 },
                 "volumeMounts": [
@@ -373,8 +378,13 @@
                   }
                 },
                 "resources": {
+                  "requests": {
+                    "cpu": "${MONGODB_CPU_REQUEST}",
+                    "memory": "${MONGODB_MEMORY_REQUEST}"
+                  },
                   "limits": {
-                    "memory": "${MEMORY_MONGODB_LIMIT}"
+                    "cpu": "${MONGODB_CPU_LIMIT}",
+                    "memory": "${MONGODB_MEMORY_LIMIT}"
                   }
                 },
                 "volumeMounts": [
@@ -438,16 +448,52 @@
       "value": "3.6"
     },
     {
-      "name": "MEMORY_LIMIT",
-      "displayName": "Memory Limit",
-      "description": "Maximum amount of memory the Node.js container can use.",
-      "value": "512Mi"
+      "name": "NODEJS_CPU_LIMIT",
+      "displayName": "CPU Limit",
+      "description": "Maximum amount of CPU (in cores) the Node.js container can use.",
+      "value": "1"
     },
     {
-      "name": "MEMORY_MONGODB_LIMIT",
-      "displayName": "Memory Limit (MongoDB)",
-      "description": "Maximum amount of memory the MongoDB container can use.",
-      "value": "512Mi"
+      "name": "NODEJS_MEMORY_LIMIT",
+      "displayName": "Memory Limit",
+      "description": "Maximum amount of memory the Node.js container can use.",
+      "value": "4Gi"
+    },
+    {
+      "name": "NODEJS_CPU_REQUEST",
+      "displayName": "CPU Request",
+      "description": "Reserved amount of CPU (in cores) the Node.js container can use.",
+      "value": "1"
+    },
+    {
+      "name": "NODEJS_MEMORY_REQUEST",
+      "displayName": "Memory Request",
+      "description": "Reserved amount of memory the Node.js container can use.",
+      "value": "1Gi"
+    },
+    {
+      "name": "MONGODB_CPU_LIMIT",
+      "displayName": "CPU Limit",
+      "description": "Maximum amount of CPU (in cores) the Node.js container can use.",
+      "value": "1"
+    },
+    {
+      "name": "MONGODB_MEMORY_LIMIT",
+      "displayName": "Memory Limit",
+      "description": "Maximum amount of memory the Node.js container can use.",
+      "value": "4Gi"
+    },
+    {
+      "name": "MONGODB_CPU_REQUEST",
+      "displayName": "CPU Request",
+      "description": "Reserved amount of CPU (in cores) the Node.js container can use.",
+      "value": "1"
+    },
+    {
+      "name": "MONGODB_MEMORY_REQUEST",
+      "displayName": "Memory Request",
+      "description": "Reserved amount of memory the Node.js container can use.",
+      "value": "1Gi"
     },
     {
       "name": "APPLICATION_DOMAIN",

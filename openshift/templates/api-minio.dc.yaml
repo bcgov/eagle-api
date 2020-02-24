@@ -46,7 +46,7 @@ objects:
                 - name: MINIO_CONFIG_DIR
                   value: /tmp
                 - name: MINIO_DATA_DIR
-                  value: /data
+                  value: ${MINIO_DATA_DIR}
               image: ${OPENSHIFT_REGISTRY}/${MINIO_IMAGE_NAMESPACE}/${MINIO_IMAGE_NAME}:${MINIO_IMAGE_TAG}
               imagePullPolicy: Always
               name: ${NAME}
@@ -100,14 +100,15 @@ objects:
     metadata:
       name: ${NAME}-docs
       annotations:
-        volume.beta.kubernetes.io/storage-class: netapp-file-standard
-        volume.beta.kubernetes.io/storage-provisioner: kubernetes.io/netapp
+        volume.beta.kubernetes.io/storage-class: ${STORAGE_CLASS}
+        volume.beta.kubernetes.io/storage-provisioner: ${STORAGE_PROVIDER}
     spec:
       accessModes:
       - ReadWriteOnce
       resources:
         requests:
           storage: ${LOCAL_STORAGE_SIZE}
+      storageClassName: ${STORAGE_CLASS}
   - apiVersion: v1
     kind: Service
     spec:
@@ -187,4 +188,19 @@ parameters:
   displayName: Minio Image Tag
   description: The tag of the minio image.
   value: stable
+  required: true
+- name: STORAGE_CLASS
+  displayName: Storage Class
+  description: Storage class to use for physical volume claim.
+  value: netapp-file-standard
+  required: true
+- name: STORAGE_PROVIDER
+  displayName: Storage Provider
+  description: Storage provider to use for physical volume claim.
+  value: kubernetes.io/netapp
+  required: true
+- name: MINIO_DATA_DIR
+  displayName: Minio Data Dir
+  description: Data directory for Minio to use. Usually either /data or /opt/minio/data
+  value: /opt/minio/data
   required: true
