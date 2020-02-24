@@ -122,7 +122,7 @@ describe('API Testing - Documents DAO', () =>
             displayName        : 'testSecureFile',
             legislation        : '2018',
             documentSource     : 'PROJECT',
-            eaoStatus          : 'Published',
+            eaoStatus          : 'Rejected',
             publish            : false,
             milestone          : null,
             type               : null,

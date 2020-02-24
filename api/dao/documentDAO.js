@@ -208,6 +208,44 @@ exports.fetchDocuments = async function(pageNumber, pageSize, sortBy, query, key
         strength: 2
     };
 
+    // document status
+
+    queryAggregates.push(
+    {
+        $addFields: {
+        "status": {
+            $cond: {
+            if: {
+                // This way, if read isn't present, we assume public no roles array.
+                $and: [
+                { $cond: { if: "$read", then: true, else: false } },
+                {
+                    $anyElementTrue: {
+                    $map: {
+                        input: "$read",
+                        as: "fieldTag",
+                        in: { $setIsSubset: [["$$fieldTag"], ['public']] }
+                    }
+                    }
+                }
+                ]
+            },
+            then: 'published',
+            else: 'unpublished'
+            }
+        }
+        }
+    });
+    
+      // if we're coming in from the public endpoint, and we're fetching documents, 
+      // we MUST add a match to enforce eaoStatus='Published', regardless of filter
+      // ensure this occurs after the main filters
+    
+    if(roles && roles.length === 1 && roles.includes('public')) {
+        aggregation.push({
+            $match: { status: 'published' }
+        });
+    }
     // Sorting
     // loop through sortBy fields. a value of -1 = descending, 1 = ascending
     if(sortBy && sortBy.length > 1)
