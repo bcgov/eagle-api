@@ -242,7 +242,7 @@ exports.fetchDocuments = async function(pageNumber, pageSize, sortBy, query, key
       // ensure this occurs after the main filters
     
     if(roles && roles.length === 1 && roles.includes('public')) {
-        aggregation.push({
+        queryAggregates.push({
             $match: { status: 'published' }
         });
     }

@@ -156,12 +156,27 @@ describe('API Testing - Documents DAO', () =>
         expect(updatedDocument).not.toEqual(null);
         expect(updatedDocument.eaoStatus).toEqual('Published');
 
+        // fetch
+        let docResults = await documentDAO.fetchDocuments(0, 1000, null, null, null, project._id, [], constants.PUBLIC_ROLES);
+        expect(docResults).not.toEqual(null);
+        expect(docResults[0].searchResults.length).toEqual(1);
+        expect(docResults[0].searchResults[0]._id).toEqual(updatedDocument._id);
+
         // unpublish
         updatedDocument = await documentDAO.unPublishDocument('Test User', updatedDocument);
 
         expect(updatedDocument).not.toEqual(null);
         expect(updatedDocument.eaoStatus).toEqual('Rejected');
 
+        docResults = await documentDAO.fetchDocuments(0, 1000, null, null, null, project._id, [], constants.PUBLIC_ROLES);
+        expect(docResults).not.toEqual(null);
+        expect(docResults[0].searchResults.length).toEqual(0);
+
+        docResults = await documentDAO.fetchDocuments(0, 1000, null, null, null, project._id, [], constants.SECURE_ROLES);
+        expect(docResults).not.toEqual(null);
+        expect(docResults[0].searchResults.length).toEqual(1);
+        expect(docResults[0].searchResults[0]._id).toEqual(updatedDocument._id);
+        
         // feature
         updatedDocument = await documentDAO.featureDocument(updatedDocument, project);
 
