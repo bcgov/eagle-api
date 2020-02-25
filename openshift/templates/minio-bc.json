@@ -1,0 +1,156 @@
+{
+    "kind": "Template",
+    "apiVersion": "v1",
+    "metadata": {
+      "name": "${NAME}",
+      "annotations": {
+        "description": "Minio with persistent storage build. By BC Gov.",
+        "iconClass": "icon-hdd",
+        "openshift.io/display-name": "BC Gov Minio",
+        "tags": "bcgov,pathfinder,minio,s3,objectstore",
+        "template.openshift.io/documentation-url": "https://github.com/bcgov/eagle-minio-openshift",
+        "template.openshift.io/long-description": "This template builds a minio server image within OpenShift, backed by persistent volume storage.",
+        "template.openshift.io/provider-display-name": "Province of BC, Office of the Chief Information Officer, BC DevExchange and DevOps Branch"
+      }
+    },
+    "objects": [
+        {
+          "apiVersion": "v1",
+          "kind": "ImageStream",
+          "metadata": {
+              "creationTimestamp": null,
+              "labels": {
+                  "shared": "true"
+              },
+              "name": "rhel7"
+          },
+          "spec": {
+              "lookupPolicy": {
+                  "local": false
+              },
+              "tags": [
+                  {
+                      "from": {
+                          "kind": "DockerImage",
+                          "name": "registry.access.redhat.com/rhel7/rhel:7.5-433"
+                      },
+                      "importPolicy": {},
+                      "name": "7.5-433"
+                  }
+              ]
+          }
+      },
+      {
+        "kind": "ImageStream",
+        "apiVersion": "v1",
+        "metadata": {
+          "name": "${NAME}",
+          "creationTimestamp": null,
+          "labels": {
+            "shared": "true"
+          }
+        },
+        "spec": {
+          "lookupPolicy": {
+            "local": false
+          }
+        },
+        "status": {
+          "dockerImageRepository": ""
+        }
+      },
+      {
+        "kind": "BuildConfig",
+        "apiVersion": "v1",
+        "metadata": {
+          "name": "${NAME}${SUFFIX}",
+          "creationTimestamp": null,
+          "labels": {
+            "app": "${NAME}",
+            "buildconfig": "${NAME}"
+          }
+        },
+        "spec": {
+          "triggers": [
+            {
+              "type": "ConfigChange"
+            },
+            {
+              "type": "ImageChange",
+              "imageChange": {}
+            }
+          ],
+          "source": {
+            "type": "Git",
+            "git": {
+              "uri": "${GIT_REPO_URL}",
+              "ref": "${GIT_REF}"
+            },
+            "contextDir": "${SOURCE_CONTEXT_DIR}"
+          },
+          "strategy": {
+            "type": "Docker",
+            "dockerStrategy": {
+              "from": {
+                "kind": "ImageStreamTag",
+                "name": "rhel7:7.5-433"
+              }
+            }
+          },
+          "output": {
+            "to": {
+              "kind": "ImageStreamTag",
+              "name": "${NAME}:${OUTPUT_IMAGE_TAG}"
+            }
+          },
+          "resources": {},
+          "postCommit": {},
+          "nodeSelector": null
+        },
+        "status": {
+          "lastVersion": 0
+        }
+      }
+    ],
+    "parameters": [
+      {
+        "name": "NAME",
+        "displayName": "Name",
+        "description": "The name assigned to all objects defined in this template.",
+        "required": true,
+        "value": "eagle-minio"
+      },
+      {
+        "name": "SUFFIX",
+        "value": "-build"
+      },
+      {
+        "name": "GIT_REPO_URL",
+        "displayName": "Git Repo URL",
+        "description": "The URL to your GIT repo, don't use the this default unless your just experimenting.",
+        "required": true,
+        "value": "https://github.com/bcgov/eagle-minio-openshift"
+      },
+      {
+        "name": "GIT_REF",
+        "displayName": "Git Reference",
+        "description": "The git reference or branch.",
+        "required": true,
+        "value": "master"
+      },
+      {
+        "name": "SOURCE_CONTEXT_DIR",
+        "displayName": "Source Context Directory",
+        "description": "The source context directory.",
+        "required": true,
+        "value": "docker"
+      },
+      {
+        "name": "OUTPUT_IMAGE_TAG",
+        "displayName": "Output Image Tag",
+        "description": "The tag given to the built image.",
+        "required": true,
+        "value": "latest"
+      }
+    ]
+  }
