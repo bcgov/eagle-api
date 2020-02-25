@@ -82,7 +82,7 @@ const Utils = require('../helpers/utils');
  * @returns {array} Aggregate with the desired legislation year set
  */
  const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation) => {
-  const aggregation = addProjectLookupAggrs(projectLegislationDataKey);
+  const aggregation = addProjectLookupAggrs(null, projectLegislationDataKey);
 
   // If project legislation is missing then use the legislationDefault key on the project model
   // pop proponent if exists.
@@ -144,12 +144,14 @@ const Utils = require('../helpers/utils');
  * @param {string} dataKey Legislation year key
  * @returns {array} Aggregate that unwinds the linked properties of a project
  */
- const addProjectLookupAggrs = (dataKey) => {
+ const addProjectLookupAggrs = (aggregation, dataKey) => {
   const ceeaInvolvementField = `${dataKey}.CEAAInvolvement`;
   const eacDecisionField = `${dataKey}.eacDecision`;
   const proponentField = `${dataKey}.proponent`;
   const currentPhaseField = `${dataKey}.currentPhaseName`;
-  const aggregation = [];
+  if (aggregation === null || typeof aggregation === "undefined") {
+    aggregation = [];
+  }
 
   // CEAA Involvement lookup.
   aggregation.push(
