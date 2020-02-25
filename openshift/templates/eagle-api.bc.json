@@ -48,7 +48,13 @@
               "kind": "ImageStreamTag",
               "namespace": "${S2I_NAMESPACE}",
               "name": "nodejs:${NODEJS_VER}"
-            }
+            },
+            "env": [
+              {
+                "name": "NODE_ENV",
+                "value": "${NODE_ENV}"
+              }
+            ]
           }
         },
         "output": {
@@ -77,6 +83,16 @@
             }
           }
         ],
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "2Gi"
+          },
+          "limits": {
+            "cpu": "1",
+            "memory": "4Gi"
+          }
+        },
         "postCommit": {
           "script": "npm test"
         }
@@ -90,6 +106,12 @@
       "description": "The name assigned to all of the frontend objects defined in this template.",
       "required": true,
       "value": "eagle-api"
+    },
+    {
+      "name": "NODE_ENV",
+      "displayName": "Node Environment",
+      "description": "Environment for running node. Toggle 'production' or 'development'.",
+      "value": "production"
     },
     {
       "name": "S2I_NAMESPACE",
