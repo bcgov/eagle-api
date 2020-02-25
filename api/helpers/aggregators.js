@@ -149,7 +149,7 @@ const Utils = require('../helpers/utils');
   const eacDecisionField = `${dataKey}.eacDecision`;
   const proponentField = `${dataKey}.proponent`;
   const currentPhaseField = `${dataKey}.currentPhaseName`;
-  if (aggregation === null){
+  if (aggregation === null || typeof aggregation === "undefined") {
     aggregation = [];
   }
 
