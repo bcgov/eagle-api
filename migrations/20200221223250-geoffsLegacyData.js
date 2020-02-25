@@ -34,10 +34,11 @@ exports.up = async function(db) {
 
     console.log('Adding sortOrder attribute to all document resources...');
 
-    let updateManyResult = await p.updateMany(query, update, options)
+    p.updateMany(query, update, options)
     .then(async result => {
       console.log('Completed successfully, Updating legacy documents...');
-      return await processData(p);
+      await processData(p);
+      mClient.close();
     })
     .catch(err => { 
       console.error(`Failed to update document resources: ${err}`); 
