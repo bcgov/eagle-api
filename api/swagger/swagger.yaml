@@ -1986,6 +1986,21 @@ paths:
             type: string
             required: true
             description: "Get Group."
+          - name: sortBy
+            in: query
+            type: string
+            required: true
+            description: "Group corresponding to a project."
+          - name: pageSize
+            in: query
+            type: string
+            required: true
+            description: "Get Group."
+          - name: pageNum
+            in: query
+            type: string
+            required: true
+            description: "Get Group."
       responses:
         "200":
           description: "Success"
