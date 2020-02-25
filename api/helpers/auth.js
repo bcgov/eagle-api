@@ -81,6 +81,7 @@ function _verifySecret (currentScopes, tokenString, secret, req, callback, sendE
     if (verificationError == null &&
         // Array.isArray(currentScopes) &&
         decodedToken &&
+        decodedToken.realm_access &&
         decodedToken.realm_access.roles
     ) {
       defaultLog.info("JWT decoded:", decodedToken);
