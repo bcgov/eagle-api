@@ -1052,8 +1052,14 @@ exports.protectedPut = async function (args, res, next) {
   filteredData.proponent = projectObj.proponent;
   filteredData.currentPhaseName = projectObj.currentPhaseName;
 
-  console.log("Updating with:", filteredData);
-  console.log("--------------------------");
+  // To avoid updating the phaseHistory if the phase hasn't changed
+  if ( filteredData.phaseHistory !== null && JSON.stringify(filteredData.phaseHistory[filteredData.phaseHistory.length-1]) !== JSON.stringify(filteredData.currentPhaseName)){
+    filteredData.phaseHistory.push( filteredData.currentPhaseName );
+  }
+
+  
+  defaultLog.debug("Updating with:", filteredData);
+  defaultLog.debug("--------------------------");
 
   if (projectLegislationYear == 2018) {
     fullProjectObject.legislation_2018 = filteredData;
