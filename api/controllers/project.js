@@ -862,17 +862,15 @@ const handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, 
       // Sort
       if (sortBy && sortBy.value) {
         sort = {};
-        sortBy.value.forEach(function (value) {
-          var order_by = value.charAt(0) == '-' ? -1 : 1;
-          var sort_by = value.slice(1);
-          sort[sort_by] = order_by;
-        }, this);
+        var order_by = sortBy.value.charAt(0) == '-' ? -1 : 1;
+        var sort_by = sortBy.value.slice(1);
+        sort[sort_by] = order_by;
       }
 
       // Skip and limit
       var processedParameters = Utils.getSkipLimitParameters(pageSize, pageNum);
       skip = processedParameters.skip;
-      limit = processedParameters.limit;
+      limit = parseInt(processedParameters.limit);
 
       fields = ['_id', 'displayName', 'email', 'org', 'orgName', 'phoneNumber'];
       try {
