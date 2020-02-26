@@ -36,7 +36,7 @@ var isValidBucket = function (bucket) {
     }
   }
   return false;
-}
+};
 
 /**
  * Returns a 16-bit pseudo-random string to be used as file name for the storage.
@@ -45,7 +45,7 @@ var isValidBucket = function (bucket) {
  */
 var getRandomizedFileName = function () {
   return crypto.randomBytes(16).toString('hex');
-}
+};
 
 /**
  * Return the file extension, derived from the full file name
@@ -53,7 +53,7 @@ var getRandomizedFileName = function () {
  */
 var getFileExtension = function (fileName) {
   return fileName.match(/\.([0-9a-z]+$)/i)[1];
-}
+};
 
 /**
  * Creates a Minio bucket with the given name
@@ -62,7 +62,7 @@ var getFileExtension = function (fileName) {
  */
 var makeBucket = function (bucket) {
   return minioClient.makeBucket(bucket);
-}
+};
 
 /**
  * Checks if the provided bucket name exists on Minio
@@ -71,7 +71,7 @@ var makeBucket = function (bucket) {
  */
 var bucketExists = function (bucket) {
   return minioClient.bucketExists(bucket);
-}
+};
 
 /**
  * Save an object to Minio.
@@ -124,7 +124,7 @@ var deleteDocument = function (bucket, projectCode, fileName) {
         throw err;
       }
       return result;
-    })
+    });
 };
 exports.deleteDocument = deleteDocument;
 
@@ -160,7 +160,7 @@ var statObject = function (bucketName, objectName) {
       }
       return stat;
     });
-}
+};
 exports.statObject = statObject;
 
 /**
@@ -186,5 +186,5 @@ var asHttpRequest = {
         .then(resolve, reject);
     });
   }
-}
+};
 exports.asHttpRequest = asHttpRequest;

@@ -50,13 +50,13 @@ var getSanitizedFields = function (fields) {
       'delete'
     ], f) !== -1);
   });
-}
+};
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function (args, res) {
   res.status(200).send();
-}
+};
 
-exports.publicGet = async function (args, res, next) {
+exports.publicGet = async function (args, res) {
   defaultLog.info('Public get for comment period');
 
   // Build match query if on CommentPeriodId route
@@ -76,11 +76,11 @@ exports.publicGet = async function (args, res, next) {
       var sort_by = value.slice(1);
       // only accept certain fields
       switch (sort_by) {
-        case 'dateStarted':
-        case 'dateCompleted':
-        case 'author':
-          sort[sort_by] = order_by;
-          break;
+      case 'dateStarted':
+      case 'dateCompleted':
+      case 'author':
+        sort[sort_by] = order_by;
+        break;
       }
     }, this);
   }
@@ -107,7 +107,7 @@ exports.publicGet = async function (args, res, next) {
   }
 };
 
-exports.protectedHead = async function (args, res, next) {
+exports.protectedHead = async function (args, res) {
   defaultLog.info('Head for comment period');
 
   // Build match query if on CommentPeriodId route
@@ -150,9 +150,9 @@ exports.protectedHead = async function (args, res, next) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
-exports.protectedSummary = async function (args, res, next) {
+exports.protectedSummary = async function (args, res) {
   defaultLog.info('Head for comment period summaries');
 
   // Build match query if on CommentPeriodId route
@@ -177,11 +177,11 @@ exports.protectedSummary = async function (args, res, next) {
       'Deferred': 0,
       'Published': 0,
       'Rejected': 0
-    }
+    };
     await Promise.all(options.map(async (item) => {
       var optionQuery = {};
       _.assignIn(optionQuery, { 'eaoStatus': item, period: mongoose.Types.ObjectId(args.swagger.params.commentPeriodId.value) });
-      console.log("optionQuery:", optionQuery);
+      console.log('optionQuery:', optionQuery);
       var res = await Utils.runDataQuery('CommentPeriod',
         args.swagger.params.auth_payload.realm_access.roles,
         optionQuery,
@@ -192,23 +192,23 @@ exports.protectedSummary = async function (args, res, next) {
         null, // limit
         true); // count
       Utils.recordAction('Summary', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value ? args.swagger.params.commentPeriodId.value : null);
-      console.log("RES:", res);
+      console.log('RES:', res);
       if (res && res[0]) {
         summary[item] = res[0]['total_items'];
       }
       return summary;
     }));
 
-    console.log("sending summary:", summary);
+    console.log('sending summary:', summary);
     return Actions.sendResponse(res, 200, summary);
   } catch (e) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
 
-exports.protectedGet = async function (args, res, next) {
+exports.protectedGet = async function (args, res) {
   defaultLog.info('Getting comment period(s)');
 
   var query = {}, sort = null, skip = null, limit = null, count = false;
@@ -267,7 +267,7 @@ exports.protectedGet = async function (args, res, next) {
 };
 
 //  Create a new CommentPeriod
-exports.protectedPost = async function (args, res, next) {
+exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.period.value;
 
   defaultLog.info('Incoming new comment period:', obj);
@@ -307,7 +307,7 @@ exports.protectedPost = async function (args, res, next) {
 };
 
 // Update an existing CommentPeriod
-exports.protectedPut = async function (args, res, next) {
+exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.commentPeriodId.value;
   var obj = args.swagger.params.cp.value;
   defaultLog.info('Put comment period:', objId);
@@ -343,10 +343,10 @@ exports.protectedPut = async function (args, res, next) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
 //  Delete a new CommentPeriod
-exports.protectedDelete = async function (args, res, next) {
+exports.protectedDelete = async function (args, res) {
   var objId = args.swagger.params.commentPeriodId.value;
   defaultLog.info('Delete comment period:', objId);
 
@@ -362,7 +362,7 @@ exports.protectedDelete = async function (args, res, next) {
 };
 
 // Publish/Unpublish the CommentPeriod
-exports.protectedPublish = async function (args, res, next) {
+exports.protectedPublish = async function (args, res) {
   var objId = args.swagger.params.commentPeriodId.value;
   defaultLog.info('Publish comment period:', objId);
 
@@ -380,7 +380,7 @@ exports.protectedPublish = async function (args, res, next) {
   }
 };
 
-exports.protectedUnPublish = async function (args, res, next) {
+exports.protectedUnPublish = async function (args, res) {
   var objId = args.swagger.params.commentPeriodId.value;
   defaultLog.info('UnPublish comment period:', objId);
 

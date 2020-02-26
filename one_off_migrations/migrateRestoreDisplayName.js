@@ -1,6 +1,5 @@
 // Retrieve
 var MongoClient = require("mongodb").MongoClient;
-var fs = require("fs");
 var ObjectId = require("mongodb").ObjectID;
 
 // Connect to the db
@@ -31,19 +30,9 @@ MongoClient.connect("mongodb://localhost/epic", async function(err, client) {
 });
 
 
-async function findObject(db, object_id) {
-  return new Promise(function(resolve, reject) {
-    db.collection("epic")
-      .find({ _id: object_id })
-      .toArray()
-      .then(async function(data) {
-        resolve(data);
-      });
-  });
-}
 
 async function updateObject(db, object_id, displayName) {
-  return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve) {
     db.collection("epic")
       .updateOne({ _id: object_id },{ $set: { displayName: displayName }})
       .then(async function(data) {

@@ -1,18 +1,16 @@
-var auth = require("../helpers/auth");
-var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function (args, res) {
   res.status(200).send();
-}
+};
 
 //  Create a new Notification Project
-exports.protectedPost = async function (args, res, next) {
+exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.notificationProject.value;
-  defaultLog.info("Incoming new object:", obj);
+  defaultLog.info('Incoming new object:', obj);
 
   var NotificationProject = mongoose.model('NotificationProject');
   var notificationProject = new NotificationProject({
@@ -49,10 +47,10 @@ exports.protectedPost = async function (args, res, next) {
 };
 
 // Update an existing user
-exports.protectedPut = async function (args, res, next) {
+exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.notificationProjectId.value;
   var obj = args.swagger.params.notificationProject.value;
-  defaultLog.info("ObjectID:", args.swagger.params.notificationProjectId.value);
+  defaultLog.info('ObjectID:', args.swagger.params.notificationProjectId.value);
 
   var NotificationProject = require('mongoose').model('NotificationProject');
 
@@ -69,7 +67,7 @@ exports.protectedPut = async function (args, res, next) {
     description: obj.description ? obj.description : '',
     centroid: obj.centroid ? obj.centroid : ['0', '0'],
     read: obj.read ? obj.read : ['staff', 'sysadmin']
-  }
+  };
 
   if (args.swagger.params.publish && args.swagger.params.publish.value) {
     if (!notificationProject.read.includes('public')) {
@@ -83,7 +81,7 @@ exports.protectedPut = async function (args, res, next) {
     }
   }
 
-  defaultLog.info("Incoming updated object:", notificationProject);
+  defaultLog.info('Incoming updated object:', notificationProject);
 
   try {
     var np = await NotificationProject.findOneAndUpdate({ _id: objId }, notificationProject, { upsert: false, new: true }).exec();
@@ -94,4 +92,4 @@ exports.protectedPut = async function (args, res, next) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};

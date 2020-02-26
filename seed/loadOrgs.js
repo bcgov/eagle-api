@@ -45,7 +45,7 @@ module.exports = function () {
 		};
 
 		// build list of entries
-		orglist.forEach(function (item, index) {
+		orglist.forEach(function (item) {
 			entries.push(item);
 		});
 
