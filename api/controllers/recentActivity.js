@@ -21,12 +21,12 @@ var getSanitizedFields = function (fields) {
       'headline'
     ], f) !== -1);
   });
-}
-exports.protectedOptions = function (args, res, rest) {
+};
+exports.protectedOptions = function (args, res) {
   res.status(200).send();
-}
+};
 
-exports.publicGet = async function (args, res, next) {
+exports.publicGet = async function (args, res) {
   var fields = ['_schemaName',
     'dateUpdated',
     'dateAdded',
@@ -96,22 +96,22 @@ exports.publicGet = async function (args, res, next) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
-exports.protectedDelete = function (args, res, next) {
-  defaultLog.info("Deleting a RecentActivity(s)");
-  defaultLog.info("args.swagger.params:", args.swagger.operation["x-security-scopes"]);
+exports.protectedDelete = function (args, res) {
+  defaultLog.info('Deleting a RecentActivity(s)');
+  defaultLog.info('args.swagger.params:', args.swagger.operation['x-security-scopes']);
 
   var RecentActivity = mongoose.model('RecentActivity');
   var query = {};
   // Build match query if on recentActivityId route
   if (args.swagger.params.recentActivityId) {
-    query = Utils.buildQuery("_id", args.swagger.params.recentActivityId.value, query);
+    query = Utils.buildQuery('_id', args.swagger.params.recentActivityId.value, query);
   }
 
   if (!Object.keys(query).length > 0) {
     // Don't allow unilateral delete.
-    return Actions.sendResponse(res, 400, "Can't delete entire collection.");
+    return Actions.sendResponse(res, 400, 'Can\'t delete entire collection.');
   }
 
   // Straight delete, don't isDelete=true them.
@@ -123,12 +123,12 @@ exports.protectedDelete = function (args, res, next) {
       return Actions.sendResponse(res, 400, err);
     }
   });
-}
+};
 
 //  Create a new RecentActivity
-exports.protectedPost = async function (args, res, next) {
+exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.recentActivity.value;
-  defaultLog.info("Incoming new object:", obj);
+  defaultLog.info('Incoming new object:', obj);
 
   var RecentActivity = mongoose.model('RecentActivity');
   delete obj._id;
@@ -157,13 +157,13 @@ exports.protectedPost = async function (args, res, next) {
 };
 
 // Update an existing RecentActivity
-exports.protectedPut = async function (args, res, next) {
+exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.recentActivityId.value;
-  defaultLog.info("ObjectID:", args.swagger.params.recentActivityId.value);
+  defaultLog.info('ObjectID:', args.swagger.params.recentActivityId.value);
 
   var obj = args.swagger.params.RecentActivityObject.value;
   // Strip security tags - these will not be updated on this route.
-  defaultLog.info("Incoming updated object:", obj);
+  defaultLog.info('Incoming updated object:', obj);
   if (obj.active) {
     obj.read = ['sysadmin', 'staff', 'public'];
   } else {
@@ -185,4 +185,4 @@ exports.protectedPut = async function (args, res, next) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};

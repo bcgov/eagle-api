@@ -1,17 +1,16 @@
-"use strict";
+'use strict';
 
-var app           = require("express")();
+var app           = require('express')();
 var fs            = require('fs');
-var uploadDir     = process.env.UPLOAD_DIRECTORY || "./uploads/";
-var hostname      = process.env.API_HOSTNAME || "localhost:3000";
-var swaggerTools  = require("swagger-tools");
-var YAML          = require("yamljs");
-var passport      = require("passport");
-var auth          = require("./api/helpers/auth");
-var swaggerConfig = YAML.load("./api/swagger/swagger.yaml");
+var uploadDir     = process.env.UPLOAD_DIRECTORY || './uploads/';
+var hostname      = process.env.API_HOSTNAME || 'localhost:3000';
+var swaggerTools  = require('swagger-tools');
+var YAML          = require('yamljs');
+var auth          = require('./api/helpers/auth');
+var swaggerConfig = YAML.load('./api/swagger/swagger.yaml');
 var winston       = require('winston');
 var bodyParser    = require('body-parser');
-var app_helper    = require("./app_helper");
+var app_helper    = require('./app_helper');
 
 var dbConnection  = 'mongodb://'
                     + (process.env.MONGODB_SERVICE_HOST || process.env.DB_1_PORT_27017_TCP_ADDR || 'localhost')
@@ -30,18 +29,18 @@ var express_server;
 
 // Logging middleware
 winston.loggers.add('default', {
-    console: {
-        colorize: 'true',
-        handleExceptions: true,
-        json: false,
-        level: 'silly',
-        label: 'default',
-    }
+  console: {
+    colorize: 'true',
+    handleExceptions: true,
+    json: false,
+    level: 'silly',
+    label: 'default',
+  }
 });
 var defaultLog = winston.loggers.get('default');
 
 // Increase postbody sizing
-app.use(bodyParser.json({limit: '10mb', extended: true}))
+app.use(bodyParser.json({limit: '10mb', extended: true}));
 app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
 
 // Enable CORS
@@ -75,9 +74,9 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
       Bearer: auth.verifyToken
     })
   );
-  
+
   var routerConfig = {
-    controllers: "./api/controllers",
+    controllers: './api/controllers',
     useStubs: false
   };
 
@@ -88,18 +87,18 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
   // Make sure uploads directory exists
   try {
     if (!fs.existsSync(uploadDir)){
-        fs.mkdirSync(uploadDir);
+      fs.mkdirSync(uploadDir);
     }
   } catch (e) {
     // Fall through - uploads will continue to fail until this is resolved locally.
-    defaultLog.info("Couldn't create upload folder:", e);
+    defaultLog.info('Couldn\'t create upload folder:', e);
   }
   app_helper.loadMongoose(dbConnection, credentials, defaultLog).then(() => {
     express_server = app.listen(api_default_port, '0.0.0.0', function() {
-      defaultLog.info("Started server on port " + api_default_port);
+      defaultLog.info('Started server on port ' + api_default_port);
     });
   }).catch(function (err) {
-    defaultLog.info("err:", err);
+    defaultLog.info('err:', err);
   });
 });
 
@@ -107,8 +106,8 @@ function shutdown() {
   if (express_server) {
     console.log('Shutting down gracefully');
     express_server.close(() => {
-        console.log('Closed out remaining connections');
-        process.exit(0);
+      console.log('Closed out remaining connections');
+      process.exit(0);
     });
   }
 }

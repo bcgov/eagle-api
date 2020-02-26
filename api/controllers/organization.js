@@ -15,18 +15,18 @@ var getSanitizedFields = function (fields) {
   return _.remove(fields, function (f) {
     return (_.indexOf(tagList, f) !== -1);
   });
-}
+};
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function (args, res) {
   res.status(200).send();
-}
+};
 
-exports.publicGet = async function (args, res, next) {
+exports.publicGet = async function (args, res) {
   var sort = {};
   var query = {};
 
   if (args.swagger.params.orgId && args.swagger.params.orgId.value) {
-    query = Utils.buildQuery("_id", args.swagger.params.orgId.value, query);
+    query = Utils.buildQuery('_id', args.swagger.params.orgId.value, query);
   }
   if (args.swagger.params.companyType && args.swagger.params.companyType.value) {
     _.assignIn(query, { companyType: args.swagger.params.companyType.value });
@@ -40,27 +40,27 @@ exports.publicGet = async function (args, res, next) {
   }
 
   // Set query type
-  _.assignIn(query, { "_schemaName": "Organization" });
+  _.assignIn(query, { '_schemaName': 'Organization' });
 
   var data = await Utils.runDataQuery('Organization',
-      ['public'],
-      query,
-      getSanitizedFields(args.swagger.params.fields.value), // Fields
-      null, // sort warmup
-      sort, // sort
-      null, // skip
-      null, // limit
-      false) // count
+    ['public'],
+    query,
+    getSanitizedFields(args.swagger.params.fields.value), // Fields
+    null, // sort warmup
+    sort, // sort
+    null, // skip
+    null, // limit
+    false); // count
   Utils.recordAction('Get', 'Organization', 'public', args.swagger.params.orgId && args.swagger.params.orgId.value ? args.swagger.params.orgId.value : null);
   return Actions.sendResponse(res, 200, data);
 };
 
-exports.protectedGet = async function (args, res, next) {
+exports.protectedGet = async function (args, res) {
   var sort = {};
   var query = {};
 
   if (args.swagger.params.orgId && args.swagger.params.orgId.value) {
-    query = Utils.buildQuery("_id", args.swagger.params.orgId.value, query);
+    query = Utils.buildQuery('_id', args.swagger.params.orgId.value, query);
   }
   if (args.swagger.params.companyType && args.swagger.params.companyType.value) {
     _.assignIn(query, { companyType: args.swagger.params.companyType.value });
@@ -74,25 +74,25 @@ exports.protectedGet = async function (args, res, next) {
   }
 
   // Set query type
-  _.assignIn(query, { "_schemaName": "Organization" });
+  _.assignIn(query, { '_schemaName': 'Organization' });
 
   var data = await Utils.runDataQuery('Organization',
-      args.swagger.params.auth_payload.realm_access.roles,
-      query,
-      getSanitizedFields(args.swagger.params.fields.value), // Fields
-      null, // sort warmup
-      sort, // sort
-      null, // skip
-      null, // limit
-      false) // count
+    args.swagger.params.auth_payload.realm_access.roles,
+    query,
+    getSanitizedFields(args.swagger.params.fields.value), // Fields
+    null, // sort warmup
+    sort, // sort
+    null, // skip
+    null, // limit
+    false); // count
   Utils.recordAction('Get', 'Organization', args.swagger.params.auth_payload.preferred_username, args.swagger.params.orgId && args.swagger.params.orgId.value ? args.swagger.params.orgId.value : null);
   return Actions.sendResponse(res, 200, data);
 };
 
 //  Create a new organization
-exports.protectedPost = async function (args, res, next) {
+exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.org.value;
-  defaultLog.info("Incoming new object:", obj);
+  defaultLog.info('Incoming new object:', obj);
 
   var Organization = mongoose.model('Organization');
   var organization = new Organization({
@@ -130,10 +130,10 @@ exports.protectedPost = async function (args, res, next) {
 };
 
 // Update an existing organization
-exports.protectedPut = async function (args, res, next) {
+exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.orgId.value;
   var obj = args.swagger.params.org.value;
-  defaultLog.info("ObjectID:", args.swagger.params.orgId.value);
+  defaultLog.info('ObjectID:', args.swagger.params.orgId.value);
 
   var Organization = mongoose.model('Organization');
   var User = mongoose.model('User');
@@ -156,7 +156,7 @@ exports.protectedPut = async function (args, res, next) {
     company: obj.company ? obj.company : ''
   };
 
-  defaultLog.info("Incoming updated object:", organization);
+  defaultLog.info('Incoming updated object:', organization);
 
   try {
     var org = await Organization.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).exec();
@@ -170,18 +170,18 @@ exports.protectedPut = async function (args, res, next) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};
 
 // Publish/Unpublish the organization
-exports.protectedPublish = function (args, res, next) {
+exports.protectedPublish = function (args, res) {
   var objId = args.swagger.params.orgId.value;
-  defaultLog.info("Publish Organization:", objId);
+  defaultLog.info('Publish Organization:', objId);
 
   var Organization = require('mongoose').model('Organization');
   Organization.findOne({ _id: objId }, function (err, o) {
     if (o) {
       Utils.recordAction('Publish', 'Organization', args.swagger.params.auth_payload.preferred_username, objId);
-      defaultLog.info("o:", o);
+      defaultLog.info('o:', o);
       // Add public to the tag of this obj.
       Actions.publish(o)
         .then(function (published) {
@@ -192,19 +192,19 @@ exports.protectedPublish = function (args, res, next) {
           return Actions.sendResponse(res, err.code, err);
         });
     } else {
-      defaultLog.info("Couldn't find that object!");
+      defaultLog.info('Couldn\'t find that object!');
       return Actions.sendResponse(res, 404, {});
     }
   });
 };
-exports.protectedUnPublish = function (args, res, next) {
+exports.protectedUnPublish = function (args, res) {
   var objId = args.swagger.params.orgId.value;
-  defaultLog.info("UnPublish Organization:", objId);
+  defaultLog.info('UnPublish Organization:', objId);
 
   var Organization = require('mongoose').model('Organization');
   Organization.findOne({ _id: objId }, function (err, o) {
     if (o) {
-      defaultLog.info("o:", o);
+      defaultLog.info('o:', o);
 
       // Remove public to the tag of this obj.
       Actions.unPublish(o)
@@ -217,7 +217,7 @@ exports.protectedUnPublish = function (args, res, next) {
           return Actions.sendResponse(res, err.code, err);
         });
     } else {
-      defaultLog.info("Couldn't find that object!");
+      defaultLog.info('Couldn\'t find that object!');
       return Actions.sendResponse(res, 404, {});
     }
   });

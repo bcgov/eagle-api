@@ -1,5 +1,5 @@
 'use strict';
-const Promise = require("bluebird");
+const Promise = require('bluebird');
 Promise.longStackTraces();
 const { hashElement } = require('folder-hash');
 const _ = require('lodash');
@@ -10,51 +10,51 @@ const stringify_replacer = null;
 const stringify_space = 2;
 
 const options = {
-    folders: { 
-        include: ['./api/helpers/models', './api/test/generate-data/factories']
-        , exclude: ['.*', 'controllers', 'fixtures'] },
-    files: { 
-        include: ['*.js']
-        , exclude: ['*_helper.js', '*.json'] }
+  folders: {
+    include: ['./api/helpers/models', './api/test/generate-data/factories']
+    , exclude: ['.*', 'controllers', 'fixtures'] },
+  files: {
+    include: ['*.js']
+    , exclude: ['*_helper.js', '*.json'] }
 };
 
 function getLastGoodHashsetFromFile() {
-    return new Promise(resolve => {
-      let filename = './api/test/generate-data/model_change_watcher_hash.json';
-      let fileContents = "";
-      fs.readFileSync(filename).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; })
-      resolve(fileContents);
-    });   
-  };
+  return new Promise(resolve => {
+    let filename = './api/test/generate-data/model_change_watcher_hash.json';
+    let fileContents = '';
+    fs.readFileSync(filename).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; });
+    resolve(fileContents);
+  });
+}
 
 function filterRelevantFolders(apiFolderJsonObj) {
-    let models = "";
-    let factories = "";
-    apiFolderJsonObj.children.forEach(function(apiSubfolder) {
-        switch(apiSubfolder.name) {
-            case "helpers":
-                apiSubfolder.children.forEach(function(helpersSubfolder) {
-                    if ("models" == helpersSubfolder.name) {
-                        models = helpersSubfolder.children;
-                    }
-                });
-              break;
-            case "test":
-                apiSubfolder.children.forEach(function(testSubfolder) {
-                    if ("generate-data" == testSubfolder.name) {
-                        testSubfolder.children.forEach(generateDataSub => {
-                            if ("factories" == generateDataSub.name) {
-                                factories = generateDataSub.children;
-                            }
-                        })
-                    }
-                });
-              break;
-            default:
+  let models = '';
+  let factories = '';
+  apiFolderJsonObj.children.forEach(function(apiSubfolder) {
+    switch(apiSubfolder.name) {
+    case 'helpers':
+      apiSubfolder.children.forEach(function(helpersSubfolder) {
+        if ('models' == helpersSubfolder.name) {
+          models = helpersSubfolder.children;
+        }
+      });
+      break;
+    case 'test':
+      apiSubfolder.children.forEach(function(testSubfolder) {
+        if ('generate-data' == testSubfolder.name) {
+          testSubfolder.children.forEach(generateDataSub => {
+            if ('factories' == generateDataSub.name) {
+              factories = generateDataSub.children;
+            }
+          });
+        }
+      });
+      break;
+    default:
                 // try next
-          }
-    });
-    return JSON.stringify({ models: models, factories: factories }, stringify_replacer, stringify_space);
+    }
+  });
+  return JSON.stringify({ models: models, factories: factories }, stringify_replacer, stringify_space);
 }
 
 
@@ -80,39 +80,39 @@ const hintMsg = `
 */`;
 
 describe('Catch Model Changes not done in Factories', () => {
-    describe('Check Models & Factories', () => {
-        test('Detect Changes', done => {
-            getLastGoodHashsetFromFile().then(lastGoodApiFolderHashset => {
-                hashElement('./api', options).then(currentApiFolderHashset => {
-                    currentApiFolderHashset = filterRelevantFolders(currentApiFolderHashset);
-                    expect.extend({
-                      toEqual(received, expected) {
-                        const pass = _.isEqual(received, expected);
-                        const message = pass
-                        ? () => this.utils.matcherHint('toEqual', undefined, undefined)
-                        : () => {
-                            const diffString = diff(expected, received, {
-                                expand: this.expand,
-                            });
-                            return (
-                                "\n\n" + hintMsg + "\n\n" +
-                                "************** Current Hashset Start **************\n" +
-                                currentApiFolderHashset + "\n" +
-                                "************** Current Hashset End **************\n" +
-                                "Difference:\n\n" + diffString);
-                            };
-                        return {actual: received, message, pass};
-                      },
-                    });
-                    
-                    let currentHashset = JSON.parse(currentApiFolderHashset);
-                    let lastGoodHashset = JSON.parse(lastGoodApiFolderHashset);
-                    expect(currentHashset.models).toEqual(lastGoodHashset.models);
-                    expect(currentHashset.factories).toEqual(lastGoodHashset.factories);
-                    done();
-                })
-            });
+  describe('Check Models & Factories', () => {
+    test('Detect Changes', done => {
+      getLastGoodHashsetFromFile().then(lastGoodApiFolderHashset => {
+        hashElement('./api', options).then(currentApiFolderHashset => {
+          currentApiFolderHashset = filterRelevantFolders(currentApiFolderHashset);
+          expect.extend({
+            toEqual(received, expected) {
+              const pass = _.isEqual(received, expected);
+              const message = pass
+                ? () => this.utils.matcherHint('toEqual', undefined, undefined)
+                : () => {
+                  const diffString = diff(expected, received, {
+                    expand: this.expand,
+                  });
+                  return (
+                    '\n\n' + hintMsg + '\n\n' +
+                                '************** Current Hashset Start **************\n' +
+                                currentApiFolderHashset + '\n' +
+                                '************** Current Hashset End **************\n' +
+                                'Difference:\n\n' + diffString);
+                };
+              return {actual: received, message, pass};
+            },
+          });
+
+          let currentHashset = JSON.parse(currentApiFolderHashset);
+          let lastGoodHashset = JSON.parse(lastGoodApiFolderHashset);
+          expect(currentHashset.models).toEqual(lastGoodHashset.models);
+          expect(currentHashset.factories).toEqual(lastGoodHashset.factories);
+          done();
         });
+      });
     });
+  });
 });
 

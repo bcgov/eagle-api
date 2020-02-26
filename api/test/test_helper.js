@@ -14,7 +14,7 @@ const app = express();
 const defaultNumberOfProjects = 1;
 
 let mongoServer;
-let mongoUri = "";  // not initializing to localhost here on purpose - would rather error out than corrupt a persistent db
+let mongoUri = '';  // not initializing to localhost here on purpose - would rather error out than corrupt a persistent db
 mongoose.Promise = global.Promise;
 setupAppServer();
 
@@ -62,7 +62,7 @@ function setupAppServer() {
 }
 
 function checkMongoUri() {
-  if ("" == mongoUri) throw "Mongo URI is not set";
+  if ('' == mongoUri) throw 'Mongo URI is not set';
 }
 
 
@@ -70,15 +70,15 @@ function getDataGenerationSettings() {
   let filepath = '/tmp/generate.config';
   if (fs.existsSync(filepath)){
     return new Promise(resolve => {
-      let fileContents = "";
-      fs.readFileSync(filepath).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; })
+      let fileContents = '';
+      fs.readFileSync(filepath).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; });
       let jsonObj = JSON.parse(fileContents);
       jsonObj.projects = Number(jsonObj.projects);
-      jsonObj.save_to_persistent_mongo = ("Saved" == jsonObj.data_mode);
-      jsonObj.generate_consistent_data = ("Static" == jsonObj.seed_mode);
-      jsonObj.generate = ("true" == jsonObj.generate);
+      jsonObj.save_to_persistent_mongo = ('Saved' == jsonObj.data_mode);
+      jsonObj.generate_consistent_data = ('Static' == jsonObj.seed_mode);
+      jsonObj.generate = ('true' == jsonObj.generate);
       resolve(jsonObj);
-    });   
+    });
   } else {
     return new Promise(resolve => {
       let jsonObj = {
@@ -88,9 +88,9 @@ function getDataGenerationSettings() {
         generate_consistent_data: true,
       };
       resolve(jsonObj);
-    });   
+    });
   }
-};
+}
 
 let dataGenerationSettings = getDataGenerationSettings();
 
@@ -103,7 +103,7 @@ function createSwaggerParams(fieldNames, additionalValues = {}, username = null)
         'x-security-scopes': ['sysadmin', 'public']
       }
     }
-  }
+  };
   return swaggerObject;
 }
 
@@ -113,7 +113,7 @@ function createPublicSwaggerParams(fieldNames, additionalValues = {}) {
     swagger: {
       params: _.merge(defaultParams, additionalValues)
     }
-  }
+  };
   return swaggerObject;
 }
 
@@ -158,7 +158,7 @@ function createSwaggerBodyObj(paramName, bodyObj) {
 }
 
 function buildParams(nameValueMapping) {
-  let paramObj = {}
+  let paramObj = {};
   _.mapKeys(nameValueMapping, function(value, key) {
     paramObj[key] = { value: value };
   });
@@ -169,11 +169,11 @@ async function mongooseConnect() {
   if (!(mongoose.connection && mongoose.connection.db)) {
     let genSettings = await dataGenerationSettings;
     if (genSettings.save_to_persistent_mongo) {
-      mongoUri = "mongodb://localhost/epic";
+      mongoUri = 'mongodb://localhost/epic';
     } else {
       if (mongoServer) {
-        mongoUri = await mongoServer.getConnectionString()
-      };
+        mongoUri = await mongoServer.getConnectionString();
+      }
     }
     checkMongoUri();
     await mongoose.connect(mongoUri, mongooseOpts, (err) => {
@@ -181,14 +181,14 @@ async function mongooseConnect() {
     });
     console.log(mongoUri);
   }
-};
+}
 
 async function checkMigrations(callback) {
   checkMongoUri();
   MongoClient.connect(mongoUri, function(err, db) {
     if (err) console.error(err);
-    var dbo = db.db("epic");
-    dbo.collection("migrations").countDocuments({}, function(err, numOfDocs){
+    var dbo = db.db('epic');
+    dbo.collection('migrations').countDocuments({}, function(err, numOfDocs){
       if (err) console.error(err);
       db.close();
       callback(numOfDocs);
@@ -199,7 +199,7 @@ async function checkMigrations(callback) {
 async function runMigrations(migrationCount) {
   if (0 < migrationCount) return;
   checkMongoUri();
-  await exec("./node_modules/db-migrate/bin/db-migrate up", function(err, stdout, stderr) {
+  await exec('./node_modules/db-migrate/bin/db-migrate up', function(err) {
     if (err) console.error(err);
   });
 }

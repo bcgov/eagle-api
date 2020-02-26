@@ -7,11 +7,11 @@ const Utils = require('../helpers/utils');
 
 /**
  * Creates an aggregation with the default project year set as the root.
- * 
+ *
  * @param {boolean} projectOnly Flag that indicates if the project should be set as root.
  * @returns {array} Aggregate with the default year set.
  */
- const setProjectDefault = (projectOnly) => {
+const setProjectDefault = (projectOnly) => {
   const aggregation = [];
 
   if (projectOnly) {
@@ -19,23 +19,23 @@ const Utils = require('../helpers/utils');
     aggregation.push(
       {
         $addFields: {
-          "default": {
+          'default': {
             $switch: {
               branches: [
-                { 
-                  case: { $eq: [ "$currentLegislationYear", 'legislation_1996' ]},
-                  then: "$legislation_1996"
+                {
+                  case: { $eq: [ '$currentLegislationYear', 'legislation_1996' ]},
+                  then: '$legislation_1996'
                 },
                 {
-                  case: { $eq: [ "$currentLegislationYear", 'legislation_2002' ]},
-                  then: "$legislation_2002"
+                  case: { $eq: [ '$currentLegislationYear', 'legislation_2002' ]},
+                  then: '$legislation_2002'
                 },
                 {
-                  case: { $eq: [ "$currentLegislationYear", 'legislation_2018' ]},
-                  then: "$legislation_2018"
+                  case: { $eq: [ '$currentLegislationYear', 'legislation_2018' ]},
+                  then: '$legislation_2018'
                 }
               ],
-              default: "$legislation_2002"
+              default: '$legislation_2002'
             }
           }
         }
@@ -48,20 +48,20 @@ const Utils = require('../helpers/utils');
           'project.default': {
             $switch: {
               branches: [
-                { 
-                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_1996' ]},
-                  then: "$project.legislation_1996"
+                {
+                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_1996' ]},
+                  then: '$project.legislation_1996'
                 },
                 {
-                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2002' ]},
-                  then: "$project.legislation_2002"
+                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_2002' ]},
+                  then: '$project.legislation_2002'
                 },
                 {
-                  case: { $eq: [ "$project.currentLegislationYear", 'legislation_2018' ]},
-                  then: "$project.legislation_2018"
+                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_2018' ]},
+                  then: '$project.legislation_2018'
                 }
               //TODO: watch out for the default case. If we hit this then we will have empty projects
-              ], default: "$project.legislation_2002"
+              ], default: '$project.legislation_2002'
             }
           }
         }
@@ -75,33 +75,33 @@ const Utils = require('../helpers/utils');
 
 /**
  * Creates an aggregate of lookups for the desired legislation year.
- * 
+ *
  * @param {string} projectLegislationDataKey Legislation year key
  * @param {string} projectLegislationDataIdKey Legislation year key with ID
  * @param {string} projectLegislation Desired project year
  * @returns {array} Aggregate with the desired legislation year set
  */
- const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation) => {
+const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKey, projectLegislation) => {
   const aggregation = addProjectLookupAggrs(null, projectLegislationDataKey);
 
   // If project legislation is missing then use the legislationDefault key on the project model
   // pop proponent if exists.
-  if (!projectLegislation || projectLegislation == "default") {
+  if (!projectLegislation || projectLegislation == 'default') {
     aggregation.push(
       {
         '$addFields': {
           [projectLegislationDataIdKey]: '$_id',
-          [projectLegislationDataKey + ".read"]: "$read",
-          [projectLegislationDataKey + ".pins"]: "$pins",
-          [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory",
-          [projectLegislationDataKey + ".pinsRead"]: "$pinsRead"
+          [projectLegislationDataKey + '.read']: '$read',
+          [projectLegislationDataKey + '.pins']: '$pins',
+          [projectLegislationDataKey + '.pinsHistory']: '$pinsHistory',
+          [projectLegislationDataKey + '.pinsRead']: '$pinsRead'
         }
       }
     );
-    
+
     aggregation.push(
       {
-        "$replaceRoot": { newRoot:  "$" + projectLegislationDataKey }
+        '$replaceRoot': { newRoot:  '$' + projectLegislationDataKey }
       }
     );
   } else {
@@ -109,28 +109,28 @@ const Utils = require('../helpers/utils');
       {
         '$addFields': {
           [projectLegislationDataIdKey]: '$_id',
-          [projectLegislationDataKey + ".read"]: "$read",
-          [projectLegislationDataKey + ".pins"]: "$pins",
-          [projectLegislationDataKey + ".pinsHistory"]: "$pinsHistory"
+          [projectLegislationDataKey + '.read']: '$read',
+          [projectLegislationDataKey + '.pins']: '$pins',
+          [projectLegislationDataKey + '.pinsHistory']: '$pinsHistory'
         }
       }
     );
 
     aggregation.push(
       {
-        "$addFields": {
-          "project": { "$mergeObjects": ["$project",  "$" + projectLegislationDataKey]},
-       }
+        '$addFields': {
+          'project': { '$mergeObjects': ['$project',  '$' + projectLegislationDataKey]},
+        }
       }
     );
 
     //Null out the projectLegislationYear
     aggregation.push({
-      "$project": {["project.legislation_" + projectLegislation]: 0 }
+      '$project': {['project.legislation_' + projectLegislation]: 0 }
     });
 
     aggregation.push({
-      "$project": {[projectLegislationDataKey]: 0 }
+      '$project': {[projectLegislationDataKey]: 0 }
     });
   }
 
@@ -140,11 +140,11 @@ const Utils = require('../helpers/utils');
 
 /**
  * Creates an aggregate of the main fields that need to have a lookup occur on them.
- * 
+ *
  * @param {string} dataKey Legislation year key
  * @returns {array} Aggregate that unwinds the linked properties of a project
  */
- const addProjectLookupAggrs = (aggregation, dataKey) => {
+const addProjectLookupAggrs = (aggregation, dataKey) => {
   const ceeaInvolvementField = `${dataKey}.CEAAInvolvement`;
   const eacDecisionField = `${dataKey}.eacDecision`;
   const proponentField = `${dataKey}.proponent`;
@@ -220,11 +220,11 @@ const generateExpArray = async (field, roles, schemaName) => {
   const expArray = [];
   if (field) {
     const queryString = qs.parse(field);
-    console.log("queryString:", queryString);
+    console.log('queryString:', queryString);
 
     await Promise.all(Object.keys(queryString).map(async item => {
       let entry = queryString[item];
-      console.log("item:", item, entry);
+      console.log('item:', item, entry);
       const orArray = [];
 
       if (item === 'pcp') {
@@ -237,7 +237,7 @@ const generateExpArray = async (field, roles, schemaName) => {
             entry.map(element => {
               orArray.push(getConvertedValue(field, decodeURIComponent(element)));
             });
-          })
+          });
         } else {
           entry.map(element => {
             return orArray.push(getConvertedValue(item, decodeURIComponent(element)));
@@ -246,40 +246,40 @@ const generateExpArray = async (field, roles, schemaName) => {
 
         expArray.push({ $or: orArray });
       } else {
-        let fields = []
+        let fields = [];
         if (schemaName === constants.PROJECT) {
           fields = handleProjectTerms(item);
         } else {
-          fields.push(item)
+          fields.push(item);
         }
 
         switch (item) {
-          case 'decisionDateStart':
+        case 'decisionDateStart':
+          for(let field of fields) {
+            handleDateStartItem(orArray, field, decodeURIComponent(entry));
+          }
+          break;
+        case 'decisionDateEnd':
+          for(let field of fields) {
+            handleDateEndItem(orArray, field, decodeURIComponent(entry));
+          }
+          break;
+        case 'datePostedStart':
+          handleDateStartItem(orArray, ['datePosted'], decodeURIComponent(entry));
+          break;
+        case 'datePostedEnd':
+          handleDateEndItem(orArray, ['datePosted'], decodeURIComponent(entry));
+          break;
+        default:
+          if (schemaName === constants.PROJECT) {
             for(let field of fields) {
-              handleDateStartItem(orArray, field, decodeURIComponent(entry));
+              orArray.push(getConvertedValue(field, decodeURIComponent(entry)));
             }
             break;
-          case 'decisionDateEnd':
-            for(let field of fields) {
-              handleDateEndItem(orArray, field, decodeURIComponent(entry));
-            }
+          } else {
+            orArray.push(getConvertedValue(fields[0], decodeURIComponent(entry)));
             break;
-          case 'datePostedStart':
-            handleDateStartItem(orArray, ['datePosted'], decodeURIComponent(entry));
-            break;
-          case 'datePostedEnd':
-            handleDateEndItem(orArray, ['datePosted'], decodeURIComponent(entry));
-            break;
-          default:
-            if (schemaName === constants.PROJECT) {
-              for(let field of fields) {
-                orArray.push(getConvertedValue(field, decodeURIComponent(entry)));
-              }
-              break;
-            } else {
-              orArray.push(getConvertedValue(fields[0], decodeURIComponent(entry)));
-              break;
-            }
+          }
         }
 
         expArray.push({ $or: orArray });
@@ -288,7 +288,7 @@ const generateExpArray = async (field, roles, schemaName) => {
     }));
   }
 
-  console.log("expArray:", expArray);
+  console.log('expArray:', expArray);
   return expArray;
 };
 
@@ -311,7 +311,7 @@ const handleProjectTerms = (item) => {
   }
 
   return legislation_items;
-}
+};
 
 const getConvertedValue = (item, entry) => {
   if (isNaN(entry)) {
@@ -365,37 +365,37 @@ const getPCPValue = async (roles, entry) => {
   const in7days = new Date();
 
   switch (entry) {
-    case 'pending':
-      in7days.setDate(now.getDate() + 7);
+  case 'pending':
+    in7days.setDate(now.getDate() + 7);
 
-      query = {
-        _schemaName: constants.COMMENT_PERIOD,
-        $and: [
-          { dateStarted: { $gt: now } },
-          { dateStarted: { $lte: in7days } }
-        ]
-      };
-      break;
+    query = {
+      _schemaName: constants.COMMENT_PERIOD,
+      $and: [
+        { dateStarted: { $gt: now } },
+        { dateStarted: { $lte: in7days } }
+      ]
+    };
+    break;
 
-    case 'open':
-      query = {
-        _schemaName: constants.COMMENT_PERIOD,
-        $and: [
-          { dateStarted: { $lte: now } },
-          { dateCompleted: { $gt: now } }
-        ]
-      };
-      break;
+  case 'open':
+    query = {
+      _schemaName: constants.COMMENT_PERIOD,
+      $and: [
+        { dateStarted: { $lte: now } },
+        { dateCompleted: { $gt: now } }
+      ]
+    };
+    break;
 
-    case 'closed':
-      query = {
-        _schemaName: constants.COMMENT_PERIOD,
-        dateCompleted: { $lt: now }
-      };
-      break;
+  case 'closed':
+    query = {
+      _schemaName: constants.COMMENT_PERIOD,
+      dateCompleted: { $lt: now }
+    };
+    break;
 
-    default:
-      console.log('Unknown PCP entry');
+  default:
+    console.log('Unknown PCP entry');
   }
 
   var pcp = {};

@@ -41,7 +41,7 @@ module.exports = function () {
             });
         };
 
-        var doApplWork = function (item, query) {
+        var doApplWork = function (item) {
             return new Promise(function (resolve, reject) {
                 Application.findOne({ name: item.name }, function (err, res) {
                     if (res === null) {
@@ -60,7 +60,7 @@ module.exports = function () {
         };
 
         // build list of entries
-        applist.forEach(function (item, index) {
+        applist.forEach(function (item) {
             entries.push(item);
         });
 
