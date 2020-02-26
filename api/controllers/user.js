@@ -1,18 +1,17 @@
-var auth = require("../helpers/auth");
-var _ = require('lodash');
+var auth = require('../helpers/auth');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function (args, res) {
   res.status(200).send();
-}
+};
 
 //  Create a new user
-exports.protectedPost = async function (args, res, next) {
+exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.user.value;
-  defaultLog.info("Incoming new object:", obj);
+  defaultLog.info('Incoming new object:', obj);
 
   var User = mongoose.model('User');
   var user = new User({
@@ -56,10 +55,10 @@ exports.protectedPost = async function (args, res, next) {
 };
 
 // Update an existing user
-exports.protectedPut = async function (args, res, next) {
+exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.userId.value;
   var obj = args.swagger.params.user.value;
-  defaultLog.info("ObjectID:", args.swagger.params.userId.value);
+  defaultLog.info('ObjectID:', args.swagger.params.userId.value);
 
   var User = require('mongoose').model('User');
 
@@ -84,11 +83,11 @@ exports.protectedPut = async function (args, res, next) {
     country: obj.country ? obj.country : '',
     postalCode: obj.postalCode ? obj.postalCode : '',
     notes: obj.notes ? obj.notes : ''
-  }
+  };
 
   user.read = user.orgName === 'Environmental Assessment Office' ? ['staff', 'sysadmin', 'public'] : ['staff', 'sysadmin'];
 
-  defaultLog.info("Incoming updated object:", user);
+  defaultLog.info('Incoming updated object:', user);
 
   try {
     var u = await User.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).exec();
@@ -99,4 +98,4 @@ exports.protectedPut = async function (args, res, next) {
     defaultLog.info('Error:', e);
     return Actions.sendResponse(res, 400, e);
   }
-}
+};

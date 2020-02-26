@@ -41,7 +41,7 @@ module.exports = function () {
             });
         };
 
-        var doDocWork = function (item, query) {
+        var doDocWork = function (item) {
             return new Promise(function (resolve, reject) {
                 Document.findOne({ documentFileName: item.documentFileName }, function (err, res) {
                     if (res === null) {
@@ -58,7 +58,7 @@ module.exports = function () {
         };
 
         // build list of entries
-        doclist.forEach(function (item, index) {
+        doclist.forEach(function (item) {
             entries.push(item);
         });
 

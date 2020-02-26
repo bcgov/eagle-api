@@ -1,6 +1,6 @@
 /**
  * Creates aggregation required for users.
- * 
+ *
  * @param {boolean} populate Flag to unwind linked schemas
  * @returns {array} Aggregation
  */
@@ -10,14 +10,14 @@ exports.createUserAggr = (populate) => {
   aggregation.push(
     {
       '$lookup': {
-        "from": "epic",
-        "localField": "org",
-        "foreignField": "_id",
-        "as": "org"
+        'from': 'epic',
+        'localField': 'org',
+        'foreignField': '_id',
+        'as': 'org'
       }
     },
     {
-      "$unwind": "$org"
+      '$unwind': '$org'
     },
   );
 
@@ -25,22 +25,22 @@ exports.createUserAggr = (populate) => {
     // Handle project.
     aggregation.push(
       {
-        "$lookup": {
-          "from": "epic",
-          "localField": "project",
-          "foreignField": "_id",
-          "as": "project"
+        '$lookup': {
+          'from': 'epic',
+          'localField': 'project',
+          'foreignField': '_id',
+          'as': 'project'
         }
       },
       {
-        "$addFields": {
-          project: "$project",
+        '$addFields': {
+          project: '$project',
         }
       },
       {
-        "$unwind": {
-          "path": "$project",
-          "preserveNullAndEmptyArrays": true
+        '$unwind': {
+          'path': '$project',
+          'preserveNullAndEmptyArrays': true
         }
       }
     );

@@ -80,24 +80,24 @@ var doWork = function (e, route) {
         // console.log('e._decision:', e._decision);
         // console.log('e._comment:', e._comment);
         if (e._application) {
-          var f = _.find(_applications, {code: e._application});
-          e._application = f._id;
+          var application = _.find(_applications, {code: e._application});
+          e._application = application._id;
         } else if (e._decision) {
-          var f = _.find(_decisions, {code: e._decision});
-          e._decision = f._id;
+          var decision = _.find(_decisions, {code: e._decision});
+          e._decision = decision._id;
         }
 
         if (route === 'api/document') {
           if (e._comment) {
-            var f = _.find(_comments, {code: e._comment});
-            e._comment = f._id;
+            var comment = _.find(_comments, {code: e._comment});
+            e._comment = comment._id;
           }
         }
       }
       if (route === 'api/public/comment') {
         // console.log('cmt:', _commentPeriods);
-        var f = _.find(_commentPeriods, {code: e.commentPeriod});
-        e._commentPeriod = f._id;
+        var commentPeriod = _.find(_commentPeriods, {code: e.commentPeriod});
+        e._commentPeriod = commentPeriod._id;
       }
       if (route === 'api/application') {
         // console.log('org:1', e.proponent);
@@ -105,7 +105,7 @@ var doWork = function (e, route) {
         // FOR NOW, USING CLIENT STRING INSTEAD OF REF TO ORGANIZATION
         // var f = _.find(_organizations, { name: e.proponent});
         // e._proponent = f._id;
-        e.client = e.client;
+        //e.client = e.client;
       }
       if (route === 'api/decision') {
         var f = _.find(_applications, { code: e._application});
@@ -226,7 +226,6 @@ var doWork = function (e, route) {
 };
 
 var insertAll = function (route, entries) {
-  var self = this;
   return new Promise(function (resolve, reject) {
     console.log("route:", route);
 
@@ -241,15 +240,6 @@ var insertAll = function (route, entries) {
   });
 };
 
-var updateAll = function (collectionName, entries) {
-  if (_.isEmpty(entries)) {
-    return Promise.resolve();
-  }
-  var updates = _.map(entries, function (entry) {
-    return update(collectionName, { _id: entry._id }, entry);
-  });
-  return Promise.all(updates);
-};
 console.log("Logging in and getting JWT:");
 login(username, password)
 .then(function () {

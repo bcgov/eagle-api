@@ -5,7 +5,7 @@ const aggregateHelper = require('../helpers/aggregators');
 
 /**
  * Create an aggregation that sets the matching criteria for a document search.
- * 
+ *
  * @param {string} schemaName Schema being searched on
  * @param {string} projectId Project ID
  * @param {string} keywords List of keywords to search on
@@ -13,10 +13,10 @@ const aggregateHelper = require('../helpers/aggregators');
  * @param {array} orModifier Search criteria for an 'or' search
  * @param {array} andModifier Search criteria for an 'and' search
  * @param {array} roles User's roles
- * 
+ *
  * @returns {array} Aggregation for a document match
  */
- exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, categorized, roles) => {
+exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, categorized, roles) => {
   const aggregation = [];
   let projectModifier;
   let keywordModifier;
@@ -84,7 +84,7 @@ const aggregateHelper = require('../helpers/aggregators');
         ...deletedModifier.$and,
         ...modifier.$and
       ]
-    }
+    };
   }
 
   aggregation.push({
@@ -95,7 +95,7 @@ const aggregateHelper = require('../helpers/aggregators');
       ...(keywordModifier ? keywordModifier : undefined),
       ...(categorizedModifier && categorized === true ? categorizedModifier : undefined),
       ...deletedModifier,
-    } 
+    }
   });
 
   // Check document permissions
@@ -106,28 +106,28 @@ const aggregateHelper = require('../helpers/aggregators');
           if: {
             // This way, if read isn't present, we assume public no roles array.
             $and: [
-              { $cond: { if: "$read", then: true, else: false } },
+              { $cond: { if: '$read', then: true, else: false } },
               {
                 $anyElementTrue: {
                   $map: {
-                    input: "$read",
-                    as: "fieldTag",
-                    in: { $setIsSubset: [["$$fieldTag"], roles] }
+                    input: '$read',
+                    as: 'fieldTag',
+                    in: { $setIsSubset: [['$$fieldTag'], roles] }
                   }
                 }
               }
             ]
           },
-          then: "$$KEEP",
+          then: '$$KEEP',
           else: {
-            $cond: { if: "$read", then: "$$PRUNE", else: "$$DESCEND" }
+            $cond: { if: '$read', then: '$$PRUNE', else: '$$DESCEND' }
           }
         }
       }
     },
     {
       $addFields: {
-        score: { $meta: "textScore" }
+        score: { $meta: 'textScore' }
       }
     }
   );
@@ -137,7 +137,7 @@ const aggregateHelper = require('../helpers/aggregators');
 
 /**
  * Creates an aggregation for documents.
- * 
+ *
  * @param {boolean} populate Flag to create lookups
  * @param {array} roles Set of user roles
  * @returns {array} Aggregate for documents.
@@ -149,18 +149,18 @@ exports.createDocumentAggr = (populate, roles) => {
   aggregation.push(
     {
       $addFields: {
-        "status": {
+        'status': {
           $cond: {
             if: {
               // This way, if read isn't present, we assume public no roles array.
               $and: [
-                { $cond: { if: "$read", then: true, else: false } },
+                { $cond: { if: '$read', then: true, else: false } },
                 {
                   $anyElementTrue: {
                     $map: {
-                      input: "$read",
-                      as: "fieldTag",
-                      in: { $setIsSubset: [["$$fieldTag"], ['public']] }
+                      input: '$read',
+                      as: 'fieldTag',
+                      in: { $setIsSubset: [['$$fieldTag'], ['public']] }
                     }
                   }
                 }
@@ -174,7 +174,7 @@ exports.createDocumentAggr = (populate, roles) => {
     }
   );
 
-  // if we're coming in from the public endpoint, and we're fetching documents, 
+  // if we're coming in from the public endpoint, and we're fetching documents,
   // we MUST add a match to enforce eaoStatus='Published', regardless of filter
   // ensure this occurs after the main filters
 
@@ -190,22 +190,22 @@ exports.createDocumentAggr = (populate, roles) => {
     // Handle project.
     aggregation.push(
       {
-        "$lookup": {
-          "from": "epic",
-          "localField": "project",
-          "foreignField": "_id",
-          "as": "project"
+        '$lookup': {
+          'from': 'epic',
+          'localField': 'project',
+          'foreignField': '_id',
+          'as': 'project'
         }
       },
       {
-        "$addFields": {
-          project: "$project",
+        '$addFields': {
+          project: '$project',
         }
       },
       {
-        "$unwind": {
-          "path": "$project",
-          "preserveNullAndEmptyArrays": true
+        '$unwind': {
+          'path': '$project',
+          'preserveNullAndEmptyArrays': true
         }
       }
     );
@@ -218,18 +218,18 @@ exports.createDocumentAggr = (populate, roles) => {
     // TODO: Abstract these types of stages, as we will need to do this a lot")
     aggregation.push(
       {
-        "$addFields": {
-          "project": { "$mergeObjects": ["$project", "$project.default"] },
+        '$addFields': {
+          'project': { '$mergeObjects': ['$project', '$project.default'] },
         }
       },
       {
-        "$project": {["project.legislation_2002"]: 0 }
+        '$project': {['project.legislation_2002']: 0 }
       },
       {
-        "$project": {["project.legislation_1996"]: 0 }
+        '$project': {['project.legislation_1996']: 0 }
       },
       {
-        "$project": {["project.default"]: 0 }
+        '$project': {['project.default']: 0 }
       }
     );
 
