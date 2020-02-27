@@ -1,6 +1,6 @@
 /**
  * Creates an aggregate for an inspection.
- * 
+ *
  * @param {boolean} populate Flag indicating if fields need a look up
  * @returns {array} Aggregate for inspections
  */
@@ -11,10 +11,10 @@ exports.createInspectionAggr = (populate) => {
     aggregation.push(
       {
         '$lookup': {
-          "from": "epic",
-          "localField": "elements",
-          "foreignField": "_id",
-          "as": "elements"
+          'from': 'epic',
+          'localField': 'elements',
+          'foreignField': '_id',
+          'as': 'elements'
         }
       }
     );
@@ -22,22 +22,22 @@ exports.createInspectionAggr = (populate) => {
     // Handle project.
     aggregation.push(
       {
-        "$lookup": {
-          "from": "epic",
-          "localField": "project",
-          "foreignField": "_id",
-          "as": "project"
+        '$lookup': {
+          'from': 'epic',
+          'localField': 'project',
+          'foreignField': '_id',
+          'as': 'project'
         }
       },
       {
-        "$addFields": {
-          project: "$project",
+        '$addFields': {
+          project: '$project',
         }
       },
       {
-        "$unwind": {
-          "path": "$project",
-          "preserveNullAndEmptyArrays": true
+        '$unwind': {
+          'path': '$project',
+          'preserveNullAndEmptyArrays': true
         }
       }
     );
@@ -48,7 +48,7 @@ exports.createInspectionAggr = (populate) => {
 
 /**
  * Creates an aggregate for an inspection element
- * 
+ *
  * @param {boolean} populate Flag indicating if fields need a look up
  * @returns {array} Aggregate for inspection elements
  */
@@ -59,10 +59,10 @@ exports.createInspectionElementAggr = (populate) => {
     aggregation.push(
       {
         '$lookup': {
-          "from": "epic",
-          "localField": "items",
-          "foreignField": "_id",
-          "as": "items"
+          'from': 'epic',
+          'localField': 'items',
+          'foreignField': '_id',
+          'as': 'items'
         }
       }
     );
@@ -70,22 +70,22 @@ exports.createInspectionElementAggr = (populate) => {
     // Handle project.
     aggregation.push(
       {
-        "$lookup": {
-          "from": "epic",
-          "localField": "project",
-          "foreignField": "_id",
-          "as": "project"
+        '$lookup': {
+          'from': 'epic',
+          'localField': 'project',
+          'foreignField': '_id',
+          'as': 'project'
         }
       },
       {
-        "$addFields": {
-          project: "$project",
+        '$addFields': {
+          project: '$project',
         }
       },
       {
-        "$unwind": {
-          "path": "$project",
-          "preserveNullAndEmptyArrays": true
+        '$unwind': {
+          'path': '$project',
+          'preserveNullAndEmptyArrays': true
         }
       }
     );

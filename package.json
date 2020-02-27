@@ -10,6 +10,18 @@
   "license": "Apache 2.0",
   "main": "app",
   "typings": "app",
+  "scripts": {
+    "lint": "eslint .",
+    "start": "node app",
+    "start-watch": "nodemon app.js",
+    "test": "echo 'Test suite should be run with \"`npm run tests` or npm `run tests-debug`\"'",
+    "tests": "cross-env UPLOAD_DIRECTORY='./api/test/uploads/' jest api --runInBand",
+    "tests-debug": "node --inspect node_modules/.bin/jest --runInBand",
+    "coverage": "jest --collectCoverageFrom=api/**.js --coverage api"
+  },
+  "pre-push": [
+    "lint"
+  ],
   "dependencies": {
     "@turf/helpers": "^6.1.4",
     "@turf/turf": "^5.1.6",
@@ -51,14 +63,6 @@
     "winston": "^2.4.4",
     "yamljs": "0.2.9"
   },
-  "scripts": {
-    "start": "node app",
-    "start-watch": "nodemon app.js",
-    "test": "echo 'Test suite should be run with \"`npm run tests` or npm `run tests-debug`\"'",
-    "tests": "cross-env UPLOAD_DIRECTORY='./api/test/uploads/' jest api --runInBand",
-    "tests-debug": "node --inspect node_modules/.bin/jest --runInBand",
-    "coverage": "jest --collectCoverageFrom=api/**.js --coverage api"
-  },
   "devDependencies": {
     "@types/factory-girl": "^5.0.1",
     "@types/faker": "^4.1.5",
@@ -75,11 +79,13 @@
     "factory-girl": "^5.0.4",
     "faker": "^4.1.0",
     "folder-hash": "^3.3.0",
+    "jasmine": "^3.5.0",
     "jest": "^25.0.0",
     "jest-cli": "^24.9.0",
     "mongodb-memory-server": "^5.2.0",
     "nock": "^10.0.1",
     "nodemon": "^1.19.4",
+    "pre-push": "^0.1.1",
     "shelljs": "^0.8.3",
     "supertest": "^3.3.0"
   }

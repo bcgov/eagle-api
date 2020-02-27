@@ -17,11 +17,11 @@ describe('Helper Testing - utils', () => {
 
     // Retrieve the record.
     const Audit = mongoose.model('Audit');
-    const testRecord = await Audit.findOne({ 
-        _objectSchema: 'Query',
-        action: testAction,
-        meta: testMeta,
-        performedBy: testUser
+    const testRecord = await Audit.findOne({
+      _objectSchema: 'Query',
+      action: testAction,
+      meta: testMeta,
+      performedBy: testUser
     });
 
     expect(testRecord.action).toBe(testAction);

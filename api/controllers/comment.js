@@ -1,4 +1,3 @@
-var auth = require('../helpers/auth');
 var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
@@ -31,60 +30,48 @@ var getSanitizedFields = function (fields) {
       'delete'
     ], f) !== -1);
   });
-}
+};
 
 var setPermissionsFromEaoStatus = function (status, comment) {
   console.log(status);
   switch (status) {
-    case 'Published':
-      defaultLog.info('Publishing Comment');
-      comment.eaoStatus = 'Published';
-      comment.read = ['public', 'staff', 'sysadmin'];
-      break;
-    case 'Pending':
-      defaultLog.info('Pending Comment');
-      comment.eaoStatus = 'Pending';
-      comment.read = ['staff', 'sysadmin'];
-      break;
-    case 'Deferred':
-      defaultLog.info('Deferring Comment');
-      comment.eaoStatus = 'Deferred';
-      comment.read = ['staff', 'sysadmin'];
-      break;
-    case 'Rejected':
-      defaultLog.info('Rejecting Comment');
-      comment.eaoStatus = 'Rejected';
-      comment.read = ['staff', 'sysadmin'];
-      break;
-    case 'Reset':
-      defaultLog.info('Reseting Comment Status');
-      comment.eaoStatus = 'Pending';
-      comment.read = ['staff', 'sysadmin'];
-      break;
-    default:
-      break;
+  case 'Published':
+    defaultLog.info('Publishing Comment');
+    comment.eaoStatus = 'Published';
+    comment.read = ['public', 'staff', 'sysadmin'];
+    break;
+  case 'Pending':
+    defaultLog.info('Pending Comment');
+    comment.eaoStatus = 'Pending';
+    comment.read = ['staff', 'sysadmin'];
+    break;
+  case 'Deferred':
+    defaultLog.info('Deferring Comment');
+    comment.eaoStatus = 'Deferred';
+    comment.read = ['staff', 'sysadmin'];
+    break;
+  case 'Rejected':
+    defaultLog.info('Rejecting Comment');
+    comment.eaoStatus = 'Rejected';
+    comment.read = ['staff', 'sysadmin'];
+    break;
+  case 'Reset':
+    defaultLog.info('Resetting Comment Status');
+    comment.eaoStatus = 'Pending';
+    comment.read = ['staff', 'sysadmin'];
+    break;
+  default:
+    break;
   }
   return comment;
-}
+};
 
-// Function 'warms up' the query so that we can project the field that we're sorting on
-// extract 'contactName' and lower-case it
-var sortWarmUp = function (sort, fields) {
-  if (sort) {
-    var projection = {};
-    _.each(fields, function (f) {
-      projection[f] = 1;
-    });
-    return sort.contactName ? { $project: Object.assign({ contactName: { $toLower: '$commentAuthor.contactName' } }, projection) } : null;
-  }
-  return null;
-}
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function (args, res) {
   res.status(200).send();
 };
 
-exports.publicHead = async function (args, res, next) {
+exports.publicHead = async function (args, res) {
   defaultLog.info('args.swagger.params:', args.swagger.operation['x-security-scopes']);
 
   // Build match query if on CommentPeriodId route
@@ -115,7 +102,7 @@ exports.publicHead = async function (args, res, next) {
   }
 };
 
-exports.publicGet = async function (args, res, next) {
+exports.publicGet = async function (args, res) {
   var query = {}, sort = {};
   var skip = null, limit = null;
 
@@ -175,7 +162,7 @@ exports.publicGet = async function (args, res, next) {
   }
 };
 
-exports.protectedHead = async function (args, res, next) {
+exports.protectedHead = async function (args, res) {
   var query = {};
 
   if (args.swagger.params.commentId && args.swagger.params.commentId.value) {
@@ -187,9 +174,8 @@ exports.protectedHead = async function (args, res, next) {
   // Unless they specifically ask for it, hide deleted results.
   if (args.swagger.params.isDeleted && args.swagger.params.isDeleted.value != undefined) {
     _.assignIn(query, { isDeleted: args.swagger.params.isDeleted.value });
-  } else {
-
   }
+
   // Set query type
   _.assignIn(query, { '_schemaName': 'Comment' });
 
@@ -213,8 +199,8 @@ exports.protectedHead = async function (args, res, next) {
   }
 };
 
-exports.protectedGet = async function (args, res, next) {
-  defaultLog.info('Getting comment(s)')
+exports.protectedGet = async function (args, res) {
+  defaultLog.info('Getting comment(s)');
 
   var query = {}, sort = {}, skip = null, limit = null, count = false, filter = [];
 
@@ -309,7 +295,7 @@ exports.protectedGet = async function (args, res, next) {
 };
 
 //  Create a new Comment
-exports.protectedPost = async function (args, res, next) {
+exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.comment.value;
 
   defaultLog.info('Incoming new comment:', obj);
@@ -335,7 +321,7 @@ exports.protectedPost = async function (args, res, next) {
   comment.comment = obj.comment;
   comment.dateAdded = obj.dateAdded;
   comment.dateUpdated = obj.dateUpdated;
-  comment.documents = docs
+  comment.documents = docs;
   comment.eaoNotes = obj.eaoNotes;
   comment.eaoStatus = obj.eaoStatus;
   comment.isAnonymous = obj.isAnonymous;
@@ -372,7 +358,7 @@ async function getNextCommentIdCount(period) {
 }
 
 //  Create a new Comment
-exports.unProtectedPost = async function (args, res, next) {
+exports.unProtectedPost = async function (args, res) {
   var obj = args.swagger.params.comment.value;
   defaultLog.info('Incoming new object:', obj);
 
@@ -411,7 +397,7 @@ exports.unProtectedPost = async function (args, res, next) {
 };
 
 // Update an existing Comment
-exports.protectedPut = async function (args, res, next) {
+exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.commentId.value;
   var obj = args.swagger.params.comment.value;
   defaultLog.info('Put comment:', objId);
@@ -455,14 +441,14 @@ exports.protectedPut = async function (args, res, next) {
 };
 
 // Publish the Comment
-exports.protectedStatus = async function (args, res, next) {
+exports.protectedStatus = async function (args, res) {
   var objId = args.swagger.params.commentId.value;
   var status = args.swagger.params.status.value.status;
 
   var comment = {
     dateUpdated: new Date(),
     updatedBy: args.swagger.params.auth_payload.preferred_username
-  }
+  };
   var Comment = mongoose.model('Comment');
 
   comment = setPermissionsFromEaoStatus(status, comment);
@@ -480,10 +466,10 @@ exports.protectedStatus = async function (args, res, next) {
 
 function formatDate(date) {
   if (date){
-      var d = new Date(date),
-        month = '' + (d.getMonth() + 1),
-        day = '' + d.getDate(),
-        year = d.getFullYear();
+    var d = new Date(date),
+      month = '' + (d.getMonth() + 1),
+      day = '' + d.getDate(),
+      year = d.getFullYear();
 
     if (month.length < 2) month = '0' + month;
     if (day.length < 2) day = '0' + day;
@@ -495,7 +481,7 @@ function formatDate(date) {
 }
 
 // Export all comments
-exports.protectedExport = async function (args, res, next) {
+exports.protectedExport = async function (args, res) {
   var period = args.swagger.params.periodId.value;
   var format = args.swagger.params.format.value;
   var roles = args.swagger.params.auth_payload.realm_access.roles;
@@ -507,12 +493,12 @@ exports.protectedExport = async function (args, res, next) {
 
   // get period title
   var commentPeriodModel = mongoose.model('CommentPeriod');
-  var commentPeriod = await commentPeriodModel.findOne({ _id: period })
-  commentPeriodName = commentPeriod.instructions;
+  var commentPeriod = await commentPeriodModel.findOne({ _id: period });
+  var commentPeriodName = commentPeriod.instructions;
 
   // get project name
   var projectModel = mongoose.model('Project');
-  var project = await projectModel.findOne({ _id: commentPeriod.project })
+  var project = await projectModel.findOne({ _id: commentPeriod.project });
   var projectName = project.name;
 
   var exportDate = formatDate(new Date());
@@ -534,27 +520,27 @@ exports.protectedExport = async function (args, res, next) {
         if: {
           // This way, if read isn't present, we assume public no roles array.
           $and: [
-            { $cond: { if: "$read", then: true, else: false } },
+            { $cond: { if: '$read', then: true, else: false } },
             {
               $anyElementTrue: {
                 $map: {
-                  input: "$read",
-                  as: "fieldTag",
-                  in: { $setIsSubset: [["$$fieldTag"], roles] }
+                  input: '$read',
+                  as: 'fieldTag',
+                  in: { $setIsSubset: [['$$fieldTag'], roles] }
                 }
               }
             }
           ]
         },
-        then: "$$KEEP",
+        then: '$$KEEP',
         else: {
-          $cond: { if: "$read", then: "$$PRUNE", else: "$$DESCEND" }
+          $cond: { if: '$read', then: '$$PRUNE', else: '$$DESCEND' }
         }
       }
     }
   });
 
-  var data = await mongoose.model('Comment').aggregate(aggregation)
+  var data = await mongoose.model('Comment').aggregate(aggregation);
 
   const filename = 'export.csv';
   res.setHeader('Content-disposition', `attachment; filename=${filename}`);
@@ -586,23 +572,45 @@ exports.protectedExport = async function (args, res, next) {
 
   transform(data, function (d) {
 
-      // Translate documents into links.
-      let docLinks = [];
+    // Translate documents into links.
+    let docLinks = [];
 
-      if (d.documents && d.documents.length > 0) {
-        d.documents.map((theDoc) => {
-          docLinks.push(basePath + '/api/document/' + theDoc + '/fetch');
-        });
-      }
+    if (d.documents && d.documents.length > 0) {
+      d.documents.map((theDoc) => {
+        docLinks.push(basePath + '/api/document/' + theDoc + '/fetch');
+      });
+    }
 
-      //Remove anonymous users
-      let sanitizedAuthor = 'Anonymous'
-      if (!d.isAnonymous) {
-        sanitizedAuthor = d.author;
-      }
+    //Remove anonymous users
+    let sanitizedAuthor = 'Anonymous';
+    if (!d.isAnonymous) {
+      sanitizedAuthor = d.author;
+    }
 
-      // Populate csv with fields relevant to staff
-      if (format == 'staff'){
+    // Populate csv with fields relevant to staff
+    if (format == 'staff'){
+
+      return {
+        Comment_No: d.commentId,
+        Submitted: formatDate(d.dateAdded),
+        Author: sanitizedAuthor,
+        Location: d.location,
+        Comment: d.comment,
+        Attachments: docLinks,
+        Published: formatDate(d.datePosted),
+        Status: d.eaoStatus,
+        Rejected_Reason: d.rejectedReason,
+        Rejected_Notes: d.rejectedNotes,
+        EAO_Notes: d.eaoNotes,
+        Project: projectName,
+        PCP_Title: commentPeriodName,
+        Export_Date: exportDate
+      };
+
+      // Populate csv with fields relevant to proponents
+    } else if (format == 'proponent') {
+      let read = d.read;
+      if (read.includes('public')) {
 
         return {
           Comment_No: d.commentId,
@@ -612,38 +620,16 @@ exports.protectedExport = async function (args, res, next) {
           Comment: d.comment,
           Attachments: docLinks,
           Published: formatDate(d.datePosted),
-          Status: d.eaoStatus,
-          Rejected_Reason: d.rejectedReason,
-          Rejected_Notes: d.rejectedNotes,
-          EAO_Notes: d.eaoNotes,
+          Pillar: d.pillars,
           Project: projectName,
           PCP_Title: commentPeriodName,
           Export_Date: exportDate
         };
-
-      // Populate csv with fields relevant to proponents
-      } else if (format == 'proponent') {
-        let read = d.read;
-        if (read.includes('public')) {
-
-          return {
-            Comment_No: d.commentId,
-            Submitted: formatDate(d.dateAdded),
-            Author: sanitizedAuthor,
-            Location: d.location,
-            Comment: d.comment,
-            Attachments: docLinks,
-            Published: formatDate(d.datePosted),
-            Pillar: d.pillars,
-            Project: projectName,
-            PCP_Title: commentPeriodName,
-            Export_Date: exportDate
-          };
-        } else {
-          return null;
-        }
+      } else {
+        return null;
       }
-    })
+    }
+  })
     .pipe(csv.stringify({ header: true }))
     .pipe(res);
-}
+};
