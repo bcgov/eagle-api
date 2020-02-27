@@ -5,6 +5,10 @@
       "hash": "n6WcPD+MXM7zPDPAcuRcsxl4O0E="
     },
     {
+      "hash": "nr9/m8mpql2LM1ZL5OUajG2oQNY=",
+      "name": "cacUser.js"
+    },
+    {
       "name": "comment.js",
       "hash": "c9crjMHdewE6BIXyzDfEmEriZBU="
     },
@@ -50,7 +54,7 @@
     },
     {
       "name": "project.js",
-      "hash": "1jD4ajLsFali6UJ78Wnz/54U1xc="
+      "hash": "/VwmkGjWquC9K0h6RrpjwEGJXc0="
     },
     {
       "name": "recentActivity.js",
@@ -73,6 +77,10 @@
     {
       "name": "audit_factory.js",
       "hash": "PbsK3iawtnfq0dn6gsrCEFlFU4w="
+    },
+    {
+      "name": "cacUser_factory.js",
+      "hash": "bznmPrZpCnXxqS6RRfR2w9fc1wg="
     },
     {
       "name": "comment_factory.js",
@@ -120,7 +128,7 @@
     },
     {
       "name": "project_factory.js",
-      "hash": "26iAuqYoMiMcyn4hOp8Y357ZRP4="
+      "hash": "2reKM9FqHjjHWPycy+fwfs8W+Z4="
     },
     {
       "name": "recent_activity_factory.js",

@@ -289,6 +289,9 @@ factory.define(factoryName, Project, buildOptions =>{
       , pins                      : [mongTypes.ObjectId()]
       , pinsRead: ["sysadmin", "staff", "project-proponent", "project-admin", "system-eao", "project-intake", "project-team", "project-system-admin", "public"]
       , pinsHistory               : {}
+      , projectCAC                : true
+      , cacMembers                : []
+      , cacEmail                  : 'noreply@fixme.gov.bc.ca'
       , links: []
     };
 

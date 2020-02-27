@@ -545,6 +545,20 @@ definitions:
       - +notificationDecision
       - -notificationDecision
 
+### CAC Definitions
+  CACObject:
+    type: object
+    properties:
+      name:
+        type: string
+        example: "John Doe"
+      email:
+        type: string
+        example: "John@Doe.net"
+      comment:
+        type: string
+        example: "John Doe wants to sign up for the CAC"
+
 ### Topic Definitions
   TopicId:
     type: object
@@ -2457,6 +2471,55 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /public/project/{projId}/cacSignUp:
+    x-swagger-router-controller: project
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to post request to"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/CACObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    post:
+      tags:
+        - project
+      summary: "Add CAC info to a project"
+      operationId: publicCACSignUp
+      description: "Adds user information to CAC on this project."
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to update"
+          required: true
+          type: string
+        - name: cac
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/CACObject"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/CACObject"
         "403":
           description: "Access Denied"
           schema:

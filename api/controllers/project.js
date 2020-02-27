@@ -73,6 +73,9 @@ var tagList = [
   'review45Start',
   'reviewSuspensions',
   'reviewExtensions',
+  'cacMembers',
+  'cacEmail',
+  'projectCAC',
   'read',
   'write',
   'delete'
@@ -156,6 +159,7 @@ exports.publicGet = async function (args, res, next) {
   tagList.push('dateAdded');
   tagList.push('dateCompleted');
 
+
   if (args.swagger.params.projId && args.swagger.params.projId.value) {
     query = Utils.buildQuery("_id", args.swagger.params.projId.value, query);
     commentPeriodPipeline = handleCommentPeriodForBannerQueryParameters(args, args.swagger.params.projId.value);
@@ -188,7 +192,7 @@ exports.publicGet = async function (args, res, next) {
       null, // steps
       true, // proponent populate
       commentPeriodPipeline);
-    defaultLog.info('Got project(s):', data);
+    console.log('Got project(s):', data);
 
     // TODO: We should do this as a query
     if (commentPeriodPipeline) {
@@ -755,6 +759,48 @@ exports.protectedUnPublishPin = async function (args, res) {
     }
   } catch (e) {
     return Actions.sendResponse(res, 400, e);
+  }
+}
+
+exports.publicCACSignUp = async function ( args, res, next) {
+  // sign this user up for CAC on the project.
+
+  const CACUser = mongoose.model('CACUser');
+  const Project = mongoose.model('Project');
+
+  // Clear out anything dangerous first, before creating an instance of the user
+  let cacObject = args.swagger.params.cac.value;
+  delete cacObject.read;
+  delete cacObject.write;
+  let cacUserToAdd  = new CACUser(cacObject);
+
+  const projectId   = args.swagger.params.projId.value;
+
+  // Find this email address in the caclist.
+  let cacUser = await CACUser.findOne({_schemaName: 'CACUser', email: cacUserToAdd.email});
+
+  if (!cacUser) {
+    // Not found, create the cacUser object in the project.
+    cacUserToAdd.read.push('sysadmin');
+    cacUserToAdd.write.push('sysadmin');
+    cacUser = await cacUserToAdd.save();
+  }
+
+  // AddToSet this if it isn't already in the cac data.
+  try {
+    await Project.findOneAndUpdate(
+      { _id: mongoose.Types.ObjectId(projectId) },
+      {
+        $addToSet: { "cacMembers": mongoose.Types.ObjectId(cacUser._id) }
+      },
+      { new: true }
+    );
+    Utils.recordAction('Post', 'ProjectCACMember', 'public', cacUser._id);
+    // We don't want to return anything but a 200 OK.
+    return Actions.sendResponse(res, 200, {});
+  } catch (e) {
+    defaultLog.info("Error inserting user into the project cac:", e);
+    return Actions.sendResponse(res, 500, {});
   }
 }
 

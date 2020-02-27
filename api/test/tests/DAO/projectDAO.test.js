@@ -2,6 +2,7 @@ const request = require('supertest');
 const test_helper = require('../../test_helper');
 const gh = require('../../generate-data/generate_helper');
 const projectController = require('../../../controllers/projectV2');
+const projectControllerV1 = require('../../../controllers/project');
 const projectDAO = require('../../../dao/projectDAO');
 const projectGroupDAO = require('../../../dao/projectGroupDAO');
 const pinDAO = require('../../../dao/pinDAO');
@@ -10,6 +11,7 @@ const constants = require('../../../helpers/constants');
 
 const group = require('../../../helpers/models/group');
 const project = require('../../../helpers/models/project');
+const CACUser = require('../../../helpers/models/cacUser');
 
 const app = test_helper.app;
 
@@ -182,4 +184,38 @@ describe('API Testing - Project DAO', () =>
         result = await projectGroupDAO.getGroup(fetchedResult._id);
         expect(result).toEqual(null);
     });
+
+    test('Project CAC SignUp tests', async () =>
+    {
+      // Create
+      let createdProject = await projectDAO.createProject('Test Project', testProject);
+      expect(createdProject.id).not.toEqual(null);
+
+      let res = {
+        writeHead: function(code, content) {
+          // 200 or fail
+          expect(code).toEqual(200)
+        },
+        end: function (data) {
+          // We should get a plain object back
+          expect(typeof(JSON.parse(data))).toEqual('object');
+        }
+      }
+
+      const formattedObj = {
+        cac:
+        {
+          value:
+          {
+            name: 'Mark Lise',
+            email: 'mark@digitalspace.ca',
+            comment: 'I like tests!'
+          }
+        },
+        projId: '58851085aaecd9001b811843'
+      };
+      const paramsWithValues = test_helper.createSwaggerParams([], formattedObj);
+
+      await projectControllerV1.publicCACSignUp(paramsWithValues, res);
+    })
 });

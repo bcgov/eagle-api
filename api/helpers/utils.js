@@ -169,6 +169,8 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
             "default.pinsHistory": '$pinsHistory',
             "default.pinsRead": '$pinsRead',
             "default._id": '$_id',
+            "default.projectCAC": '$projectCAC',
+            "default.cacEmail": '$cacEmail',
             "default.read": '$read'
           }
         },
