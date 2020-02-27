@@ -1,6 +1,5 @@
 {
-  "models": [
-    {
+  "models": [{
       "name": "audit.js",
       "hash": "YtyZPywOMBZ767aq/3dp4x6zKsE="
     },
@@ -14,7 +13,7 @@
     },
     {
       "name": "document.js",
-      "hash": "DGkOA06EfQxKaKDHin9V5JIU2mk="
+      "hash": "zXJBaSKnqu+qboq1LiqdXqpSZ3U="
     },
     {
       "name": "group.js",
@@ -69,8 +68,7 @@
       "hash": "I/5kkWHxeGP7/O7x1Dxy+FZwJ0k="
     }
   ],
-  "factories": [
-    {
+  "factories": [{
       "name": "audit_factory.js",
       "hash": "PbsK3iawtnfq0dn6gsrCEFlFU4w="
     },
