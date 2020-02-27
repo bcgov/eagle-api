@@ -1,10 +1,11 @@
-const defaultLog  = require('winston').loggers.get('default');
-const Actions     = require('../helpers/actions');
-const projectDAO  = require('../dao/projectDAO');
-const documentDAO = require('../dao/documentDAO');
-const constants   = require('../helpers/constants');
-const mime        = require('mime-types');
-const mongoose        = require('mongoose');
+const defaultLog     = require('winston').loggers.get('default');
+const requestPromise = require('request-promise-native');
+const Actions        = require('../helpers/actions');
+const projectDAO     = require('../dao/projectDAO');
+const documentDAO    = require('../dao/documentDAO');
+const constants      = require('../helpers/constants');
+const mime           = require('mime-types');
+const mongoose       = require('mongoose');
 
 async function getDocuments(roles, params)
 {
@@ -248,10 +249,10 @@ exports.publishDocument = async function (args, res, next)
             let userName = args.swagger.params.auth_payload.preferred_username ? args.swagger.params.auth_payload.preferred_username : 'public';
 
             let document = await documentDAO.fetchDocument(documentId);
-            document = await documentDAO.publishDocument(userName, document);
-            document = documentDAO.documentHateoas(updatedDocument, constants.SECURE_ROLES);
+            updatedDocument = await documentDAO.publishDocument(userName, document);
+            updatedDocument = documentDAO.documentHateoas(updatedDocument, constants.SECURE_ROLES);
 
-            return Actions.sendResponseV2(res, 200, document);
+            return Actions.sendResponseV2(res, 200, updatedDocument);
         }
         else
         {
@@ -417,7 +418,7 @@ exports.downloadDocumentSecure = async function(args, res, next)
                 res.setHeader('Content-Type', documentMeta.metaData['content-type']);
                 res.setHeader('Content-Disposition', 'attachment;filename="' + documentMeta.fileName + '"');
 
-                return rp(documentMeta.url).pipe(res);
+                return requestPromise(documentMeta.url).pipe(res);
             }
             else
             {
@@ -557,7 +558,7 @@ exports.downloadDocument = async function(args, res, next)
                 res.setHeader('Content-Type', documentMeta.metaData['content-type']);
                 res.setHeader('Content-Disposition', 'attachment;filename="' + documentMeta.fileName + '"');
 
-                return rp(documentMeta.url).pipe(res);
+                return requestPromise(documentMeta.url).pipe(res);
             }
             else
             {

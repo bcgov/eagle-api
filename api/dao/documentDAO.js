@@ -43,15 +43,11 @@ exports.createDocument = async function(userName, projectId, comment, uploadedFi
 
     try 
     {
-        let virusScanSuccessful = false;
+        let virusScanSuccessful = true;
 
         if (ENABLE_VIRUS_SCANNING == 'true') 
         {
             virusScanSuccessful = Utils.avScan(uploadedFile.buffer);
-        } 
-        else 
-        {
-            virusScanSuccessful = true;
         }
 
         if (!virusScanSuccessful) 
@@ -110,7 +106,6 @@ exports.createDocument = async function(userName, projectId, comment, uploadedFi
             else
             {
                 document.legislation          = parseInt(documentDetails.legislation);
-                // doc.labels = JSON.parse(args.swagger.params.labels.value);
                 document.milestone            = documentDetails.milestone;
                 document.type                 = documentDetails.type;
                 document.description          = documentDetails.description;
@@ -324,8 +319,6 @@ exports.updateDocument = async function(userName, originalDocument, projectId, u
         {
             originalDocument.read = constants.SECURE_ROLES;
         }
-
-        // originalDocument.labels = JSON.parse(args.swagger.params.labels.value);
 
         let updatedDocument = await originalDocument.save();
 
