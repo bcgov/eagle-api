@@ -271,7 +271,7 @@ definitions:
       - internalMime
       - internalSize
       - isFeatured
-
+      - sortOrder
 ### Comment Definitions
   CommentId:
     type: object
@@ -1983,6 +1983,21 @@ paths:
             description: "Group corresponding to a project."
           - name: groupId
             in: path
+            type: string
+            required: true
+            description: "Get Group."
+          - name: sortBy
+            in: query
+            type: string
+            required: true
+            description: "Group corresponding to a project."
+          - name: pageSize
+            in: query
+            type: string
+            required: true
+            description: "Get Group."
+          - name: pageNum
+            in: query
             type: string
             required: true
             description: "Get Group."

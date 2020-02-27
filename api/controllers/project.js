@@ -393,15 +393,15 @@ exports.protectedPost = function (args, res) {
   var projectData;
 
   if (projectLegislationYear == 2018) {
-    project = new Project({legislation_2018: obj});
+    project = new Project({ legislation_2018: obj });
     projectData = project.legislation_2018;
     projectData.legislation = '2018 Environmental Assessment Act';
   } else if (projectLegislationYear == 2002) {
-    project = new Project({legislation_2002: obj});
+    project = new Project({ legislation_2002: obj });
     projectData = project.legislation_2002;
     projectData.legislation = '2002 Environmental Assessment Act';
   } else if (projectLegislationYear == 1996) {
-    project = new Project({legislation_1996: obj});
+    project = new Project({ legislation_1996: obj });
     projectData = project.legislation_1996;
     projectData.legislation = '1996 Environmental Assessment Act';
   }
@@ -862,17 +862,15 @@ const handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, 
       // Sort
       if (sortBy && sortBy.value) {
         sort = {};
-        sortBy.value.forEach(function (value) {
-          var order_by = value.charAt(0) == '-' ? -1 : 1;
-          var sort_by = value.slice(1);
-          sort[sort_by] = order_by;
-        }, this);
+        var order_by = sortBy.value.charAt(0) == '-' ? -1 : 1;
+        var sort_by = sortBy.value.slice(1);
+        sort[sort_by] = order_by;
       }
 
       // Skip and limit
       var processedParameters = Utils.getSkipLimitParameters(pageSize, pageNum);
       skip = processedParameters.skip;
-      limit = processedParameters.limit;
+      limit = parseInt(processedParameters.limit);
 
       fields = ['_id', 'displayName', 'email', 'org', 'orgName', 'phoneNumber'];
       try {
@@ -970,7 +968,7 @@ exports.protectedPut = async function (args, res) {
   if (projectObj.legislationYear) {
     projectLegislationYear = projectObj.legislationYear;
     // check if the passed in project year exists in the legislation year list
-    if ( !fullProjectObject.legislationYearList.includes(projectLegislationYear) ) {
+    if (!fullProjectObject.legislationYearList.includes(projectLegislationYear)) {
       fullProjectObject.legislationYearList.push(projectLegislationYear);
     }
   } else {
@@ -1033,8 +1031,8 @@ exports.protectedPut = async function (args, res) {
   filteredData.CEAALink = projectObj.CEAALink;
   filteredData.eacDecision = projectObj.eacDecision;
   filteredData.decisionDate = projectObj.decisionDate ? new Date(projectObj.decisionDate) : null;
-  fullProjectObject.review45Start = projectObj.review45Start  ? new Date(projectObj.review45Start) : null;
-  fullProjectObject.review180Start = projectObj.review180Start  ? new Date(projectObj.review180Start) : null;
+  fullProjectObject.review45Start = projectObj.review45Start ? new Date(projectObj.review45Start) : null;
+  fullProjectObject.review180Start = projectObj.review180Start ? new Date(projectObj.review180Start) : null;
 
   filteredData.nameSearchTerms = Utils.generateSearchTerms(projectObj.name, WORDS_TO_ANALYZE);
 
@@ -1053,10 +1051,10 @@ exports.protectedPut = async function (args, res) {
   //If phaseHistory isn't initialized (defaults to empty string)
   if (filteredData.phaseHistory === '') {
     filteredData.phaseHistory = [];
-    filteredData.phaseHistory.push( filteredData.currentPhaseName );
-  } else if ( filteredData.phaseHistory !== null && JSON.stringify(filteredData.phaseHistory[filteredData.phaseHistory.length-1]) !== JSON.stringify(filteredData.currentPhaseName)){
+    filteredData.phaseHistory.push(filteredData.currentPhaseName);
+  } else if (filteredData.phaseHistory !== null && JSON.stringify(filteredData.phaseHistory[filteredData.phaseHistory.length - 1]) !== JSON.stringify(filteredData.currentPhaseName)) {
     // To avoid updating the phaseHistory if the phase hasn't changed
-    filteredData.phaseHistory.push( filteredData.currentPhaseName );
+    filteredData.phaseHistory.push(filteredData.currentPhaseName);
   }
 
 
@@ -1098,7 +1096,7 @@ exports.protectedPublish = function (args, res) {
         o.currentLegislationYear = 'legislation_' + ProjObject.legislationYear;
       }
 
-      return Actions.publish(o,true)
+      return Actions.publish(o, true)
         .then(function (published) {
           Utils.recordAction('Publish', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
           return Actions.sendResponse(res, 200, published);
@@ -1323,14 +1321,14 @@ exports.getFeaturedDocuments = async function (args, res) {
     if (args.swagger.params.projId && args.swagger.params.projId.value) {
       let projectModel = mongoose.model('Project');
       projectModel.findOne({ _id: args.swagger.params.projId.value }, async function (err, project) {
-        let featuredDocs = await fetchFeaturedDocuments(project, true);
+        let featuredDocs = await fetchFeaturedDocuments(project);
 
         return Actions.sendResponse(res, 200, featuredDocs);
       });
     } else {
-      return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found'});
+      return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found' });
     }
-  } catch(e) {
+  } catch (e) {
     return Actions.sendResponse(res, 500, {});
   }
 };
@@ -1340,23 +1338,23 @@ exports.getFeaturedDocumentsSecure = async function (args, res) {
     if (args.swagger.params.projId && args.swagger.params.projId.value) {
       let project = await mongoose.model('Project').findById(mongoose.Types.ObjectId(args.swagger.params.projId.value));
 
-      let featuredDocs = await fetchFeaturedDocuments(project, false);
+      let featuredDocs = await fetchFeaturedDocuments(project);
 
       return Actions.sendResponse(res, 200, featuredDocs);
     }
 
-    return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found'});
-  } catch(e) {
+    return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found' });
+  } catch (e) {
     return Actions.sendResponse(res, 500, {});
   }
 };
 
-var fetchFeaturedDocuments = async function(project) {
+var fetchFeaturedDocuments = async function (project) {
   try {
     let documents = await mongoose.model('Document').find({ project: project._id, isFeatured: true });
 
     return documents;
-  } catch(e) {
+  } catch (e) {
     throw Error(e);
   }
 };

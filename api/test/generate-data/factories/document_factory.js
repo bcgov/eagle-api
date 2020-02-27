@@ -86,6 +86,8 @@ factory.define(factoryName, Document, buildOptions => {
     // TODO generate more meaningful meta 
     // eg ["Under Review","Public Comments/Submissions","(2nd Public Comment Period) Email dated May 13/05 from PersonName1 and PersonName2 (Delta BC) with comments regarding the truck traffic and the port."]
     , labels           : [faker.lorem.sentence(), faker.lorem.sentence(), faker.lorem.sentence()]
+    , isFeatured       : faker.random.boolean()
+    , sortOrder        : faker.random.number()
   };
   return attrs;
 });

@@ -1,9 +1,9 @@
 // Imports
 const defaultLog = require('winston').loggers.get('default');
-const mongoose   = require('mongoose');
-const Actions    = require('../helpers/actions');
+const mongoose = require('mongoose');
+const Actions = require('../helpers/actions');
 const projectDAO = require('../dao/projectDAO');
-const constants  = require('../helpers/constants');
+const constants = require('../helpers/constants');
 
 async function getProjectHandler(roles, params) {
   let data = {};
@@ -16,15 +16,15 @@ async function getProjectHandler(roles, params) {
     data = await projectDAO.getProject(roles, projectId);
     data = projectDAO.projectHateoas(data, roles);
   } else {
-    let pageNumber = Object.prototype.hasOwnProperty.call(params,'pageNumber') && params.pageNumber.value ? params.pageNumber.value : 1;
-    let pageSize   = Object.prototype.hasOwnProperty.call(params,'pageSize')   && params.pageSize.value   ? params.pageSize.value   : 10;
-    let sortBy     = Object.prototype.hasOwnProperty.call(params,'sortBy')     && params.sortBy.value     ? params.sortBy.value     : '';
-    let query      = Object.prototype.hasOwnProperty.call(params,'query')      && params.query.value      ? params.query.value      : '';
-    let keywords   = Object.prototype.hasOwnProperty.call(params,'keywords')   && params.keywords.value   ? params.keywords.value   : '';
+    let pageNumber = Object.prototype.hasOwnProperty.call(params, 'pageNumber') && params.pageNumber.value ? params.pageNumber.value : 1;
+    let pageSize = Object.prototype.hasOwnProperty.call(params, 'pageSize') && params.pageSize.value ? params.pageSize.value : 10;
+    let sortBy = Object.prototype.hasOwnProperty.call(params, 'sortBy') && params.sortBy.value ? params.sortBy.value : '';
+    let query = Object.prototype.hasOwnProperty.call(params, 'query') && params.query.value ? params.query.value : '';
+    let keywords = Object.prototype.hasOwnProperty.call(params, 'keywords') && params.keywords.value ? params.keywords.value : '';
 
     data = await projectDAO.getProjects(roles, pageNumber, pageSize, sortBy, keywords, query);
 
-    for(let projectIndex in data[0].searchResults) {
+    for (let projectIndex in data[0].searchResults) {
       let project = data[0].searchResults[projectIndex];
       project = projectDAO.projectHateoas(project, roles);
     }
@@ -52,7 +52,7 @@ exports.projectHead = async function (args, res) {
     let data = await getProjectHandler(constants.PUBLIC_ROLES, args.swagger.params);
 
     return data ? Actions.sendResponseV2(res, 200, data)
-      : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found'});
+      : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found' });
   } catch (e) {
     defaultLog.error('### Error in {HEAD}/Public/Projects/ :', e);
     return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects' });
@@ -68,7 +68,7 @@ exports.projectHeadProtected = async function (args, res) {
     let data = await getProjectHandler(constants.SECURE_ROLES, args.swagger.params);
 
     return data ? Actions.sendResponseV2(res, 200, data)
-      : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found'});
+      : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found' });
   } catch (e) {
     defaultLog.error('### Error in {HEAD}/Projects/ :', e);
     return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects' });
@@ -85,7 +85,7 @@ exports.fetchProjects = async function (args, res) {
     let data = await getProjectHandler(constants.PUBLIC_ROLES, args.swagger.params);
 
     return data ? Actions.sendResponseV2(res, 200, data)
-      : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found'});
+      : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found' });
   } catch (e) {
     defaultLog.error('### Error in {GET}/Public/Projects/ :', e);
     return res.json({ code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects' });
@@ -101,7 +101,7 @@ exports.fetchProjectsProtected = async function (args, res) {
     let data = await getProjectHandler(constants.SECURE_ROLES, args.swagger.params);
 
     return data ? Actions.sendResponseV2(res, 200, data)
-      : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found'});
+      : Actions.sendResponseV2(res, 404, { code: 404, message: 'Project information was not found' });
   } catch (e) {
     defaultLog.error('### Error in {GET}/Projects/ :', e);
     return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects' });
@@ -122,7 +122,7 @@ exports.createProject = async function (args, res) {
 
       project = await projectDAO.createProject(args.swagger.params.auth_payload.preferred_username, project);
 
-      if(project) {
+      if (project) {
         // If the resource was successfully created, fetch it and return it
         project = await projectDAO.getProject(constants.SECURE_ROLES, project._id);
 
@@ -155,13 +155,13 @@ exports.updateProject = async function (args, res) {
       let sourceProject = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
       let updatedProject = args.swagger.params.project.value;
 
-      if(sourceProject && updatedProject) {
+      if (sourceProject && updatedProject) {
         updatedProject = await projectDAO.updateProject(args.swagger.params.auth_payload.preferred_username, sourceProject, updatedProject);
 
         updatedProject = projectDAO.projectHateoas(updatedProject, constants.SECURE_ROLES);
         return Actions.sendResponseV2(res, 200, updatedProject);
       } else {
-        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.' });
       }
     } else {
       throw Error('Invalid request');
@@ -186,7 +186,7 @@ exports.deleteProject = async function (args, res) {
 
       let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
-      if(project) {
+      if (project) {
         project = await projectDAO.deleteProject(args.swagger.params.auth_payload.preferred_username, project);
 
         // delete endpoints return the original resource so
@@ -195,7 +195,7 @@ exports.deleteProject = async function (args, res) {
         project = projectDAO.projectHateoas(project, constants.SECURE_ROLES);
         return Actions.sendResponseV2(res, 200, project);
       } else {
-        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.' });
       }
     } else {
       throw Error('Invalid request');
@@ -220,12 +220,12 @@ exports.publishProject = async function (args, res) {
 
       let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
-      if(project) {
+      if (project) {
         project = await projectDAO.publishProject(args.swagger.params.auth_payload.preferred_username, project);
         project = projectDAO.projectHateoas(project, constants.SECURE_ROLES);
         return Actions.sendResponseV2(res, 200, project);
       } else {
-        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.' });
       }
     } else {
       throw Error('Invalid request');
@@ -250,12 +250,12 @@ exports.unPublishProject = async function (args, res) {
 
       let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
-      if(project) {
+      if (project) {
         project = await projectDAO.unPublishProject(args.swagger.params.auth_payload.preferred_username, project);
         project = projectDAO.projectHateoas(project, constants.SECURE_ROLES);
         return Actions.sendResponseV2(res, 200, project);
       } else {
-        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.' });
       }
     } else {
       throw Error('Invalid request');
@@ -285,12 +285,12 @@ exports.createProjectExtension = async function (args, res) {
 
       let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
-      if(project) {
+      if (project) {
         project = await projectDAO.addExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
         project = projectDAO.projectHateoas(project, constants.SECURE_ROLES);
         return Actions.sendResponseV2(res, 201, project);
       } else {
-        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.' });
       }
     } else {
       throw Error('Invalid request');
@@ -317,12 +317,12 @@ exports.updateProjectExtension = async function (args, res) {
 
       let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
-      if(project) {
+      if (project) {
         project = await projectDAO.updateExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
         project = projectDAO.projectHateoas(project, constants.SECURE_ROLES);
         return Actions.sendResponseV2(res, 200, project);
       } else {
-        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.' });
       }
     } else {
       throw Error('Invalid request');
@@ -349,12 +349,12 @@ exports.deleteProjectExtension = async function (args, res) {
 
       let project = await projectDAO.getProject(constants.SECURE_ROLES, projectId);
 
-      if(project) {
+      if (project) {
         project = await projectDAO.updateExtension(args.swagger.params.auth_payload.preferred_username, extension, project);
         project = projectDAO.projectHateoas(project, constants.SECURE_ROLES);
         return Actions.sendResponseV2(res, 200, project);
       } else {
-        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.'});
+        return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project ' + projectId + ' not found.' });
       }
     } else {
       throw Error('Invalid request');
@@ -374,13 +374,13 @@ exports.fetchFeaturedDocuments = async function (args, res) {
     if (args.swagger.params.projId && args.swagger.params.projId.value) {
 
       let project = await projectDAO.getProject(constants.PUBLIC_ROLES, args.swagger.params.projId);
-      let featuredDocs = await getFeaturedDocuments(project, true);
+      let featuredDocs = await getFeaturedDocuments(project);
 
       return Actions.sendResponseV2(res, 200, featuredDocs);
     } else {
-      return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project not found'});
+      return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project not found' });
     }
-  } catch(e) {
+  } catch (e) {
     defaultLog.error('### Error in {GET}/Public/Projects/{id}/FeaturedDocuments :', e);
     return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects{id}/FeaturedDocuments' });
   } finally {
@@ -395,13 +395,13 @@ exports.fetchFeaturedDocumentsSecure = async function (args, res) {
     if (args.swagger.params.projId && args.swagger.params.projId.value) {
       let project = await projectDAO.getProject(args.swagger.params.projId.value);
 
-      let featuredDocs = await getFeaturedDocuments(project, false);
+      let featuredDocs = await getFeaturedDocuments(project);
 
       return Actions.sendResponseV2(res, 200, featuredDocs);
     }
 
-    return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project not found'});
-  } catch(e) {
+    return Actions.sendResponseV2(res, 404, { status: 404, message: 'Project not found' });
+  } catch (e) {
     defaultLog.error('### Error in {GET}/Projects/{id}/FeaturedDocuments :', e);
     return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Projects{id}/FeaturedDocuments' });
   } finally {
@@ -409,16 +409,16 @@ exports.fetchFeaturedDocumentsSecure = async function (args, res) {
   }
 };
 
-var getFeaturedDocuments = async function(project) {
+var getFeaturedDocuments = async function (project) {
   try {
     let documents = await mongoose.model('Document').find({ project: project._id, isFeatured: true });
 
-    if(documents) {
+    if (documents) {
       return documents;
     } else {
       throw Error('Featured documents could not be loaded.');
     }
-  } catch(e) {
+  } catch (e) {
     throw Error(e);
   }
 };

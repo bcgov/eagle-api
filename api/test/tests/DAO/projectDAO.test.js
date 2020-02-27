@@ -5,6 +5,9 @@ const constants = require('../../../helpers/constants');
 
 const project = require('../../../helpers/models/project');
 
+require('../../test_helper');
+require('../../../helpers/models/audit');
+require('../../../helpers/models/group');
 
 describe('API Testing - Project DAO', () => {
   let testProject = new project();
@@ -82,7 +85,6 @@ describe('API Testing - Project DAO', () => {
   test('Project CRUD tests', async () => {
     // Create
     let createdProject = await projectDAO.createProject('Test User', testProject);
-
     expect(createdProject.id).not.toEqual(null);
 
     let loadedProject = await projectDAO.getProject(constants.SECURE_ROLES, createdProject._id);
