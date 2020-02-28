@@ -88,6 +88,8 @@ factory.define(factoryName, Document, buildOptions => {
     , labels           : [faker.lorem.sentence(), faker.lorem.sentence(), faker.lorem.sentence()]
     , isFeatured       : faker.random.boolean()
     , sortOrder        : faker.random.number()
+    , publicHitCount   : faker.random.number()
+    , secureHitCount   : faker.random.number()
   };
   return attrs;
 });
