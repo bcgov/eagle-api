@@ -48,7 +48,9 @@ var getSanitizedFields = function (fields) {
       'isPublished',
       'internalMime',
       'isFeatured',
-      'sortOrder'], f) !== -1);
+      'sortOrder',
+      'secureHitCount',
+      'publicHitCount'], f) !== -1);
   });
 };
 
