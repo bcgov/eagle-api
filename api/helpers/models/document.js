@@ -48,5 +48,7 @@ module.exports = require('../models')('Document', {
   // TODO
   labels: [{ type: Mixed, default: {} }],
   isFeatured: { type: Boolean, default: false },
-  sortOrder: { type: Number, default: 0 }
+  sortOrder: { type: Number, default: 0 },
+  publicHitCount: { type: Number, default: 0 },
+  secureHitCount: { type: Number, default: 0 }
 }, 'epic');
