@@ -48,7 +48,9 @@ var getSanitizedFields = function (fields) {
       'isPublished',
       'internalMime',
       'isFeatured',
-      'sortOrder'], f) !== -1);
+      'sortOrder',
+      'publicHitCount',
+      'secureHitCount'], f) !== -1);
   });
 };
 
@@ -304,6 +306,15 @@ exports.publicDownload = function (args, res) {
         }
         var fileMeta;
 
+        // update document public hit count
+
+        mongoose.model('Document').findById(args.swagger.params.docId.value)
+        .then(doc => 
+        {
+          doc.publicHitCount++;
+          doc.save();
+        });
+
         // check if the file exists in Minio
         return MinioController.statObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, blob.internalURL)
           .then(function (objectMeta) {
@@ -364,6 +375,14 @@ exports.protectedDownload = function (args, res) {
           fileName = fileName + '.' + fileType;
         }
         var fileMeta;
+
+        // update document secure hit count
+        mongoose.model('Document').findById(args.swagger.params.docId.value)
+        .then(doc => 
+        {
+          doc.secureHitCount++;
+          doc.save();
+        });
 
         // check if the file exists in Minio
         return MinioController.statObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, blob.internalURL)
@@ -431,6 +450,14 @@ exports.protectedOpen = function (args, res) {
 
         var fileMeta;
 
+        // update document secure hit count
+        mongoose.model('Document').findById(args.swagger.params.docId.value)
+        .then(doc => 
+        {
+          doc.secureHitCount++;
+          doc.save();
+        });
+
         // check if the file exists in Minio
         return MinioController.statObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, blob.internalURL)
           .then(function (objectMeta) {
@@ -446,6 +473,7 @@ exports.protectedOpen = function (args, res) {
             res.setHeader('Content-Length', fileMeta.size);
             res.setHeader('Content-Type', fileMeta.metaData['content-type']);
             res.setHeader('Content-Disposition', 'inline;filename="' + fileName + '"');
+
             return rp(docURL).pipe(res);
           });
       } else {
