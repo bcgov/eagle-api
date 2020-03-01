@@ -272,8 +272,8 @@ definitions:
       - internalSize
       - isFeatured
       - sortOrder
-      - secureHitCount
       - publicHitCount
+      - secureHitCount
 ### Comment Definitions
   CommentId:
     type: object
