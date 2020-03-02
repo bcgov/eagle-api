@@ -34,8 +34,8 @@ function getLastGoodHashsetFromFile() {
 }
 
 function filterRelevantFolders(apiFolderJsonObj) {
-  let models = '';
-  let factories = '';
+  let models = {};
+  let factories = {};
   apiFolderJsonObj.children.forEach(function(apiSubfolder) {
     switch(apiSubfolder.name) {
     case 'helpers':

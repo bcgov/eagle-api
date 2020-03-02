@@ -36,8 +36,8 @@ function getLastGoodHashsetFromFile() {
 }
 
 function filterRelevantFolders(rootFolder) {
-  let lists = '';
-  let list_factory = '';
+  let lists = {};
+  let list_factory = {};
   rootFolder.children.forEach(function(rootSubfolder) {
     switch(rootSubfolder.name) {
     case 'migrations_data':

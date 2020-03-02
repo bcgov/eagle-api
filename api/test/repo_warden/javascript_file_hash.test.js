@@ -38,10 +38,10 @@ function getLastGoodHashsetFromFile() {
 function filterRelevantFolders(rootFolder) {
   const rootJsFiles = Object.assign({}, rootFolder.children.filter(item => (item.name.endsWith('.js'))));
   defaultLog.debug(rootJsFiles);
-  let one_off_migrationsJsFiles = '';
-  let openshiftJsFiles = '';
-  let templatesJsFiles = '';
-  let uploadsJsFiles = '';
+  let one_off_migrationsJsFiles = {};
+  let openshiftJsFiles = {};
+  let templatesJsFiles = {};
+  let uploadsJsFiles = {};
 
   rootFolder.children.forEach(function(rootSubfolder) {
     switch(rootSubfolder.name) {
