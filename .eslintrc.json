@@ -15,8 +15,8 @@
         "migrations_temp/",
         "one_off_migrations",
         "openshift/",
-        "seed/",
-        "api/test/generate-data/factories"
+        "api/test/factories",
+        "api/test/data_generators/"
     ],
     "rules": {
         "block-scoped-var": "error",

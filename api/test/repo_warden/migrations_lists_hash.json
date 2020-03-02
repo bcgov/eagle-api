@@ -1,0 +1,56 @@
+{
+    "lists": [
+    {
+        "name": "20190404201820-new-authors_docTypes_labels_headlineTypes.js",
+        "hash": "2VUVgPLHdX9QSSXrsepw9KE+vvg="
+    },
+    {
+        "name": "20190512102523-new-regions.js",
+        "hash": "OQIsSStYsU03p0Z3WE1WSac8ojA="
+    },
+    {
+        "name": "20190619151700-new-docTypes_labels.js",
+        "hash": "7JOO8jt8RiC7Sq1Grrg0W/0777E="
+    },
+    {
+        "name": "20190703105100-new-projectPhases.js",
+        "hash": "veUg5vNujUC+7M0zp06diNp2my8="
+    },
+    {
+        "name": "20191008204532-new-authors_docTypes_labels_projectPhases.js",
+        "hash": "8OnwMIXt0k2NUwn/GoMgPs3+usc="
+    },
+    {
+        "name": "20191216211917-new-labels.js",
+        "hash": "Lc1ThSPrpnPrTQFbUoE81cpm7vw="
+    },
+    {
+        "name": "20191216211917-update-labels.js",
+        "hash": "AnwHIn8i/7lcYKK7liL9DkXx9CU="
+    },
+    {
+        "name": "20191219230142-new-docTypes.js",
+        "hash": "M7pL78z1lz0f9lBvN2RQAkiuPjU="
+    },
+    {
+        "name": "20191219230142-update-docTypes.js",
+        "hash": "xhP6ziw7fqmC+ynV3E6CSnETyZI="
+    },
+    {
+        "name": "20200106221247-new-labels.js",
+        "hash": "9XKUTChUZ576QWIN/g0uwv18ZPA="
+    },
+    {
+        "name": "20200106221247-update-labels.js",
+        "hash": "VkmMwP4lP9QphwjKiRXaeDRsHoo="
+    },
+    {
+        "name": "20200106221500-new-ceaaInvolvments_eaDecisions.js",
+        "hash": "ORcpZ4c0S7erAJhhl66rC3BEmx4="
+    }
+    ],
+    "list_factory": {
+    "name": "list_factory.js",
+    "hash": "COedNDhU5GRAvcd1F2Ge5fRi0vM="
+    }
+}

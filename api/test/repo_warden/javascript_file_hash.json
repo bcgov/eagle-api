@@ -1,0 +1,41 @@
+{
+    "rootJsFiles": {
+    "0": {
+        "name": "cleanupInvalidTags.js",
+        "hash": "lVe+NeFWoiagFNE50bWfAcRvU08="
+    }
+    },
+    "one_off_migrationsJsFiles": {
+    "0": {
+        "name": "loadDocumentTags.js",
+        "hash": "eltoU1AIIYfYgxuzQ0u0lYMak1k="
+    },
+    "1": {
+        "name": "migrateDocuments.js",
+        "hash": "gp5UixHJ41DjmtgZSHvH28cQtVQ="
+    },
+    "2": {
+        "name": "migrateDocuments2.js",
+        "hash": "TU90FvPHhesw6x2I5r/hZWoiUTo="
+    },
+    "3": {
+        "name": "migrateMassDocTagging.js",
+        "hash": "dp/5puDcIk0jh0QkHykCOFUkcBU="
+    },
+    "4": {
+        "name": "migrateMassPartialTagging.js",
+        "hash": "zJfdjDYs6nc+C3JTYXYCM1F5XGo="
+    },
+    "5": {
+        "name": "migrateOldEpicGroups.js",
+        "hash": "t3dUQAeTR9AeDcAcH9fVLPCkMbI="
+    },
+    "6": {
+        "name": "migrateRestoreDisplayName.js",
+        "hash": "ay39hJLKQ+brR24JVqIWH9qZExk="
+    }
+    },
+    "openshiftJsFiles": {},
+    "templatesJsFiles": {},
+    "uploadsJsFiles": {}
+}

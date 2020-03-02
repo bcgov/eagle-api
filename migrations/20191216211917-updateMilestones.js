@@ -14,7 +14,8 @@ exports.setup = function(options, seedLink) {
   seed = seedLink;
 };
 
-let migrationItems = require(process.cwd() + '/migrations_data/milestone_lists');
+let milestonesToUpdate = require(process.cwd() + '/migrations_data/lists/20191216211917-update-labels.js');
+let milestonesToInsert = require(process.cwd() + '/migrations_data/lists/20191216211917-new-labels.js');
 
 exports.up = function(db) {
   let mClient;
@@ -22,7 +23,7 @@ exports.up = function(db) {
     .then((mClientInst) => {
       mClient = mClientInst;
       var p = mClient.collection('epic');
-      p.insert(migrationItems.newMilestones)
+      p.insert(milestonesToInsert)
       //Delete Revised Assessment Repo
       p.aggregate([
         { $match: {_schemaName:"List", type: "label"} }
@@ -60,8 +61,8 @@ exports.up = function(db) {
     });
 };
 function getMilestoneListObject(milestoneName) {
-  for (var i=0; i < migrationItems.milestoneList.length; i++) { 
-    const milestoneItem = migrationItems.milestoneList[i];
+  for (var i=0; i < milestonesToUpdate.length; i++) { 
+    const milestoneItem = milestonesToUpdate[i];
     if (milestoneItem.name === milestoneName || milestoneItem.oldName && milestoneItem.oldName === milestoneName) {
       return milestoneItem;
     }

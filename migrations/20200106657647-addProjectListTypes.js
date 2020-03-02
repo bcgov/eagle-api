@@ -14,7 +14,7 @@ exports.setup = function(options, seedLink) {
   seed = seedLink;
 };
 
-const listItems = require(process.cwd() + '/migrations_data/eaDecisionsAndIAACInvolvment');
+const listItems = require(process.cwd() + '/migrations_data/lists/20200106221500-new-ceaaInvolvments_eaDecisions.js');
 
 exports.up = function(db) {
   let mClient;
