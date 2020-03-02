@@ -17,7 +17,7 @@ factory.define(factoryName, RecentActivity, buildOptions => {
   let listsPool = (buildOptions.pipeline) ? 
     (buildOptions.pipeline.lists) ? buildOptions.pipeline.lists : null :
     (buildOptions.listsPool) ? buildOptions.listsPool : null;
-  const headlineTypes = listsPool.filter(listEntry => "headlineType" === listEntry.type);
+  const headlineTypes = (null == listsPool) ? [] : listsPool.filter(listEntry => "headlineType" === listEntry.type);
   
   let raType = faker.random.arrayElement(["News", "Public Comment Period"]);
   let dateUpdated = moment(faker.date.past(10, new Date()));

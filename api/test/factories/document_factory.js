@@ -35,10 +35,10 @@ factory.define(factoryName, Document, buildOptions => {
   let listsPool = (buildOptions.pipeline) ? 
     (buildOptions.pipeline.lists) ? buildOptions.pipeline.lists : null :
     (buildOptions.listsPool) ? buildOptions.listsPool : null;
-  const doctypes = listsPool.filter(listEntry => "doctype" === listEntry.type);
-  const authors = listsPool.filter(listEntry => "author" === listEntry.type);
-  const labels = listsPool.filter(listEntry => "label" === listEntry.type);
-  const projectPhases = listsPool.filter(listEntry => "projectPhase" === listEntry.type);
+  const doctypes = (null == listsPool) ? [] : listsPool.filter(listEntry => "doctype" === listEntry.type);
+  const authors = (null == listsPool) ? [] : listsPool.filter(listEntry => "author" === listEntry.type);
+  const labels = (null == listsPool) ? [] : listsPool.filter(listEntry => "label" === listEntry.type);
+  const projectPhases = (null == listsPool) ? [] : listsPool.filter(listEntry => "projectPhase" === listEntry.type);
 
   let author = factory_helper.generateFakePerson();
   let updator = faker.random.arrayElement([null, author, factory_helper.generateFakePerson()]);
@@ -54,7 +54,7 @@ factory.define(factoryName, Document, buildOptions => {
 
   let numberOfLabels = faker.random.number(5);
   let distinctLabelsForThisDoc = [];
-  for (let i = 0; i < numberOfLabels, i++;) {
+  for (let i = 0; i < numberOfLabels; i++) {
     let label = factory_helper.getRandomExistingListElementName(labels);
     if (distinctLabelsForThisDoc[label]) continue;
     distinctLabelsForThisDoc.push(label);

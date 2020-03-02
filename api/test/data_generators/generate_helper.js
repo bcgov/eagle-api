@@ -244,7 +244,7 @@ function generateRecentActivitiesSetForCommentPeriod(factoryKey, commentPeriod, 
   defaultLog.debug("commentPeriodRecentActivitiesToGen = " + commentPeriodRecentActivitiesToGen);
   return new Promise(function(resolve, reject) {
   let projectsPool = (buildOptions.pipeline) ? buildOptions.pipeline.projects : null;
-  const parentProject = projectsPool.filter(project => commentPeriod.project == project.id);
+  const parentProject = (null == projectsPool) ? [] : projectsPool.filter(project => commentPeriod.project == project.id);
   let contentUrl = (1 == parentProject.length) ? "/p/" + parentProject.shortName + "/commentperiod/" + commentPeriod._id + "" : "";
   let customRecentActivitySettings = { documentUrl: "", contentUrl: contentUrl, project: null, pcp: factory_helper.ObjectId(commentPeriod._id) };
     factory.createMany(factoryKey, commentPeriodRecentActivitiesToGen, customRecentActivitySettings, buildOptions).then(recentActivities => {

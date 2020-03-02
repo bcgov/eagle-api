@@ -86,10 +86,10 @@ factory.define(factoryName, Project, buildOptions =>{
     let usersPool = (buildOptions.usersPool) ? buildOptions.usersPool : null;
     let organizationsPool = (buildOptions.orgsPool) ? buildOptions.orgsPool : null;
     let listsPool = (buildOptions.listsPool) ? buildOptions.listsPool : null;
-    const ceaaInvolvements = listsPool.filter(listEntry => "ceaaInvolvements" === listEntry.type);
-    const eacDecisions = listsPool.filter(listEntry => "eaDecisions" === listEntry.type);
-    const projectPhases = listsPool.filter(listEntry => "projectPhase" === listEntry.type);
-    const regions = listsPool.filter(listEntry => "region" === listEntry.type);
+    const ceaaInvolvements = (null == listsPool) ? [] : listsPool.filter(listEntry => "ceaaInvolvements" === listEntry.type);
+    const eacDecisions = (null == listsPool) ? [] : listsPool.filter(listEntry => "eaDecisions" === listEntry.type);
+    const projectPhases = (null == listsPool) ? [] : listsPool.filter(listEntry => "projectPhase" === listEntry.type);
+    const regions = (null == listsPool) ? [] : listsPool.filter(listEntry => "region" === listEntry.type);
 
     let projectName = faker.company.companyName() + " " + faker.random.arrayElement(projectNameSuffixes);
     let decisionDate = moment(faker.date.past(10, new Date()));
