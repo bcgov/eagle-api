@@ -86,7 +86,7 @@ const hintMsg = `
 *    so that they start with a valid 'YYYYMMDDHHmmss-' prefix like the other files as they are sorted
 *    in descending chronological order when used by the lists factory.
 * 3. Run this test locally from project folder ./
-*      node_modules/.bin/jest ./api/test/repo_warden/migrations_lists_integrity_check.test.js
+*      node_modules/.bin/jest ./api/test/repo_warden/migrations_lists_hash.test.js
 * 4. Open ./api/test/repo_warden/migrations_lists_hash.json
 * 5. Look at the contents, clear them and then copy-paste your output from step 3 into the file
 * 6. Re-run step 3 and make any fixes until the test passes

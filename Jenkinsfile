@@ -59,6 +59,10 @@ def getChangeLog(pastBuilds) {
   return log;
 }
 
+/*
+ * Using fake credentials for the environment variables.
+ * They just need to be there as placeholders for some of the unit tests.
+ */
 def nodejsTester () {
   openshift.withCluster() {
     openshift.withProject() {
@@ -80,6 +84,13 @@ def nodejsTester () {
             resourceLimitMemory: '4Gi',
             workingDir: '/tmp',
             command: '',
+            envVars: [
+                envVar(key: 'MONGODB_DATABASE', value: 'epic'), 
+                envVar(key: 'MINIO_ACCESS_KEY', value: 'xxxx'),
+                envVar(key: 'MINIO_SECRET_KEY', value: 'xxxx'),
+                envVar(key: 'MINIO_HOST', value: 'foo.pathfinder.gov.bc.ca'),
+                envVar(key: 'KEYCLOAK_ENABLED', value: 'true')
+            ]
           )
         ]
       ) {

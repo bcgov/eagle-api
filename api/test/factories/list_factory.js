@@ -107,8 +107,6 @@ function getAllLists() {
   return allLists;
 }
 
-refreshListsFromMigrationData();
-
 factory.define(factoryName, List, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
   factory_helper.faker = faker;
