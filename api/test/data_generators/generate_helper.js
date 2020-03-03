@@ -36,12 +36,12 @@ const gd = require('./generated_data');
 let defaultLog = app_helper.defaultLog;
 
 // logging levels
-let isInfoMode = _.isEmpty(process.env.LOGGING_INFO) ? false : process.env.LOGGING_INFO;
-let isDebugMode = _.isEmpty(process.env.LOGGING_DEBUG) ? false : process.env.LOGGING_DEBUG;
+let isInfoMode = _.isEmpty(process.env.LOGGING_INFO) ? false : ('true' == process.env.LOGGING_INFO);
+let isDebugMode = _.isEmpty(process.env.LOGGING_DEBUG) ? false : ('true' == process.env.LOGGING_DEBUG);
 
 // file generation settings
-let generateFiles = _.isEmpty(process.env.GENERATE_FILES) ? true : process.env.GENERATE_FILES;
-let persistFiles = _.isEmpty(process.env.PERSIST_FILES) ? false : process.env.PERSIST_FILES;  // this will consume disk space over time but is essential for debugging
+let generateFiles = _.isEmpty(process.env.GENERATE_FILES) ? true : ('true' == process.env.GENERATE_FILES);
+let persistFiles = _.isEmpty(process.env.PERSIST_FILES) ? false : ('true' == process.env.PERSIST_FILES);  // this will consume disk space over time but is essential for debugging
 
 // Used to generate random values in the range [0 to CeilingValue] for correspondingly named objects
 let generatorCeilings = {

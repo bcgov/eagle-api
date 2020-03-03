@@ -86,22 +86,26 @@ function getDataGenerationSettings() {
     return new Promise(resolve => {
       let fileContents = '';
       fs.readFileSync(filepath).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; });
-      let jsonObj = JSON.parse(fileContents);
-      jsonObj.projects = Number(jsonObj.projects);
-      jsonObj.save_to_persistent_mongo = ('Saved' == jsonObj.data_mode);
-      jsonObj.generate_consistent_data = ('Static' == jsonObj.seed_mode);
-      jsonObj.generate = ('true' == jsonObj.generate);
-      resolve(jsonObj);
+      let settingsObj = JSON.parse(fileContents);
+      settingsObj.projects = Number(settingsObj.projects);
+      settingsObj.save_to_persistent_mongo = ('Saved' == settingsObj.data_mode);
+      settingsObj.generate_consistent_data = ('Static' == settingsObj.seed_mode);
+      settingsObj.generate = ('true' == settingsObj.generate);
+      resolve(settingsObj);
     });
   } else {
     return new Promise(resolve => {
-      let jsonObj = {
-        generate: _.isEmpty(process.env.GENERATE_ON) ? false : process.env.GENERATE_ON,
-        projects: _.isEmpty(process.env.GENERATE_NUM_OF_PROJECTS) ? defaultNumberOfProjects : process.env.GENERATE_NUM_OF_PROJECTS,
-        save_to_persistent_mongo: _.isEmpty(process.env.GENERATE_SAVE_TO_PERSISTENT_MONGO) ? false : process.env.GENERATE_SAVE_TO_PERSISTENT_MONGO,
-        generate_consistent_data: _.isEmpty(process.env.GENERATE_CONSISTENT_DATA) ? true : process.env.GENERATE_CONSISTENT_DATA,
+      let data_mode = _.isEmpty(process.env.GENERATE_DATA_MODE) ? 'Unsaved' : process.env.GENERATE_DATA_MODE;
+      let seed_mode = _.isEmpty(process.env.GENERATE_SEED_MODE) ? 'Static' : process.env.GENERATE_SEED_MODE;
+      let settingsObj = {
+        data_mode: data_mode,
+        seed_mode: seed_mode,
+        projects: _.isEmpty(process.env.GENERATE_NUM_OF_PROJECTS) ? defaultNumberOfProjects : Number(process.env.GENERATE_NUM_OF_PROJECTS),
+        save_to_persistent_mongo: ('Saved' == data_mode),
+        generate_consistent_data: ('Static' == seed_mode),
+        generate: _.isEmpty(process.env.GENERATE_ON) ? false : ('true' == process.env.GENERATE_ON)
       };
-      resolve(jsonObj);
+      resolve(settingsObj);
     });
   }
 }
