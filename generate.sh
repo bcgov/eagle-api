@@ -30,5 +30,5 @@ JSON="{\"generate\":\"true\",\"projects\":\"$PROJECTS\",\"seed_mode\":\"$SEED_MO
 #printf "$JSON\n";
 rm -f /tmp/generate.config;
 printf "$JSON" > /tmp/generate.config;
-node_modules/.bin/jest ./api/test/generate-data/generate.test.js;
+node_modules/.bin/jest ./api/test/data_generators/generate.test.js;
 rm -f /tmp/generate.config;

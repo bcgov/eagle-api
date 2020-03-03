@@ -14,7 +14,7 @@ exports.setup = function(options, seedLink) {
   seed = seedLink;
 };
 
-let listItems = require(process.cwd() + '/migrations_data/regionlist.js');
+let listItems = require(process.cwd() + '/migrations_data/lists/20190512102523-new-regions.js');
 
 exports.up = function(db) {
   let mClient;

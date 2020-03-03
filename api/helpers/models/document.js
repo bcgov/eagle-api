@@ -44,10 +44,10 @@ module.exports = require ('../models')('Document', {
     keywords         : { type: String, default: '' },
     legislation      : { type: Number, default: 0 },
     legislationYearVetted : { type: Boolean, default: false },
-
     // TODO
     labels           : [{ type: Mixed, default: {} }],
     isFeatured       : { type: Boolean, default: false },
-    links            : [{ type: Mixed }],
-    sortOrder        : { type: Number, default: 0 }
+    sortOrder        : { type: Number, default: 0 },
+    publicHitCount   : { type: Number, default: 0 },
+    secureHitCount   : { type: Number, default: 0 }
 }, 'epic');

@@ -1,6 +1,6 @@
 const request = require('supertest');
 const test_helper = require('../../test_helper');
-const generate_helper = require('../../generate-data/generate_helper');
+const generate_helper = require('../../data_generators/generate_helper');
 const organization = require('../../../controllers/organization');
 
 // Import any models used in the tests.

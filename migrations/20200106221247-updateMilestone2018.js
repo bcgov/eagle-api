@@ -14,7 +14,8 @@ exports.setup = function(options, seedLink) {
   seed = seedLink;
 }
 
-let migrationItems = require(process.cwd() + '/migrations_data/milestone_lists_2018_fix');
+let milestonesToUpdate = require(process.cwd() + '/migrations_data/lists/20200106221247-update-labels.js');
+let milestonesToInsert = require(process.cwd() + '/migrations_data/lists/20200106221247-new-labels.js');
   exports.up = function(db) {
     let mClient;
     return db.connection.connect(db.connectionString, { native_parser: true})
@@ -32,7 +33,7 @@ let migrationItems = require(process.cwd() + '/migrations_data/milestone_lists_2
               p.deleteOne({_id: item._id});
               continue;
             }
-            const lookupMilestone = getListObject(migrationItems.milestoneList, item.name, item.legislation);
+            const lookupMilestone = getListObject(milestonesToUpdate, item.name, item.legislation);
             if (lookupMilestone) {
               p.update(
                 {
@@ -46,9 +47,9 @@ let migrationItems = require(process.cwd() + '/migrations_data/milestone_lists_2
                 }
               )
             }
-            }
-            p.insert(migrationItems.newMilestones)
-            mClient.close();
+          }
+          p.insert(milestonesToInsert)
+          mClient.close();
         })
         //Add in new milestone object
       })
