@@ -95,10 +95,10 @@ function getDataGenerationSettings() {
   } else {
     return new Promise(resolve => {
       let jsonObj = {
-        generate: false,
-        projects: defaultNumberOfProjects,
-        save_to_persistent_mongo: false,
-        generate_consistent_data: true,
+        generate: _.isEmpty(process.env.GENERATE_ON) ? false : process.env.GENERATE_ON,
+        projects: _.isEmpty(process.env.GENERATE_NUM_OF_PROJECTS) ? defaultNumberOfProjects : process.env.GENERATE_NUM_OF_PROJECTS,
+        save_to_persistent_mongo: _.isEmpty(process.env.GENERATE_SAVE_TO_PERSISTENT_MONGO) ? false : process.env.GENERATE_SAVE_TO_PERSISTENT_MONGO,
+        generate_consistent_data: _.isEmpty(process.env.GENERATE_CONSISTENT_DATA) ? true : process.env.GENERATE_CONSISTENT_DATA,
       };
       resolve(jsonObj);
     });
