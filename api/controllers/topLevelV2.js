@@ -26,25 +26,25 @@ exports.getTopLevel = async function (args, res) {
       version: '1.0.0',
       links:
         [
-            { rel: 'self', title: 'API Top Level', method: 'GET', href: '/api/v2/' },
-            { rel: 'fetch', title: 'Public Projects List', method: 'GET', href: '/api/v2/Public/Projects' },
-            { rel: 'fetch', title: 'Public Documents List', method: 'GET', href: '/api/v2/Public/Documents' },
-            { rel: 'create', title: 'Public Documents Create', method: 'POST', href: '/api/v2/Public/Documents' }
+          { rel: 'self', title: 'API Top Level', method: 'GET', href: '/api/v2/' },
+          { rel: 'fetch', title: 'Public Projects List', method: 'GET', href: '/api/v2/Public/Projects' },
+          { rel: 'fetch', title: 'Public Documents List', method: 'GET', href: '/api/v2/Public/Documents' },
+          { rel: 'create', title: 'Public Documents Create', method: 'POST', href: '/api/v2/Public/Documents' }
         ]
     };
 
     // secure links
     if (Object.prototype.hasOwnProperty.call(args.swagger.params, 'auth_payload') && args.swagger.params.auth_payload.preferred_username !== 'public') {
-        topLevelData.links.push({ rel: 'fetch', title: 'Secure Projects List', method: 'GET', href: '/api/v2/Projects' });
-        topLevelData.links.push({ rel: 'create', title: 'Secure Projects Create', method: 'POST', href: '/api/v2/Projects' });
-        topLevelData.links.push({ rel: 'fetch', title: 'Secure Documents List', method: 'GET', href: '/api/v2/Documents' });
-        topLevelData.links.push({ rel: 'create', title: 'Secure Documents Create', method: 'POST', href: '/api/v2/Documents' });
+      topLevelData.links.push({ rel: 'fetch', title: 'Secure Projects List', method: 'GET', href: '/api/v2/Projects' });
+      topLevelData.links.push({ rel: 'create', title: 'Secure Projects Create', method: 'POST', href: '/api/v2/Projects' });
+      topLevelData.links.push({ rel: 'fetch', title: 'Secure Documents List', method: 'GET', href: '/api/v2/Documents' });
+      topLevelData.links.push({ rel: 'create', title: 'Secure Documents Create', method: 'POST', href: '/api/v2/Documents' });
 
-        /* Endpoints without a bindable link (we don't return PIN or MEMBER(user) resources yet)
+      /* Endpoints without a bindable link (we don't return PIN or MEMBER(user) resources yet)
           { rel: 'self', title: 'API Top Level', method: 'GET', href: '/api/v2/' },
           { rel: 'fetch', title: 'Public Projects List', method: 'GET', href: '/api/v2/Public/Projects' },
         ]*/
-    };
+    }
     Actions.sendResponseV2(res, 200, topLevelData);
   } catch (e) {
     defaultLog.error('### Error in {GET} / :', e);

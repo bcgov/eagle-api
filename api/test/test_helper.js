@@ -189,8 +189,8 @@ async function mongooseConnect() {
       }
     } else {
       if (mongoServer) {
-        mongoUri = await mongoServer.getConnectionString()
-      };
+        mongoUri = await mongoServer.getConnectionString();
+      }
     }
     checkMongoUri();
     await mongoose.connect(mongoUri, mongooseOpts, (err) => {
@@ -198,14 +198,14 @@ async function mongooseConnect() {
     });
     defaultLog.info(mongoUri);
   }
-};
+}
 
 // we only wish to run migrations on databases which have never run migrations before
 async function checkMigrations(callback) {
   checkMongoUri();
   let options;
-  if ((!_.isEmpty(app_helper.credentials)) 
-  && (!_.isEmpty(app_helper.credentials.db_username)) 
+  if ((!_.isEmpty(app_helper.credentials))
+  && (!_.isEmpty(app_helper.credentials.db_username))
   && (!_.isEmpty(app_helper.credentials.db_password))) {
     options = {};
     let auth = {};
@@ -221,7 +221,7 @@ async function checkMigrations(callback) {
     let mcn = migrationsCollectionName;
     dbo.listCollections({name: mcn}).toArray(function(err, collInfos) {
       if (0 == collInfos.length) {
-        dbo.createCollection(mcn, function(err, res) {
+        dbo.createCollection(mcn, function(err) {
           if (err) if (0 == err.message.includes('Cannot use a session that has ended')) defaultLog.error(err);
           defaultLog.verbose(mcn + ' collection created');
           db.close();
@@ -244,7 +244,7 @@ async function runMigrations(migrationCount) {
   checkMongoUri();
   if (-1 == mongoUri.indexOf('localhost')) return;  // TODO make this work in both memory-server instances and on deployments via database.json
   if (0 < migrationCount) return;
-  await exec('./node_modules/db-migrate/bin/db-migrate up', function(err, stdout, stderr) {
+  await exec('./node_modules/db-migrate/bin/db-migrate up', function(err) {
     if (err) defaultLog.error(err);
   });
 }

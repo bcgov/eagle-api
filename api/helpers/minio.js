@@ -22,12 +22,11 @@ var BUCKETS = _.isEmpty(process.env.MINIO_BUCKET_NAME) ? { DOCUMENTS_BUCKET: 'up
 
 exports.BUCKETS = BUCKETS;
 
-var isMockService = function()
-{
-    // If our host is set to the default configuration, assume that we're not running
-    // a local minio client and just ignore all minio calls
-    return minioClient.host === 'foo.pathfinder.gov.bc.ca';
-}
+var isMockService = function() {
+  // If our host is set to the default configuration, assume that we're not running
+  // a local minio client and just ignore all minio calls
+  return minioClient.host === 'foo.pathfinder.gov.bc.ca';
+};
 
 /**
  * Checks wether the provided bucket name is a valid (known) bucket.
@@ -129,7 +128,7 @@ exports.putDocument = putDocument;
  * @param fileName the name of the file
  */
 var deleteDocument = function (bucket, projectCode, fileName) {
-  if(isMockService()) return Promise.resolve(() => { return {} });
+  if(isMockService()) return Promise.resolve(() => { return {}; });
   return minioClient.removeObject(bucket, projectCode + '/' + fileName)
     .then(function (result, err) {
       if (err) {
