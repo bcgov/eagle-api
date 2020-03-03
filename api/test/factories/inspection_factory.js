@@ -1,0 +1,54 @@
+const factory = require('factory-girl').factory;
+const factory_helper = require('./factory_helper');
+const Inspection = require('../../helpers/models/inspection');
+let faker = require('faker/locale/en');
+
+const factoryName = Inspection.modelName;
+
+factory.define(factoryName, Inspection, buildOptions => {
+  if (buildOptions.faker) faker = buildOptions.faker;
+  factory_helper.faker = faker;
+  
+  let author = factory_helper.generateFakePerson();
+  let updator = faker.random.arrayElement([null, author, factory_helper.generateFakePerson()]);
+  let deletor = faker.random.arrayElement([null, author, updator, factory_helper.generateFakePerson()]);
+
+  let updatedDate = moment(faker.date.past(10, new Date()));
+  let endDate = updatedDate.clone().subtract(faker.random.number(45), 'days');
+  let createdDate = endDate.clone().subtract(faker.random.number(45), 'days');
+  let startDate = createdDate.clone();
+  if (0 == updator.length) updatedDate = null;
+
+  let attrs = {
+      _id              : factory_helper.ObjectId()
+    // Tracking
+    , _schemaName      : "Inspection"
+    , _createdDate     : createdDate
+    , _updatedDate     : updatedDate
+    , _addedBy         : author.idir
+    , _updatedBy       : updator.idir
+    , _deletedBy       : deletor.idir
+
+    // Note: Default on tag property is purely for display only, they have no real effect on the model
+    // This must be done in the code.
+    , read             : faker.random.arrayElement([["inspector"], ["sysadmin"], ["inspector"], ["sysadmin"]])
+    , write            : faker.random.arrayElement([["inspector"], ["sysadmin"], ["inspector"], ["sysadmin"]])
+    , delete           : faker.random.arrayElement([["inspector"], ["sysadmin"], ["inspector"], ["sysadmin"]])
+
+    // Not editable
+    , name             : author.fullName
+    , label            : faker.lorem.sentence()
+    , case             : faker.lorem.sentence()
+    , email            : author.emailAddress
+    , startDate        : startDate
+    , endDate          : endDate
+    , elements         : [factory_helper.ObjectId(), factory_helper.ObjectId(), factory_helper.ObjectId()]
+    , customProjectName: ''
+    , project          : factory_helper.ObjectId()
+    , inspectionId     : "abc123-abc123-abc123"  // TODO: mock this out properly
+  };
+  return attrs;
+});
+
+exports.factory = factory;
+exports.name = factoryName;

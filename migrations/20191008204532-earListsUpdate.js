@@ -15,7 +15,7 @@ exports.setup = function(options, seedLink) {
   seed = seedLink;
 };
 
-let listItems = require(process.cwd() + '/migrations_data/ear_lists');
+let listItems = require(process.cwd() + '/migrations_data/lists/20191008204532-new-authors_docTypes_labels_projectPhases.js');
 
 exports.up = function(db) {
   // create 2018 lists
