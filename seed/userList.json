@@ -1,8 +1,0 @@
-[
-    {
-        "username": "admin",
-        "password": "admin",
-        "displayName": "Eagle Admin",
-        "roles": ["sysadmin", "public"]
-    }
-]

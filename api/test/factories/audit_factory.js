@@ -1,0 +1,28 @@
+const factory = require('factory-girl').factory;
+const Audit = require('../../helpers/models/audit');
+let faker = require('faker/locale/en');
+
+const factoryName = Audit.modelName;
+
+factory.define(factoryName, Audit, buildOptions => {
+    if (buildOptions.faker) faker = buildOptions.faker;
+
+    let attrs = {
+          action: "mock"
+        , meta: "mock"
+        , _objectSchema: "mock"
+        , addedBy: ''
+        , updatedBy: ''
+        , deletedBy: ''
+        , performedBy: ''
+        , timestamp: Date.now()
+        // Permissions
+        , write: []
+        , read: []
+        , delete: []
+    }
+    return attrs;
+});
+
+exports.factory = factory;
+exports.name = factoryName;

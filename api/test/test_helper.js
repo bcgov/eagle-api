@@ -4,28 +4,42 @@ const DatabaseCleaner = require('database-cleaner');
 const dbCleaner = new DatabaseCleaner('mongodb');
 const mongoose = require('mongoose');
 const mongooseOpts = require('../../config/mongoose_options').mongooseOptions;
+const app_helper = require('../../app_helper');
 const mongoDbMemoryServer = require('mongodb-memory-server');
 const MongoClient = require('mongodb').MongoClient;
 const exec = require('child_process').exec;
 const _ = require('lodash');
 const fs = require('fs');
-
+const fh = require('./factories/factory_helper');
+const projectGenerationTime = 5 * 1000;
+const prerequisiteGenerationTime = 30 * 1000;
 const app = express();
+let defaultLog = app_helper.defaultLog;
 const defaultNumberOfProjects = 1;
-
+let performMigrations = false;  // migrations used to be necessary to load the lists but we now load them directly via the list factory
 let mongoServer;
-let mongoUri = '';  // not initializing to localhost here on purpose - would rather error out than corrupt a persistent db
+let mongoUri = "";  // not initializing to localhost here on purpose - would rather error out than corrupt a persistent db
 mongoose.Promise = global.Promise;
 setupAppServer();
 
-jest.setTimeout(10000);
+let jestTimeout = 10 * 1000;
+
+jest.setTimeout(jestTimeout);
 
 beforeAll(async () => {
   let genSettings = await dataGenerationSettings;
-  if (2 < genSettings.projects) jest.setTimeout(5000 * genSettings.projects);
+  if (2 < genSettings.projects) {
+    jestTimeout = jestTimeout + (genSettings.projects * projectGenerationTime);
+    jest.setTimeout(jestTimeout);
+  }
   if (!genSettings.save_to_persistent_mongo) mongoServer = instantiateInMemoryMongoServer();
   await mongooseConnect();
-  if (genSettings.generate) await checkMigrations(runMigrations);
+  if ((performMigrations) && (genSettings.generate) && (genSettings.save_to_persistent_mongo)) await checkMigrations(runMigrations);
+  if (!fs.existsSync(fh.generatedDocSamples.L)) {
+    jestTimeout = jestTimeout + prerequisiteGenerationTime;
+    jest.setTimeout(jestTimeout);
+    await fh.generatePrerequisitePdfs();
+  }
 });
 
 beforeEach(async () => {
@@ -64,7 +78,6 @@ function setupAppServer() {
 function checkMongoUri() {
   if ('' == mongoUri) throw 'Mongo URI is not set';
 }
-
 
 function getDataGenerationSettings() {
   let filepath = '/tmp/generate.config';
@@ -169,27 +182,56 @@ async function mongooseConnect() {
   if (!(mongoose.connection && mongoose.connection.db)) {
     let genSettings = await dataGenerationSettings;
     if (genSettings.save_to_persistent_mongo) {
-      mongoUri = 'mongodb://localhost/epic';
+      mongoUri = app_helper.dbConnection;
+      if (!_.isEmpty(app_helper.credentials)) {
+        mongooseOpts.user = app_helper.credentials.db_username;
+        mongooseOpts.pass = app_helper.credentials.db_password;
+      }
     } else {
       if (mongoServer) {
-        mongoUri = await mongoServer.getConnectionString();
-      }
+        mongoUri = await mongoServer.getConnectionString()
+      };
     }
     checkMongoUri();
     await mongoose.connect(mongoUri, mongooseOpts, (err) => {
-      if (err) console.error(err);
+      if (err) defaultLog.error(err);
     });
-    console.log(mongoUri);
+    defaultLog.info(mongoUri);
   }
-}
+};
 
+// we only wish to run migrations on databases which have never run migrations before
 async function checkMigrations(callback) {
   checkMongoUri();
-  MongoClient.connect(mongoUri, function(err, db) {
-    if (err) console.error(err);
-    var dbo = db.db('epic');
-    dbo.collection('migrations').countDocuments({}, function(err, numOfDocs){
-      if (err) console.error(err);
+  let options;
+  if ((!_.isEmpty(app_helper.credentials)) 
+  && (!_.isEmpty(app_helper.credentials.db_username)) 
+  && (!_.isEmpty(app_helper.credentials.db_password))) {
+    options = {};
+    let auth = {};
+    auth.user = app_helper.credentials.db_username;
+    auth.password = app_helper.credentials.db_password;
+    options.auth = auth;
+  }
+  MongoClient.connect(mongoUri, options, function(err, db) {
+    if (err) defaultLog.error(err);
+    var dbo = db.db(app_helper.dbName);
+    const runMigrations = 0;
+    const migrationsCollectionName = 'migrations';
+    let mcn = migrationsCollectionName;
+    dbo.listCollections({name: mcn}).toArray(function(err, collInfos) {
+      if (0 == collInfos.length) {
+        dbo.createCollection(mcn, function(err, res) {
+          if (err) if (0 == err.message.includes('Cannot use a session that has ended')) defaultLog.error(err);
+          defaultLog.verbose(mcn + ' collection created');
+          db.close();
+          callback(runMigrations);
+        });
+        return;
+      }
+    });
+    dbo.collection(mcn).countDocuments({}, function(err, numOfDocs){
+      if (err) defaultLog.error(err);
       db.close();
       callback(numOfDocs);
     });
@@ -197,10 +239,13 @@ async function checkMigrations(callback) {
 }
 
 async function runMigrations(migrationCount) {
-  if (0 < migrationCount) return;
+  let genSettings = await dataGenerationSettings;
+  if (!genSettings.save_to_persistent_mongo) return;
   checkMongoUri();
-  await exec('./node_modules/db-migrate/bin/db-migrate up', function(err) {
-    if (err) console.error(err);
+  if (-1 == mongoUri.indexOf('localhost')) return;  // TODO make this work in both memory-server instances and on deployments via database.json
+  if (0 < migrationCount) return;
+  await exec('./node_modules/db-migrate/bin/db-migrate up', function(err, stdout, stderr) {
+    if (err) defaultLog.error(err);
   });
 }
 

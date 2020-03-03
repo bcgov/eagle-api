@@ -8,36 +8,14 @@ var swaggerTools  = require('swagger-tools');
 var YAML          = require('yamljs');
 var auth          = require('./api/helpers/auth');
 var swaggerConfig = YAML.load('./api/swagger/swagger.yaml');
-var winston       = require('winston');
 var bodyParser    = require('body-parser');
 var app_helper    = require('./app_helper');
-
-var dbConnection  = 'mongodb://'
-                    + (process.env.MONGODB_SERVICE_HOST || process.env.DB_1_PORT_27017_TCP_ADDR || 'localhost')
-                    + '/'
-                    + (process.env.MONGODB_DATABASE || 'epic');
-var db_username = process.env.MONGODB_USERNAME || '';
-var db_password = process.env.MONGODB_PASSWORD || '';
-var credentials = {
-  db_username : db_username,
-  db_password : db_password
-};
 
 var api_default_port = 3000;
 
 var express_server;
 
-// Logging middleware
-winston.loggers.add('default', {
-  console: {
-    colorize: 'true',
-    handleExceptions: true,
-    json: false,
-    level: 'silly',
-    label: 'default',
-  }
-});
-var defaultLog = winston.loggers.get('default');
+var defaultLog = app_helper.defaultLog;
 
 // Increase postbody sizing
 app.use(bodyParser.json({limit: '10mb', extended: true}));
@@ -93,7 +71,7 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
     // Fall through - uploads will continue to fail until this is resolved locally.
     defaultLog.info('Couldn\'t create upload folder:', e);
   }
-  app_helper.loadMongoose(dbConnection, credentials, defaultLog).then(() => {
+  app_helper.loadMongoose().then(() => {
     express_server = app.listen(api_default_port, '0.0.0.0', function() {
       defaultLog.info('Started server on port ' + api_default_port);
     });
@@ -114,4 +92,4 @@ function shutdown() {
 
 exports.shutdown = shutdown;
 exports.api_default_port = api_default_port;
-exports.dbConnection = dbConnection;
+exports.dbConnection = app_helper.dbConnection;

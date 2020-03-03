@@ -14,7 +14,7 @@ exports.setup = function(options, seedLink) {
   seed = seedLink;
 };
 
-let listItems = require(process.cwd() + '/migrations_data/updatedDocTypes.js');
+let listItems = require(process.cwd() + '/migrations_data/lists/20191219230142-new-docTypes.js');
 
 exports.up = function(db) {
   let mClient;
