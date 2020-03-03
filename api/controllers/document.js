@@ -309,11 +309,10 @@ exports.publicDownload = function (args, res) {
         // update document public hit count
 
         mongoose.model('Document').findById(args.swagger.params.docId.value)
-        .then(doc => 
-        {
-          doc.publicHitCount++;
-          doc.save();
-        });
+          .then(doc => {
+            doc.publicHitCount++;
+            doc.save();
+          });
 
         // check if the file exists in Minio
         return MinioController.statObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, blob.internalURL)
@@ -378,11 +377,10 @@ exports.protectedDownload = function (args, res) {
 
         // update document secure hit count
         mongoose.model('Document').findById(args.swagger.params.docId.value)
-        .then(doc => 
-        {
-          doc.secureHitCount++;
-          doc.save();
-        });
+          .then(doc => {
+            doc.secureHitCount++;
+            doc.save();
+          });
 
         // check if the file exists in Minio
         return MinioController.statObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, blob.internalURL)
@@ -452,11 +450,10 @@ exports.protectedOpen = function (args, res) {
 
         // update document secure hit count
         mongoose.model('Document').findById(args.swagger.params.docId.value)
-        .then(doc => 
-        {
-          doc.secureHitCount++;
-          doc.save();
-        });
+          .then(doc => {
+            doc.secureHitCount++;
+            doc.save();
+          });
 
         // check if the file exists in Minio
         return MinioController.statObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, blob.internalURL)

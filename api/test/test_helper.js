@@ -36,6 +36,7 @@ beforeAll(async () => {
   await mongooseConnect();
   if ((performMigrations) && (genSettings.generate) && (genSettings.save_to_persistent_mongo)) await checkMigrations(runMigrations);
   if (!fs.existsSync(fh.generatedDocSamples.L)) {
+    // eslint-disable-next-line require-atomic-updates
     jestTimeout = jestTimeout + prerequisiteGenerationTime;
     jest.setTimeout(jestTimeout);
     await fh.generatePrerequisitePdfs();
@@ -85,22 +86,26 @@ function getDataGenerationSettings() {
     return new Promise(resolve => {
       let fileContents = '';
       fs.readFileSync(filepath).toString().split('\n').forEach(function (line) { fileContents = fileContents + line; });
-      let jsonObj = JSON.parse(fileContents);
-      jsonObj.projects = Number(jsonObj.projects);
-      jsonObj.save_to_persistent_mongo = ('Saved' == jsonObj.data_mode);
-      jsonObj.generate_consistent_data = ('Static' == jsonObj.seed_mode);
-      jsonObj.generate = ('true' == jsonObj.generate);
-      resolve(jsonObj);
+      let settingsObj = JSON.parse(fileContents);
+      settingsObj.projects = Number(settingsObj.projects);
+      settingsObj.save_to_persistent_mongo = ('Saved' == settingsObj.data_mode);
+      settingsObj.generate_consistent_data = ('Static' == settingsObj.seed_mode);
+      settingsObj.generate = ('true' == settingsObj.generate);
+      resolve(settingsObj);
     });
   } else {
     return new Promise(resolve => {
-      let jsonObj = {
-        generate: false,
-        projects: defaultNumberOfProjects,
-        save_to_persistent_mongo: false,
-        generate_consistent_data: true,
+      let data_mode = _.isEmpty(process.env.GENERATE_DATA_MODE) ? 'Unsaved' : process.env.GENERATE_DATA_MODE;
+      let seed_mode = _.isEmpty(process.env.GENERATE_SEED_MODE) ? 'Static' : process.env.GENERATE_SEED_MODE;
+      let settingsObj = {
+        data_mode: data_mode,
+        seed_mode: seed_mode,
+        projects: _.isEmpty(process.env.GENERATE_NUM_OF_PROJECTS) ? defaultNumberOfProjects : Number(process.env.GENERATE_NUM_OF_PROJECTS),
+        save_to_persistent_mongo: ('Saved' == data_mode),
+        generate_consistent_data: ('Static' == seed_mode),
+        generate: _.isEmpty(process.env.GENERATE_ON) ? false : ('true' == process.env.GENERATE_ON)
       };
-      resolve(jsonObj);
+      resolve(settingsObj);
     });
   }
 }
@@ -189,8 +194,8 @@ async function mongooseConnect() {
       }
     } else {
       if (mongoServer) {
-        mongoUri = await mongoServer.getConnectionString()
-      };
+        mongoUri = await mongoServer.getConnectionString();
+      }
     }
     checkMongoUri();
     await mongoose.connect(mongoUri, mongooseOpts, (err) => {
@@ -198,14 +203,14 @@ async function mongooseConnect() {
     });
     defaultLog.info(mongoUri);
   }
-};
+}
 
 // we only wish to run migrations on databases which have never run migrations before
 async function checkMigrations(callback) {
   checkMongoUri();
   let options;
-  if ((!_.isEmpty(app_helper.credentials)) 
-  && (!_.isEmpty(app_helper.credentials.db_username)) 
+  if ((!_.isEmpty(app_helper.credentials))
+  && (!_.isEmpty(app_helper.credentials.db_username))
   && (!_.isEmpty(app_helper.credentials.db_password))) {
     options = {};
     let auth = {};
@@ -221,7 +226,7 @@ async function checkMigrations(callback) {
     let mcn = migrationsCollectionName;
     dbo.listCollections({name: mcn}).toArray(function(err, collInfos) {
       if (0 == collInfos.length) {
-        dbo.createCollection(mcn, function(err, res) {
+        dbo.createCollection(mcn, function(err) {
           if (err) if (0 == err.message.includes('Cannot use a session that has ended')) defaultLog.error(err);
           defaultLog.verbose(mcn + ' collection created');
           db.close();
@@ -244,7 +249,7 @@ async function runMigrations(migrationCount) {
   checkMongoUri();
   if (-1 == mongoUri.indexOf('localhost')) return;  // TODO make this work in both memory-server instances and on deployments via database.json
   if (0 < migrationCount) return;
-  await exec('./node_modules/db-migrate/bin/db-migrate up', function(err, stdout, stderr) {
+  await exec('./node_modules/db-migrate/bin/db-migrate up', function(err) {
     if (err) defaultLog.error(err);
   });
 }
