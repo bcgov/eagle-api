@@ -7,6 +7,7 @@ const Utils = require('../helpers/utils');
 const constants = require('../helpers/constants').schemaTypes;
 const documentAggregator = require('../aggregators/documentAggregator');
 const projectAggregator = require('../aggregators/projectAggregator');
+const cacAggregator = require('../aggregators/cacAggregator');
 const groupAggregator = require('../aggregators/groupAggregator');
 const userAggregator = require('../aggregators/userAggregator');
 const recentActivityAggregator = require('../aggregators/recentActivityAggregator');
@@ -38,6 +39,11 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     case constants.PROJECT:
       matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
       schemaAggregation = projectAggregator.createProjectAggr(projectLegislation);
+      break;
+    case constants.CAC:
+      matchAggregation = await cacAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
+      // None needed
+      schemaAggregation = [];
       break;
     case constants.GROUP:
       matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
