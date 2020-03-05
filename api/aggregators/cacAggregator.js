@@ -24,7 +24,7 @@ const aggregateHelper = require('../helpers/aggregators');
     aggregation.push({
       $match: {
         _schemaName: 'Project',
-        _id: mongoose.Types.ObjectId("58851085aaecd9001b811843")
+        _id: mongoose.Types.ObjectId(projectId)
       },
     },
     {
@@ -42,9 +42,13 @@ const aggregateHelper = require('../helpers/aggregators');
       }
     },
     {
-        $replaceRoot: {
-            newRoot: '$cacMembers'
+      $replaceRoot: {
+        newRoot: {
+          $cond: {
+            if: '$cacMembers', then: '$cacMembers', else: {}
+          }
         }
+      }
     });
   }
 
@@ -77,19 +81,6 @@ const aggregateHelper = require('../helpers/aggregators');
     } 
   });
 
-  // if (projectId) {
-  //   // Add in the $lookup to populate the users inside the project cacMembers array
-  //   aggregation.push({
-  //     "$lookup": {
-  //       "from": "epic",
-  //       "localField": "cacMembers",
-  //       "foreignField": "_id",
-  //       "as": "cacMembers"
-  //     }
-  //   });
-  // }
-
-  // Check document permissions
   aggregation.push(
     {
       $redact: {
