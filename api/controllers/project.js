@@ -832,6 +832,28 @@ exports.protectedCreateCAC = async function (args, res, next) {
   }
 }
 
+exports.protectedCACDelete = async function (args, res, next) {
+  // Remove CAC project
+  var projId = args.swagger.params.projId.value;
+  var Project = mongoose.model('Project');
+  try {
+    var data = await Project.update(
+      { _id: mongoose.Types.ObjectId(projId) },
+      { projectCAC: false },
+      { new: true }
+    );
+    if (data.nModified === 0) {
+      return Actions.sendResponse(res, 400, {});
+    }
+    // Fall through if successful
+    Utils.recordAction('Post', 'Remove Project CAC', args.swagger.params.auth_payload.preferred_username, projId);
+    return Actions.sendResponse(res, 200, data);
+  } catch (e) {
+    defaultLog.info("Couldn't find that object!", e);
+    return Actions.sendResponse(res, 404, {});
+  }
+}
+
 exports.protectedDeleteGroupMembers = async function (args, res, next) {
   var projId = args.swagger.params.projId.value;
   var groupId = args.swagger.params.groupId.value;
