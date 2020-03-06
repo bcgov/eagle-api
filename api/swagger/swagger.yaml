@@ -2524,7 +2524,7 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-  /project/{projId}/cacRemoveMember:
+  /project/{projId}/cac:
     x-swagger-router-controller: project
     options:
       tags:
@@ -2578,29 +2578,6 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-  /project/{projId}/cac:
-    x-swagger-router-controller: project
-    options:
-      tags:
-        - project
-      summary: "Pre-flight request"
-      operationId: protectedOptions
-      description: "Options on Project Route"
-      parameters:
-        - name: projId
-          in: path
-          description: "ID of project to post request to"
-          required: true
-          type: string
-      responses:
-        "200":
-          description: "Success"
-          schema:
-            $ref: "#/definitions/CACObject"
-        "403":
-          description: "Access Denied"
-          schema:
-            $ref: "#/definitions/Error"
     delete:
       tags:
         - project
@@ -2623,29 +2600,6 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/CACObject"
-        "403":
-          description: "Access Denied"
-          schema:
-            $ref: "#/definitions/Error"
-  /project/{projId}/addCAC:
-    x-swagger-router-controller: project
-    options:
-      tags:
-        - project
-      summary: "Pre-flight request"
-      operationId: protectedOptions
-      description: "Options on Project Route"
-      parameters:
-        - name: projId
-          in: path
-          description: "ID of project to post request to"
-          required: true
-          type: string
-      responses:
-        "200":
-          description: "Success"
-          schema:
-            $ref: "#/definitions/Project"
         "403":
           description: "Access Denied"
           schema:
