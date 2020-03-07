@@ -839,7 +839,7 @@ exports.protectedCACDelete = async function (args, res, next) {
   try {
     var data = await Project.update(
       { _id: mongoose.Types.ObjectId(projId) },
-      { projectCAC: false },
+      { projectCAC: false, cacMembers: [] },
       { new: true }
     );
     if (data.nModified === 0) {
