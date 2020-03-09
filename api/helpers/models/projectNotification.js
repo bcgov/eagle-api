@@ -1,16 +1,17 @@
 var mongoose = require('mongoose');
 var Mixed = mongoose.Schema.Types.Mixed;
 
-module.exports = require('../models')('NotificationProject', {
+module.exports = require('../models')('ProjectNotification', {
   name: { type: String, default: null },
   type: { type: String, default: null },
   subType: { type: String, default: null },
-  proponentName: { type: String, default: null },
-  startDate: { type: Date, default: null },
-  decisionDate: { type: Date, default: null },
+  nature: { type: String, default: null },
   region: { type: String, default: null },
-  notificationDecision: { type: String, default: null },
+  location: { type: String, default: null },
+  decision: { type: String, default: null },
+  decisionDate: { type: Date, default: null },
   description: { type: String, default: null },
+  trigger: { type: String, default: null },
   centroid: [{ type: Mixed, default: 0.00 }],
 
   // Permissions
