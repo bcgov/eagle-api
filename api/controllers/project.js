@@ -806,8 +806,23 @@ exports.publicCACSignUp = async function ( args, res, next) {
 
 exports.protectedCACRemoveMember = async function (args, res, next) {
   // Remove a user from CAC
-  console.log("REMOVE FROM CAC");
-  return Actions.sendResponse(res, 200, {});
+  var projId = args.swagger.params.projId.value;
+  var member = args.swagger.params.member.value;
+  defaultLog.info("Delete CAC Member:", member, " from Project:", projId);
+
+  var Project = mongoose.model('Project');
+  try {
+    var data = await Project.update(
+      { _id: mongoose.Types.ObjectId(projId) },
+      { $pull: { cacMembers: { $in: [mongoose.Types.ObjectId(member._id)] } } },
+      { new: true }
+    );
+    Utils.recordAction('Delete', 'CACMemberFromProject', args.swagger.params.auth_payload.preferred_username, member._id);
+    return Actions.sendResponse(res, 200, data);
+  } catch (e) {
+    defaultLog.info("Couldn't find that object!");
+    return Actions.sendResponse(res, 404, {});
+  }
 }
 
 exports.protectedCreateCAC = async function (args, res, next) {
