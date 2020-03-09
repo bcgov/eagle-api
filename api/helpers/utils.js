@@ -347,6 +347,18 @@ exports.filterData = function (collection, data, roles) {
       delete item.reviewExtensions;
     });
     return data;
+  } else if (collection === 'Organization') {
+    _.each(data, function (item) {
+      if (item.searchResults) {
+        for (let organization in item.searchResults){
+          delete item.searchResults[organization].description;
+          delete item.searchResults[organization].postal;
+          delete item.searchResults[organization].address1;
+          delete item.searchResults[organization].address2;
+        }
+      }
+    });
+    return data;
   } else {
     return data;
   }

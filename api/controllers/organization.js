@@ -113,7 +113,7 @@ exports.protectedPost = async function (args, res) {
     parentCompany: mongoose.Types.ObjectId.isValid(obj.parentCompany) ? mongoose.Types.ObjectId(obj.parentCompany) : null,
     companyLegal: obj.companyLegal,
     company: obj.company,
-    read: ['staff', 'sysadmin'],
+    read: ['public', 'staff', 'sysadmin'],
     write: ['staff', 'sysadmin'],
     delete: ['staff', 'sysadmin']
   });
