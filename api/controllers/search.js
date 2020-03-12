@@ -142,7 +142,7 @@ const executeQuery = async function (args, res) {
   sortBy.forEach((value) => {
     // To handle multiple sort values passed by comma delimiter which occurs when multiple sort by fields are used (somehow)
     if (value.includes(",")){
-      sortParams = value.split(",");
+      let sortParams = value.split(",");
       sortParams.forEach((sortValue)=>{
         sortDirection = sortValue.charAt(0) === '-' ? -1 : 1;
         sortField = sortValue.slice(1);

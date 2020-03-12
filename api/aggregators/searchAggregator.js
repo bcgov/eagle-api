@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-const constants = require('../helpers/constants').schemaTypes;
 const aggregateHelper = require('../helpers/aggregators');
 
 /**
@@ -113,7 +112,7 @@ exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, so
     //sort will have multiple values passed
     if (sortField.includes("datePosted") || Object.prototype.hasOwnProperty.call(sortValues, "datePosted")){
       //datePosted is too specfic(in it's time) and needs the truncated form of date, can be expanded if other dates are required to be truncated
-      tempSortValues = {};
+      let tempSortValues = {};
       for (let property in sortValues){
         if (Object.prototype.hasOwnProperty.call(sortValues, property)) {
           if (property === "datePosted"){
@@ -129,14 +128,14 @@ exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, so
 
   } else {
     // if sortField is null, this would create a broken sort, so ignore it if its null
-    if(sortField) {
+    if(sortField && sortValues && sortValues[sortField]) {
       sortValues[sortField] = sortDirection;
     }
   }
 
   // We don't want to have sort in the aggregation if the front end doesn't need sort.
   if (sortField && sortDirection) {
-     if(datePostedHandlingTruncating){
+    if(datePostedHandlingTruncating){
       // Currently this is just handling datePosted, if more date variables are needed change datePosted to a variable and detect it above
       searchResultAggregation.push(
 

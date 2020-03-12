@@ -307,7 +307,7 @@ exports.publicDownload = function (args, res) {
         var fileMeta;
 
         // clean the filename
-        fileName = encodeURIComponent(fileName).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/\%2F/g, '_').replace(/ /g, '_');
+        fileName = encodeURIComponent(fileName).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/%2F/g, '_').replace(/ /g, '_');
         // update document public hit count
 
         mongoose.model('Document').findById(args.swagger.params.docId.value)
