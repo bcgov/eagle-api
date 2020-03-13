@@ -80,6 +80,9 @@ def nodejsTester () {
             resourceLimitMemory: '4Gi',
             workingDir: '/tmp',
             command: '',
+            envVars: [
+              envVar(key: 'MINIO_HOST', value: 'foo.pathfinder.gov.bc.ca')
+            ]
           )
         ]
       ) {
@@ -132,14 +135,14 @@ def nodejsSonarqube () {
               SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
 
               sh "npm install typescript"
-              sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar. -Dsonar.verbose=true --stacktrace --info"
+              sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.projectKey='org.sonarqube:cac-eagle-api' -Dsonar.projectName=cac-eagle-api -Dsonar.verbose=true --stacktrace --info"
 
               // wiat for scan status to update
               sleep(30)
 
               // check if sonarqube passed
               sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
-              SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-api')
+              def SONARQUBE_STATUS_URL = "${SONARQUBE_URL}/api/qualitygates/project_status?projectKey=org.sonarqube:cac-eagle-api"
 
               SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
               SONARQUBE_STATUS = sonarGetStatus (SONARQUBE_STATUS_JSON)

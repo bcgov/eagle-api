@@ -16,6 +16,7 @@ var getSanitizedFields = function (fields) {
       'documents',
       'eaoNotes',
       'eaoStatus',
+      'submittedCAC',
       'isAnonymous',
       'location',
       'period',
@@ -380,6 +381,7 @@ exports.unProtectedPost = async function (args, res) {
   comment.commentId = commentIdCount;
   comment.documents = [];
   comment.datePosted = undefined;
+  comment.submittedCAC = obj.submittedCAC;
 
   comment.read = ['staff', 'sysadmin'];
   comment.write = ['staff', 'sysadmin'];
@@ -416,6 +418,7 @@ exports.protectedPut = async function (args, res) {
     dateUpdated: new Date(),
     eaoNotes: obj.eaoNotes,
     eaoStatus: obj.eaoStatus,
+    submittedCAC: obj.submittedCAC,
     proponentNotes: obj.proponentNotes,
     proponentStatus: obj.proponentStatus,
     publishedNotes: obj.publishedNotes,
@@ -604,7 +607,8 @@ exports.protectedExport = async function (args, res) {
         EAO_Notes: d.eaoNotes,
         Project: projectName,
         PCP_Title: commentPeriodName,
-        Export_Date: exportDate
+        Export_Date: exportDate,
+        CACMember: d.submittedCAC
       };
 
       // Populate csv with fields relevant to proponents
@@ -623,7 +627,8 @@ exports.protectedExport = async function (args, res) {
           Pillar: d.pillars,
           Project: projectName,
           PCP_Title: commentPeriodName,
-          Export_Date: exportDate
+          Export_Date: exportDate,
+          CACMember: d.submittedCAC
         };
       } else {
         return null;

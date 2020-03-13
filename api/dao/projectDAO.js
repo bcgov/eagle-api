@@ -173,7 +173,9 @@ exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywor
           'default.read': '$read',
           'default.pins': '$pins',
           'default.pinsHistory': '$pinsHistory',
-          'default.pinsRead': '$pinsRead'
+          'default.pinsRead': '$pinsRead',
+          'default.projectCAC': '$projectCAC',
+          'default.cacEmail': '$cacEmail',
         }
     });
 

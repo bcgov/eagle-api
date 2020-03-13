@@ -20,6 +20,9 @@ module.exports = require('../models')('Comment', {
   // Number auto-incremented.  Do not set manually.
   commentId           : { type: Number, default: null },
 
+  // CAC Related
+  submittedCAC        : { type: Boolean, default: false },
+
   // Permissions
   write               : [{ type: String, trim: true, default: '["project-system-admin"]' }],
   read                : [{ type: String, trim: true, default: '["project-system-admin"]' }],

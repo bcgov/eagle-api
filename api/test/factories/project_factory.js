@@ -251,6 +251,9 @@ factory.define(factoryName, Project, buildOptions =>{
       , pins                      : [factory_helper.ObjectId()]
       , pinsRead                  : ["sysadmin", "project-proponent", "project-system-admin", "public"]
       , pinsHistory               : {}
+      , projectCAC                : true
+      , cacMembers                : []
+      , cacEmail                  : 'noreply@fixme.gov.bc.ca'
       , links: []
     };
 
