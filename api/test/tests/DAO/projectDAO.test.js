@@ -3,12 +3,13 @@ const projectGroupDAO = require('../../../dao/projectGroupDAO');
 const pinDAO = require('../../../dao/pinDAO');
 const constants = require('../../../helpers/constants');
 const projectControllerV1 = require('../../../controllers/project');
-const CACUser = require('../../../helpers/models/cacUser');
+
 const project = require('../../../helpers/models/project');
 
 const test_helper = require('../../test_helper');
 require('../../../helpers/models/audit');
 require('../../../helpers/models/group');
+require('../../../helpers/models/cacUser');
 
 describe('API Testing - Project DAO', () => {
   let testProject = new project();
@@ -181,7 +182,7 @@ describe('API Testing - Project DAO', () => {
     expect(createdProject.id).not.toEqual(null);
 
     let res = {
-      writeHead: function(code, content) {
+      writeHead: function(code) {
         // 200 or fail
         expect(code).toEqual(200);
       },
