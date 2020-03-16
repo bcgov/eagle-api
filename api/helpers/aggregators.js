@@ -94,7 +94,10 @@ const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKe
           [projectLegislationDataKey + '.read']: '$read',
           [projectLegislationDataKey + '.pins']: '$pins',
           [projectLegislationDataKey + '.pinsHistory']: '$pinsHistory',
-          [projectLegislationDataKey + '.pinsRead']: '$pinsRead'
+          [projectLegislationDataKey + '.pinsRead']: '$pinsRead',
+          [projectLegislationDataKey + ".cacEmail"]: "$cacEmail",
+          [projectLegislationDataKey + ".cacMembers"]: "$cacMembers",
+          [projectLegislationDataKey + ".projectCAC"]: "$projectCAC"
         }
       }
     );

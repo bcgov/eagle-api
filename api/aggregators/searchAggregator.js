@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-const constants = require('../helpers/constants').schemaTypes;
 const aggregateHelper = require('../helpers/aggregators');
 
 /**
@@ -108,20 +107,36 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
  */
 exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, sortDirection, pageNum, pageSize) {
   const searchResultAggregation = [];
-  let defaultTwoSorts = false;
+  let datePostedHandlingTruncating = false;
+  if (sortField && sortValues !=null && typeof sortValues != "undefined" && sortField.includes(",") || Object.keys(sortValues).length > 1){
+    //sort will have multiple values passed
+    if (sortField.includes("datePosted") || Object.prototype.hasOwnProperty.call(sortValues, "datePosted")){
+      //datePosted is too specfic(in it's time) and needs the truncated form of date, can be expanded if other dates are required to be truncated
+      let tempSortValues = {};
+      for (let property in sortValues){
+        if (Object.prototype.hasOwnProperty.call(sortValues, property)) {
+          if (property === "datePosted"){
+            tempSortValues['date'] = sortValues[property];
+          } else {
+            tempSortValues[property] = sortValues[property];
+          }
+        }
+      }
+      sortValues = tempSortValues;
+      datePostedHandlingTruncating = true;
+    }
 
-  if (schemaName === constants.DOCUMENT && sortValues['datePosted'] === -1 || sortValues['score'] === -1) {
-    defaultTwoSorts = true;
   } else {
     // if sortField is null, this would create a broken sort, so ignore it if its null
-    if(sortField) {
+    if(sortField && sortValues && sortValues[sortField]) {
       sortValues[sortField] = sortDirection;
     }
   }
 
   // We don't want to have sort in the aggregation if the front end doesn't need sort.
   if (sortField && sortDirection) {
-    if (defaultTwoSorts){
+    if(datePostedHandlingTruncating){
+      // Currently this is just handling datePosted, if more date variables are needed change datePosted to a variable and detect it above
       searchResultAggregation.push(
 
         { $addFields: {
@@ -131,7 +146,7 @@ exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, so
             }}
 
         }},
-        { $sort: { date: -1, displayName: 1 }}
+        { $sort: sortValues }
       );
     } else {
       searchResultAggregation.push(

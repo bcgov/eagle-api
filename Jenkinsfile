@@ -89,7 +89,13 @@ def nodejsTester () {
                 envVar(key: 'MINIO_ACCESS_KEY', value: 'xxxx'),
                 envVar(key: 'MINIO_SECRET_KEY', value: 'xxxx'),
                 envVar(key: 'MINIO_HOST', value: 'foo.pathfinder.gov.bc.ca'),
-                envVar(key: 'KEYCLOAK_ENABLED', value: 'true')
+                envVar(key: 'KEYCLOAK_ENABLED', value: 'true'),
+                envVar(key: 'GENERATE_ON', value: 'true'),
+                envVar(key: 'GENERATE_NUM_OF_PROJECTS', value: '10'),
+                envVar(key: 'GENERATE_SAVE_TO_PERSISTENT_MONGO', value: 'false'),
+                envVar(key: 'GENERATE_CONSISTENT_DATA', value: 'true'),
+                envVar(key: 'GENERATE_FILES', value: 'false'),
+                envVar(key: 'PERSIST_FILES', value: 'false')
             ]
           )
         ]

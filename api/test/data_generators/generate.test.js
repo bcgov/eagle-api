@@ -28,7 +28,14 @@ describe('Generate Test Data', () => {
       test_helper.dataGenerationSettings.then(genSettings => {
         defaultLog.debug(genSettings);
 
-        // Default is to not run the data generator when running global tests
+        // Eaxample basic usage from project base dir: 
+        //     ./generate.sh 10 Static Unsaved
+        //     ./generate.sh 3 Random Saved
+        // or you can just set the following environment variable:
+        //     export GENERATE_ON=true
+        // and run:
+        //     npm run tests
+        // and it will run a coverage test using settings 1 Static Unsaved
         if (genSettings.generate) {
           defaultLog.info("Data Generation is on");
           gh.generateEntireDatabase(usersData).then(generatedData => {
