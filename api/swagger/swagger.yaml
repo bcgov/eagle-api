@@ -3734,6 +3734,11 @@ paths:
           description: "The legislation year of the file."
           required: false
           type: string
+        - name: sortOrder
+          in: formData
+          description: "Custom sort order of documents."
+          required: false
+          type: number
       responses:
         "200":
           description: "Success"

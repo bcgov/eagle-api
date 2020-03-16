@@ -649,25 +649,46 @@ exports.protectedPut = async function (args, res) {
 
   obj._updatedBy = args.swagger.params.auth_payload.preferred_username;
 
-  obj.displayName = args.swagger.params.displayName.value;
-
-  obj.milestone = args.swagger.params.milestone.value ? mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null;
-  obj.type = args.swagger.params.type.value ? mongoose.Types.ObjectId(args.swagger.params.type.value) : null;
-  obj.documentAuthorType = args.swagger.params.documentAuthorType.value ? mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null;
-  obj.projectPhase = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null;
-
-  obj.dateUploaded = args.swagger.params.dateUploaded.value;
-  obj.datePosted = args.swagger.params.datePosted.value;
-  obj.description = args.swagger.params.description.value;
-
-  obj.keywords = args.swagger.params.keywords ? args.swagger.params.keywords.value : null;
-
-  obj.legislation = parseInt(args.swagger.params.legislation.value, 10);
-
-  obj.eaoStatus = args.swagger.params.eaoStatus.value;
-  if (args.swagger.params.eaoStatus.value === 'Published') {
+  if (args.swagger.params.displayName && args.swagger.params.displayName.value ) {
+    obj.displayName = args.swagger.params.displayName.value;
+  }
+  if ( args.swagger.params.milestone && args.swagger.params.milestone.value ) {
+    obj.milestone = mongoose.Types.ObjectId(args.swagger.params.milestone.value);
+  }
+  if ( args.swagger.params.type && args.swagger.params.type.value ) {
+    obj.type = mongoose.Types.ObjectId(args.swagger.params.type.value);
+  }
+  if ( args.swagger.params.documentAuthorType && args.swagger.params.documentAuthorType.value ) {
+    obj.documentAuthorType = mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value);
+  }
+  if ( args.swagger.params.projectPhase && args.swagger.params.projectPhase.value ) {
+    obj.projectPhase = mongoose.Types.ObjectId(args.swagger.params.projectPhase.value);
+  }
+  if ( args.swagger.params.dateUploaded && args.swagger.params.dateUploaded.value ) {
+    obj.dateUploaded = args.swagger.params.dateUploaded.value;
+  }
+  if ( args.swagger.params.datePosted && args.swagger.params.datePosted.value ) {
+    obj.datePosted = args.swagger.params.datePosted.value;
+  }
+  if ( args.swagger.params.description && args.swagger.params.description.value ) {
+    obj.description = args.swagger.params.description.value;
+  }
+  if ( args.swagger.params.keywords && args.swagger.params.keywords.value ) {
+    obj.keywords = args.swagger.params.keywords.value;
+  }
+  if ( args.swagger.params.legislation && args.swagger.params.legislation.value ) {
+    obj.legislation = parseInt(args.swagger.params.legislation.value, 10);
+  }
+  // only order application documents for now
+  if ( args.swagger.params.sortOrder && args.swagger.params.sortOrder.value ) {
+    obj.sortOrder = args.swagger.params.sortOrder.value;
+  }
+  if ( args.swagger.params.eaoStatus && args.swagger.params.eaoStatus.value ){
+    obj.eaoStatus = args.swagger.params.eaoStatus.value;
+  }
+  if (args.swagger.params.eaoStatus && args.swagger.params.eaoStatus.value === 'Published') {
     obj.read = ['public', 'staff', 'sysadmin'];
-  } else if (args.swagger.params.eaoStatus.value === 'Rejected') {
+  } else if (args.swagger.params.eaoStatus && args.swagger.params.eaoStatus.value === 'Rejected') {
     obj.read = ['staff', 'sysadmin'];
   }
 

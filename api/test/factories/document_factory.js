@@ -32,7 +32,7 @@ factory.define(factoryName, Document, buildOptions => {
   if (buildOptions.faker) faker = buildOptions.faker;
   factory_helper.faker = faker;
 
-  let listsPool = (buildOptions.pipeline) ? 
+  let listsPool = (buildOptions.pipeline) ?
     (buildOptions.pipeline.lists) ? buildOptions.pipeline.lists : null :
     (buildOptions.listsPool) ? buildOptions.listsPool : null;
   const doctypes = (null == listsPool) ? [] : listsPool.filter(listEntry => "doctype" === listEntry.type);
@@ -59,7 +59,7 @@ factory.define(factoryName, Document, buildOptions => {
     if (distinctLabelsForThisDoc[label]) continue;
     distinctLabelsForThisDoc.push(label);
   }
-  
+
   let projectId = factory_helper.ObjectId();
   let userUploadedFileName = generateOriginalFileName(faker, docTypeSettings.ext);
   let minioFileSystemFileName = factory_helper.hexaDecimal(32).toLocaleLowerCase() + "." + docTypeSettings.ext;
@@ -80,7 +80,7 @@ factory.define(factoryName, Document, buildOptions => {
 
     // Note: Default on tag property is purely for display only, they have no real effect on the model
     // This must be done in the code.
-    , read             : ("Published" == eaoStatus) ? ["public", "sysadmin", "staff"] : ["sysadmin", "staff"] 
+    , read             : ("Published" == eaoStatus) ? ["public", "sysadmin", "staff"] : ["sysadmin", "staff"]
     , write            : ["sysadmin", "staff"]
     , delete           : ["sysadmin", "staff"]
 
@@ -98,7 +98,7 @@ factory.define(factoryName, Document, buildOptions => {
 
     // Pre-filled with documentFileName in the UI
     , displayName      : displayName
-    , milestone        : faker.random.arrayElement([null, factory_helper.ObjectId()])
+    , milestone        : factory_helper.ObjectId(factory_helper.getRandomExistingMongoId())
     , dateUploaded     : dateUploaded
     , datePosted       : datePosted
     , type             : factory_helper.ObjectId(factory_helper.getRandomExistingMongoId(doctypes))
@@ -111,6 +111,7 @@ factory.define(factoryName, Document, buildOptions => {
     , labels           : distinctLabelsForThisDoc
     , publicHitCount   : faker.random.number()
     , secureHitCount   : faker.random.number()
+    , sortOrder        : faker.random.number()
   };
 
   return attrs;
@@ -147,23 +148,23 @@ function generatePhysicalFile(faker, generateFiles, persistFiles, mongooseDoc) {
     let userUploadedFileName = generateOriginalFileName(faker, editableDocument.internalExt);
     editableDocument.displayName = userUploadedFileName;
     editableDocument.documentFileName = userUploadedFileName;
-    let templatePath = faker.random.arrayElement([factory_helper.generatedDocSamples.S, factory_helper.generatedDocSamples.M, factory_helper.generatedDocSamples.L]); 
+    let templatePath = faker.random.arrayElement([factory_helper.generatedDocSamples.S, factory_helper.generatedDocSamples.M, factory_helper.generatedDocSamples.L]);
     let stats = fs.statSync(templatePath);
     editableDocument.internalSize = stats["size"];
 
     if ("COMMENT" == editableDocument.documentSource) {
       // these fields are completely absent unless the document comes from a comment
       editableDocument.internalOriginalName = userUploadedFileName;
-    } 
+    }
 
     let projectDocTempPath = factory_helper.epicAppTmpBasePath + editableDocument.project + path.sep;
     shell.mkdir('-p', projectDocTempPath);
-    
+
     let query = {'_id' : mongooseDoc._id};
 
     if (generateFiles) {
       let guid = faker.random.number({min:1000000000000000000, max:9999999999999999999}).toString()  // eg. 6628723481510936576
-      
+
       let tempFilePath = projectDocTempPath + guid + "." + editableDocument.internalExt;
       fs.copyFileSync(templatePath, tempFilePath);
       factory_helper.touchPath(tempFilePath);
