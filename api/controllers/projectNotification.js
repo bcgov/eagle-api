@@ -28,6 +28,7 @@ exports.protectedPost = async function (args, res) {
   try {
     const saveProjectNotification = await projectNotification.save();
     Utils.recordAction('Post', 'ProjectNotification', args.swagger.params.auth_payload.preferred_username, saveProjectNotification._id);
+
     defaultLog.info('Saved new project notification object:', saveProjectNotification);
     return Actions.sendResponse(res, 201, saveProjectNotification);
   } catch (e) {
