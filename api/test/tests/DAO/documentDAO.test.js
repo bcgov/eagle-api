@@ -1,10 +1,12 @@
-const test_helper        = require('../../test_helper');
 const projectDAO         = require('../../../dao/projectDAO');
 const documentDAO        = require('../../../dao/documentDAO');
 const constants          = require('../../../helpers/constants');
 const project            = require('../../../helpers/models/project');
 const fs                 = require('fs');
 const MinioController    = require('../../../helpers/minio');
+
+require('../../../helpers/models/audit');
+require('../../../helpers/models/document');
 
 describe('API Testing - Documents DAO', () => {
   let testProject = new project();
