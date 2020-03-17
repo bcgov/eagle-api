@@ -5,6 +5,7 @@ const project            = require('../../../helpers/models/project');
 const fs                 = require('fs');
 const MinioController    = require('../../../helpers/minio');
 
+require('../../test_helper');
 require('../../../helpers/models/audit');
 require('../../../helpers/models/document');
 
