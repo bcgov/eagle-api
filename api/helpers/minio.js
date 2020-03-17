@@ -22,6 +22,12 @@ var BUCKETS = _.isEmpty(process.env.MINIO_BUCKET_NAME) ? { DOCUMENTS_BUCKET: 'up
 
 exports.BUCKETS = BUCKETS;
 
+var isMockService = function() {
+  // If our host is set to the default configuration, assume that we're not running
+  // a local minio client and just ignore all minio calls
+  return minioClient.host === 'foo.pathfinder.gov.bc.ca';
+};
+
 /**
  * Checks wether the provided bucket name is a valid (known) bucket.
  * @param bucket the name of the bucket
@@ -61,7 +67,7 @@ var getFileExtension = function (fileName) {
  * @returns a promise that resolves if the bucket was created successfully
  */
 var makeBucket = function (bucket) {
-  return minioClient.makeBucket(bucket);
+  return isMockService() ? true : minioClient.makeBucket(bucket);
 };
 
 /**
@@ -70,7 +76,7 @@ var makeBucket = function (bucket) {
  * @returns a promise that resolves with true if the bucket exists, false otherwise
  */
 var bucketExists = function (bucket) {
-  return minioClient.bucketExists(bucket);
+  return isMockService() ? Promise.resolve(() => { return true;}) : minioClient.bucketExists(bucket);
 };
 
 /**
@@ -92,6 +98,10 @@ var putDocument = function (bucket, projectCode, fileName, pathOnDisk) {
       })
       .then(function () {
         // generate randomized file name and append extension from original name
+        if (isMockService()) {
+          return Promise.resolve(() => { return true; });
+        }
+
         var fileExtension = getFileExtension(fileName);
         var newFileName = getRandomizedFileName() + (fileExtension ? '.' + fileExtension : '');
         var filePath = path.posix.join(projectCode, newFileName);
@@ -118,6 +128,7 @@ exports.putDocument = putDocument;
  * @param fileName the name of the file
  */
 var deleteDocument = function (bucket, projectCode, fileName) {
+  if(isMockService()) return Promise.resolve(() => { return {}; });
   return minioClient.removeObject(bucket, projectCode + '/' + fileName)
     .then(function (result, err) {
       if (err) {
@@ -136,6 +147,7 @@ exports.deleteDocument = deleteDocument;
  * @returns a promise that resolves with the presigned url
  */
 var getPresignedGETUrl = function (bucket, filePath) {
+  if(isMockService()) return Promise.resolve();
   return minioClient.presignedGetObject(bucket, filePath, 5 * 60)
     .then(function (url, err) {
       if (err) {
@@ -153,6 +165,7 @@ exports.getPresignedGETUrl = getPresignedGETUrl;
  * @returns a promise that resolves with the object metadata, or undefined if the object does not exist
  */
 var statObject = function (bucketName, objectName) {
+  if(isMockService()) return Promise.resolve();
   return minioClient.statObject(bucketName, objectName)
     .then(function(stat, err){
       if (err) {
@@ -173,6 +186,8 @@ var asHttpRequest = {
    */
   deleteDocument: function (req, res) {
     return new Promise(function (resolve, reject) {
+      if(isMockService()) return Promise.resolve();
+
       return deleteDocument(BUCKETS.DOCUMENTS_BUCKET, req.params.projectCode, req.params.fileName)
         .then(
           function (result) {

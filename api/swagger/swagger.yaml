@@ -271,6 +271,7 @@ definitions:
       - internalMime
       - internalSize
       - isFeatured
+      - links
       - sortOrder
       - publicHitCount
       - secureHitCount
@@ -6758,7 +6759,7 @@ paths:
             $ref: "#/definitions/Error"
 
 ### V2 Routes
-
+### Top Level
   /v2/:
     x-swagger-router-controller: topLevelV2
     options:
@@ -6791,6 +6792,7 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+### Projects
   /v2/Public/Projects:
     x-swagger-router-controller: projectV2
     options:
@@ -6984,7 +6986,7 @@ paths:
       tags:
         - project
       summary: "Pre-flight request"
-      operationId: projectOptionsProtected
+      operationId: projectOptions
       description: "Options on Project GET Route"
       parameters:
         - name: projId
@@ -7018,6 +7020,76 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
+  /v2/public/projects/{projId}/documents:
+    x-swagger-router-controller: projectV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: projectOptions
+      description: "Options on Project GET Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - project
+      summary: "Get a project"
+      operationId: fetchDocuments
+      description: "Public access to retreiving projects."
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+        - in: query
+          name: pageNumber
+          type: number
+          required: false
+          description: "Page number (ignored if pageSize is set to 0, defaults to 1)"
+        - in: query
+          name: pageSize
+          type: number
+          required: false
+          description: "Number of results per page (a value of 0 will fetch all, defaults to 10)"
+        - in: query
+          name: sortBy
+          description: "Fields to sort by."
+          required: false
+          type: string
+        - in: query
+          name: keywords
+          description: "keywords search filter."
+          required: false
+          type: string
+        - in: query
+          name: query
+          description: "Custom query KVP object."
+          required: false
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
         "403":
           description: "Access Denied"
           schema:
@@ -7105,6 +7177,76 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
+  /v2/projects/{projId}/documents:
+    x-swagger-router-controller: projectV2
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: projectOptionsProtected
+      description: "Options on Project GET Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - project
+      summary: "Get a project"
+      operationId: fetchDocumentsSecure
+      description: "Public access to retreiving projects."
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+        - in: query
+          name: pageNumber
+          type: number
+          required: false
+          description: "Page number (ignored if pageSize is set to 0, defaults to 1)"
+        - in: query
+          name: pageSize
+          type: number
+          required: false
+          description: "Number of results per page (a value of 0 will fetch all, defaults to 10)"
+        - in: query
+          name: sortBy
+          description: "Fields to sort by."
+          required: false
+          type: string
+        - in: query
+          name: keywords
+          description: "keywords search filter."
+          required: false
+          type: string
+        - in: query
+          name: query
+          description: "Custom query KVP object."
+          required: false
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
         "403":
           description: "Access Denied"
           schema:
@@ -8098,6 +8240,857 @@ paths:
           in: path
           description: "ID of project to get"
           required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+### Documents
+  /v2/documents:
+    x-swagger-router-controller: documentsV2
+    options:
+      tags:
+        - document
+      summary: "Pre-flight request"
+      operationId: documentOptionsProtected
+      description: "Options on Document Route"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    post:
+      tags:
+        - document
+      summary: "Create a new document"
+      operationId: createDocumentSecure
+      description: "Create a new document object."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      consumes:
+        - multipart/form-data
+      parameters:
+        - name: upfile
+          in: formData
+          description: "The file to upload."
+          required: true
+          type: file
+        - name: project
+          in: formData
+          description: "The application to bind this document to."
+          required: false
+          type: string
+        - name: type
+          in: formData
+          description: "The type to bind this document to."
+          required: false
+          type: string
+        - name: documentSource
+          in: formData
+          description: "The documentSource of this document."
+          required: false
+          type: string
+        - name: documentAuthor
+          in: formData
+          description: "The documentAuthor of the file."
+          required: false
+          type: string
+        - name: documentAuthorType
+          in: formData
+          description: "The documentAuthorType of the file."
+          required: false
+          type: string
+        - name: milestone
+          in: formData
+          description: "The milestone of the file."
+          required: false
+          type: string
+        - name: projectPhase
+          in: formData
+          description: "The project phase of the file."
+          required: false
+          type: string
+        - name: datePosted
+          in: formData
+          description: "The datePosted of the file."
+          required: false
+          type: string
+        - name: dateUploaded
+          in: formData
+          description: "The dateUploaded of the file."
+          required: false
+          type: string
+        - name: documentName
+          in: formData
+          description: "The documentName of the file."
+          required: false
+          type: string
+        - name: description
+          type: string
+          in: formData
+          description: "The description of the file."
+          required: false
+        - name: keywords
+          in: formData
+          description: "The keywords of the file."
+          required: false
+          type: string
+        - name: labels
+          in: formData
+          description: "The labels of the file."
+          required: false
+          type: string
+        - name: displayName
+          in: formData
+          description: "The displayName of the file."
+          required: false
+          type: string
+        - name: documentFileName
+          in: formData
+          description: "The documentFileName of the file."
+          required: false
+          type: string
+        - name: internalOriginalName
+          in: formData
+          description: "The internalOriginalName of the file. This is only used for documents related to comments."
+          required: false
+          type: string
+        - name: comment
+          in: formData
+          description: "The comment pointer of the file."
+          required: false
+          type: string
+        - name: publish
+          in: query
+          description: "Should we publish right away?"
+          required: false
+          type: boolean
+        - name: legislation
+          in: formData
+          description: "The legislation year of the file."
+          required: false
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - document
+      summary: "Get a list of documents"
+      operationId: fetchDocumentsSecure
+      description: "Authenticated access to retreiving a document."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - sysadmin
+        - staff
+      parameters:
+        - in: query
+          name: pageNumber
+          type: number
+          required: false
+          description: "Page number (ignored if pageSize is set to 0, defaults to 1)"
+        - in: query
+          name: pageSize
+          type: number
+          required: false
+          description: "Number of results per page (a value of 0 will fetch all, defaults to 10)"
+        - in: query
+          name: sortBy
+          description: "Fields to sort by."
+          required: false
+          type: string
+        - in: query
+          name: keywords
+          description: "keywords search filter."
+          required: false
+          type: string
+        - in: query
+          name: query
+          description: "Custom query KVP object."
+          required: false
+          type: string
+        - in: query
+          name: projects
+          description: "Documents relating to a particular Project(s)"
+          type: array
+          required: false
+          collectionFormat: pipes
+          items:
+            type: string
+        - in: query
+          name: comments
+          description: "Documents relating to a particular Comment(s)"
+          type: array
+          required: false
+          collectionFormat: pipes
+          items:
+            type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /v2/documents/{docId}:
+    x-swagger-router-controller: documentsV2
+    options:
+      tags:
+        - document
+      summary: "Pre-flight request"
+      operationId: documentOptionsProtected
+      description: "Options on Document GET Route"
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - document
+      summary: "Get a document"
+      operationId: fetchDocumentSecure
+      description: "Authenticated access to retreiving a document."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      tags:
+        - document
+      summary: "Update/Upload a document"
+      operationId: updateDocument
+      description: "Update a document object."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+      consumes:
+        - multipart/form-data
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to update"
+          required: true
+          type: string
+        - name: upfile
+          in: formData
+          description: "The file to upload."
+          required: true
+          type: file
+        - name: project
+          in: formData
+          description: "The application to bind this document to."
+          required: false
+          type: string
+        - name: type
+          in: formData
+          description: "The type to bind this document to."
+          required: false
+          type: string
+        - name: documentSource
+          in: formData
+          description: "The documentSource of this document."
+          required: false
+          type: string
+        - name: documentAuthor
+          in: formData
+          description: "The documentAuthor of the file."
+          required: false
+          type: string
+        - name: documentAuthorType
+          in: formData
+          description: "The documentAuthorType of the file."
+          required: false
+          type: string
+        - name: milestone
+          in: formData
+          description: "The milestone of the file."
+          required: false
+          type: string
+        - name: projectPhase
+          in: formData
+          description: "The project phase of the file."
+          required: false
+          type: string
+        - name: datePosted
+          in: formData
+          description: "The datePosted of the file."
+          required: false
+          type: string
+        - name: dateUploaded
+          in: formData
+          description: "The dateUploaded of the file."
+          required: false
+          type: string
+        - name: documentName
+          in: formData
+          description: "The documentName of the file."
+          required: false
+          type: string
+        - name: description
+          in: formData
+          description: "The description of the file."
+          required: false
+          type: string
+        - name: keywords
+          in: formData
+          description: "The keywords of the file."
+          required: false
+          type: string
+        - name: labels
+          in: formData
+          description: "The labels of the file."
+          required: false
+          type: string
+        - name: displayName
+          in: formData
+          description: "The displayName of the file."
+          required: false
+          type: string
+        - name: documentFileName
+          in: formData
+          description: "The documentFileName of the file."
+          required: false
+          type: string
+        - name: eaoStatus
+          in: formData
+          description: "The eaoStatus of the file."
+          required: false
+          type: string
+        - name: legislation
+          in: formData
+          description: "The legislation year of the file."
+          required: false
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    delete:
+      tags:
+        - document
+      summary: "Delete a document"
+      operationId: deleteDocument
+      description: "Delete a document object."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - project-system-admin
+      consumes:
+        - application/json
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to delete"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /v2/documents/{docId}/publish:
+    x-swagger-router-controller: documentsV2
+    options:
+      tags:
+        - document
+      summary: "Pre-flight request"
+      operationId: documentOptionsProtected
+      description: "Options on Document GET Route"
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      tags:
+        - document
+      summary: "Publish a document"
+      operationId: publishDocument
+      description: "Adds the singular instance of the 'public' role to a document."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+        # TODO: Define publish roles.
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to update"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /v2/documents/{docId}/unpublish:
+    x-swagger-router-controller: documentsV2
+    options:
+      tags:
+        - document
+      summary: "Pre-flight request"
+      operationId: documentOptionsProtected
+      description: "Options on Document GET Route"
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      tags:
+        - document
+      summary: "UnPublish a document"
+      operationId: unPublishDocument
+      description: "Removes the singular instance of the 'public' role on a document."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+        # TODO: Define unpublish roles.
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to update"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /v2/documents/{docId}/feature:
+    x-swagger-router-controller: documentsV2
+    options:
+      tags:
+        - document
+      summary: "Pre-flight request"
+      operationId: documentOptionsProtected
+      description: "Options on Document GET Route"
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      tags:
+        - document
+      summary: "Flag a document as featured"
+      operationId: featureDocument
+      description: "set the document isFeatured to true. Will check to ensure max featured docs is enforced"
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+        # TODO: Define publish roles.
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to update"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /v2/documents/{docId}/unfeature:
+    x-swagger-router-controller: documentsV2
+    options:
+      tags:
+        - document
+      summary: "Pre-flight request"
+      operationId: documentOptionsProtected
+      description: "Options on Document GET Route"
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      tags:
+        - document
+      summary: "UnFavorite a document"
+      operationId: unfeatureDocument
+      description: "sets the isFeatured value to false"
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to update"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /v2/documents/{docId}/download:
+    x-swagger-router-controller: documentsV2
+    options:
+      tags:
+        - document
+      summary: "Pre-flight request"
+      operationId: documentOptionsProtected
+      description: "Options on Document GET Download Route"
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - document
+      summary: "Download a document"
+      operationId: downloadDocumentSecure
+      description: "Authenticated access to retreiving a document binary."
+      security:
+        - Bearer: []
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to download"
+          required: true
+          type: string
+        - name: fileName
+          in: query
+          description: "custom file name for the file"
+          required: false
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /v2/public/documents:
+    x-swagger-router-controller: documentsV2
+    options:
+      tags:
+        - document
+      summary: "Pre-flight request"
+      operationId: documentOptions
+      description: "Options on Document Route"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    post:
+      tags:
+        - document
+      summary: "Create a new document from public"
+      operationId: createDocument
+      description: "Create a new document object from public."
+      consumes:
+        - multipart/form-data
+      parameters:
+        - name: upfile
+          in: formData
+          description: "The file to upload."
+          required: true
+          type: file
+        - name: project
+          in: formData
+          description: "The project to bind this document to."
+          required: false
+          type: string
+        - name: comment
+          in: formData
+          description: "The comment to bind this document to."
+          required: false
+          type: string
+        - name: displayName
+          in: formData
+          description: "The displayName of the file."
+          required: false
+          type: string
+      responses:
+        "201":
+          description: "Created"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - document
+      summary: "Get a list of documents"
+      operationId: fetchDocuments
+      description: "Retreiving public documents."
+      parameters:
+        - in: query
+          name: pageNumber
+          type: number
+          required: false
+          description: "Page number (ignored if pageSize is set to 0, defaults to 1)"
+        - in: query
+          name: pageSize
+          type: number
+          required: false
+          description: "Number of results per page (a value of 0 will fetch all, defaults to 10)"
+        - in: query
+          name: sortBy
+          description: "Fields to sort by."
+          required: false
+          type: string
+        - in: query
+          name: keywords
+          description: "keywords search filter."
+          required: false
+          type: string
+        - in: query
+          name: query
+          description: "Custom query KVP object."
+          required: false
+          type: string
+        - in: query
+          name: project
+          description: "Documents relating to a particular Project(s)"
+          type: array
+          required: false
+          collectionFormat: pipes
+          items:
+            type: string
+        - in: query
+          name: comment
+          description: "Documents relating to a particular Comment(s)"
+          type: array
+          required: false
+          collectionFormat: pipes
+          items:
+            type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /v2/public/documents/{docId}:
+    x-swagger-router-controller: documentsV2
+    options:
+      tags:
+        - document
+      summary: "Pre-flight request"
+      operationId: documentOptions
+      description: "Options on Document GET Route"
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - document
+      summary: "Get a document"
+      operationId: fetchDocument
+      description: "Public access to retreiving documents."
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /v2/public/documents/{docId}/download:
+    x-swagger-router-controller: documentsV2
+    options:
+      tags:
+        - document
+      summary: "Pre-flight request"
+      operationId: documentOptions
+      description: "Options on Document GET Download Route"
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - document
+      summary: "Download a document"
+      operationId: downloadDocument
+      description: "Authenticated access to retreiving a document binary."
+      parameters:
+        - name: docId
+          in: path
+          description: "ID of document to download"
+          required: true
+          type: string
+        - name: fileName
+          in: query
+          description: "File name override"
+          required: false
           type: string
       responses:
         "200":

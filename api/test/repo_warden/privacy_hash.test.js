@@ -1,11 +1,11 @@
 'use strict';
 const Promise = require('bluebird');
 Promise.config({
-    warnings: false,
-    longStackTraces: true,
-    cancellation: false,
-    monitoring: false,
-    asyncHooks: false,
+  warnings: false,
+  longStackTraces: true,
+  cancellation: false,
+  monitoring: false,
+  asyncHooks: false,
 });
 const { hashElement } = require('folder-hash');
 const _ = require('lodash');
@@ -25,9 +25,9 @@ const options = {
   files: {
     include: ['*.json', '*.dump', '*.dump.tar.gz']
     , exclude: [
-         '.*', '.eslintrc.json', 'database.json', 'package-lock.json', 'package.json'
-        , 'javascript_file_hash.json', 'migrations_lists_hash.json'
-        , 'model_vs_factory_hash.json', 'privacy_hash.json'] }
+      '.*', '.eslintrc.json', 'database.json', 'package-lock.json', 'package.json'
+      , 'javascript_file_hash.json', 'migrations_lists_hash.json'
+      , 'model_vs_factory_hash.json', 'privacy_hash.json'] }
 };
 
 function getLastGoodHashsetFromFile() {

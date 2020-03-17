@@ -8,6 +8,6 @@ function findObjectsByEnding(obj, ending, accumulator) {
     if (obj.name.endsWith(ending)) accumulator.push(obj);
   }
   return accumulator;
-};
+}
 
 exports.findObjectsByEnding = findObjectsByEnding;
