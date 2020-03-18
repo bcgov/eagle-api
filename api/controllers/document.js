@@ -306,6 +306,11 @@ exports.publicDownload = function (args, res) {
         }
         var fileMeta;
 
+        // Allow override
+        if (args.swagger.params.filename) {
+          fileName = args.swagger.params.filename.value;
+        }
+
         // clean the filename
         fileName = encodeURIComponent(fileName).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/%2F/g, '_').replace(/ /g, '_');
         // update document public hit count
