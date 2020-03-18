@@ -3,6 +3,7 @@ var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var qs = require('qs');
 var Actions = require('../helpers/actions');
+var Email = require('../helpers/email');
 var Utils = require('../helpers/utils');
 var tagList = [
   'CEAAInvolvement',
@@ -794,7 +795,7 @@ exports.publicCACSignUp = async function ( args, res) {
 
   // AddToSet this if it isn't already in the cac data.
   try {
-    await Project.findOneAndUpdate(
+    const projectData = await Project.findOneAndUpdate(
       { _id: mongoose.Types.ObjectId(projectId) },
       {
         $addToSet: { "cacMembers": mongoose.Types.ObjectId(cacUser._id) }
@@ -802,11 +803,58 @@ exports.publicCACSignUp = async function ( args, res) {
       { new: true }
     );
     Utils.recordAction('Post', 'ProjectCACMember', 'public', cacUser._id);
+
+    // Determine most recent project name
+    if (projectData) {
+      const projectName = projectData[projectData.currentLegislationYear].name;
+
+      // Send the user a welcome email
+      await Email.sendCACWelcomeEmail(projectId, projectName, cacUser.email);
+    }
     // We don't want to return anything but a 200 OK.
     return Actions.sendResponse(res, 200, {});
   } catch (e) {
     defaultLog.info("Error inserting user into the project cac:", e);
     return Actions.sendResponse(res, 500, {});
+  }
+};
+
+exports.publicCACRemoveMember = async function (args, res) {
+  // Remove a user from a CAC - public.
+  const Project = mongoose.model('Project');
+  const CACUser = mongoose.model('CACUser');
+
+  const projId = args.swagger.params.projId.value;
+  const cac = args.swagger.params.cac.value;
+  defaultLog.info("Delete CAC Member:", cac.email, " from Project:", projId);
+
+  try {
+    // We need to look this user up first before we can pull it out
+    // of the project cacMembers list.
+    const member = await CACUser.findOne({
+      _schemaName: 'CACUser',
+      email: cac.email,
+      project: mongoose.Types.ObjectId(projId)
+    });
+
+    if (member) {
+      // Remove it from the project
+      await Project.updateOne(
+        { _id: mongoose.Types.ObjectId(projId) },
+        { $pull: { cacMembers: { $in: [member._id] } } }
+      );
+
+      // Remove it from the CACUser collection
+      await CACUser.deleteOne({_id: member._id});
+
+      Utils.recordAction('Delete', 'CACMemberFromProject', 'public', member._id);
+      return Actions.sendResponse(res, 200, {});
+    } else {
+      return Actions.sendResponse(res, 404, {});
+    }
+  } catch (e) {
+    defaultLog.info("Couldn't find that object!", e);
+    return Actions.sendResponse(res, 404, {});
   }
 };
 
