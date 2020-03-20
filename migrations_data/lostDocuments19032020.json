@@ -1,0 +1,2185 @@
+[{
+	"_id": {
+		"$oid": "5886cc9fa4acd4014b820843"
+	},
+	"documentFileName": "Letter dated November 10/04 from Bruce Barrett, P.Eng (British Columbia Transmission Corporation, BCTC) to Joan Hesketh (DM, EAO) regarding their request to opt-in to the environmental process.pdf",
+	"datePosted": {
+		"$date": "2004-11-10T08:00:00.000Z"
+	},
+	"description": "On November 10, 2004, a request was made by the Proponent to the Environmental Assessment Office to designate the VITR project as reviewable.",
+	"displayName": "Request to Designate a Project as Reviewable",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602c"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e2"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504ca"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886cca0a4acd4014b820844"
+	},
+	"documentFileName": "Letter from Joan Hesketh (DM, EAO) to Bruce Barrett (BCTC) regarding the issuance of a section 7(3) (a) of the Act, designating their Project to be a reviewable project.pdf",
+	"datePosted": {
+		"$date": "2004-12-01T08:00:00.000Z"
+	},
+	"description": "On December 1, 2004, the EAO sent a letter regarding reviewing the VITR project to BC Transmission.",
+	"displayName": "Letter to BC Transmission Regarding the VITR Project being Reviewable",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504db"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602c"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e2"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cb"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886ccaca4acd4014b820846"
+	},
+	"documentFileName": "Revised Appendices (1-6) to the Project Description.pdf",
+	"datePosted": {
+		"$date": "2005-01-28T08:00:00.000Z"
+	},
+	"description": "On January 28, 2005, the EAo received a revised project description regarding the VITR Project from BC Transmission.",
+	"displayName": "Revised Appendices to the Project Description - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602c"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e3"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504d2"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886ccaca4acd4014b820847"
+	},
+	"documentFileName": "Revised Project Description.pdf",
+	"datePosted": {
+		"$date": "2005-01-28T08:00:00.000Z"
+	},
+	"description": "On January 28, 2005, the Environmental Assessment Office received a Project Description for the VITR project from BC Transmission.",
+	"displayName": "Revised VITR Project Description",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602c"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e3"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886ccaca4acd4014b820848"
+	},
+	"documentFileName": "Drawing that shows route alternatives in the Tsawwassen area.pdf",
+	"datePosted": {
+		"$date": "2005-01-28T08:00:00.000Z"
+	},
+	"description": "On January 28, 2005, the EAo received a project description regarding the VITR Project from BC Transmission.",
+	"displayName": "Revised Project Description - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602c"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e3"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504d2"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886ccb7a4acd4014b820849"
+	},
+	"documentFileName": "Project Description Revision 4 and Addendum.pdf",
+	"datePosted": {
+		"$date": "2005-01-31T08:00:00.000Z"
+	},
+	"description": "On January 31, 2005, the EAO received a letter regarding the Revised Project Description for the VITR Project from BC Transmission.",
+	"displayName": "Letter from BC Transmission Regarding the Revised Project Description for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602c"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e3"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cb"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886ccc4a4acd4014b82084a"
+	},
+	"documentFileName": "Draft Terms or Reference for the Vancouver Island Transmission Reinforcement Project dated March 2005..pdf",
+	"datePosted": {
+		"$date": "2005-03-15T08:00:00.000Z"
+	},
+	"description": "On March 15, 2005, BC Transmission submitted the Draft Terms of Reference for the VITR project, specifying the information proposed to be required in the project's Application.",
+	"displayName": "Draft Terms or Reference - Specifying the Proposed Information Required for the project's Application",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504d3"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886ccdea4acd4014b82084c"
+	},
+	"documentFileName": "Letter dated Mar 17/05 from Michael Costello (BCTC) to Val Roddick, MLA (Delta South) \u0026 Mayor Lois E. Jackson (The Corporation of Delta) re: BCTC will not recommend constructing overhead lines on the existing right-of-way in Tsawwassen.pdf",
+	"datePosted": {
+		"$date": "2005-03-17T08:00:00.000Z"
+	},
+	"description": "On March 17, 2005, BC Transmission responded to requests from MLA and Corporation of Delta regarding alternative routes for the VITR Project.",
+	"displayName": "Response from BC Transmission to MLA and Corporation of Delta Regarding Requests for Alternative Routes for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886ccdea4acd4014b82084d"
+	},
+	"documentFileName": "Letter dated Mar 23/05 from Bruce Barrett, P. Eng. (BCTC) to Derek Griffin (EAO) regarding the Vancouver Island Transmission Reinforcement Project Confirmation of Project Documentation.pdf",
+	"datePosted": {
+		"$date": "2005-03-23T08:00:00.000Z"
+	},
+	"description": "On March 23, 2005, the EAO received comments regarding the confirmation of documentation for the VITR Project from BC Transmission.",
+	"displayName": "Comments from BC Transmission Regarding Confirmation of Documentation for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886ccf5a4acd4014b820851"
+	},
+	"documentFileName": "Letter dated Apr 5/05 from Tony Law (Islands Trust Council) to Michael Costello (BC Transmission Corp.) and ccd to Derek Griffin (EAO) regarding their comments on the proposed project.pdf",
+	"datePosted": {
+		"$date": "2005-04-06T07:00:00.000Z"
+	},
+	"description": "On April 6, 2005, the EAO received comments regarding the VITR Project from Island Trust Council.",
+	"displayName": "Comments from Island Trust Council Regarding VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886ccf6a4acd4014b820852"
+	},
+	"documentFileName": "Letter dated Apr 5/05 from Linda Adams (Islands Trust) to Derek Griffin (EAO) regarding their comments on the proposed project.pdf",
+	"datePosted": {
+		"$date": "2005-04-06T07:00:00.000Z"
+	},
+	"description": "On April 6, 2005, the EAO received comments regarding the draft Terms of Reference for the VITR Project from Island Trust Council.",
+	"displayName": "Comments from Island Trust Council Regarding Draft TOR for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886cd02a4acd4014b820854"
+	},
+	"documentFileName": "Ltr dated Mar 16/05 \u0026 received Apr 18/05 from Sheila Anderson (Galiano Island Local Trustee), Louise Decario (Galiano Island Local Trustee) \u0026 Richard Tamboline (CRD Environmental Services)  to D Griffin (EAO) re: their comments on proposed project.pdf",
+	"datePosted": {
+		"$date": "2005-04-18T07:00:00.000Z"
+	},
+	"description": "On April 18, 2005, the EAO received comments regarding the draft Terms of Reference for the VITR Project from CRD.",
+	"displayName": "Comments from CRD Regarding the Draft TOR for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886cd0fa4acd4014b820855"
+	},
+	"documentFileName": "Email dated Mar 29/05 from Keith Anderson (LWBC) to Derek Griffin (EAO) regarding their comments on the proposed project.pdf",
+	"datePosted": {
+		"$date": "2005-03-29T08:00:00.000Z"
+	},
+	"description": "On March 29, 2005, the EAO received comments regarding the VITR Project from Land and Water BC.",
+	"displayName": "Comment from Land and Water BC Regarding the VITR Project.",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886cd35a4acd4014b820857"
+	},
+	"documentFileName": "Email dated Apr 19/05 from Michael Willcox (WLAP) to Derek Griffin (EAO) stating they have no comments on the revised Terms of Reference.pdf",
+	"datePosted": {
+		"$date": "2005-04-19T07:00:00.000Z"
+	},
+	"description": "On April 19, 2005, the EAO received comments regarding the revised Terms of Reference for the VITR Project from WLAP.",
+	"displayName": "Comments from WLAP Regarding Revised TOR for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886cd36a4acd4014b820858"
+	},
+	"documentFileName": "Email dated Apr 19/05 from Dave Hutchcroft (SRM, Arch) to Derek Griffin (EAO) regarding their comments on the proposed project.pdf",
+	"datePosted": {
+		"$date": "2005-04-19T07:00:00.000Z"
+	},
+	"description": "On April 19, 2005, the EAO received comments regarding the revised Terms of Reference for the VITR project from the Archaeology and Registry Branch",
+	"displayName": "Comments from Archaeology and Registry Services Branch Regarding Revised TOR for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886cd36a4acd4014b820859"
+	},
+	"documentFileName": "Email dated Apr 20/05 from Rob Kline (AGF) to Derek Griffin (EAO) regarding their comments on the proposed project.pdf",
+	"datePosted": {
+		"$date": "2005-04-20T07:00:00.000Z"
+	},
+	"description": "On April 20, 2005, the EAO received comments regarding the impact on Salt Spring Vineyards for the VITR Project from CRD.",
+	"displayName": "Comments from CRD Regarding Impact on Salt Spring Vineyard for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886cd41a4acd4014b82085a"
+	},
+	"documentFileName": "Email dated Apr 21/05 from Al Planiden (MoT) to Derek Griffin (EAO) regarding their comments on the proposed project.pdf",
+	"datePosted": {
+		"$date": "2005-04-21T07:00:00.000Z"
+	},
+	"description": "On April 21, 2005, the EAO received comments regarding the revised Terms of Reference from Ministry of Transportation.",
+	"displayName": "Comments from MoT Regarding Revised TOR for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886cd42a4acd4014b82085b"
+	},
+	"documentFileName": "Email dated Apr 8/05 from Janet Mercer (Gulf Islands National Park Reserve) to Derek Griffin (EAO) stating the project will not impact their park lands \u0026 will decline further review opportunities.pdf",
+	"datePosted": {
+		"$date": "2005-04-08T07:00:00.000Z"
+	},
+	"description": "On April 8, 2005, the EAO received comments regarding the revised Terms of Reference for the VITR project from Gulf Islands National Parks Reserve.",
+	"displayName": "Comments from Gulf Islands National Parks Reserve Regarding Revised TOR for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886cd8ba4acd4014b820862"
+	},
+	"documentFileName": "Letter dated Apr 20/05 from George V. Harvie (The Corporation of Delta) to Derek Griffin (EAO) regarding their comments on the proposed project.pdf",
+	"datePosted": {
+		"$date": "2005-04-22T07:00:00.000Z"
+	},
+	"description": "On April 22, 2005, the EAO received comments regarding the draft Terms of Reference for the VITR Project from the Corporation of Delta.",
+	"displayName": "Comments from Corporation of Delta Regarding Draft TOR for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886cda3a4acd4014b820869"
+	},
+	"documentFileName": "Letter dated Jul 25/05 from Berni Claus (EC) to Dave Carter (CEAA) regarding their responsibility with regards to the VITR Project.pdf",
+	"datePosted": {
+		"$date": "2005-07-25T07:00:00.000Z"
+	},
+	"description": "On July 25, 2005, Envronment Canada sent a letter to CEAA regarding their responsibilities with the VITR project.",
+	"displayName": "Letter from EC to CEAA Regarding their Responsibilities with the VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cb"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886ce23a4acd4014b820872"
+	},
+	"documentFileName": "Approved Terms of Reference dated January 20, 2006.pdf",
+	"datePosted": {
+		"$date": "2006-01-27T08:00:00.000Z"
+	},
+	"description": "On January 27, 2006, the EAO accepted the Terms of Reference for the VITR project, specifying the information required to be in the project's Application.",
+	"displayName": "Accepted Terms of Reference - Specifying the Information Required for the project's Application",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504db"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504d3"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e7"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886ce24a4acd4014b820873"
+	},
+	"documentFileName": "Letter dated January 20, 2006, from Bruce Barrett (BCTC) re: Approved TOR.pdf",
+	"datePosted": {
+		"$date": "2006-01-20T08:00:00.000Z"
+	},
+	"description": "On January 20, 2006, the EAO received a letter regarding their acceptance of the Terms of Reference for the VITR Project from BC Transmission.",
+	"displayName": "Letter from BC Transmission Regarding the Acceptance of the TOR for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cb"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e7"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886ce3aa4acd4014b820875"
+	},
+	"documentFileName": "Public Comment Invited on Draft Terms of Reference for BCTCs Application for an Environmental Assessment Certificate.pdf",
+	"datePosted": {
+		"$date": "2005-03-08T08:00:00.000Z"
+	},
+	"description": "The EAO invites the public to comment on the Draft Terms of Reference for the Vancouver Island Transmission Reinforcement Project. The comment period starts on March 15, 2005 and ends on April 22, 2005. ",
+	"displayName": "Public Comment Invitation - Draft TOR for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cd"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d27ca4acd4014b8208fe"
+	},
+	"documentFileName": "Saltspring Island 2001 Census Profile attachment..pdf",
+	"datePosted": {
+		"$date": "2005-09-23T07:00:00.000Z"
+	},
+	"description": "On September 23, 2005, the EAO received a memo regarding the Saltspring Island Trust Area for the VITR Project from Islands Trust.",
+	"displayName": "Memo from Islands Trust Regarding Saltspring Island Trust Area for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee5"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d27ca4acd4014b8208ff"
+	},
+	"documentFileName": "Galiano Island 2001 Census Profile attachment..pdf",
+	"datePosted": {
+		"$date": "2005-09-23T07:00:00.000Z"
+	},
+	"description": "On September 23, 2005, the EAO received a memo regarding Galiano Island Trust Area for VITR Project from Islands Trust.",
+	"displayName": "Memo from Islands Trust Regarding Galiano Island Trust Area for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee5"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d27ca4acd4014b820900"
+	},
+	"documentFileName": "Island Trust Comments re application..pdf",
+	"datePosted": {
+		"$date": "2006-07-27T07:00:00.000Z"
+	},
+	"description": "On July 27, 2006, the EAO received comments regaridng the application for the VITR Project from BC Transmission.",
+	"displayName": "Comments from Islands Trust Regarding the Application for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d288a4acd4014b820901"
+	},
+	"documentFileName": "Email from Linda Adams dated July 27/06 re comments on application..pdf",
+	"datePosted": {
+		"$date": "2006-07-27T07:00:00.000Z"
+	},
+	"description": "On July 27, 2006, the EAO received comments regarding the application for the VITR Project from Islands Trust.",
+	"displayName": "Comments from Islands Trust Regarding the Application for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d2b8a4acd4014b820906"
+	},
+	"documentFileName": "Attachment to email of letter from Mayor L. Jackson..pdf",
+	"datePosted": {
+		"$date": "2006-07-26T07:00:00.000Z"
+	},
+	"description": "On July 26, 2006, the EAO received comments regarding the VITR Project from the Corporation of Delta.",
+	"displayName": "Comments from Corporation of Delta Regarding VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d2bfa4acd4014b820907"
+	},
+	"documentFileName": "Email from Mayor L. Jackson dated July 27/06..pdf",
+	"datePosted": {
+		"$date": "2006-07-27T07:00:00.000Z"
+	},
+	"description": "On July 27, 2006, the EAO received comments regarding the VITR Project from the Corporation of Delta.",
+	"displayName": "Comments from Corporation of Delta Regarding VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d35da4acd4014b820919"
+	},
+	"documentFileName": "Evaluation of Directionally Drilled Shore Approach dated January 2006..pdf",
+	"datePosted": {
+		"$date": "2006-08-08T07:00:00.000Z"
+	},
+	"description": "On August 8, 2006, the EAO received a report regarding the Evaluation of Directionally Drilled Shore Approach for the VITR Project from BC Transmission",
+	"displayName": "Evaluation of Directionally Drilled Shore Approach Report",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d361a4acd4014b82091a"
+	},
+	"documentFileName": "Figure 9 (Page 35 of Evaluation of Directionally Drilled Shore Approach Rep.pdf",
+	"datePosted": {
+		"$date": "2006-08-08T07:00:00.000Z"
+	},
+	"description": "On August 8, 2006, the EAo received a report regarding the Evaluation of Directionally Drilled Shore Approach from BC Transmission.",
+	"displayName": "Evaluation of Directionally Drilled Shore Approach Report",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d361a4acd4014b82091b"
+	},
+	"documentFileName": "Letter from B. Barrett, BCTC to EAO dated Aug. 8/06..pdf",
+	"datePosted": {
+		"$date": "2006-08-08T07:00:00.000Z"
+	},
+	"description": "On August 8, 2006, the EAO received a letter regarding the Evaluation of Directionally Drilled Shore Approach for the VITR Project from BC Transmission.",
+	"displayName": "Letter from BC Transmission Regarding Evaluation of Directionally Drilled Shore Approach for VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d43ca4acd4014b820931"
+	},
+	"documentFileName": "Appendix F: EBT Model Results.pdf",
+	"datePosted": {
+		"$date": "2006-09-29T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix F: EBT Model Results",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d44fa4acd4014b820932"
+	},
+	"documentFileName": "Appendix D and E: MBO Model Results.pdf",
+	"datePosted": {
+		"$date": "2006-09-29T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix D and E: MBO Model Results",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d453a4acd4014b820933"
+	},
+	"documentFileName": "Appendix B and C: TBY Model Results.pdf",
+	"datePosted": {
+		"$date": "2006-09-29T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix B and C: TBY Model Results",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d454a4acd4014b820934"
+	},
+	"documentFileName": "Appendix A: EBT Model Results.pdf",
+	"datePosted": {
+		"$date": "2006-09-29T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix A: EBT Model Results",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d460a4acd4014b820936"
+	},
+	"documentFileName": "VITRP-Comparison of Magnetic Field Meters-dated Aug 21/06.pdf",
+	"datePosted": {
+		"$date": "2006-08-21T07:00:00.000Z"
+	},
+	"description": "On August 21, 2006, the EAO received a report regarding the comparison of magnetic field meters for the VITR Project from BC Transmission.",
+	"displayName": "Comparison of Magnetic Field Meters Report - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d467a4acd4014b820937"
+	},
+	"documentFileName": "BCTC Responses to EAC Application Public Comments-revised dated Sept 22/06.pdf",
+	"datePosted": {
+		"$date": "2006-09-22T07:00:00.000Z"
+	},
+	"description": "On September 22, 2006, the EAO received a public comments tracking table from BC Transmission.",
+	"displayName": "Public Comments Tracking Table - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee4"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d46ca4acd4014b820938"
+	},
+	"documentFileName": "Application Review -Public Consultation \u0026 Communications Activities \u0026 Input.pdf",
+	"datePosted": {
+		"$date": "2006-09-22T07:00:00.000Z"
+	},
+	"description": "On September 22, 2006, the EAo received a public consultation report regarding the VITR Project from BC Transmission.",
+	"displayName": "Public Consultation Report - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d53ea4acd4014b82094c"
+	},
+	"documentFileName": "BC Transmission Corporation Responses to Addendum to EA Certificate Application Public Comments.pdf",
+	"datePosted": {
+		"$date": "2006-11-09T08:00:00.000Z"
+	},
+	"description": "On November 9, 2006, the EAo received a public comments tracking table regarding the VITR project from BC Transmission.",
+	"displayName": "Public Comments Tracking Table - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee4"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d555a4acd4014b82094f"
+	},
+	"documentFileName": "VITRP Assessment Report - Appendices - VITR Project Commitments Table Dec 22 2006.pdf",
+	"datePosted": {
+		"$date": "2006-12-22T08:00:00.000Z"
+	},
+	"description": "On December 22, 2006, the EAO received a commitments table regarding the VITR Project from BC Transmission.",
+	"displayName": "Commitments Table - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee4"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d556a4acd4014b820950"
+	},
+	"documentFileName": "VITRP Assessment Report - Appendices - VITR Project BCTC Responses to Public Comments on EAC Application December 2006.pdf",
+	"datePosted": {
+		"$date": "2006-12-20T08:00:00.000Z"
+	},
+	"description": "On December 20, 2006, the EAO received a public comments tracking table regarding the VITR Project from BC Transmission.",
+	"displayName": "Public Comments Tracking Table - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee4"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d556a4acd4014b820951"
+	},
+	"documentFileName": "VITRP Assessment Report - Appendices - VITR Project BCTC Responses to Public Comments on Addendum to EAC Application December 2006.pdf",
+	"datePosted": {
+		"$date": "2006-12-20T08:00:00.000Z"
+	},
+	"description": "On December 20, 2006, the EAO received a pubic comments tracking table regarding the VITR Project from BC Transmission.",
+	"displayName": "Public Comments Tracking Table - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee4"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d561a4acd4014b820952"
+	},
+	"documentFileName": "VITRP Assessment Report - Appendices - First Nations Tracking Document (Dec 20).pdf",
+	"datePosted": {
+		"$date": "2006-12-20T08:00:00.000Z"
+	},
+	"description": "On December 20, 2006, the EAO received a First Nations tracking table regarding the VITR Project from BC Transmission.",
+	"displayName": "First Nations Tracking Table - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee4"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d562a4acd4014b820953"
+	},
+	"documentFileName": "VITRP Assessment Report - Appendices - Agency Issues Tracking Document (Dec 20).pdf",
+	"datePosted": {
+		"$date": "2006-12-08T08:00:00.000Z"
+	},
+	"description": "On December 8, 2006, the EAO received an Agency Tracking Tbale regarding the VITR Project from BC Transmission.",
+	"displayName": "Agency Issues Tracking Table - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee4"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d569a4acd4014b820954"
+	},
+	"documentFileName": "VITRP Assessment Report - Main Document.pdf",
+	"datePosted": {
+		"$date": "2006-12-29T08:00:00.000Z"
+	},
+	"description": "On December 29, 2006, the EAO received the Assessment Report regarding the VITR Project from BC Transmission.",
+	"displayName": "Assessment Report - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d5eaa4acd4014b82095f"
+	},
+	"documentFileName": "Appendix J - Key to R/W Preparation Map Sheets and maps 1- 8 (maps 8 of 22 to 22 of 22 ) Dec 11/06.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix J - Key to R/W Preparation Map Sheets and maps 1- 8 (maps 8 of 22 to 22 of 22 ) Dec 11/06",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d5eaa4acd4014b820960"
+	},
+	"documentFileName": "Appendix I: sheet 24 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 24 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d5f5a4acd4014b820961"
+	},
+	"documentFileName": "Appendix I: sheet 23 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 23 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d5f6a4acd4014b820962"
+	},
+	"documentFileName": "Appendix I: sheet 22 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 22 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d5fca4acd4014b820963"
+	},
+	"documentFileName": "Appendix I: sheet 21 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 21 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d601a4acd4014b820964"
+	},
+	"documentFileName": "Appendix I: sheet 20 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 20 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d60da4acd4014b820965"
+	},
+	"documentFileName": "Appendix I: sheet 18 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 18 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d635a4acd4014b820966"
+	},
+	"documentFileName": "Appendix I: sheet 17 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 17 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d635a4acd4014b820967"
+	},
+	"documentFileName": "Appendix I: sheet 16 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 16 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d635a4acd4014b820968"
+	},
+	"documentFileName": "Appendix I: sheet 15 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 15 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d641a4acd4014b820969"
+	},
+	"documentFileName": "Appendix I: sheet 14 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 14 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d642a4acd4014b82096a"
+	},
+	"documentFileName": "Appendix I: sheet 13 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 13 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d643a4acd4014b82096b"
+	},
+	"documentFileName": "Appendix I: sheet 12 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 12 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d650a4acd4014b82096c"
+	},
+	"documentFileName": "Appendix I: sheet 11 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 11 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d650a4acd4014b82096d"
+	},
+	"documentFileName": "Appendix I: sheet 10 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 10 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d65ca4acd4014b82096e"
+	},
+	"documentFileName": "Appendix I: sheet 9 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 9 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d65da4acd4014b82096f"
+	},
+	"documentFileName": "Appendix I: sheet 8 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 8 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d683a4acd4014b820970"
+	},
+	"documentFileName": "Appendix I: sheet 7 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 7 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d683a4acd4014b820971"
+	},
+	"documentFileName": "Appendix I: sheet 6 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 6 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d68aa4acd4014b820972"
+	},
+	"documentFileName": "Appendix I: sheet 5 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 5 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d68fa4acd4014b820973"
+	},
+	"documentFileName": "Appendix I: sheet 4 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 4 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d68fa4acd4014b820974"
+	},
+	"documentFileName": "Appendix I: sheet 3 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 3 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d69da4acd4014b820975"
+	},
+	"documentFileName": "Appendix I: sheet 2 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 2 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d69da4acd4014b820976"
+	},
+	"documentFileName": "Appendix I: sheet 1 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix I: sheet 1 of 24 - Environmental, Social and First Nations Issue Mapping, Right of way mapping with Environmental Areas",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d6a4a4acd4014b820977"
+	},
+	"documentFileName": "Appendix A_B_C_D_E_F_G_H_K_L_M_N_O_P.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Appendix A_B_C_D_E_F_G_H_K_L_M_N_O_P",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d6a9a4acd4014b820978"
+	},
+	"documentFileName": "Contruction Environmental Management Plan - main report.pdf",
+	"datePosted": {
+		"$date": "2007-04-27T07:00:00.000Z"
+	},
+	"description": "On April 27, 2007, the EAO received the Construction Environmental Management Plan Report for the VITR Project from BC Transmission.",
+	"displayName": "Construction Environmental Management Plan Report - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296035"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5886d6dca4acd4014b82097b"
+	},
+	"documentFileName": "Vancouver Island Transmission Reinforcement - Annual Report - 2009-03-16.pdf",
+	"datePosted": {
+		"$date": "2009-03-16T07:00:00.000Z"
+	},
+	"description": "On March 16, 2009, the EAO received the Annual Summary Report No.2 for the VITR Project from BC Transmission.",
+	"displayName": "Annual Summary Report No.2 - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f1"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a384218296036"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5887e368ad20ac134d9163dc"
+	},
+	"documentFileName": "Final Application Information Requirements - Public Tracking Table.pdf",
+	"datePosted": {
+		"$date": "2011-09-30T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Final Application Information Requirements - Public Tracking Table, published September 2011",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee4"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	}
+},
+{
+	"_id": {
+		"$oid": "5887e369ad20ac134d9163dd"
+	},
+	"documentFileName": "Final Application Information Requirements - Agency Tracking Table.pdf",
+	"datePosted": {
+		"$date": "2011-09-30T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Final Application Information Requirements - Agency Tracking Table, published September 2011",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee4"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e6"
+	}
+},
+{
+	"_id": {
+		"$oid": "5887e369ad20ac134d9163de"
+	},
+	"documentFileName": "Letter from Karen Christie (EAO) to Kevin Podrasky (Teck Coal Ltd) - dated 30 Jan 12.pdf",
+	"datePosted": {
+		"$date": "2012-01-30T08:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Letter from Karen Christie (EAO) to Kevin Podrasky (Teck Coal Ltd) - dated 30 Jan 12",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504db"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602c"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e1"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cb"
+	}
+},
+{
+	"_id": {
+		"$oid": "5887e369ad20ac134d9163df"
+	},
+	"documentFileName": "Letter from Karen Christie (EAO) to Kevin Podrasky (Teck Coal Ltd) - dated 30 Jan 12.pdf",
+	"datePosted": {
+		"$date": "2012-01-30T08:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Letter from Karen Christie (EAO) to Kevin Podrasky (Teck Coal Ltd) - dated 30 Jan 12",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504db"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5d0d212c7d50161b92a80ee7"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cb"
+	}
+},
+{
+	"_id": {
+		"$oid": "5887e369ad20ac134d9163e0"
+	},
+	"documentFileName": "Letter from Karen Christie (EAO) to Kim Bellefontaine (MEM) dated 30 Jan 2012.pdf",
+	"datePosted": {
+		"$date": "2012-01-30T08:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Letter from Karen Christie (EAO) to Kim Bellefontaine (MEM) dated 30 Jan 2012",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504db"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5d0d212c7d50161b92a80ee7"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cb"
+	}
+},
+{
+	"_id": {
+		"$oid": "5887e36aad20ac134d9163e1"
+	},
+	"documentFileName": "Letter from Karen Christie (EAO) to Chris Stroich (MOE) dated 30 Jan 2012.pdf",
+	"datePosted": {
+		"$date": "2012-01-30T08:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Letter from Karen Christie (EAO) to Chris Stroich (MOE) dated 30 Jan 2012",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504db"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5d0d212c7d50161b92a80ee7"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cb"
+	}
+},
+{
+	"_id": {
+		"$oid": "5887e36aad20ac134d9163e2"
+	},
+	"documentFileName": "Letter from Karen Christie (EAO) to Jeremy Zandbergen (MOFLR) dated 30 Jan 2012.pdf",
+	"datePosted": {
+		"$date": "2012-01-30T08:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Letter from Karen Christie (EAO) to Jeremy Zandbergen (MOFLR) dated 30 Jan 2012",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504db"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5d0d212c7d50161b92a80ee7"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cb"
+	}
+},
+{
+	"_id": {
+		"$oid": "5887e36aad20ac134d9163e3"
+	},
+	"documentFileName": "Public invited to comment on the proposed Line Creek Operations Phase II Project Feb 20/12 to midnight April 5/12. Public Open House to be held Feb 28th  and Mar 5th..pdf",
+	"datePosted": {
+		"$date": "2012-02-13T08:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Public invited to comment on the proposed Line Creek Operations Phase II Project Feb 20, 2012 to midnight April 5, 2012. Public Open House to be held Feb 28th  and Mar 5th.",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cd"
+	}
+},
+{
+	"_id": {
+		"$oid": "5887e385ad20ac134d91647f"
+	},
+	"documentFileName": "Letter to Kevin Podrasky (Teck Coal Limited) from Karen Christie (EAO) re Section C of the Application, Ktunaxa Nation Interests, dated March 13, 2012.pdf",
+	"datePosted": {
+		"$date": "2012-03-13T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Letter to Kevin Podrasky (Teck Coal Limited) from Karen Christie (EAO) re Section C of the Application, Ktunaxa Nation Interests, dated March 13, 2012",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504db"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cb"
+	}
+},
+{
+	"_id": {
+		"$oid": "5887e386ad20ac134d916483"
+	},
+	"documentFileName": "Working Group Comments, Ministry of Forests, Lands and Natural Resource Operations dated April 12, 2012, from Herb Tepper.pdf",
+	"datePosted": {
+		"$date": "2012-04-17T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Working Group Comments, Ministry of Forests, Lands and Natural Resource Operations dated April 12, 2012, from Herb Tepper",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee4"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	}
+},
+{
+	"_id": {
+		"$oid": "5887e387ad20ac134d916485"
+	},
+	"documentFileName": "Working Group Comments, Montana Department of Environmental Quality dated April 12, 2012, letter to Karen Christie from Richard Opper.pdf",
+	"datePosted": {
+		"$date": "2012-04-12T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Working Group Comments, Montana Department of Environmental Quality dated April 12, 2012, letter to Karen Christie from Richard Opper",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	}
+},
+{
+	"_id": {
+		"$oid": "5888e5a5817b85ae43cf7ba3"
+	},
+	"documentFileName": "Sediment Plume and Deposition Modeling at VITR Project Landing Site - ASL Environmental Sciences Inc.pdf",
+	"datePosted": {
+		"$date": "2006-09-29T07:00:00.000Z"
+	},
+	"description": "On September 29, 2006 the EAO received the Sediment Plume and Deposition Modeling Report regarding the VITR project from ASL Environmental Sciences.",
+	"displayName": "Sediment Plume and Deposition Modeling Report - VITR Project",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504cf"
+	}
+},
+{
+	"_id": {
+		"$oid": "5888e5ce817b85ae43cf7c6f"
+	},
+	"documentFileName": "Application Information Requirements (AIR) for the proposed Line Creek Operations Phase II Project, and letter dated Oct 7/11 from Karen Christie (EAO) to Kevin Podrasky, Teck Coal Limited (Proponent), issuing the AIR to the Proponent..pdf",
+	"datePosted": {
+		"$date": "2011-10-07T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Application Information Requirements (AIR) for the proposed Line Creek Operations Phase II Project, and letter dated Oct 7, 2011 from Karen Christie (EAO) to Kevin Podrasky, Teck Coal Limited (Proponent), issuing the AIR to the Proponent.",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504db"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602d"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504d3"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e7"
+	}
+},
+{
+	"_id": {
+		"$oid": "5888e5ce817b85ae43cf7c70"
+	},
+	"documentFileName": "Application for Water License on Dry Creek within the Concurrent Permitting Regulation submitted to BC Ministry of Forests, Lands and Natural Resources Operations by Teck Coal Limited, December 2011.pdf",
+	"datePosted": {
+		"$date": "2011-12-30T08:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Application for Water License on Dry Creek within the Concurrent Permitting Regulation submitted to BC Ministry of Forests, Lands and Natural Resources Operations by Teck Coal Limited, December 2011",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5d0d212c7d50161b92a80ee7"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504ca"
+	}
+},
+{
+	"_id": {
+		"$oid": "5888e5ce817b85ae43cf7c71"
+	},
+	"documentFileName": "Water Discharge Permit Amendment Application submitted to BC Ministry of Environment by Teck Coal Limited, December 2011.pdf",
+	"datePosted": {
+		"$date": "2011-12-30T08:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Water Discharge Permit Amendment Application submitted to BC Ministry of Environment by Teck Coal Limited, December 2011",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504dc"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829603c"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f2"
+	},
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504ca"
+	}
+},
+{
+	"_id": {
+		"$oid": "5888e5cf817b85ae43cf7c73"
+	},
+	"documentFileName": "Working Group Comments, United States Environmental Protection Agency dated April 16, 2012, letter to Karen Christie from Julie DalSoglio.pdf",
+	"datePosted": {
+		"$date": "2012-04-16T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Working Group Comments, United States Environmental Protection Agency dated April 16, 2012, letter to Karen Christie from Julie DalSoglio",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	}
+},
+{
+	"_id": {
+		"$oid": "5888e5cf817b85ae43cf7c74"
+	},
+	"documentFileName": "Working Group Comments, Ministry of Environment dated April 16, 2012, letter to Karen Christie from A J Downie, Kootenay Region.pdf",
+	"datePosted": {
+		"$date": "2012-04-16T07:00:00.000Z"
+	},
+	"description": "",
+	"displayName": "Working Group Comments, Ministry of Environment dated April 16, 2012, letter to Karen Christie from A J Downie, Kootenay Region",
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504de"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829602f"
+	},
+	"type": {
+		"$oid": "5d0d212c7d50161b92a80ee3"
+	},
+	"legislation": 2002,
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504e9"
+	}
+},
+{
+	"_id": {
+		"$oid": "5d5b09f0894e950025c81fc6"
+	},
+	"projectPhase": {
+		"$oid": "5d3f6c7eda7a38421829603a"
+	},
+	"documentAuthorType": {
+		"$oid": "5cf00c03a266b7e1877504db"
+	},
+	"description": "On August 15, 2019, Certificate Amendment #3 for the existing Environmental Assessment Certificate #M05-02 was issued to Red Chris Development Co. for the Porphyry Copper-Gold Mine project.",
+	"type": {
+		"$oid": "5cf00c03a266b7e1877504d0"
+	},
+	"datePosted": {
+		"$date": "2019-08-15T07:00:00.000Z"
+	},
+	"milestone": {
+		"$oid": "5cf00c03a266b7e1877504f2"
+	},
+	"displayName": "EAC #M05-02 - Red Chris Porphyry Copper-Gold Mine - Certificate Amendment #3",
+	"documentFileName": "Rpt_Red Chris_Amendment 3_20190815.pdf",
+	"legislation": 2002
+}]
+
