@@ -541,7 +541,12 @@ exports.protectedPost = async function (args, res) {
               doc.internalSize = upfile.size;
               doc.passedAVCheck = true;
               doc.internalMime = upfile.mimetype;
-              doc.legislation = parseInt(args.swagger.params.legislation.value, 10);
+
+              let formattedLeg = null;
+              if (typeof args.swagger.params.legislation.value === 'string' || typeof arguments.swagger.params.legislation.value === 'number') {
+                formattedLeg = parseInt(args.swagger.params.legislation.value, 10);
+              }
+              doc.legislation = formattedLeg;
 
               doc.documentSource = args.swagger.params.documentSource.value;
               // TODO Not Yet
