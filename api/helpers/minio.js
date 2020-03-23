@@ -9,13 +9,13 @@ var _ = require('lodash');
  * The Minio client which facilitates the connection to Minio, and through which all calls should be made.
  */
 var minioClient = new minio.Client({
-  endPoint: '127.0.0.1',
-  port: 9000,
-  useSSL: false,
-  accessKey: 'my_access_key',
-  secretKey: 'my_secret_key'
- });
- 
+  endPoint: process.env.MINIO_HOST,
+  port: 443,
+  useSSL: true,
+  accessKey: process.env.MINIO_ACCESS_KEY,
+  secretKey: process.env.MINIO_SECRET_KEY
+});
+
 // This is the list of known, valid buckets documents can be uploaded and downloaded from
 // Set from a system environment variable, if that's not available then defaults to 'uploads'
 var BUCKETS = _.isEmpty(process.env.MINIO_BUCKET_NAME) ? { DOCUMENTS_BUCKET: 'uploads' } : { DOCUMENTS_BUCKET: process.env.MINIO_BUCKET_NAME };
