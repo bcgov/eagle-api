@@ -544,7 +544,7 @@ exports.protectedPost = async function (args, res) {
 
               let formattedLeg = null;
               if ((args.swagger.params.legislation && typeof args.swagger.params.legislation.value === 'string') ||
-                  (args.swagger.params.legislation && typeof arguments.swagger.params.legislation.value === 'number')) {
+                  (args.swagger.params.legislation && typeof args.swagger.params.legislation.value === 'number')) {
                 formattedLeg = parseInt(args.swagger.params.legislation.value, 10);
               }
               doc.legislation = formattedLeg;
