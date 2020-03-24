@@ -567,14 +567,14 @@ exports.protectedPost = async function (args, res) {
                 doc.read.push('public');
               }
 
-              doc.milestone = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null;
-              doc.type = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.type.value) : null;
-              doc.documentAuthor = args.swagger.params.projectPhase.value ? args.swagger.params.documentAuthor.value : null;
-              doc.documentAuthorType = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null;
+              doc.milestone = args.swagger.params.milestone.value && args.swagger.params.milestone.value !== "null" ? mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null;
+              doc.type = args.swagger.params.type.value && args.swagger.params.type.value !== "null" ? mongoose.Types.ObjectId(args.swagger.params.type.value) : null;
+              doc.documentAuthor = args.swagger.params.documentAuthor.value && args.swagger.params.documentAuthor.value !== "null" ? args.swagger.params.documentAuthor.value : null;
+              doc.documentAuthorType = args.swagger.params.documentAuthorType.value && args.swagger.params.documentAuthorType.value !== "null" ? mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null;
               doc.dateUploaded = args.swagger.params.dateUploaded.value;
               doc.datePosted = args.swagger.params.datePosted.value;
               doc.description = args.swagger.params.description.value;
-              doc.projectPhase = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null;
+              doc.projectPhase = args.swagger.params.projectPhase.value && args.swagger.params.projectPhase.value !== "null" ? mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null;
               // Update who did this?
               console.log('unlink');
               doc.save()
