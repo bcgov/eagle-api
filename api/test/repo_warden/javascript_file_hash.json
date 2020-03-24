@@ -7,12 +7,12 @@
     },
     "one_off_migrationsJsFiles": {
     "0": {
-      "name": "20200320233962-restoreDocTags.js",
-      "hash": "dgCaZMKMmnGy2V1fG53NAZx8ByE="
+      "hash": "dgCaZMKMmnGy2V1fG53NAZx8ByE=",
+      "name": "20200320233962-restoreDocTags.js"
     },
     "1": {
-        "name": "loadDocumentTags.js",
-        "hash": "eltoU1AIIYfYgxuzQ0u0lYMak1k="
+      "name": "loadDocumentTags.js",
+      "hash": "eltoU1AIIYfYgxuzQ0u0lYMak1k="
     },
     "2": {
         "name": "migrateDocuments.js",
