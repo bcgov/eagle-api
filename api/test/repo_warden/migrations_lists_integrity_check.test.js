@@ -1,11 +1,11 @@
 'use strict';
 const Promise = require('bluebird');
 Promise.config({
-    warnings: false,
-    longStackTraces: true,
-    cancellation: false,
-    monitoring: false,
-    asyncHooks: false,
+  warnings: false,
+  longStackTraces: true,
+  cancellation: false,
+  monitoring: false,
+  asyncHooks: false,
 });
 const _ = require('lodash');
 const fs = require('fs');
@@ -105,7 +105,7 @@ describe('Catch Poorly Written List Migration Data', () => {
     }, 50000);
 
     test('Check that the name of the migrations_data/lists file is meaningful showing what type of list data it contains', done => {
-      // To provide the ability to quickly glean meaningful info from the file names.  Calling a file 'lists.js' provides zero value. 
+      // To provide the ability to quickly glean meaningful info from the file names.  Calling a file 'lists.js' provides zero value.
       glob(listFileMatchPattern, function(err, files) { // lists/**/*.js
         if (err) {
           defaultLog.error('cannot match pattern \'' + listFileMatchPattern + '\'', err);
@@ -139,7 +139,7 @@ describe('Catch Poorly Written List Migration Data', () => {
     }, 50000);
 
     test('Check that the name of the migrations_data/lists file is meaningful showing what type of list data it contains', done => {
-      // To provide the ability to quickly glean meaningful info from the file names.  Calling a file 'lists.js' provides zero value. 
+      // To provide the ability to quickly glean meaningful info from the file names.  Calling a file 'lists.js' provides zero value.
       glob(listFileMatchPattern, function(err, files) { // lists/**/*.js
         if (err) {
           defaultLog.error('cannot match pattern \'' + listFileMatchPattern + '\'', err);

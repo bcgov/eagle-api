@@ -1,11 +1,11 @@
 'use strict';
 const Promise = require('bluebird');
 Promise.config({
-    warnings: false,
-    longStackTraces: true,
-    cancellation: false,
-    monitoring: false,
-    asyncHooks: false,
+  warnings: false,
+  longStackTraces: true,
+  cancellation: false,
+  monitoring: false,
+  asyncHooks: false,
 });
 const _ = require('lodash');
 const fs = require('fs');
@@ -53,13 +53,13 @@ describe('Catch Poorly Written Migrations', () => {
           expect(true).toEqual(fileName.startsWith('20'));
           expect(true).toEqual(fileName.startsWith('-', 14));
           let datePortionOfFileName = fileName.substr(0, 14);
-          
+
           // DO NOT ADD any more to this list.  Migrations have a date prefix, use valid dates from now on.
           // We're not going to go unsnarl our prod database so we will leave these exeptions as is.
           // And if you're worried about migration clobber, talk to your teammates and coordinate with real times!
           const specialBadLegacyCases = ['20200116825964', '20200106657647', '20200106938494', '20200116825964', '20200116984039', '20200120640657'];
           if (specialBadLegacyCases.find(legacyCase => datePortionOfFileName == legacyCase)) continue;
-          
+
           let isValidDate = moment(datePortionOfFileName, 'YYYYMMDDHHmmss', true).isValid();
           defaultLog.debug(datePortionOfFileName, 'is a valid date?', isValidDate);
           expect(true).toEqual(isValidDate);

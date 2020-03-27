@@ -2,12 +2,14 @@ const projectDAO = require('../../../dao/projectDAO');
 const projectGroupDAO = require('../../../dao/projectGroupDAO');
 const pinDAO = require('../../../dao/pinDAO');
 const constants = require('../../../helpers/constants');
+const projectControllerV1 = require('../../../controllers/project');
 
 const project = require('../../../helpers/models/project');
 
-require('../../test_helper');
+const test_helper = require('../../test_helper');
 require('../../../helpers/models/audit');
 require('../../../helpers/models/group');
+require('../../../helpers/models/cacUser');
 
 describe('API Testing - Project DAO', () => {
   let testProject = new project();
@@ -172,5 +174,39 @@ describe('API Testing - Project DAO', () => {
     result = await projectGroupDAO.deleteGroup('Test', fetchedResult, createdProject);
     result = await projectGroupDAO.getGroup(fetchedResult._id);
     expect(result).toEqual(null);
+  });
+
+  test('Project CAC SignUp tests', async () => {
+    // Create
+    let createdProject = await projectDAO.createProject('Test Project', testProject);
+    expect(createdProject.id).not.toEqual(null);
+
+    let res = {
+      writeHead: function(code) {
+        // 200 or fail
+        expect(code).toEqual(200);
+      },
+      end: function (data) {
+        // We should get a plain object back
+        expect(typeof(JSON.parse(data))).toEqual('object');
+      }
+    };
+
+    const formattedObj = {
+      cac:
+      {
+        value:
+        {
+          name: 'Mark Lise',
+          email: 'mark@digitalspace.ca',
+          comment: 'I like tests!'
+        }
+      },
+      projId: '58851085aaecd9001b811843'
+    };
+    const paramsWithValues = test_helper.createSwaggerParams([], formattedObj);
+
+    // fix this.
+    await projectControllerV1.publicCACSignUp(paramsWithValues, res);
   });
 });

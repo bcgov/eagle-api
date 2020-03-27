@@ -40,6 +40,7 @@ factory.define(factoryName, Comment, buildOptions => {
     , publishedNotes      : faker.lorem.paragraph()
     , rejectedNotes       : faker.lorem.paragraph()
     , rejectedReason      : ""
+    , submittedCAC        : false
     , valuedComponents    : [factory_helper.ObjectId(), factory_helper.ObjectId(), factory_helper.ObjectId()]
 
     // Number auto-incremented.  Do not set manually.

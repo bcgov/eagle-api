@@ -1,6 +1,7 @@
 exports.schemaTypes = Object.freeze({
   ITEM: 'Item',
   DOCUMENT: 'Document',
+  CAC: 'CACUser',
   PROJECT: 'Project',
   GROUP: 'Group',
   USER: 'User',

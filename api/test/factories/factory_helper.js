@@ -45,11 +45,11 @@ function generateEpicFormatPhoneNumber() {
 }
 
 function getRandomExistingMongoId(objectIdsPool) {
-    return  (objectIdsPool) ? generateSeededObjectId(faker.random.arrayElement(objectIdsPool)._id) : generateSeededObjectId();
+    return  (objectIdsPool && objectIdsPool.length > 0) ? generateSeededObjectId(faker.random.arrayElement(objectIdsPool)._id) : generateSeededObjectId();
 }
 
 function getRandomExistingListElementName(objectIdsPool) {
-    return  (objectIdsPool) ? faker.random.arrayElement(objectIdsPool).name : "";
+    return  (objectIdsPool && objectIdsPool.length > 0) ? faker.random.arrayElement(objectIdsPool).name : "";
 }
 
 function loadBcCities() {
@@ -137,7 +137,7 @@ function getInc() {
     return (index + 1) % 0xffffff;
 }
 
-// when generating multiple projects' worth of data we need seeds that follow a repeatable 
+// when generating multiple projects' worth of data we need seeds that follow a repeatable
 // pattern when the generators are set to static but are distinct values in order to avoid collisions
 function generateDeterministicSeed(commonFactorySeed, parentId) {
     return (commonFactorySeed * 1000000) + Number(parentId.toString().replace(/a|b|c|d|e|f/gi, "").substr(0, 5)) + getInc();
@@ -149,7 +149,7 @@ function touchPath(pathToTouch) {
         fs.utimesSync(pathToTouch, time, time);
     } catch (err) {
         fs.closeSync(fs.openSync(pathToTouch, 'w'));
-    }    
+    }
 }
 
 let epicAppTmpBasePath = path.sep + "tmp" + path.sep + "epic" + path.sep;
@@ -160,8 +160,8 @@ const generatedDocExt = ".pdf";
 
 // sizes based on EPIC representative samples
 const generatedDocSamples = {
-    S: generatedDocBasePath + "Small" + generatedDocExt, 
-    M: generatedDocBasePath + "Medium" + generatedDocExt, 
+    S: generatedDocBasePath + "Small" + generatedDocExt,
+    M: generatedDocBasePath + "Medium" + generatedDocExt,
     L: generatedDocBasePath + "Large" + generatedDocExt
 };
 

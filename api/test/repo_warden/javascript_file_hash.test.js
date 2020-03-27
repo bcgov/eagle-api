@@ -1,11 +1,11 @@
 'use strict';
 const Promise = require('bluebird');
 Promise.config({
-    warnings: false,
-    longStackTraces: true,
-    cancellation: false,
-    monitoring: false,
-    asyncHooks: false,
+  warnings: false,
+  longStackTraces: true,
+  cancellation: false,
+  monitoring: false,
+  asyncHooks: false,
 });
 const { hashElement } = require('folder-hash');
 const _ = require('lodash');
@@ -65,7 +65,7 @@ function filterRelevantFolders(rootFolder) {
   });
 
   const hashPackage = {
-      rootJsFiles: rootJsFiles
+    rootJsFiles: rootJsFiles
     , one_off_migrationsJsFiles: one_off_migrationsJsFiles  // TODO: get rid of this folder entirely.  It smells.  A one off migration is just a migration.
     , openshiftJsFiles: openshiftJsFiles
     , templatesJsFiles: templatesJsFiles
