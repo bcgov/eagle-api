@@ -39,6 +39,7 @@ exports.up = function(db) {
       console.error(`Failed to update Recent Activities: ${err}`); 
       mClient.close() 
     });
+    mClient.close();
   });
 };
 
