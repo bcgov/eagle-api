@@ -65,7 +65,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
     schemaAggregation = inspectionAggregator.createInspectionElementAggr(populate);
     break;
-  case constants.NOTIFICATION_PROJECT:
+  case constants.PROJECT_NOTIFICATION:
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
     schemaAggregation = notificationProjectAggregator.createNotificationProjectAggr(populate);
     break;

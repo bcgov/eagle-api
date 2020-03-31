@@ -58,7 +58,7 @@ async function loadModels(dbConnection, options, logger) {
     require('./api/helpers/models/comment');
     require('./api/helpers/models/commentperiod');
     require('./api/helpers/models/topic');
-    require('./api/helpers/models/notificationProject');
+    require('./api/helpers/models/projectNotification');
     require('./api/helpers/models/cacUser');
     log(logger, 'db model loading done.');
   },

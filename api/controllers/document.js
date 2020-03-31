@@ -548,7 +548,13 @@ exports.protectedPost = async function (args, res) {
               doc.internalSize = upfile.size;
               doc.passedAVCheck = true;
               doc.internalMime = upfile.mimetype;
-              doc.legislation = parseInt(args.swagger.params.legislation.value, 10);
+
+              let formattedLeg = null;
+              if ((args.swagger.params.legislation && typeof args.swagger.params.legislation.value === 'string') ||
+                  (args.swagger.params.legislation && typeof args.swagger.params.legislation.value === 'number')) {
+                formattedLeg = parseInt(args.swagger.params.legislation.value, 10);
+              }
+              doc.legislation = formattedLeg;
 
               doc.documentSource = args.swagger.params.documentSource.value;
               // TODO Not Yet
@@ -568,14 +574,14 @@ exports.protectedPost = async function (args, res) {
                 doc.read.push('public');
               }
 
-              doc.milestone = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null;
-              doc.type = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.type.value) : null;
-              doc.documentAuthor = args.swagger.params.projectPhase.value ? args.swagger.params.documentAuthor.value : null;
-              doc.documentAuthorType = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null;
+              doc.milestone = args.swagger.params.milestone.value && args.swagger.params.milestone.value !== "null" ? mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null;
+              doc.type = args.swagger.params.type.value && args.swagger.params.type.value !== "null" ? mongoose.Types.ObjectId(args.swagger.params.type.value) : null;
+              doc.documentAuthor = args.swagger.params.documentAuthor.value && args.swagger.params.documentAuthor.value !== "null" ? args.swagger.params.documentAuthor.value : null;
+              doc.documentAuthorType = args.swagger.params.documentAuthorType.value && args.swagger.params.documentAuthorType.value !== "null" ? mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null;
               doc.dateUploaded = args.swagger.params.dateUploaded.value;
               doc.datePosted = args.swagger.params.datePosted.value;
               doc.description = args.swagger.params.description.value;
-              doc.projectPhase = args.swagger.params.projectPhase.value ? mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null;
+              doc.projectPhase = args.swagger.params.projectPhase.value && args.swagger.params.projectPhase.value !== "null" ? mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null;
               // Update who did this?
               console.log('unlink');
               doc.save()

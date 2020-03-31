@@ -1,6 +1,7 @@
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import java.util.regex.Pattern
+import java.util.UUID
 
 /*
  * Sends a rocket chat notification
@@ -58,22 +59,48 @@ def getChangeLog(pastBuilds) {
   return log;
 }
 
+/*
+ * Using fake credentials for the environment variables.
+ * They just need to be there as placeholders for some of the unit tests.
+ */
 def nodejsTester () {
   openshift.withCluster() {
     openshift.withProject() {
-      podTemplate(label: 'node-tester', name: 'node-tester', serviceAccount: 'jenkins', cloud: 'openshift', containers: [
-        containerTemplate(
-          name: 'jnlp',
-          image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
-          resourceRequestCpu: '500m',
-          resourceLimitCpu: '800m',
-          resourceRequestMemory: '2Gi',
-          resourceLimitMemory: '4Gi',
-          workingDir: '/tmp',
-          command: '',
-        )
-      ]) {
-        node("node-tester") {
+      String testPodLabel = "node-tester-${UUID.randomUUID().toString()}";
+      println testPodLabel;
+      podTemplate(
+        label: testPodLabel,
+        name: testPodLabel,
+        serviceAccount: 'jenkins',
+        cloud: 'openshift',
+        slaveConnectTimeout: 300,
+        containers: [
+          containerTemplate(
+            name: 'jnlp',
+            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
+            resourceRequestCpu: '500m',
+            resourceLimitCpu: '1000m',
+            resourceRequestMemory: '2Gi',
+            resourceLimitMemory: '4Gi',
+            workingDir: '/tmp',
+            command: '',
+            envVars: [
+                envVar(key: 'MONGODB_DATABASE', value: 'epic'), 
+                envVar(key: 'MINIO_ACCESS_KEY', value: 'xxxx'),
+                envVar(key: 'MINIO_SECRET_KEY', value: 'xxxx'),
+                envVar(key: 'MINIO_HOST', value: 'foo.pathfinder.gov.bc.ca'),
+                envVar(key: 'KEYCLOAK_ENABLED', value: 'true'),
+                envVar(key: 'GENERATE_ON', value: 'true'),
+                envVar(key: 'GENERATE_NUM_OF_PROJECTS', value: '10'),
+                envVar(key: 'GENERATE_SAVE_TO_PERSISTENT_MONGO', value: 'false'),
+                envVar(key: 'GENERATE_CONSISTENT_DATA', value: 'true'),
+                envVar(key: 'GENERATE_FILES', value: 'false'),
+                envVar(key: 'PERSIST_FILES', value: 'false')
+            ]
+          )
+        ]
+      ) {
+        node(testPodLabel) {
           checkout scm
           sh 'npm i'
           try {
@@ -88,24 +115,32 @@ def nodejsTester () {
   }
 }
 
-// todo templates can be pulled from a repository, instead of declared here
 def nodejsSonarqube () {
   openshift.withCluster() {
     openshift.withProject() {
-      podTemplate(label: 'node-sonarqube', name: 'node-sonarqube', serviceAccount: 'jenkins', cloud: 'openshift', containers: [
-        containerTemplate(
-          name: 'jnlp',
-          image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
-          resourceRequestCpu: '500m',
-          resourceLimitCpu: '1000m',
-          resourceRequestMemory: '2Gi',
-          resourceLimitMemory: '4Gi',
-          workingDir: '/tmp',
-          command: '',
-          args: '${computer.jnlpmac} ${computer.name}',
-        )
-      ]) {
-        node("node-sonarqube") {
+      String sonarLabel = "sonarqube-runner-${UUID.randomUUID().toString()}";
+      println sonarLabel;
+      podTemplate(
+        label: "${sonarLabel}",
+        name: "${sonarLabel}",
+        serviceAccount: 'jenkins',
+        cloud: 'openshift',
+        slaveConnectTimeout: 300,
+        containers: [
+          containerTemplate(
+            name: 'jnlp',
+            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7:v3.11.161',
+            resourceRequestCpu: '500m',
+            resourceLimitCpu: '1000m',
+            resourceRequestMemory: '2Gi',
+            resourceLimitMemory: '4Gi',
+            workingDir: '/tmp',
+            command: '',
+            args: '${computer.jnlpmac} ${computer.name}',
+          )
+        ]
+      ) {
+        node("${sonarLabel}") {
           checkout scm
           dir('sonar-runner') {
             try {
@@ -114,7 +149,7 @@ def nodejsSonarqube () {
               SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
 
               sh "npm install typescript"
-              sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar. -Dsonar.verbose=true --stacktrace --info"
+              sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar.projectKey=org.sonarqube:demo-eagle-api -Dsonar.projectName=org.sonarqube:demo-eagle-api -Dsonar.verbose=true --stacktrace --info"
 
               // wiat for scan status to update
               sleep(30)
@@ -130,7 +165,7 @@ def nodejsSonarqube () {
                 echo "Scan Failed"
 
                 notifyRocketChat(
-                  "@all The latest build ${env.BUILD_DISPLAY_NAME} of demo-eagle-api seems to be broken. \n ${env.BUILD_URL}\n Error: \n Sonarqube scan failed",
+                  "@all The latest build ${env.BUILD_DISPLAY_NAME} of demo-eagle-api seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n Sonarqube scan failed",
                   ROCKET_DEPLOY_WEBHOOK
                 )
 
@@ -142,7 +177,7 @@ def nodejsSonarqube () {
 
             } catch (error) {
               notifyRocketChat(
-                "@all The latest build ${env.BUILD_DISPLAY_NAME} of demo-eagle-api seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error}",
+                "@all The latest build ${env.BUILD_DISPLAY_NAME} of demo-eagle-api seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error}",
                 ROCKET_DEPLOY_WEBHOOK
               )
               throw error
@@ -184,7 +219,7 @@ pipeline {
                 ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
                 ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
-                echo "Building demo-eagle-api demo branch"
+                echo "Building eagle-api projectNotificationFeature branch"
                 openshiftBuild bldCfg: 'demo-eagle-api', showBuildLogs: 'true'
                 echo "Build done"
 
@@ -197,7 +232,7 @@ pipeline {
                 echo ">> IMAGE_HASH: ${IMAGE_HASH}"
               } catch (error) {
                 notifyRocketChat(
-                  "@all The build ${env.BUILD_DISPLAY_NAME} of demo-eagle-api, seems to be broken.\n ${env.BUILD_URL}\n Error: \n ${error.message}",
+                  "@all The build ${env.BUILD_DISPLAY_NAME} of demo-eagle-api, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
                   ROCKET_DEPLOY_WEBHOOK
                 )
                 throw error
@@ -206,15 +241,14 @@ pipeline {
           }
         }
 
-      // disable for EAR-Feature branch
-        // stage('Unit Tests') {
-        //   steps {
-        //     script {
-        //       echo "Running Unit Tests"
-        //       def result = nodejsTester()
-        //     }
-        //   }
-        // }
+        stage('Unit Tests') {
+          steps {
+            script {
+              echo "Running Unit Tests"
+              def result = nodejsTester()
+            }
+          }
+        }
 
         stage('Sonarqube') {
           steps {
@@ -232,14 +266,14 @@ pipeline {
         script {
           try {
             echo "Deploying to dev..."
-            openshiftTag destStream: 'demo-eagle-api', verbose: 'false', destTag: 'dev', srcStream: 'demo-eagle-api', srcTag: "${IMAGE_HASH}"
+            openshiftTag destStream: 'demo-eagle-api', verbose: 'false', destTag: 'demo', srcStream: 'demo-eagle-api', srcTag: "${IMAGE_HASH}"
             sleep 5
-            // todo eagle-test? what depCfg?
+
             openshiftVerifyDeployment depCfg: 'demo-eagle-api', namespace: 'esm-test', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
             echo ">>>> Deployment Complete"
 
             notifyRocketChat(
-              "A new version of demo-eagle-api is now in Test, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
+              "A new version of demo-eagle-api is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
               ROCKET_DEPLOY_WEBHOOK
             )
 
@@ -249,7 +283,7 @@ pipeline {
             )
           } catch (error) {
             notifyRocketChat(
-              "@all The build ${env.BUILD_DISPLAY_NAME} of demo-eagle-api, seems to be broken.\n ${env.BUILD_URL}\n Error: \n ${error.message}",
+              "@all The build ${env.BUILD_DISPLAY_NAME} of demo-eagle-api, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
               ROCKET_DEPLOY_WEBHOOK
             )
             currentBuild.result = "FAILURE"

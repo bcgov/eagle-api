@@ -8,7 +8,7 @@ exports.schemaTypes = Object.freeze({
   RECENT_ACTIVITY: 'RecentActivity',
   INSPECTION: 'Inspection',
   INSPECTION_ELEMENT: 'InspectionElement',
-  NOTIFICATION_PROJECT: 'NotificationProject',
+  PROJECT_NOTIFICATION: 'ProjectNotification',
   LIST: 'List',
   COMMENT: 'Comment',
   COMMENT_PERIOD: 'CommentPeriod',

@@ -500,53 +500,51 @@ definitions:
     enum: &organizationFields
       - name
 
-### NotificationProject Definitions
-  NotificationProjectId:
+### ProjectNotification Definitions
+  ProjectNotificationId:
     type: object
     properties:
       comment:
         type: string
-        example: "A cool notification project"
-  NotificationProjectObject:
+        example: "A cool project notification"
+  ProjectNotificationObject:
     type: object
     properties:
       _id:
         type: string
         example: "54759eb3c090d83494e2d804"
-  NotificationProjectFields:
+  ProjectNotificationFields:
     type: string
     description: "Optional fields to return."
     example: name|description
     #TODO: Fix enums
-    enum: &notificationProjectFields
+    enum: &projectNotificationFields
       - 'name'
       - 'type'
       - 'subType'
-      - 'proponentName'
-      - 'startDate'
+      - 'nature'
+      - 'location'
       - 'decisionDate'
       - 'region'
-      - 'notificationDecision'
+      - 'decision'
       - 'description'
       - 'centroid'
       - 'read'
-  NotificationProjectSortByFields:
+  ProjectNotificationSortByFields:
     type: string
     description: "Optional fields to sort by (prefixed with + or - for order)"
     example: +name,-name
-    enum: &notificationProjectSortByFields
+    enum: &projectNotificationSortByFields
       - +name
       - -name
-      - +proponentName
-      - -proponentName
       - +type
       - -type
       - +subType
       - -subType
       - +region
       - -region
-      - +notificationDecision
-      - -notificationDecision
+      - +decision
+      - -decision
 
 ### CAC Definitions
   CACObject:
@@ -4888,67 +4886,67 @@ paths:
           schema:
             $ref: "#/definitions/Error"
 
-### Notification Project
-  /notificationProject:
-    x-swagger-router-controller: notificationProject
+### Project Notification
+  /projectNotification:
+    x-swagger-router-controller: projectNotification
     options:
       tags:
-        - notificationProject
+        - projectNotification
       summary: "Pre-flight request"
       operationId: protectedOptions
-      description: "Options on Notification Project Route"
+      description: "Options on Project Notification Route"
       responses:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/NotificationProjectObject"
+            $ref: "#/definitions/ProjectNotificationObject"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
     post:
       tags:
-        - notificationProject
-      summary: "Create a new notification project"
+        - projectNotification
+      summary: "Create a new project notification"
       operationId: protectedPost
-      description: "Create a new notification project object."
+      description: "Create a new project notification object."
       security:
         - Bearer: []
       x-security-scopes:
         - staff
         - sysadmin
       parameters:
-        - name: notificationProject
+        - name: projectNotification
           in: body
           required: true
           schema:
-            $ref: "#/definitions/NotificationProjectId"
+            $ref: "#/definitions/ProjectNotificationId"
         - in: query
           name: publish
           description: "Should this project be published?"
           required: false
           type: boolean
       responses:
-        "200":
+        "201":
           description: "Success"
           schema:
-            $ref: "#/definitions/NotificationProjectObject"
+            $ref: "#/definitions/ProjectNotificationObject"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-  /notificationProject/{notificationProjectId}:
-    x-swagger-router-controller: notificationProject
+  /projectNotification/{projectNotificationId}:
+    x-swagger-router-controller: projectNotification
     options:
       tags:
-        - notificationProject
+        - projectNotification
       summary: "Pre-flight request"
       operationId: protectedOptions
-      description: "Options on Notification Project GET Route"
+      description: "Options on Project Notification GET Route"
       parameters:
-        - name: notificationProjectId
+        - name: projectNotificationId
           in: path
-          description: "ID of notification project to get"
+          description: "ID of project notification to get"
           required: true
           type: string
       responses:
@@ -4962,26 +4960,26 @@ paths:
             $ref: "#/definitions/Error"
     put:
       tags:
-        - notificationProject
-      summary: "Update a notification project"
+        - projectNotification
+      summary: "Update a project notification"
       operationId: protectedPut
-      description: "Update a notification project object."
+      description: "Update a project notification object."
       security:
         - Bearer: []
       x-security-scopes:
         - staff
         - sysadmin
       parameters:
-        - name: notificationProjectId
+        - name: projectNotificationId
           in: path
-          description: "ID of notificationProject to update"
+          description: "ID of projectNotification to update"
           required: true
           type: string
-        - name: notificationProject
+        - name: projectNotification
           in: body
           required: true
           schema:
-            $ref: "#/definitions/NotificationProjectObject"
+            $ref: "#/definitions/ProjectNotificationObject"
         - in: query
           name: publish
           description: "Should this project be published?"
@@ -4991,7 +4989,7 @@ paths:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/NotificationProjectObject"
+            $ref: "#/definitions/ProjectNotificationObject"
         "403":
           description: "Access Denied"
           schema:
