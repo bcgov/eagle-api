@@ -42,7 +42,7 @@ exports.sendCACWelcomeEmail = async function (projectId, projectName, email) {
       }
     ],
     "encoding": "utf-8",
-    "from": "BC Gov <noreply@gov.bc.ca>",
+    "from": "BC Gov - Environmental Assessment Office <noreply@gov.bc.ca>",
     "priority": "normal",
     "subject": "Welcome to the {{ projectName }} Community Advisory Committee"
   };

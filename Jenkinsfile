@@ -59,62 +59,6 @@ def getChangeLog(pastBuilds) {
   return log;
 }
 
-/*
- * Using fake credentials for the environment variables.
- * They just need to be there as placeholders for some of the unit tests.
- */
-def nodejsTester () {
-  openshift.withCluster() {
-    openshift.withProject() {
-      String testPodLabel = "node-tester-${UUID.randomUUID().toString()}";
-      println testPodLabel;
-      podTemplate(
-        label: testPodLabel,
-        name: testPodLabel,
-        serviceAccount: 'jenkins',
-        cloud: 'openshift',
-        slaveConnectTimeout: 300,
-        containers: [
-          containerTemplate(
-            name: 'jnlp',
-            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
-            resourceRequestCpu: '500m',
-            resourceLimitCpu: '1000m',
-            resourceRequestMemory: '2Gi',
-            resourceLimitMemory: '4Gi',
-            workingDir: '/tmp',
-            command: '',
-            envVars: [
-                envVar(key: 'MONGODB_DATABASE', value: 'epic'), 
-                envVar(key: 'MINIO_ACCESS_KEY', value: 'xxxx'),
-                envVar(key: 'MINIO_SECRET_KEY', value: 'xxxx'),
-                envVar(key: 'MINIO_HOST', value: 'foo.pathfinder.gov.bc.ca'),
-                envVar(key: 'KEYCLOAK_ENABLED', value: 'true'),
-                envVar(key: 'GENERATE_ON', value: 'true'),
-                envVar(key: 'GENERATE_NUM_OF_PROJECTS', value: '10'),
-                envVar(key: 'GENERATE_SAVE_TO_PERSISTENT_MONGO', value: 'false'),
-                envVar(key: 'GENERATE_CONSISTENT_DATA', value: 'true'),
-                envVar(key: 'GENERATE_FILES', value: 'false'),
-                envVar(key: 'PERSIST_FILES', value: 'false')
-            ]
-          )
-        ]
-      ) {
-        node(testPodLabel) {
-          checkout scm
-          sh 'npm i'
-          try {
-            sh 'npm run tests'
-          } finally {
-            echo "Unit Tests Passed"
-          }
-        }
-      }
-      return true
-    }
-  }
-}
-
 def nodejsSonarqube () {
   openshift.withCluster() {
     openshift.withProject() {
@@ -237,15 +181,6 @@ pipeline {
                 )
                 throw error
               }
-            }
-          }
-        }
-
-        stage('Unit Tests') {
-          steps {
-            script {
-              echo "Running Unit Tests"
-              def result = nodejsTester()
             }
           }
         }
