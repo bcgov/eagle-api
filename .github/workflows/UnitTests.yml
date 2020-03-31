@@ -23,3 +23,4 @@ jobs:
         npm run tests
       env:
         CI: true
+        MINIO_HOST: foo.pathfinder.gov.bc.ca
