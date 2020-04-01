@@ -88,6 +88,8 @@ exports.up = async function(db) {
       );
       console.log('***** Number of document author types that were updated *****');
       console.log(authorResult.modifiedCount);
+
+      mClient.close();
     });
 };
 
