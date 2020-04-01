@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * This migration fixes any documents that have invalid IDs in their type, authorType, or milestone fields.
+ * This migration fixes any documents that have invalid IDs in their type, documentAuthorType, or milestone fields.
  * Any documents that do not have a value in those fields that is from the List schema will be set to `null`.
  */
 
