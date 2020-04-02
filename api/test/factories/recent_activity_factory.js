@@ -40,6 +40,7 @@ factory.define(factoryName, RecentActivity, buildOptions => {
     , active              : faker.random.boolean()
     , project             : factory_helper.ObjectId()
     , content             : faker.lorem.paragraph()
+    , notificationName    : faker.lorem.word()
     , headline            : factory_helper.getRandomExistingListElementName(headlineTypes)
 
     // Permissions
