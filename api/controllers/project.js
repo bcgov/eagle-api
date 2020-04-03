@@ -1059,7 +1059,7 @@ const handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, 
           sort, // sort
           skip, // skip
           limit, // limit
-          false); // count
+          true); // count
 
         Utils.recordAction('Get', 'GroupMember', username);
         return Actions.sendResponse(res, 200, groupData);
