@@ -4,7 +4,7 @@
     "metadata": {
         "creationTimestamp": null,
         "labels": {
-            "app": "${NAME}-pipeline",
+            "app": "${GROUP_NAME}-pipeline",
             "name": "${NAME}-pipeline",
             "template": "${NAME}-pipeline"
         },
@@ -18,7 +18,7 @@
           "name": "${NAME}-pipeline",
           "creationTimestamp": null,
           "labels": {
-            "app": "${NAME}"
+            "app": "${GROUP_NAME}"
           }
         },
         "spec": {
