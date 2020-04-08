@@ -20,15 +20,6 @@ def notifyRocketChat(text, url) {
 
 
 /*
- * takes in a sonarqube status json payload
- * and returns the status string
- */
-def sonarGetStatus (jsonPayload) {
-  def jsonSlurper = new JsonSlurper()
-  return jsonSlurper.parseText(jsonPayload).projectStatus.status
-}
-
-/*
  * Updates the global pastBuilds array: it will iterate recursively
  * and add all the builds prior to the current one that had a result
  * different than 'SUCCESS'.
@@ -57,48 +48,6 @@ def getChangeLog(pastBuilds) {
     }
   }
   return log;
-}
-
-def nodejsTester () {
-  openshift.withCluster() {
-    openshift.withProject() {
-      String testPodLabel = "node-tester-${UUID.randomUUID().toString()}";
-      println testPodLabel;
-      podTemplate(
-        label: testPodLabel,
-        name: testPodLabel,
-        serviceAccount: 'jenkins',
-        cloud: 'openshift',
-        slaveConnectTimeout: 300,
-        containers: [
-          containerTemplate(
-            name: 'jnlp',
-            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7',
-            resourceRequestCpu: '500m',
-            resourceLimitCpu: '1000m',
-            resourceRequestMemory: '2Gi',
-            resourceLimitMemory: '4Gi',
-            workingDir: '/tmp',
-            command: '',
-            envVars: [
-              envVar(key: 'MINIO_HOST', value: 'foo.pathfinder.gov.bc.ca')
-            ]
-          )
-        ]
-      ) {
-        node(testPodLabel) {
-          checkout scm
-          sh 'npm i'
-          try {
-            sh 'npm run tests'
-          } finally {
-            echo "Unit Tests Passed"
-          }
-        }
-      }
-      return true
-    }
-  }
 }
 
 
@@ -151,14 +100,6 @@ pipeline {
           }
         }
 
-        stage('Unit Tests') {
-          steps {
-            script {
-              echo "Running Unit Tests"
-              def result = nodejsTester()
-            }
-          }
-        }
       }
     }
 
