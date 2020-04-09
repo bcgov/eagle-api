@@ -1,0 +1,24 @@
+# This action will create a Pull Request to merge all changes on DEVELOP
+# into the TEST branch. PR will be created as a draft
+name: Create test branch PR
+
+on:
+  pull_request:
+    branches:
+    - develop
+    types: [closed]
+
+jobs:
+  pull-request:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: pull-request
+      uses: repo-sync/pull-request@v2
+      with:
+        destination_branch: "test"
+        pr_title: "Pulling ${{ github.ref }} into TEST"
+        pr_body: ":crown: *An automated PR*  This PR will pull all recent merges from DEVELOP into TEST"
+        pr_label: "auto-pr from dev to test"
+        pr_draft: true
+        github_token: ${{ secrets.GITHUB_TOKEN }}
