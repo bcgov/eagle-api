@@ -85,7 +85,7 @@ exports.protectedPut = async function (args, res) {
     notes: obj.notes ? obj.notes : ''
   };
 
-  user.read = user.orgName === 'Environmental Assessment Office' ? ['staff','sysadmin', 'public'] : ['staff', 'sysadmin'];
+  user.read = user.orgName === 'Environmental Assessment Office' ? ['staff', 'sysadmin', 'public'] : ['staff', 'sysadmin'];
 
   defaultLog.info('Incoming updated object:', user);
 
