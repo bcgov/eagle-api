@@ -90,7 +90,7 @@ exports.protectedPut = async function (args, res) {
   defaultLog.info('Incoming updated object:', user);
 
   try {
-    var u = await User.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).exec();
+    var u = await User.findOneAndUpdate({ _id: objId }, user, { upsert: false, new: true }).exec();
     Utils.recordAction('Put', 'User', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Organization updated:', u);
     return Actions.sendResponse(res, 200, u);
