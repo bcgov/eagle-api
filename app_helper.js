@@ -90,8 +90,8 @@ async function loadMongoose() {
 async function startCron(defaultLog) {
   // standard crom pattern
   // seconds[0-59] minutes[0-59] hours[0-23] day_of_month[1-31] months[0-11] day_of_week[0-6]
-  // cron.schedule('* 3 * * * *', async function() {
-  cron.schedule('10 * * * * *', async function() {
+  // cron.schedule('10 * * * * *', async function() {  // for testing
+  cron.schedule('* 3 * * * *', async function() {
     let afterTimestamp = await materialized_view__top_search_terms.get_last(defaultLog);
     await materialized_view__top_search_terms.update(defaultLog, afterTimestamp);
   });
