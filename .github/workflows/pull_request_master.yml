@@ -16,6 +16,7 @@ jobs:
     - name: pull-request
       uses: repo-sync/pull-request@v2
       with:
+        source_branch: "test"
         destination_branch: "master"
         pr_title: "Pulling ${{ github.ref }} into MASTER"
         pr_body: ":crown: *An automated PR*  This PR will pull all recent merges from TEST into MASTER"

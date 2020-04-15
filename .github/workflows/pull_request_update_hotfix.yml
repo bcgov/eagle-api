@@ -1,0 +1,23 @@
+name: Create develop/master branch PRa
+
+on:
+  pull_request:
+    branches:
+    - master
+    types: [closed]
+
+jobs:
+  pull-request:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: pull-request
+      uses: repo-sync/pull-request@v2
+      with:
+        source_branch: "master"
+        destination_branch: "hotfix"
+        pr_title: "Pulling ${{ github.ref }} into HOTFIX"
+        pr_body: ":crown: *An automated PR*  This PR will pull all recent merges from MASTER into HOTFIX"
+        pr_label: "auto-pr from master to hotfix"
+        pr_draft: true
+        github_token: ${{ secrets.GITHUB_TOKEN }}
