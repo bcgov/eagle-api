@@ -72,8 +72,10 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
     defaultLog.info('Couldn\'t create upload folder:', e);
   }
   app_helper.loadMongoose().then(() => {
-    express_server = app.listen(api_default_port, '0.0.0.0', function() {
-      defaultLog.info('Started server on port ' + api_default_port);
+    app_helper.startCron(defaultLog).then(() => {
+      express_server = app.listen(api_default_port, '0.0.0.0', function() {
+        defaultLog.info('Started server on port ' + api_default_port);
+      });
     });
   }).catch(function (err) {
     defaultLog.info('err:', err);
