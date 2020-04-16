@@ -241,7 +241,7 @@ factory.define(factoryName, Project, buildOptions =>{
     
     let attrs = {
         _id                       : factory_helper.ObjectId()
-      , currentLegislationYear    : legislationNumber
+      , currentLegislationYear    : `legislation_${legislationNumber}`
       , legislationYearList       : legislationYearList
 
       // Permissions

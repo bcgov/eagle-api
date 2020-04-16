@@ -227,5 +227,40 @@ pipeline {
         }
       }
     }
+
+    stage('Populate Data'){
+      steps {
+        script {
+          try {
+            echo "Clearing old data"
+             /* Get the Deployment Config (DC) Object */
+            def dcObj = openshift.selector('dc', 'eagle-api').object()
+            
+            /* Use the DC to find the pods */
+            def podSelector = openshift.selector('pod', [deployment: "eagle-api-${dcObj.status.latestVersion}"])
+            
+            podSelector.withEach {
+                // obtain the pod name and remove "pods/" from the front.
+                def podName = it.name()  // probably pods/abcd1234
+                podName = podName.replaceFirst("pods/", "")
+
+                // Run a command on the container
+                def resp = openshiftExec(pod: podName, command: ["echo", "testing"])
+
+                assert resp.stdout.contains("testing")              
+            }
+
+            echo "Populating new data"
+          } catch (error) {
+            notifyRocketChat(
+              "@all Data generation failed for the build ${env.BUILD_DISPLAY_NAME} of eagle-api.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+              ROCKET_DEPLOY_WEBHOOK
+            )
+            currentBuild.result = "FAILURE"
+            throw new Exception("Data generation failed")
+          }
+        }
+      }
+    }
   }
 }
