@@ -164,7 +164,7 @@ pipeline {
                 ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
                 echo "Building eagle-api develop branch"
-                openshiftBuild bldCfg: 'eagle-api', showBuildLogs: 'true'
+                openshiftBuild bldCfg: 'eagle-api', showBuildLogs: 'true', env: [[ name: "NODE_ENV", value: "development" ]]
                 echo "Build done"
 
                 echo ">>> Get Image Hash"
@@ -232,7 +232,7 @@ pipeline {
       steps {
         script {
           try {
-            echo "Clearing old data"
+            echo "Running data generators"
              /* Get the Deployment Config (DC) Object */
             def dcObj = openshift.selector('dc', 'eagle-api').object()
             
@@ -241,16 +241,12 @@ pipeline {
             
             podSelector.withEach {
                 // obtain the pod name and remove "pods/" from the front.
-                def podName = it.name()  // probably pods/abcd1234
+                def podName = it.name()
                 podName = podName.replaceFirst("pods/", "")
 
-                // Run a command on the container
-                def resp = openshiftExec(pod: podName, command: ["echo", "testing"])
-
-                assert resp.stdout.contains("testing")              
+                // Run a command in the container
+                def resp = openshiftExec(pod: podName, command: ["/opt/app-root/src/generate.sh", "30", "Static", "Saved"])
             }
-
-            echo "Populating new data"
           } catch (error) {
             notifyRocketChat(
               "@all Data generation failed for the build ${env.BUILD_DISPLAY_NAME} of eagle-api.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",

@@ -10,6 +10,7 @@ Promise.config({
 });
 const test_helper = require('../test_helper');
 const factory_helper = require('../factories/factory_helper');
+const mongoose = require('mongoose');
 const request = require('supertest');
 const nock = require('nock');
 const gh = require("./generate_helper");
@@ -24,7 +25,15 @@ describe('Generate Test Data', () => {
   ];
 
   describe('Generate Projects', () => {
-    test('Generator', done => {
+    test('Generator', async done => {
+    mongoose.connection.db.collection('epic').count((error, count) => {
+      // This is a fail safe to prevent data being generated on databases that are not empty.
+      if (count) {
+        defaultLog.error(`Collection must be empty to generate data. There are currently ${count} documents in the collection`);
+        done();
+        return;
+      }
+
       test_helper.dataGenerationSettings.then(genSettings => {
         defaultLog.debug(genSettings);
 
@@ -72,6 +81,7 @@ describe('Generate Test Data', () => {
           done();
         }
       });
+     });
     });
   });
 });
