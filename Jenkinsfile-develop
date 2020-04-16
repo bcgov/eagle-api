@@ -245,7 +245,7 @@ pipeline {
                 podName = podName.replaceFirst("pods/", "")
 
                 // Run a command in the container
-                def resp = openshiftExec(pod: podName, command: ["/opt/app-root/src/generate.sh", "30", "Static", "Saved"])
+                def resp = openshiftExec(pod: podName, command: ["/opt/app-root/src/generate.sh", "30", "Static", "Saved", "Single"])
             }
           } catch (error) {
             notifyRocketChat(
