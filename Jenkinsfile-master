@@ -24,6 +24,8 @@ pipeline {
       agent any
       steps {
         script {
+          ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+          ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
           try {
             echo "Backing up..."
             sh("oc tag esm/eagle-api:prod esm/eagle-api:prod-backup")
