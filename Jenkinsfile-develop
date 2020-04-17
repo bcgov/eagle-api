@@ -232,20 +232,24 @@ pipeline {
       steps {
         script {
           try {
-            echo "Running data generators"
-             /* Get the Deployment Config (DC) Object */
-            def dcObj = openshift.selector('dc', 'eagle-api').object()
-            
-            /* Use the DC to find the pods */
-            def podSelector = openshift.selector('pod', [deployment: "eagle-api-${dcObj.status.latestVersion}"])
-            
-            podSelector.withEach {
-                // obtain the pod name and remove "pods/" from the front.
-                def podName = it.name()
-                podName = podName.replaceFirst("pods/", "")
+            openshift.withCluster() {
+              openshift.withProject('esm-dev') {
+                echo "Running data generators"
+                /* Get the Deployment Config (DC) Object */
+                def dcObj = openshift.selector('dc', 'eagle-api').object()
+                
+                /* Use the DC to find the pods */
+                def podSelector = openshift.selector('pod', [deployment: "eagle-api-${dcObj.status.latestVersion}"])
+                
+                podSelector.withEach {
+                    // obtain the pod name and remove "pods/" from the front.
+                    def podName = it.name()
+                    podName = podName.replaceFirst("pods/", "")
 
-                // Run a command in the container
-                def resp = openshiftExec(pod: podName, command: ["/opt/app-root/src/generate.sh", "30", "Static", "Saved", "Single"])
+                    // Run a command in the container
+                    def resp = openshiftExec(pod: podName, command: ["/opt/app-root/src/generate.sh", "30", "Static", "Saved", "Single"])
+                }
+              }
             }
           } catch (error) {
             notifyRocketChat(
