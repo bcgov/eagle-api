@@ -232,8 +232,7 @@ pipeline {
       steps {
         script {
           try {
-            openshift.withCluster('esm-dev') {
-
+            openshift.withCluster() {
               openshift.withProject() {
                 echo "Running data generators"
                 /* Get the Deployment Config (DC) Object */
