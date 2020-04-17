@@ -530,6 +530,9 @@ definitions:
       - 'description'
       - 'centroid'
       - 'read'
+      - 'associatedProjectId'
+      - 'associatedProjectName'
+      - 'trigger'
   ProjectNotificationSortByFields:
     type: string
     description: "Optional fields to sort by (prefixed with + or - for order)"

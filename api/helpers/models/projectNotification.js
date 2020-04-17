@@ -12,6 +12,8 @@ module.exports = require('../models')('ProjectNotification', {
   decisionDate: { type: Date, default: null },
   description: { type: String, default: null },
   trigger: { type: String, default: null },
+  associatedProjectId: { type: String, default: null },
+  associatedProjectName : { type: String, default: null },
   centroid: [{ type: Mixed, default: 0.00 }],
 
   // Permissions
