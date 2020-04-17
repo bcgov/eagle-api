@@ -10,6 +10,7 @@ Promise.config({
 });
 const test_helper = require('../test_helper');
 const factory_helper = require('../factories/factory_helper');
+const mongoose = require('mongoose');
 const request = require('supertest');
 const nock = require('nock');
 const gh = require("./generate_helper");
@@ -24,10 +25,10 @@ describe('Generate Test Data', () => {
   ];
 
   describe('Generate Projects', () => {
-    test('Generator', done => {
+    test('Generator', async done => {
+    mongoose.connection.db.collection('epic').count((error, recordCount) => {
       test_helper.dataGenerationSettings.then(genSettings => {
         defaultLog.debug(genSettings);
-
         // Eaxample basic usage from project base dir: 
         //     ./generate.sh 10 Static Unsaved
         //     ./generate.sh 3 Random Saved
@@ -38,6 +39,14 @@ describe('Generate Test Data', () => {
         // and it will run a coverage test using settings 1 Static Unsaved
         if (genSettings.generate) {
           defaultLog.info("Data Generation is on");
+
+          // This is a fail safe to prevent data being generated on collections that have data if not explicitly set in the command.
+          if (recordCount && genSettings.single_db_pass) {
+            defaultLog.error(`Collection must be empty to generate data or the command must be run with the 'Multiple' flag set. There are currently ${recordCount} documents in the collection`);
+            done();
+            return;
+          }
+
           gh.generateEntireDatabase(usersData).then(generatedData => {
             defaultLog.info(((genSettings.generate_consistent_data) ? "Consistent" : "Random") + " data generation " + ((genSettings.save_to_persistent_mongo) ? "saved" : "unsaved"));
             let projects = generatedData.projects;
@@ -72,6 +81,7 @@ describe('Generate Test Data', () => {
           done();
         }
       });
+     });
     });
   });
 });
