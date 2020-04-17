@@ -232,11 +232,11 @@ pipeline {
       steps {
         script {
           try {
-            openshift.withCluster('esm-dev') {
+            openshift.withCluster() {
               openshift.withProject() {
                 echo "Running data generators"
                 /* Get the Deployment Config (DC) Object */
-                def dcObj = openshift.selector('dc', 'eagle-api').object()
+                def dcObj = openshift.selector('dc', 'esm-dev/eagle-api').object()
                 
                 /* Use the DC to find the pods */
                 def podSelector = openshift.selector('pod', [deployment: "eagle-api-${dcObj.status.latestVersion}"])
