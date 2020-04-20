@@ -17,13 +17,10 @@ def notifyRocketChat(text, url) {
     sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
 }
 
-
 pipeline {
   agent any
   stages {
-
-
-   stage('Tag Dev as Test'){
+   stage('Tag Test as Prod'){
       agent any
       steps {
         script {
@@ -31,25 +28,23 @@ pipeline {
           ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
           try {
             echo "Backing up..."
-            sh("oc tag esm/eagle-api:test esm/eagle-api:test-backup")
+            sh("oc tag esm/eagle-api:prod esm/eagle-api:prod-backup")
             sleep 5
-            echo "Tagging Dev as Test..."
-            sh("oc tag esm/eagle-api:dev esm/eagle-api:test")
+            echo "Tagging Test as Prod..."
+            sh("oc tag esm/eagle-api:test esm/eagle-api:prod")
             sleep 5
-            // todo update namespace before switching over
             echo ">>>> Tagging Complete"
-
             notifyRocketChat(
-              "eagle-api dev has been tagged to test",
+              "eagle-api test has been tagged to prod",
               ROCKET_DEPLOY_WEBHOOK
             )
             notifyRocketChat(
-              "@all eagle-api dev has been tagged as test",
+              "@all eagle-api test has been tagged to prod",
               ROCKET_QA_WEBHOOK
             )
           } catch (error) {
             notifyRocketChat(
-              "@all tagging dev as test has failed",
+              "@all tagging test as prod has failed",
               ROCKET_DEPLOY_WEBHOOK
             )
             currentBuild.result = "FAILURE"
@@ -58,9 +53,5 @@ pipeline {
         }
       }
     }
-
-
-
-  
   }
 }

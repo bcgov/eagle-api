@@ -1,7 +1,9 @@
-var mongoose      = require("mongoose");
-var _             = require('lodash');
-var winston       = require('winston');
-
+const mongoose      = require('mongoose');
+const cron          = require('node-cron');
+const _             = require('lodash');
+const winston       = require('winston');
+const options       = require('./config/mongoose_options').mongooseOptions;
+const materialized_view__top_search_terms       = require('./api/materialized_views/reports/top_search_terms');
 
 // Logging middleware
 winston.loggers.add('default', {
@@ -77,7 +79,6 @@ function log(logger, msg) {
 }
 
 async function loadMongoose() {
-  var options = require('./config/mongoose_options').mongooseOptions;
   if (!_.isEmpty(credentials)) {
     options.user = credentials.db_username;
     options.pass = credentials.db_password;
@@ -86,7 +87,19 @@ async function loadMongoose() {
   await loadModels(dbConnection, options, defaultLog);
 }
 
+async function startCron(defaultLog) {
+  // standard crom pattern
+  // seconds[0-59] minutes[0-59] hours[0-23] day_of_month[1-31] months[0-11] day_of_week[0-6]
+  // cron.schedule('10 * * * * *', async function() {  // for testing
+  cron.schedule('* 3 * * * *', async function() {
+    let afterTimestamp = await materialized_view__top_search_terms.get_last(defaultLog);
+    await materialized_view__top_search_terms.update(defaultLog, afterTimestamp);
+  });
+  // TODO: add more materialized view cron tasks here
+}
+
 exports.loadMongoose = loadMongoose;
+exports.startCron = startCron;
 exports.loadModels = loadModels;
 exports.dbName = dbName;
 exports.dbConnection = dbConnection;

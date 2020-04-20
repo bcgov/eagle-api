@@ -78,7 +78,7 @@ pipeline {
                 ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
                 ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
-                echo "Building eagle-api master branch"
+                echo "Building eagle-api hotfix branch"
                 openshiftBuild bldCfg: 'eagle-api', showBuildLogs: 'true'
                 echo "Build done"
 
@@ -103,19 +103,18 @@ pipeline {
       }
     }
 
-    stage('Deploy to prod'){
+    stage('Deploy to hotfix'){
       agent any
       steps {
         script {
           try {
             echo "Backing up..."
-            openshiftTag destStream: 'eagle-api', verbose: 'false', destTag: 'backup-master', srcStream: 'eagle-api', srcTag: "master"
+            openshiftTag destStream: 'eagle-api', verbose: 'false', destTag: 'backup-hotfix', srcStream: 'eagle-api', srcTag: "hotfix"
             sleep 5
-            echo "Deploying to prod..."
-            openshiftTag destStream: 'eagle-api', verbose: 'false', destTag: 'master', srcStream: 'eagle-api', srcTag: "${IMAGE_HASH}"
+            echo "Deploying to hotfix..."
+            openshiftTag destStream: 'eagle-api', verbose: 'false', destTag: 'hotfix', srcStream: 'eagle-api', srcTag: "${IMAGE_HASH}"
             sleep 5
-            // todo update namespace before switching over
-            openshiftVerifyDeployment depCfg: 'eagle-api', namespace: 'esm-dev', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
+            openshiftVerifyDeployment depCfg: 'eagle-api', namespace: 'esm-test', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
             echo ">>>> Deployment Complete"
 
             notifyRocketChat(
@@ -123,7 +122,7 @@ pipeline {
               ROCKET_DEPLOY_WEBHOOK
             )
             notifyRocketChat(
-              "@all A new hotfix image has been created \n Changes to prod: \n ${CHANGELOG}",
+              "@all A new hotfix image has been created \n Changes to hotfix: \n ${CHANGELOG}",
               ROCKET_QA_WEBHOOK
             )
           } catch (error) {
