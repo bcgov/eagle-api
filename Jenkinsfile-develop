@@ -247,7 +247,7 @@ pipeline {
                     podName = podName.replaceFirst("pod/", "")
 
                     // Run a command in the container
-                    def resp = openshiftExec(namespace: 'esm-dev', pod: podName, command: ["/opt/app-root/src/generate.sh"])
+                    def resp = openshiftExec(namespace: 'esm-dev', pod: podName, command: "/opt/app-root/src/generate.sh")
                 }
               }
             }
