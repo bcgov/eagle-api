@@ -7,11 +7,11 @@ on:
     types: [closed]
 
 jobs:
-  pull-request:
+  pull-request-develop:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: pull-request
+    - name: pull-request-develop
       uses: repo-sync/pull-request@v2
       with:
         source_branch: "hotfix"
@@ -21,11 +21,11 @@ jobs:
         pr_label: "auto-pr from hotfix to dev"
         pr_draft: true
         github_token: ${{ secrets.GITHUB_TOKEN }}
-  pull-request:
+  pull-request-master:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: pull-request
+    - name: pull-request-master
       uses: repo-sync/pull-request@v2
       with:
         source_branch: "hotfix"
