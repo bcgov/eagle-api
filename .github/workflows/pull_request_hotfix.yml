@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: pull-request
+    - name: pull-request-develop
       uses: repo-sync/pull-request@v2
       with:
         source_branch: "hotfix"
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: pull-request
+    - name: pull-request-master
       uses: repo-sync/pull-request@v2
       with:
         source_branch: "hotfix"
