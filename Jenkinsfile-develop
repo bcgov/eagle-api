@@ -244,15 +244,14 @@ pipeline {
                 podSelector.withEach {
                     // obtain the pod name and remove "pods/" from the front.
                     def podName = it.name()
-                    podName = podName.replaceFirst("pod/", "")
+                    podName = podName.replaceFirst("pods/", "")
 
                     // Run a command in the container
-                    def resp = openshiftExec(namespace: 'esm-dev', pod: podName, command: ["pwd"])
-                    echo resp;
+                    def resp = openshiftExec(namespace: 'esm-dev', pod: podName, command: ["/opt/app-root/src/generate.sh 30 Static Saved Single"])
                 }
               }
             }
-          } catch (error) {
+          }catch (error) {
             notifyRocketChat(
               "@all Data generation failed for the build ${env.BUILD_DISPLAY_NAME} of eagle-api.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
               ROCKET_DEPLOY_WEBHOOK
