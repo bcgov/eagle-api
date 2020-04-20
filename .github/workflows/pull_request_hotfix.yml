@@ -21,7 +21,7 @@ jobs:
         pr_label: "auto-pr from hotfix to dev"
         pr_draft: true
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        pull-request-master:
+  pull-request-master:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
