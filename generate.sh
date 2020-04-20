@@ -1,3 +1,4 @@
+#!/bin/sh
 #################################################
 # 
 # This script calls a data generation
