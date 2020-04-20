@@ -244,7 +244,7 @@ pipeline {
                 podSelector.withEach {
                     // obtain the pod name and remove "pods/" from the front.
                     def podName = it.name()
-                    podName = podName.replaceFirst("pod/", "")
+                    podName = podName.replaceFirst("pods/", "")
 
                     // Run a command in the container
                     def resp = openshiftExec(namespace: 'esm-dev', pod: podName, command: ["/opt/app-root/src/generate.sh 30 Static Saved Single"])
