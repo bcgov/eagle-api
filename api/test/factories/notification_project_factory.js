@@ -68,6 +68,8 @@ factory.define('notificationProject', NotificationProject, buildOptions => {
   let notificationProject = faker.company.companyName() + " " + faker.random.arrayElement(notificationProjectNameSuffixes);
   let decisionDate = moment(faker.date.past(10, new Date()));
   let startDate = decisionDate.clone().subtract(faker.random.number(45), 'days');
+  let associatedId = '100000000000000';
+  let associatedFakeProject = "Not Real Project";
   let attrs = {
       _id                     : factory_helper.ObjectId()
     , name                    : faker.name.prefix()
@@ -77,7 +79,8 @@ factory.define('notificationProject', NotificationProject, buildOptions => {
     , startDate               : startDate
     , decisionDate            : decisionDate
     , region                  : faker.random.arrayElement(regions)
-    
+    , associatedProjectId     : associatedId
+    , associatedProjectName   : associatedFakeProject
     // TODO: This has not been set by the business yet.
     , notificationDecision    : ''
     
