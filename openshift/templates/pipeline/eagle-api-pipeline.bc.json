@@ -89,7 +89,7 @@
         "displayName": "Jenkinsfile path",
         "description": "Path to the Jenkinsfile in your GIT repo.",
         "required": true,
-        "value": "Jenkinsfile"
+        "value": "Jenkinsfile-develop"
       }
     ]
 }
