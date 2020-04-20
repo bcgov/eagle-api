@@ -249,6 +249,7 @@ pipeline {
                     // Run a command in the container
                     def resp = openshiftExec(namespace: "esm-dev", pod: podName, command: "whoami")
                     openshiftExec(namespace: "esm-dev", pod: podName, command: "echo", arguments: ['$PATH'])
+
                 }
               }
             }
