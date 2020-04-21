@@ -251,7 +251,7 @@ pipeline {
 
                     if (resp.err != "") {
                       currentBuild.result = "FAILURE"
-                      throw new Exception("Data generation failed")
+                      throw new Exception("Data generation failed. Error: ${resp.err}")
                     }
                 }
               }
