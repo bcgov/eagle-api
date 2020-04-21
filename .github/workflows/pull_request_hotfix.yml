@@ -1,10 +1,10 @@
 name: Create develop/master branch PRa
 
 on:
-  pull_request:
+  push:
     branches:
     - hotfix
-    types: [closed]
+
 
 jobs:
   pull-request-develop:
