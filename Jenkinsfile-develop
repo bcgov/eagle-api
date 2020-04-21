@@ -228,18 +228,18 @@ pipeline {
       }
     }
 
-    stage('Populate Data'){
+    stage("Populate Data"){
       steps {
         script {
           try {
             openshift.withCluster() {
-              openshift.withProject('esm-dev') {
+              openshift.withProject("esm-dev") {
                 echo "Running data generators"
                 /* Get the Deployment Config (DC) Object */
-                def dcObj = openshift.selector('dc', 'eagle-api').object()
+                def dcObj = openshift.selector("dc", "eagle-api").object()
                 
                 /* Use the DC to find the pods */
-                def podSelector = openshift.selector('pod', [deployment: "eagle-api-${dcObj.status.latestVersion}"])
+                def podSelector = openshift.selector("pod", [deployment: "eagle-api-${dcObj.status.latestVersion}"])
                 
                 podSelector.withEach {
                     // obtain the pod name and remove "pods/" from the front.
@@ -247,13 +247,16 @@ pipeline {
                     podName = podName.replaceFirst("pod/", "")
 
                     // Run a command in the container
-                    def resp = openshift.exec('-n', 'esm-dev', podName, 'scl', 'enable', 'rh-nodejs8', '/opt/app-root/src/generate.sh', '3', 'Static', 'Saved', 'Single')
-                    echo resp.err
-                    echo resp.out
+                    def resp = openshift.exec("-n", "esm-dev", podName, "scl", "enable", "rh-nodejs8", "/opt/app-root/src/generate.sh 2 Static Saved Single")
+
+                    if (resp.err != "") {
+                      currentBuild.result = "FAILURE"
+                      throw new Exception("Data generation failed")
+                    }
                 }
               }
             }
-          }catch (error) {
+          } catch (error) {
             notifyRocketChat(
               "@all Data generation failed for the build ${env.BUILD_DISPLAY_NAME} of eagle-api.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
               ROCKET_DEPLOY_WEBHOOK
