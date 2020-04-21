@@ -247,11 +247,9 @@ pipeline {
                     podName = podName.replaceFirst("pod/", "")
 
                     // Run a command in the container
-                    //def resp = openshiftExec(namespace: "esm-dev", pod: podName, command: "/opt/app-root/src/generate.sh")
-
-                    def resp = openshift.raw('rsh', podName)
-                    echo resp.out 
+                    def resp = openshift.exec('-n', 'esm-dev', podName, 'scl', 'enable', 'rh-nodejs8', '/opt/app-root/src/generate.sh')
                     echo resp.err
+                    echo resp.out
                 }
               }
             }
