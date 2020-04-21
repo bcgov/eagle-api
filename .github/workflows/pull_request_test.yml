@@ -5,7 +5,7 @@ name: Create test branch PR
 on:
   push:
     branches:
-    - <branch name>
+    - develop
 
 jobs:
   pull-request:
