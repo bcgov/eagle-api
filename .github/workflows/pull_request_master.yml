@@ -3,10 +3,10 @@
 name: Create master branch PR
 
 on:
-  pull_request:
+  push:
     branches:
-    - test
-    types: [closed]
+    - master
+
 
 jobs:
   pull-request:

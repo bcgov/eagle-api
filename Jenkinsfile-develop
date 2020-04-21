@@ -247,12 +247,7 @@ pipeline {
                     podName = podName.replaceFirst("pod/", "")
 
                     // Run a command in the container
-                    def resp = openshift.exec("-n", "esm-dev", podName, "scl", "enable", "rh-nodejs8", '"/opt/app-root/src/generate.sh 2 Static Saved Single"')
-
-                    if (resp.err != "") {
-                      currentBuild.result = "FAILURE"
-                      throw new Exception("Data generation failed. Error: ${resp.err}")
-                    }
+                    openshift.exec("-n", "esm-dev", podName, "scl", "enable", "rh-nodejs8", '"/opt/app-root/src/generate.sh 20 Static Saved Single"')
                 }
               }
             }
