@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: mongo-migrations
+parameters:
+  - name: VERSION
+    value: latest
+  - name: NAMESPACE
+    value: esm
+objects:
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      annotations:
+        openshift.io/generated-by: OpenShiftNewBuild
+      creationTimestamp: null
+      labels:
+        name: mongo-migrations
+      name: mongo-migrations
+      namespace: "${NAMESPACE}"
+    spec:
+      lookupPolicy:
+        local: false
+    status:
+      dockerImageRepository: ""
+  - apiVersion: build.openshift.io/v1
+    kind: BuildConfig
+    metadata:
+      annotations:
+        openshift.io/generated-by: OpenShiftNewBuild
+      creationTimestamp: null
+      labels:
+        name: "mongo-migrations"
+        version: ${VERSION}
+      name: "mongo-migrations"
+      namespace: "${NAMESPACE}"
+    spec:
+      nodeSelector: null
+      output:
+        to:
+          kind: ImageStreamTag
+          name: mongo-migrations:${VERSION}
+      postCommit: {}
+      resources: {}
+      source:
+        git:
+          uri: https://github.com/bcgov/eagle-api.git
+          ref: develop
+        contextDir: openshift/templates/jobs/mongo-migrations
+        type: Dockerfile
+      strategy:
+        dockerStrategy:
+          from:
+            kind: ImageStreamTag
+            name: alpine:3.7
+            namespace: openshift
+        type: Docker
+      triggers:
+      - type: ConfigChange
+    status:
+      lastVersion: 0
