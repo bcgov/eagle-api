@@ -3,52 +3,56 @@ set -euo pipefail
 IFS=$'\n\t'
 [ "${VERBOSE:-}" != true ]|| set -x
 
+# Variables -- Where do we get these from? Assuming the openshift yaml env configs
+ESM_ENV=${ESM_ENV}
+API_POD=${API_POD}
+MONGO_POD=${MONGO_POD}
+MONGODB_ADMIN_PASSWORD=${MONGODB_ADMIN_PASSWORD}
+
+# probably need a long-lived token? oc create serviceaccount epic-dbmigrate 
 echo "Connect to openshift..."
-oc login...
+oc login https://console.pathfinder.gov.bc.ca:8443 --token=abc123
+oc project esm-${ESM_ENV}
 echo "Shut down the API pod..."
-oc scale pod [api pod id] --replicas=0
+oc scale pod ${API_POD} --replicas=0  # how do we get the pod id?
 
 echo "Remote to the Mongo pod..."
-oc project esm-[dev/test/prod]
-oc rsh [mongo pod name]
-
+oc rsh ${MONGO_POD} # how do we get the pod id?
+# At this point, I'm assuming the script will execute correctly in the rsh terminal?
 echo "Creating a backup..."
-mongodump -u admin -p $MONGODB_ADMIN_PASSWORD --authenticationDatabase=admin -d epic -o /tmp/dump
+mongodump -u admin -p ${MONGODB_ADMIN_PASSWORD} --authenticationDatabase=admin -d epic -o /tmp/dump
 exit
 
 echo "Copying backup..."
-cd [dump location]
-oc rsync [mongo pod name]:/tmp/dump .
-mongo
-use epic
-db.dropDatabase()
-exit
-
+cd ./data/dump
+oc rsync ${MONGO_POD}:/tmp/dump .
 echo "Loading backup into local MongoDB..."
-mongoRestore
+mongoRestore -u admin -p ${MONGODB_ADMIN_PASSWORD} --authenticationDatabase=admin -d epic .
 
 echo "Running migration scripts..."
 cd ./ealge-api
 ./node_modules/db-migrate/bin/db-migrate up
-
+# how do we know if this failed or succeeded?
 echo "Creating a local dump..."
-cd [dump location]
+cd ./data/dump
 mongodump -d epic -o ./migrated
 
 echo "Copying dump to Mongo pod..."
-oc rsync . [mongo pod name]:/tmp/dump
-oc rsh [mongo pod name]
+oc rsync . ${MONGO_POD}:/tmp/dump
+oc rsh ${MONGO_POD}
 
 echo "Restoring dump..."
-mongo admin -u admin -p $MONGODB_ADMIN_PASSWORD
+mongo admin -u admin -p ${MONGODB_ADMIN_PASSWORD}
 use epic
 db.dropDatabase()
 exit
 cd /tmp/dump
-mongorestore -u admin -p $MONGODB_ADMIN_PASSWORD --authenticationDatabase=admin -d epic migrated/epic
+mongorestore -u admin -p ${MONGODB_ADMIN_PASSWORD} --authenticationDatabase=admin -d epic migrated/epic
 exit
 
 echo "Spinning API pod back up..."
-oc scale pod [api pod id] --replicas=1
+oc scale pod ${API_POD} --replicas=1
 
-echo "Migration run complete!"
+echo "Migration complete!"
+
+# kill local mongo, let the pod die? or just shut down the pod?
