@@ -164,7 +164,7 @@ pipeline {
                 ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
                 echo "Building eagle-api develop branch"
-                openshiftBuild bldCfg: 'eagle-api', showBuildLogs: 'true'
+                openshiftBuild bldCfg: 'eagle-api', showBuildLogs: 'true', env: [[ name: "NODE_ENV", value: "development" ]]
                 echo "Build done"
 
                 echo ">>> Get Image Hash"
@@ -223,6 +223,41 @@ pipeline {
             )
             currentBuild.result = "FAILURE"
             throw new Exception("Deploy failed")
+          }
+        }
+      }
+    }
+
+    stage("Populate Data"){
+      steps {
+        script {
+          try {
+            openshift.withCluster() {
+              openshift.withProject("esm-dev") {
+                echo "Running data generators"
+                /* Get the Deployment Config (DC) Object */
+                def dcObj = openshift.selector("dc", "eagle-api").object()
+                
+                /* Use the DC to find the pods */
+                def podSelector = openshift.selector("pod", [deployment: "eagle-api-${dcObj.status.latestVersion}"])
+                
+                podSelector.withEach {
+                    // obtain the pod name and remove "pods/" from the front.
+                    def podName = it.name()
+                    podName = podName.replaceFirst("pod/", "")
+
+                    // Run a command in the container
+                    openshift.exec("-n", "esm-dev", podName, "scl", "enable", "rh-nodejs8", '"/opt/app-root/src/generate.sh 20 Static Saved Single"')
+                }
+              }
+            }
+          } catch (error) {
+            notifyRocketChat(
+              "@all Data generation failed for the build ${env.BUILD_DISPLAY_NAME} of eagle-api.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+              ROCKET_DEPLOY_WEBHOOK
+            )
+            currentBuild.result = "FAILURE"
+            throw new Exception("Data generation failed")
           }
         }
       }

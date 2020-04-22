@@ -78,7 +78,7 @@ pipeline {
                 ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
                 ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
 
-                echo "Building eagle-api master branch"
+                echo "Building eagle-api hotfix branch"
                 openshiftBuild bldCfg: 'eagle-api', showBuildLogs: 'true'
                 echo "Build done"
 
@@ -86,7 +86,7 @@ pipeline {
                 // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
                 // Tag the images for deployment based on the image's hash
                 IMAGE_HASH = sh (
-                  script: """oc get istag eagle-api:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+                  script: """oc get istag hotfix-eagle-api:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
                   returnStdout: true).trim()
                 echo ">> IMAGE_HASH: ${IMAGE_HASH}"
               } catch (error) {
@@ -103,19 +103,19 @@ pipeline {
       }
     }
 
-    stage('Deploy to prod'){
+    stage('Deploy to hotfix'){
       agent any
       steps {
         script {
           try {
             echo "Backing up..."
-            openshiftTag destStream: 'eagle-api', verbose: 'false', destTag: 'backup-master', srcStream: 'eagle-api', srcTag: "master"
+            openshiftTag destStream: 'hotfix-eagle-api', verbose: 'false', destTag: 'backup-hotfix', srcStream: 'hotfix-eagle-api', srcTag: "hotfix"
             sleep 5
-            echo "Deploying to prod..."
-            openshiftTag destStream: 'eagle-api', verbose: 'false', destTag: 'master', srcStream: 'eagle-api', srcTag: "${IMAGE_HASH}"
+            echo "Deploying to hotfix..."
+            openshiftTag destStream: 'hotfix-eagle-api', verbose: 'false', destTag: 'hotfix', srcStream: 'hotfix-eagle-api', srcTag: "${IMAGE_HASH}"
             sleep 5
-            // todo update namespace before switching over
-            openshiftVerifyDeployment depCfg: 'eagle-api', namespace: 'esm-dev', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
+            openshiftVerifyDeployment depCfg: 'hotfix-eagle-api', namespace: 'esm-test', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
+
             echo ">>>> Deployment Complete"
 
             notifyRocketChat(
@@ -123,12 +123,12 @@ pipeline {
               ROCKET_DEPLOY_WEBHOOK
             )
             notifyRocketChat(
-              "@all A new hotfix image has been created \n Changes to prod: \n ${CHANGELOG}",
+              "@all A new hotfix image has been created \n Changes to hotfix: \n ${CHANGELOG}",
               ROCKET_QA_WEBHOOK
             )
           } catch (error) {
             notifyRocketChat(
-              "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-api, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+              "@all The build ${env.BUILD_DISPLAY_NAME} of hotfix-eagle-api, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
               ROCKET_DEPLOY_WEBHOOK
             )
             currentBuild.result = "FAILURE"

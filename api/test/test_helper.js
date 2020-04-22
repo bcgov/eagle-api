@@ -90,6 +90,7 @@ function getDataGenerationSettings() {
       settingsObj.projects = Number(settingsObj.projects);
       settingsObj.save_to_persistent_mongo = ('Saved' == settingsObj.data_mode);
       settingsObj.generate_consistent_data = ('Static' == settingsObj.seed_mode);
+      settingsObj.single_db_pass = ('Single' == settingsObj.db_passes);
       settingsObj.generate = ('true' == settingsObj.generate);
       resolve(settingsObj);
     });
@@ -97,12 +98,14 @@ function getDataGenerationSettings() {
     return new Promise(resolve => {
       let data_mode = _.isEmpty(process.env.GENERATE_DATA_MODE) ? 'Unsaved' : process.env.GENERATE_DATA_MODE;
       let seed_mode = _.isEmpty(process.env.GENERATE_SEED_MODE) ? 'Static' : process.env.GENERATE_SEED_MODE;
+      let db_passes = _.isEmpty(process.env.GENERATE_DB_PASSES) ? 'Single' : process.env.GENERATE_DB_PASSES;
       let settingsObj = {
         data_mode: data_mode,
         seed_mode: seed_mode,
         projects: _.isEmpty(process.env.GENERATE_NUM_OF_PROJECTS) ? defaultNumberOfProjects : Number(process.env.GENERATE_NUM_OF_PROJECTS),
         save_to_persistent_mongo: ('Saved' == data_mode),
         generate_consistent_data: ('Static' == seed_mode),
+        single_db_pass: ('Single' == db_passes),
         generate: _.isEmpty(process.env.GENERATE_ON) ? false : ('true' == process.env.GENERATE_ON)
       };
       resolve(settingsObj);

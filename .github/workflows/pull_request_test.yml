@@ -3,10 +3,9 @@
 name: Create test branch PR
 
 on:
-  pull_request:
+  push:
     branches:
     - develop
-    types: [closed]
 
 jobs:
   pull-request:
