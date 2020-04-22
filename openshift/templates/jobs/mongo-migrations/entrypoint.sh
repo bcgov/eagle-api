@@ -4,7 +4,6 @@ IFS=$'\n\t'
 [ "${VERBOSE:-}" != true ]|| set -x
 
 # Variables -- Where do we get these from? Assuming the openshift yaml env configs
-ESM_ENV=${ESM_ENV}
 API_POD=${API_POD}
 MONGO_POD=${MONGO_POD}
 MONGODB_ADMIN_PASSWORD=${MONGODB_ADMIN_PASSWORD}
@@ -12,7 +11,7 @@ MONGODB_ADMIN_PASSWORD=${MONGODB_ADMIN_PASSWORD}
 # probably need a long-lived token? oc create serviceaccount epic-dbmigrate 
 echo "Connect to openshift..."
 oc login https://console.pathfinder.gov.bc.ca:8443 --token=abc123
-oc project esm-${ESM_ENV}
+oc project esm-${NAME_SUFFIX}
 echo "Shut down the API pod..."
 oc scale pod ${API_POD} --replicas=0  # how do we get the pod id?
 
@@ -31,8 +30,19 @@ mongoRestore -u admin -p ${MONGODB_ADMIN_PASSWORD} --authenticationDatabase=admi
 
 echo "Running migration scripts..."
 cd ./ealge-api
-./node_modules/db-migrate/bin/db-migrate up
 # how do we know if this failed or succeeded?
+# if it failed, we should just die, and alert the user
+# only carry on with the local dump if all is well.
+if ! ./node_modules/db-migrate/bin/db-migrate up
+then
+	echo "Migration process failed!"
+    curl -X POST -H "Content-Type: application/json" --data "{\"username\":\"BakBot\",\"icon_emoji\":\":robot:\",\"text\":\"@all EPIC data migration process failed.\"}" ${ROCKETCHAT_WEBHOOK};
+    echo "Spinning API pod back up..."
+    oc scale pod ${API_POD} --replicas=1
+	exit 1
+fi
+# If the migrations were all good, create a local dump
+# and push that up to the mongodb
 echo "Creating a local dump..."
 cd ./data/dump
 mongodump -d epic -o ./migrated

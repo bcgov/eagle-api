@@ -52,7 +52,7 @@ objects:
         dockerStrategy:
           from:
             kind: ImageStreamTag
-            name: alpine:3.7
+            name: alpine:latest
             namespace: openshift
         type: Docker
       triggers:
