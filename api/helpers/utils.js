@@ -86,7 +86,8 @@ exports.recordAction = async function (action, meta, payload, objId = null){
     action: action,
     meta: meta,
     objId: objId,
-    performedBy: payload
+    performedBy: payload,
+    timestamp: Date.now(),
   });
   return await audit.save();
 };
