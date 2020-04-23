@@ -78,7 +78,7 @@ else
     oc cp drop_db.sh ${MONGO_POD}:/tmp/
     oc cp restore_backup.sh ${MONGO_POD}:/tmp/
     echo "Dropping epic db..."
-    oc rsh ${MONGO_POD} /tmp/drop_db.sh # libyaml-cpp.so.rh-mongodb36-0.5 issue? Running script when rsh'ed in works though? .profile issue?
+    oc rsh ${MONGO_POD} /tmp/drop_db.sh
     echo "Loading migrated data..."
     oc rsh ${MONGO_POD} /tmp/restore_backup.sh
 fi

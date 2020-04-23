@@ -91,7 +91,7 @@ ENV MONGO_POD eagle-api-mongodb-***
 ENV NAME_SUFFIX ***
 ENV OC_URL https://console.pathfinder.gov.bc.ca:8443
 ENV OC_TOKEN ***
-ENV ROCKETCHAT_WEBHOOK ???
+ENV ROCKETCHAT_WEBHOOK ***
 
 # call the entrypoint script
 # The bash script will handle running the migrations and clean up
@@ -100,11 +100,3 @@ COPY ./create_backup.sh /
 COPY ./restore_backup.sh /
 COPY ./drop_db.sh /
 ENTRYPOINT ["/entrypoint.sh"]
-
-# change from root (no way to go back from here!)
-# USER 1001
-# for debugging only, remove this when done!
-# this command will let the image run, even when the script it finished
-# so you can log into it, check logs, etc. We don't want this behaviour
-# outside of local testing (assuming you dont run CMD mongod)
-# CMD tail -f /dev/null
