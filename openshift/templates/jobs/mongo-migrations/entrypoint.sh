@@ -3,62 +3,89 @@ set -euo pipefail
 IFS=$'\n\t'
 [ "${VERBOSE:-}" != true ]|| set -x
 
-# Variables -- Where do we get these from? Assuming the openshift yaml env configs
-API_POD=${API_POD}
-MONGO_POD=${MONGO_POD}
-
+echo "###############################################"
+echo "##            Migration starting             ##"
+echo "###############################################"
+echo ""
+echo ""
+echo ""
+echo "***********************************************"
+echo "* Connect to openshift..."
+echo "***********************************************"
 # probably need a long-lived token? oc create serviceaccount epic-dbmigrate 
-echo "Connect to openshift..."
-oc login ???
+oc login ${OC_URL} --token=${OC_TOKEN}
 oc project esm-${NAME_SUFFIX}
-echo "Shut down the API pod ${API_POD}..."
-#oc scale pod ${API_POD} --replicas=0  # how do we get the pod id?
+
+echo "***********************************************"
+echo "* Shut down the API pod ${API_POD}..."
+echo "***********************************************"
+oc scale pod ${API_POD} --replicas=0
+
+echo "***********************************************"
+echo "* Begin backup process"
+echo "***********************************************"
 
 echo "Remote to the Mongo pod ${MONGO_POD}..."
 oc cp create_backup.sh ${MONGO_POD}:/tmp/
+
 echo "Creating a backup..."
 oc rsh ${MONGO_POD} /tmp/create_backup.sh
 
 echo "Copying backup..."
 cd /data/dump
 oc rsync ${MONGO_POD}:/tmp/dump .
+
 echo "Fire up MongoDB..."
 mongod --fork --logpath /var/log/mongod.log
+
 echo "Loading backup into local MongoDB..."
 cd /data/dump/dump/epic
 mongorestore -d epic .
 
-echo "Preparing eagle-api for running migration scripts..."
+echo "Prepping for migration run..."
 cd /eagle-api
 # how do we know if this failed or succeeded?
 # if it failed, we should just die, and alert the user
 # only carry on with the local dump if all is well.
 # install so we can run the migrations
+echo "***********************************************"
+echo "* NPM install log"
+echo "***********************************************"
 npm install
-echo "Running migrations..."
+echo "***********************************************"
+echo "* Running migrations..."
+echo "***********************************************"
 if ! ./node_modules/db-migrate/bin/db-migrate up
 then
 	echo "Migration process failed!"
-    #curl -X POST -H "Content-Type: application/json" --data "{\"username\":\"BakBot\",\"icon_emoji\":\":robot:\",\"text\":\"@all EPIC data migration process failed.\"}" ${ROCKETCHAT_WEBHOOK};
-    echo "Spinning API pod back up..."
-    #oc scale pod ${API_POD} --replicas=1
-	exit 1
+    curl -X POST -H "Content-Type: application/json" --data "{\"username\":\"BakBot\",\"icon_emoji\":\":robot:\",\"text\":\"@all EPIC data migration process failed.\"}" ${ROCKETCHAT_WEBHOOK};
+else
+    # If the migrations were all good, create a local dump
+    # and push that up to the mongodb
+    echo "***********************************************"
+    echo "* Migration successful, restoring to ${MONGO_POD}"
+    echo "***********************************************"
+
+    echo "Creating a local dump..."
+    cd /data/dump
+    mongodump -d epic -o ./migrated
+
+    echo "Copying dump to Mongo pod..."
+    oc rsync . ${MONGO_POD}:/tmp/dump
+
+    echo "Restoring Mongo from Migrated data dump..."
+    cd /
+    oc cp restore_backup.sh ${MONGO_POD}:/tmp/
+    oc rsh ${MONGO_POD} /tmp/restore_backup.sh
 fi
-# If the migrations were all good, create a local dump
-# and push that up to the mongodb
-echo "Creating a local dump..."
-cd /data/dump
-mongodump -d epic -o ./migrated
+echo "***********************************************"
+echo "* Spinning API pod back up..."
+echo "***********************************************"
+echo ""
+oc scale pod ${API_POD} --replicas=1
+echo ""
+echo "###############################################"
+echo "##            Migration complete             ##"
+echo "###############################################"
 
-echo "Copying dump to Mongo pod..."
-oc rsync . ${MONGO_POD}:/tmp/dump
-echo "Restoring Mongo from Migrated data dump..."
-oc cp restore_backup.sh ${MONGO_POD}:/tmp/
-oc rsh ${MONGO_POD} /tmp/restore_backup.sh
-
-echo "Spinning API pod back up..."
-#oc scale pod ${API_POD} --replicas=1
-
-echo "Migration complete!"
-
-#exit 1
+exit 1

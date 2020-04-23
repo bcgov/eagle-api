@@ -86,9 +86,12 @@ RUN mkdir -p /data/db
 RUN mkdir -p /data/dump
 
 # setup environment variables (for testing)
-ENV API_POD ***
-ENV MONGO_POD ***
+ENV API_POD eagle-api-???
+ENV MONGO_POD eagle-api-mongodb-???
 ENV NAME_SUFFIX dev
+ENV OC_URL https://console.pathfinder.gov.bc.ca:8443
+ENV OC_TOKEN ???
+ENV ROCKETCHAT_WEBHOOK ???
 
 # call the entrypoint script
 # The bash script will handle running the migrations and clean up
