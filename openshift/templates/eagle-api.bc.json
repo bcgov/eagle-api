@@ -123,7 +123,7 @@
       "name": "NODEJS_VER",
       "displayName": "Node.js Version Number",
       "description": "The version number of Node.js that matches the version in project file .tool-versions",
-      "value": "8"
+      "value": "10"
     },
     {
       "name": "SOURCE_REPOSITORY_URL",
