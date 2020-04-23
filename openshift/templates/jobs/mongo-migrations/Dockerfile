@@ -71,14 +71,8 @@ RUN git clone -b develop https://github.com/bcgov/eagle-api.git /eagle-api
 # start mongodb installs
 RUN apk --update add curl libgcc libstdc++
 
-# Install mongodb (alpine v3.8 will install mongo 3.6. For 4 use apline v3.9)
-# grab repo list for mongo
-# RUN echo 'http://dl-cdn.alpinelinux.org/alpine/v3.8/main' >> /etc/apk/repositories
-# RUN echo 'http://dl-cdn.alpinelinux.org/alpine/v3.8/community' >> /etc/apk/repositories
-# RUN apk add mongodb yaml-cpp=0.6.2-r2
-# get mongo up and running
-# RUN apk --update add mongodb mongodb-tools
 ENV MONGODB_VERSION 3.6.0
+
 RUN apk --update add curl libgcc libstdc++ \
     && cd /tmp \
     && curl -SLo- https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-${MONGODB_VERSION}.tgz | tar xz \
@@ -91,15 +85,17 @@ RUN mkdir -p /data/db
 # make a location for the dump file
 RUN mkdir -p /data/dump
 
-# expose the port (probably not needed, mongo will only be used internally)
-# EXPOSE 27017
-# run mongod
-CMD ["mongod"]
+# setup environment variables (for testing)
+ENV API_POD ***
+ENV MONGO_POD ***
+ENV NAME_SUFFIX dev
 
 # call the entrypoint script
 # The bash script will handle running the migrations and clean up
-# COPY ./entrypoint.sh /
-# ENTRYPOINT ["/entrypoint.sh"]
+COPY ./entrypoint.sh /
+COPY ./create_backup.sh /
+COPY ./restore_backup.sh /
+ENTRYPOINT ["/entrypoint.sh"]
 
 # change from root (no way to go back from here!)
 # USER 1001
@@ -107,4 +103,4 @@ CMD ["mongod"]
 # this command will let the image run, even when the script it finished
 # so you can log into it, check logs, etc. We don't want this behaviour
 # outside of local testing (assuming you dont run CMD mongod)
-# CMD tail -f /dev/null
+CMD tail -f /dev/null

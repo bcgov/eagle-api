@@ -6,63 +6,59 @@ IFS=$'\n\t'
 # Variables -- Where do we get these from? Assuming the openshift yaml env configs
 API_POD=${API_POD}
 MONGO_POD=${MONGO_POD}
-MONGODB_ADMIN_PASSWORD=${MONGODB_ADMIN_PASSWORD}
 
 # probably need a long-lived token? oc create serviceaccount epic-dbmigrate 
 echo "Connect to openshift..."
-oc login https://console.pathfinder.gov.bc.ca:8443 --token=abc123
+oc login ???
 oc project esm-${NAME_SUFFIX}
-echo "Shut down the API pod..."
-oc scale pod ${API_POD} --replicas=0  # how do we get the pod id?
+echo "Shut down the API pod ${API_POD}..."
+#oc scale pod ${API_POD} --replicas=0  # how do we get the pod id?
 
-echo "Remote to the Mongo pod..."
-oc rsh ${MONGO_POD} # how do we get the pod id?
-# At this point, I'm assuming the script will execute correctly in the rsh terminal?
+echo "Remote to the Mongo pod ${MONGO_POD}..."
+oc cp create_backup.sh ${MONGO_POD}:/tmp/
 echo "Creating a backup..."
-mongodump -u admin -p ${MONGODB_ADMIN_PASSWORD} --authenticationDatabase=admin -d epic -o /tmp/dump
-exit
+oc rsh ${MONGO_POD} /tmp/create_backup.sh
 
 echo "Copying backup..."
-cd ./data/dump
+cd /data/dump
 oc rsync ${MONGO_POD}:/tmp/dump .
+echo "Fire up MongoDB..."
+mongod --fork --logpath /var/log/mongod.log
 echo "Loading backup into local MongoDB..."
-mongoRestore -u admin -p ${MONGODB_ADMIN_PASSWORD} --authenticationDatabase=admin -d epic .
+cd /data/dump/dump/epic
+mongorestore -d epic .
 
-echo "Running migration scripts..."
-cd ./ealge-api
+echo "Preparing eagle-api for running migration scripts..."
+cd /eagle-api
 # how do we know if this failed or succeeded?
 # if it failed, we should just die, and alert the user
 # only carry on with the local dump if all is well.
+# install so we can run the migrations
+npm install
+echo "Running migrations..."
 if ! ./node_modules/db-migrate/bin/db-migrate up
 then
 	echo "Migration process failed!"
-    curl -X POST -H "Content-Type: application/json" --data "{\"username\":\"BakBot\",\"icon_emoji\":\":robot:\",\"text\":\"@all EPIC data migration process failed.\"}" ${ROCKETCHAT_WEBHOOK};
+    #curl -X POST -H "Content-Type: application/json" --data "{\"username\":\"BakBot\",\"icon_emoji\":\":robot:\",\"text\":\"@all EPIC data migration process failed.\"}" ${ROCKETCHAT_WEBHOOK};
     echo "Spinning API pod back up..."
-    oc scale pod ${API_POD} --replicas=1
+    #oc scale pod ${API_POD} --replicas=1
 	exit 1
 fi
 # If the migrations were all good, create a local dump
 # and push that up to the mongodb
 echo "Creating a local dump..."
-cd ./data/dump
+cd /data/dump
 mongodump -d epic -o ./migrated
 
 echo "Copying dump to Mongo pod..."
 oc rsync . ${MONGO_POD}:/tmp/dump
-oc rsh ${MONGO_POD}
-
-echo "Restoring dump..."
-mongo admin -u admin -p ${MONGODB_ADMIN_PASSWORD}
-use epic
-db.dropDatabase()
-exit
-cd /tmp/dump
-mongorestore -u admin -p ${MONGODB_ADMIN_PASSWORD} --authenticationDatabase=admin -d epic migrated/epic
-exit
+echo "Restoring Mongo from Migrated data dump..."
+oc cp restore_backup.sh ${MONGO_POD}:/tmp/
+oc rsh ${MONGO_POD} /tmp/restore_backup.sh
 
 echo "Spinning API pod back up..."
-oc scale pod ${API_POD} --replicas=1
+#oc scale pod ${API_POD} --replicas=1
 
 echo "Migration complete!"
 
-# kill local mongo, let the pod die? or just shut down the pod?
+#exit 1
