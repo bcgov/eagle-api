@@ -86,11 +86,11 @@ RUN mkdir -p /data/db
 RUN mkdir -p /data/dump
 
 # setup environment variables (for testing)
-ENV API_POD eagle-api-???
-ENV MONGO_POD eagle-api-mongodb-???
-ENV NAME_SUFFIX dev
+ENV API_POD eagle-api-***
+ENV MONGO_POD eagle-api-mongodb-***
+ENV NAME_SUFFIX ***
 ENV OC_URL https://console.pathfinder.gov.bc.ca:8443
-ENV OC_TOKEN ???
+ENV OC_TOKEN ***
 ENV ROCKETCHAT_WEBHOOK ???
 
 # call the entrypoint script
@@ -98,6 +98,7 @@ ENV ROCKETCHAT_WEBHOOK ???
 COPY ./entrypoint.sh /
 COPY ./create_backup.sh /
 COPY ./restore_backup.sh /
+COPY ./drop_db.sh /
 ENTRYPOINT ["/entrypoint.sh"]
 
 # change from root (no way to go back from here!)
@@ -106,4 +107,4 @@ ENTRYPOINT ["/entrypoint.sh"]
 # this command will let the image run, even when the script it finished
 # so you can log into it, check logs, etc. We don't want this behaviour
 # outside of local testing (assuming you dont run CMD mongod)
-CMD tail -f /dev/null
+# CMD tail -f /dev/null
