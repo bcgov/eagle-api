@@ -7,23 +7,23 @@ async function update(defaultLog) {
         $expr: {
           $eq: [
             {
-              $toLower: "$_schemaName"
+              $toLower: '$_schemaName'
             },
-            "project"
+            'project'
           ]
         }
       }
     },
     {
       $project: {
-        name: "$name"
+        name: '$name'
       }
     },
     {
       $lookup: {
-        from: "epic",
+        from: 'epic',
         let: {
-          projectId: "$_id"
+          projectId: '$_id'
         },
         pipeline: [
           {
@@ -33,23 +33,23 @@ async function update(defaultLog) {
                   {
                     $eq: [
                       {
-                        $toLower: "$_schemaName"
+                        $toLower: '$_schemaName'
                       },
-                      "document"
+                      'document'
                     ]
                   },
                   {
                     $eq: [
-                      "$project",
-                      "$$projectId"
+                      '$project',
+                      '$$projectId'
                     ]
                   },
                   {
                     $eq: [
                       {
-                        $toLower: "$documentSource"
+                        $toLower: '$documentSource'
                       },
-                      "project"
+                      'project'
                     ]
                   }
                 ]
@@ -58,76 +58,76 @@ async function update(defaultLog) {
           },
           {
             $project: {
-              documentId: "$_id",
-              project: "$project",
+              documentId: '$_id',
+              project: '$project',
               isTagged: {
                 $cond: {
                   if: {
                     $and: [
                       {
                         $ne: [
-                          "$type",
-                          ""
+                          '$type',
+                          ''
                         ]
                       },
                       {
                         $ne: [
-                          "$type",
+                          '$type',
                           null
                         ]
                       },
                       {
                         $eq: [
                           {
-                            $type: "$type"
+                            $type: '$type'
                           },
-                          "objectId"
+                          'objectId'
                         ]
                       },
                       {
                         $ne: [
-                          "$milestone",
-                          ""
+                          '$milestone',
+                          ''
                         ]
                       },
                       {
                         $ne: [
-                          "$milestone",
+                          '$milestone',
                           null
                         ]
                       },
                       {
                         $eq: [
                           {
-                            "$type": "$milestone"
+                            '$type': '$milestone'
                           },
-                          "objectId"
+                          'objectId'
                         ]
                       },
                       {
                         $ne: [
-                          "$documentAuthorType",
-                          ""
+                          '$documentAuthorType',
+                          ''
                         ]
                       },
                       {
                         $ne: [
-                          "$documentAuthorType",
+                          '$documentAuthorType',
                           null
                         ]
                       },
                       {
                         $eq: [
                           {
-                            $type: "$documentAuthorType"
+                            $type: '$documentAuthorType'
                           },
-                          "objectId"
+                          'objectId'
                         ]
                       }
                     ]
                   },
-                  then: "Tagged",
-                  else: "Untagged"
+                  then: 'Tagged',
+                  else: 'Untagged'
                 }
               }
             }
@@ -135,8 +135,8 @@ async function update(defaultLog) {
           {
             $group: {
               _id: {
-                project: "$project",
-                isTagged: "$isTagged"
+                project: '$project',
+                isTagged: '$isTagged'
               },
               count: {
                 $sum: 1
@@ -146,9 +146,9 @@ async function update(defaultLog) {
           {
             $project: {
               _id: 0,
-              project: "$_id.project",
-              status: "$_id.isTagged",
-              count: "$count"
+              project: '$_id.project',
+              status: '$_id.isTagged',
+              count: '$count'
             }
           },
           {
@@ -158,22 +158,22 @@ async function update(defaultLog) {
             }
           }
         ],
-        as: "docStats"
+        as: 'docStats'
       }
     },
     {
       $project: {
         _id: 0,
-        project: "$name",
+        project: '$name',
         array0: {
           $arrayElemAt: [
-            "$docStats",
+            '$docStats',
             0
           ]
         },
         array1: {
           $arrayElemAt: [
-            "$docStats",
+            '$docStats',
             1
           ]
         }
@@ -182,25 +182,25 @@ async function update(defaultLog) {
     {
       $project: {
         _id: 0,
-        project: "$project",
+        project: '$project',
         tagged: {
           $cond: [
             {
               $eq: [
-                "$array0.status",
-                "Tagged"
+                '$array0.status',
+                'Tagged'
               ]
             },
-            "$array0.count",
+            '$array0.count',
             {
               $cond: [
                 {
                   $eq: [
-                    "$array1.status",
-                    "Tagged"
+                    '$array1.status',
+                    'Tagged'
                   ]
                 },
-                "$array1.count",
+                '$array1.count',
                 0
               ]
             }
@@ -210,20 +210,20 @@ async function update(defaultLog) {
           $cond: [
             {
               $eq: [
-                "$array0.status",
-                "Untagged"
+                '$array0.status',
+                'Untagged'
               ]
             },
-            "$array0.count",
+            '$array0.count',
             {
               $cond: [
                 {
                   $eq: [
-                    "$array1.status",
-                    "Untagged"
+                    '$array1.status',
+                    'Untagged'
                   ]
                 },
-                "$array1.count",
+                '$array1.count',
                 0
               ]
             }
@@ -234,12 +234,12 @@ async function update(defaultLog) {
     {
       $project: {
         _id: 0,
-        project: "$project",
+        project: '$project',
         hasUntagged: {
           $cond: [
             {
               $gt: [
-                "$untagged",
+                '$untagged',
                 0
               ]
             },
@@ -252,20 +252,20 @@ async function update(defaultLog) {
     {
       $project: {
         _id: 0,
-        projectName: "$project",
+        projectName: '$project',
         inProgress: {
           $cond: {
             if: {
               $eq: [
                 1,
-                "$hasUntagged"
+                '$hasUntagged'
               ]
             },
             then: {
-              $literal: "In Progress"
+              $literal: 'In Progress'
             },
             else: {
-              $literal: "Completely Tagged"
+              $literal: 'Completely Tagged'
             }
           }
         }
@@ -273,7 +273,7 @@ async function update(defaultLog) {
     },
     {
       $group: {
-        _id: "$inProgress",
+        _id: '$inProgress',
         count: {
           $sum: 1
         }
@@ -284,7 +284,7 @@ async function update(defaultLog) {
   const collection = mongoose.connection.db.collection('read_only__reports__projects_completely_tagged_docs');
   let result;
   if (collection) {
-    result = await collection.find({}, { projection: { "_id": 1 } }).limit(1).toArray();
+    result = await collection.find({}, { projection: { '_id': 1 } }).limit(1).toArray();
   }
 
   if (collection && result.length > 0) {

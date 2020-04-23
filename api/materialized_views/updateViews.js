@@ -17,7 +17,10 @@ exports.updateAllMaterializedViews = async function(defaultLog) {
   await changesPerformedByNonPublicUsers.update(defaultLog, afterTimestamp);
 
 
-  // These reports do not check for a last timestamp as they are generated over a set time period.
+  /**
+   * These reports do not check for a last timestamp as they are generated over a set time
+   * period or have a query that cannot be tracked with timestamps.
+   */
   await changesPerformedByNonPublicUsersLast14.update(defaultLog);
   await projectsWithCompletelyTaggedDocs.update(defaultLog);
 };

@@ -8,23 +8,23 @@ async function update(defaultLog) {
   const queryAggregates = [
     {
       $project: {
-        performedBy: "$performedBy",
+        performedBy: '$performedBy',
         timestampDay: {
           $let: {
             vars: {
-              column: "$timestamp"
+              column: '$timestamp'
             },
             in: {
               ___date: {
                 $dateToString: {
-                  format: "%Y-%m-%d",
-                  date: "$$column"
+                  format: '%Y-%m-%d',
+                  date: '$$column'
                 }
               }
             }
           }
         },
-        action: "$action"
+        action: '$action'
       }
     },
     {
@@ -32,7 +32,7 @@ async function update(defaultLog) {
         $and: [
           {
             performedBy: {
-              $ne: "public"
+              $ne: 'public'
             }
           },
           {
@@ -44,32 +44,32 @@ async function update(defaultLog) {
           },
           {
             action: {
-              $ne: "get"
+              $ne: 'get'
             }
           },
           {
             action: {
-              $ne: "search"
+              $ne: 'search'
             }
           },
           {
             action: {
-              $ne: "summary"
+              $ne: 'summary'
             }
           },
           {
             action: {
-              $ne: "Get"
+              $ne: 'Get'
             }
           },
           {
             action: {
-              $ne: "Search"
+              $ne: 'Search'
             }
           },
           {
             action: {
-              $ne: "Summary"
+              $ne: 'Summary'
             }
           },
           {
@@ -87,7 +87,7 @@ async function update(defaultLog) {
     },
     {
       $group: {
-        _id: "$performedBy",
+        _id: '$performedBy',
         count: {
           $sum: 1
         },
@@ -104,7 +104,7 @@ async function update(defaultLog) {
   const collection = mongoose.connection.db.collection('read_only__reports__changes_non_public_last_14');
   let result;
   if (collection) {
-    result = await collection.find({}, { projection: { "_id": 1 } }).limit(1).toArray();
+    result = await collection.find({}, { projection: { '_id': 1 } }).limit(1).toArray();
   }
 
   if (collection && result.length > 0) {

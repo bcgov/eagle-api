@@ -121,7 +121,7 @@ async function get_last(defaultLog) {
     return constants.minDate;
   }
 
-  const result = await collection.find({}, { projection: { '_id':0, 'latest':1 } }).sort({ 'latest': -1 }).limit(1).toArray();
+  const result = await collection.find({}, { projection: { '_id': 0, 'latest': 1 } }).sort({ 'latest': -1 }).limit(1).toArray();
 
   if (result.length === 0) {
     return constants.minDate;
