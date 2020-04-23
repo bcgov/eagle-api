@@ -102,8 +102,12 @@ async function update(defaultLog) {
   ];
 
   const collection = mongoose.connection.db.collection('read_only__reports__changes_non_public_last_14');
-
+  let result;
   if (collection) {
+    result = await collection.find({}, { projection: { "_id": 1 } }).limit(1).toArray();
+  }
+
+  if (collection && result.length > 0) {
     defaultLog.debug('checking if need to update read_only__reports__changes_non_public_last_14');
 
     const latestSinceLastRun = await mongoose.model('Audit').aggregate(queryAggregates);
@@ -133,7 +137,6 @@ async function update(defaultLog) {
     const collection = mongoose.connection.db.collection('read_only__reports__changes_non_public_last_14');
     collection.createIndex({_id: 1});
     collection.createIndex({count: 1});
-    collection.createIndex({latest: 1});
   }
 }
 

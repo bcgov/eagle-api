@@ -1,6 +1,7 @@
 const topSearchTerms = require('./reports/topSearchTerms');
 const changesPerformedByNonPublicUsers = require('./reports/changesPerformedByNonPublicUsers');
 const changesPerformedByNonPublicUsersLast14 = require('./reports/changesPerformedOverLast14Days');
+const projectsWithCompletelyTaggedDocs = require('./reports/projectsWithCompletelyTaggedDocs');
 
 /**
  * This function is called by a cron and is used to update all material view collections.
@@ -18,4 +19,5 @@ exports.updateAllMaterializedViews = async function(defaultLog) {
 
   // These reports do not check for a last timestamp as they are generated over a set time period.
   await changesPerformedByNonPublicUsersLast14.update(defaultLog);
+  await projectsWithCompletelyTaggedDocs.update(defaultLog);
 };
