@@ -31,7 +31,7 @@ echo "***********************************************"
 # We need to scale down the API pod because of a tight dependency to db access
 # We don't want users passing in data while we're migrating, and we don't want
 # the pod to crash if it can't access in the few seconds while it's dropping
-oc scale pod ${API_POD} --replicas=0
+oc scale dc eagle-api --replicas=0
 
 echo "***********************************************"
 echo "* Begin backup process"
@@ -127,7 +127,7 @@ echo ""
 # The process is finished, so we need to scale up the API pod to get
 # the system working again. This must occur whether the process is
 # successful or not
-oc scale pod ${API_POD} --replicas=1
+oc scale dc eagle-api --replicas=1
 echo ""
 echo "###############################################"
 echo "##            Migration complete             ##"
