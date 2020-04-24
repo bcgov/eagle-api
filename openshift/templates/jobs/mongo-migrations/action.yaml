@@ -1,0 +1,33 @@
+# action.yml
+name: 'Mongo Automated Migration'
+description: 'Execute migrations to the MongoDB pod'
+inputs:
+  OC_URL:
+    description: 'URL for Openshift'
+    required: true
+    default: 'https://console.pathfinder.gov.bc.ca:8443'
+  OC_TOKEN:
+    description: 'Token for executing oc commands'
+    required: true
+  ROCKETCHAT_WEBHOOK:
+    description: 'Webhook for sending status to Rocketchat'
+    required: true
+  NAME_SUFFIX:
+    description: 'dev/test/prod'
+    required: true
+  API_POD:
+    description: 'The ID for the API pod in esm'
+    required: true
+  MONGO_POD:
+    description: 'The ID for the MongoDB pod in esm'
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.OC_URL }}
+    - ${{ inputs.OC_TOKEN }}
+    - ${{ inputs.ROCKETCHAT_WEBHOOK }}
+    - ${{ inputs.NAME_SUFFIX }}
+    - ${{ inputs.API_POD }}
+    - ${{ inputs.MONGO_POD }}
