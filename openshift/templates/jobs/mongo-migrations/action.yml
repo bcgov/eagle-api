@@ -15,11 +15,7 @@ inputs:
   NAME_SUFFIX:
     description: 'dev/test/prod'
     required: true
+    default: 'dev'
 runs:
   using: 'docker'
   image: 'Dockerfile'
-  args:
-    - ${{ inputs.OC_URL }}
-    - ${{ inputs.OC_TOKEN }}
-    - ${{ inputs.ROCKETCHAT_WEBHOOK }}
-    - ${{ inputs.NAME_SUFFIX }}

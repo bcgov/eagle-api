@@ -85,12 +85,6 @@ RUN mkdir -p /data/db
 # make a location for the dump file
 RUN mkdir -p /data/dump
 
-# setup environment variables (for testing)
-ENV NAME_SUFFIX ***
-ENV OC_URL https://console.pathfinder.gov.bc.ca:8443
-ENV OC_TOKEN ***
-ENV ROCKETCHAT_WEBHOOK ***
-
 # call the entrypoint script
 # The bash script will handle running the migrations and clean up
 COPY ./entrypoint.sh /
