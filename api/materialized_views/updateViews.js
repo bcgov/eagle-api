@@ -4,6 +4,7 @@ const changesPerformedByNonPublicUsersLast14 = require('./reports/changesPerform
 const projectsWithCompletelyTaggedDocs = require('./reports/projectsWithCompletelyTaggedDocs');
 const documentTaggingProgressBarGraph = require('./reports/documentTaggingProgressBarGraph');
 const documentTaggingProgressByProject = require('./reports/documentTaggingProgressByProject');
+const documentTaggingProgressTotal = require('./reports/documentTaggingProgressTotal');
 
 /**
  * This function is called by a cron and is used to update all material view collections.
@@ -27,4 +28,5 @@ exports.updateAllMaterializedViews = async function(defaultLog) {
   await projectsWithCompletelyTaggedDocs.update(defaultLog);
   await documentTaggingProgressBarGraph.update(defaultLog);
   await documentTaggingProgressByProject.update(defaultLog);
+  await documentTaggingProgressTotal.update(defaultLog);
 };
