@@ -206,6 +206,32 @@
                               "name": "${MINIO_SECRET_NAME}"
                           }
                       }
+                  },
+                  {
+                    "name": "CHES_ENDPOINT",
+                    "value": "${CHES_ENDPOINT}"
+                  },
+                  {
+                    "name": "GETOK_ENDPOINT",
+                    "value": "${GETOK_ENDPOINT}"
+                  },
+                  {
+                    "name": "_GETOK_CLIENT_SECRET",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "key": "CLIENT_SECRET",
+                            "name": "${CHES_SECRET_NAME}"
+                        }
+                    }
+                  },
+                  {
+                      "name": "_GETOK_CLIENTID",
+                      "valueFrom": {
+                          "secretKeyRef": {
+                              "key": "CLIENT_ID",
+                              "name": "${CHES_SECRET_NAME}"
+                          }
+                      }
                   }
                 ],
                 "readinessProbe": {
@@ -605,6 +631,24 @@
       "description": "Minio bucket where documents will be uploaded to.",
       "value": "/opt/app-root/src/uploads",
       "required": true
+    },
+    {
+      "name": "CHES_ENDPOINT",
+      "displayName": "CHES Hostname",
+      "description": "The exposed hostname to route to the CHES email service",
+      "value": "https://ches-no-exist-dev.pathfinder.gov.bc.ca/"
+    },
+    {
+      "name": "GETOK_ENDPOINT",
+      "displayName": "GETOK endpoint",
+      "description": "The exposed endpoint to route to the GETOK service",
+      "value": "https://sso-no-exist.pathfinder.gov.bc.ca/auth/realms/jbd6rnxw/protocol/openid-connect/token"
+    },
+    {
+      "name": "CHES_SECRET_NAME",
+      "displayName": "Name of the CHES secret",
+      "description": "The name of the secrets file for CHES",
+      "value": "getok-secret"
     }
   ]
 }

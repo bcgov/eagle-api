@@ -247,7 +247,7 @@ pipeline {
                     podName = podName.replaceFirst("pod/", "")
 
                     // Run a command in the container
-                    openshift.exec("-n", "esm-dev", podName, "scl", "enable", "rh-nodejs8", '"/opt/app-root/src/generate.sh 20 Static Saved Single"')
+                    openshift.exec("-n", "esm-dev", podName, "scl", "enable", "rh-nodejs10", '"/opt/app-root/src/generate.sh 20 Static Saved Single"')
                 }
               }
             }
