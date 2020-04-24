@@ -7,6 +7,7 @@ const documentTaggingProgressByProject = require('./reports/documentTaggingProgr
 const documentTaggingProgressTotal = require('./reports/documentTaggingProgressTotal');
 const projectGeoInfo = require('./reports/projectGeoInfo');
 const projectStatsFull = require('./reports/projectStatsFull');
+const publishedComments = require('./reports/publishedComments');
 
 /**
  * This function is called by a cron and is used to update all material view collections.
@@ -33,4 +34,5 @@ exports.updateAllMaterializedViews = async function(defaultLog) {
   await documentTaggingProgressTotal.update(defaultLog);
   await projectGeoInfo.update(defaultLog);
   await projectStatsFull.update(defaultLog);
+  await publishedComments.update(defaultLog);
 };
