@@ -168,7 +168,6 @@ async function update(defaultLog) {
     const collection = mongoose.connection.db.collection('read_only__reports__document_tagging_bar_graph');
     collection.createIndex({_id: 1});
     collection.createIndex({count: 1});
-    collection.createIndex({status: 1});
   }
 }
 
