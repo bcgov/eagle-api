@@ -153,8 +153,8 @@ async function update(defaultLog) {
     await mongoose.model('Document').aggregate(queryAggregates);
 
     const collection = mongoose.connection.db.collection('read_only__reports__document_tagging_total');
-    collection.createIndex({_id: 1});
-    collection.createIndex({count: 1});
+    collection.createIndex({ _id: 1 });
+    collection.createIndex({ count: 1 });
   }
 }
 
