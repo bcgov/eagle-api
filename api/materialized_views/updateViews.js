@@ -8,6 +8,7 @@ const documentTaggingProgressTotal = require('./reports/documentTaggingProgressT
 const projectGeoInfo = require('./reports/projectGeoInfo');
 const projectStatsFull = require('./reports/projectStatsFull');
 const publishedComments = require('./reports/publishedComments');
+const publishedNewItems = require('./reports/publishedNewItems');
 
 /**
  * This function is called by a cron and is used to update all material view collections.
@@ -21,6 +22,9 @@ exports.updateAllMaterializedViews = async function(defaultLog) {
 
   afterTimestamp = await changesPerformedByNonPublicUsers.get_last(defaultLog);
   await changesPerformedByNonPublicUsers.update(defaultLog, afterTimestamp);
+
+  afterTimestamp = await publishedNewItems.get_last(defaultLog);
+  await publishedNewItems.update(defaultLog, afterTimestamp);
 
 
   /**
