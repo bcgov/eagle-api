@@ -86,8 +86,6 @@ RUN mkdir -p /data/db
 RUN mkdir -p /data/dump
 
 # setup environment variables (for testing)
-ENV API_POD eagle-api-***
-ENV MONGO_POD eagle-api-mongodb-***
 ENV NAME_SUFFIX ***
 ENV OC_URL https://console.pathfinder.gov.bc.ca:8443
 ENV OC_TOKEN ***

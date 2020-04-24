@@ -15,12 +15,6 @@ inputs:
   NAME_SUFFIX:
     description: 'dev/test/prod'
     required: true
-  API_POD:
-    description: 'The ID for the API pod in esm'
-    required: true
-  MONGO_POD:
-    description: 'The ID for the MongoDB pod in esm'
-    required: true
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -29,5 +23,3 @@ runs:
     - ${{ inputs.OC_TOKEN }}
     - ${{ inputs.ROCKETCHAT_WEBHOOK }}
     - ${{ inputs.NAME_SUFFIX }}
-    - ${{ inputs.API_POD }}
-    - ${{ inputs.MONGO_POD }}
