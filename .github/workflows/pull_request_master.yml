@@ -22,4 +22,6 @@ jobs:
         pr_body: ":crown: *An automated PR*  This PR will pull all recent merges from TEST into MASTER - NOTE: This will deploy to production! Do not merge unless you're sure."
         pr_label: "auto-pr from test to master" 
         pr_draft: true
+        pr_reviewer: "JLWade"
+        pr_assignee: "JLWade"
         github_token: ${{ secrets.GITHUB_TOKEN }}
