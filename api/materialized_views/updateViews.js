@@ -9,6 +9,7 @@ const projectGeoInfo = require('./reports/projectGeoInfo');
 const projectStatsFull = require('./reports/projectStatsFull');
 const publishedComments = require('./reports/publishedComments');
 const publishedNewItems = require('./reports/publishedNewItems');
+const topUserVisitsAllTime = require('./reports/topUserVisitsAllTime');
 
 /**
  * This function is called by a cron and is used to update all material view collections.
@@ -26,6 +27,8 @@ exports.updateAllMaterializedViews = async function(defaultLog) {
   afterTimestamp = await publishedNewItems.get_last(defaultLog);
   await publishedNewItems.update(defaultLog, afterTimestamp);
 
+  afterTimestamp = await topUserVisitsAllTime.get_last(defaultLog);
+  await topUserVisitsAllTime.update(defaultLog, afterTimestamp);
 
   /**
    * These reports do not check for a last timestamp as they are generated over a set time
