@@ -10,6 +10,8 @@ const projectStatsFull = require('./reports/projectStatsFull');
 const publishedComments = require('./reports/publishedComments');
 const publishedNewItems = require('./reports/publishedNewItems');
 const topUserVisitsAllTime = require('./reports/topUserVisitsAllTime');
+const topUserVisitsLast14 = require('./reports/topUserVisitsLast14');
+const unpublishedComments = require('./reports/unpublishedComments');
 
 /**
  * This function is called by a cron and is used to update all material view collections.
@@ -42,4 +44,6 @@ exports.updateAllMaterializedViews = async function(defaultLog) {
   await projectGeoInfo.update(defaultLog);
   await projectStatsFull.update(defaultLog);
   await publishedComments.update(defaultLog);
+  await topUserVisitsLast14.update(defaultLog);
+  await unpublishedComments.update(defaultLog);
 };

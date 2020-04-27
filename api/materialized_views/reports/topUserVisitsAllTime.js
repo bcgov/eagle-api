@@ -96,12 +96,12 @@ async function update(defaultLog, afterTimestamp) {
   ];
 
   if (afterTimestamp !== constants.minDate){
-    defaultLog.debug('checking if need to update read_only__reports__user_all_time');
+    defaultLog.debug('checking if need to update read_only__reports__users_all_time');
 
     const visits = await mongoose.model('Audit').aggregate(queryAggregates);
 
     visits.forEach(visit => {
-      const collection = mongoose.connection.db.collection('read_only__reports__user_all_time');
+      const collection = mongoose.connection.db.collection('read_only__reports__users_all_time');
       collection.updateOne({
         '_id': visit['_id'],
       },
@@ -116,12 +116,12 @@ async function update(defaultLog, afterTimestamp) {
       defaultLog.debug(`updated info for '${visit['_id']}' and incremented count by ${visit['count']}`);
     });
   } else {
-    defaultLog.debug('initializing read_only__reports__user_all_time');
+    defaultLog.debug('initializing read_only__reports__users_all_time');
 
-    queryAggregates.push({ $out: 'read_only__reports__user_all_time' });
+    queryAggregates.push({ $out: 'read_only__reports__users_all_time' });
     await mongoose.model('Audit').aggregate(queryAggregates);
 
-    const collection = mongoose.connection.db.collection('read_only__reports__user_all_time');
+    const collection = mongoose.connection.db.collection('read_only__reports__users_all_time');
     collection.createIndex({ _id: 1 });
     collection.createIndex({ count: 1 });
     collection.createIndex({ latest: 1 });
@@ -129,7 +129,7 @@ async function update(defaultLog, afterTimestamp) {
 }
 
 async function get_last(defaultLog) {
-  const collection = mongoose.connection.db.collection('read_only__reports__user_all_time');
+  const collection = mongoose.connection.db.collection('read_only__reports__users_all_time');
   if (!collection) {
     return constants.minDate;
   }
