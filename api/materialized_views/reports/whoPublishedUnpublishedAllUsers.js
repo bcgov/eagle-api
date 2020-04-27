@@ -196,7 +196,7 @@ async function update(defaultLog) {
         performedBy: "$performedBy",
         documentDisplayName: {
           $cond: {
-            dif: {
+            if: {
               $eq: [
                 "Document",
                 "$objectType"
@@ -333,9 +333,6 @@ async function update(defaultLog) {
         write: "$write",
         delete: "$delete"
       }
-    },
-    {
-      $limit: 2000
     }
   ];
 
