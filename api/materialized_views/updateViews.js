@@ -12,6 +12,7 @@ const publishedNewItems = require('./reports/publishedNewItems');
 const topUserVisitsAllTime = require('./reports/topUserVisitsAllTime');
 const topUserVisitsLast14 = require('./reports/topUserVisitsLast14');
 const unpublishedComments = require('./reports/unpublishedComments');
+const whoPublishedUnpublishedAllUsers = require('./reports/whoPublishedUnpublishedAllUsers');
 
 /**
  * This function is called by a cron and is used to update all material view collections.
@@ -46,4 +47,5 @@ exports.updateAllMaterializedViews = async function(defaultLog) {
   await publishedComments.update(defaultLog);
   await topUserVisitsLast14.update(defaultLog);
   await unpublishedComments.update(defaultLog);
+  await whoPublishedUnpublishedAllUsers.update(defaultLog);
 };
