@@ -71,7 +71,9 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
     // Fall through - uploads will continue to fail until this is resolved locally.
     defaultLog.info('Couldn\'t create upload folder:', e);
   }
+
   app_helper.loadMongoose().then(() => {
+    // Start the cron job that updates the materialized views.
     app_helper.startCron(defaultLog).then(() => {
       express_server = app.listen(api_default_port, '0.0.0.0', function() {
         defaultLog.info('Started server on port ' + api_default_port);
