@@ -7,7 +7,7 @@ const { updateAllMaterializedViews } = require('./api/materialized_views/updateV
 
 // Set the Cron pattern here.
 // Cron pattern - seconds[0-59] minutes[0-59] hours[0-23] day_of_month[1-31] months[0-11] day_of_week[0-6]
-const MATERIALIZED_VIEWS_CRON_PATTERN = '10 * * * * *';
+const MATERIALIZED_VIEWS_CRON_PATTERN = '*/5 * * * *';
 
 // Logging middleware
 winston.loggers.add('default', {
