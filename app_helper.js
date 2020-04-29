@@ -3,7 +3,11 @@ const cron          = require('node-cron');
 const _             = require('lodash');
 const winston       = require('winston');
 const options       = require('./config/mongoose_options').mongooseOptions;
-const materialized_view__top_search_terms       = require('./api/materialized_views/reports/top_search_terms');
+const { updateAllMaterializedViews } = require('./api/materialized_views/updateViews');
+
+// Set the Cron pattern here.
+// Cron pattern - seconds[0-59] minutes[0-59] hours[0-23] day_of_month[1-31] months[0-11] day_of_week[0-6]
+const MATERIALIZED_VIEWS_CRON_PATTERN = '*/30 * * * *';
 
 // Logging middleware
 winston.loggers.add('default', {
@@ -88,14 +92,8 @@ async function loadMongoose() {
 }
 
 async function startCron(defaultLog) {
-  // standard crom pattern
-  // seconds[0-59] minutes[0-59] hours[0-23] day_of_month[1-31] months[0-11] day_of_week[0-6]
-  // cron.schedule('10 * * * * *', async function() {  // for testing
-  cron.schedule('* 3 * * * *', async function() {
-    let afterTimestamp = await materialized_view__top_search_terms.get_last(defaultLog);
-    await materialized_view__top_search_terms.update(defaultLog, afterTimestamp);
-  });
-  // TODO: add more materialized view cron tasks here
+  // Scheduling material view updates.
+  cron.schedule(MATERIALIZED_VIEWS_CRON_PATTERN, () => updateAllMaterializedViews(defaultLog));
 }
 
 exports.loadMongoose = loadMongoose;
