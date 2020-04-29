@@ -40,7 +40,9 @@ async function update(defaultLog) {
     },
     {
       $project: {
-        _id: "$_objectType",
+        _id: false,
+        projectName: "$_projectName",
+        objectType: "$_objectType",
         count: "$_count"
       }
     }
@@ -60,7 +62,8 @@ async function update(defaultLog) {
     projects.forEach(project => {
       const collection = mongoose.connection.db.collection('read_only__reports__project_stats_full');
       collection.updateOne({
-        '_id': project['_id'],
+        'objectType': project['objectType'],
+        'projectName': project['projectName']
       },
       {
         $set: { count: project['count'] },
@@ -69,7 +72,7 @@ async function update(defaultLog) {
         upsert: true,
       });
 
-      defaultLog.debug(`updated info for project '${project['_id']}'`);
+      defaultLog.debug(`updated info for project '${project['objectType']}'`);
     });
   } else {
     defaultLog.debug('initializing read_only__reports__project_stats_full');
@@ -78,7 +81,6 @@ async function update(defaultLog) {
     await mongoose.model('Project').aggregate(queryAggregates);
 
     const collection = mongoose.connection.db.collection('read_only__reports__project_stats_full');
-    collection.createIndex({ _id: 1 });
     collection.createIndex({ count: 1 });
   }
 }
