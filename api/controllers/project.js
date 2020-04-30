@@ -762,11 +762,6 @@ exports.protectedUnPublishPin = async function (args, res) {
   }
 };
 
-
-
-
-
-// pinsRead is on the project level and for all pins on the project
 exports.protectedPublishCAC = async function (args, res) {
   var projId = args.swagger.params.projId.value;
   var Project = require('mongoose').model('Project');
@@ -818,22 +813,6 @@ exports.protectedUnPublishCAC = async function (args, res) {
     return Actions.sendResponse(res, 400, e);
   }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 exports.publicCACSignUp = async function ( args, res) {
   // sign this user up for CAC on the project.
