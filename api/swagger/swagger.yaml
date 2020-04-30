@@ -1544,6 +1544,105 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+
+  /project/{projId}/cac/publish:
+    x-swagger-router-controller: project
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      tags:
+        - cac
+      summary: "Publish a CAC on a project"
+      operationId: protectedPublishCAC
+      description: "Sets the value true role to the project projectCACPublished field"
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to update"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /project/{projId}/cac/unpublish:
+    x-swagger-router-controller: project
+    options:
+      tags:
+        - project
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Project Route"
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to get"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    put:
+      tags:
+        - cac
+      summary: "Unpublish a CAC on a project"
+      operationId: protectedUnPublishCAC
+      description: "Sets the value of projectCACPublished to false"
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      parameters:
+        - name: projId
+          in: path
+          description: "ID of project to update"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
   /project/{projId}/pin/{pinId}:
     x-swagger-router-controller: project
     options:
