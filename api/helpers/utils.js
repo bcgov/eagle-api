@@ -160,6 +160,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
           'default.pinsRead': '$pinsRead',
           'default._id': '$_id',
           "default.projectCAC": '$projectCAC',
+          "default.projectCACPublished": '$projectCACPublished',
           "default.cacEmail": '$cacEmail',
           'default.read': '$read'
         }

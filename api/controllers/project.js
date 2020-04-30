@@ -77,6 +77,7 @@ var tagList = [
   'cacMembers',
   'cacEmail',
   'projectCAC',
+  'projectCACPublished',
   'read',
   'write',
   'delete'
@@ -892,7 +893,7 @@ exports.protectedCreateCAC = async function (args, res) {
   try {
     let data = await Project.update(
       { _id: mongoose.Types.ObjectId(projId) },
-      { projectCAC: true, cacEmail: cacData.cacEmail }
+      { projectCAC: true, cacEmail: cacData.cacEmail, projectCACPublished: false }
     );
     if (data.nModified === 0) {
       return Actions.sendResponse(res, 400, {});
