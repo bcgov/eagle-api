@@ -116,7 +116,9 @@ var projectDefinition = {
   // CAC
   projectCAC : { type: Boolean, default: false },
   cacMembers : [{ type: 'ObjectId', ref: 'CACUser' }],
-  cacEmail   : { type: String, default: 'noreply@projects.eao.gov.bc.ca' }
+  cacEmail   : { type: String, default: 'noreply@projects.eao.gov.bc.ca' },
+  projectCACPublished : { type: Boolean, default: false }
+
 };
 
 var buildToNature = {};
