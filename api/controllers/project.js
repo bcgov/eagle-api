@@ -762,6 +762,79 @@ exports.protectedUnPublishPin = async function (args, res) {
   }
 };
 
+
+
+
+
+// pinsRead is on the project level and for all pins on the project
+exports.protectedPublishCAC = async function (args, res) {
+  var projId = args.swagger.params.projId.value;
+  var Project = require('mongoose').model('Project');
+  try {
+    var project = await Project.findOne({ _id: projId });
+    if (project) {
+      defaultLog.info('Project:', projId);
+      var published = await Project.update(
+        { _id: mongoose.Types.ObjectId(projId) },
+        {
+          $set: {
+            'projectCACPublished': true
+          }
+        },
+      );
+      Utils.recordAction('Publish', 'CAC', args.swagger.params.auth_payload.preferred_username);
+      return Actions.sendResponse(res, 200, published);
+    } else {
+      defaultLog.info('Couldn\'t publish CAC on project: ', projId);
+      return Actions.sendResponse(res, 404);
+    }
+  } catch (e) {
+    return Actions.sendResponse(res, 400, e);
+  }
+};
+
+exports.protectedUnPublishCAC = async function (args, res) {
+  var projId = args.swagger.params.projId.value;
+  var Project = require('mongoose').model('Project');
+  try {
+    var project = await Project.findOne({ _id: projId });
+    if (project) {
+      defaultLog.info('Project:', projId);
+      var published = await Project.update(
+        { _id: mongoose.Types.ObjectId(projId) },
+        {
+          $set: {
+            'projectCACPublished': false
+          }
+        },
+      );
+      Utils.recordAction('Publish', 'CAC', args.swagger.params.auth_payload.preferred_username, projId);
+      return Actions.sendResponse(res, 200, published);
+    } else {
+      defaultLog.info('Couldn\'t unpublish CAC on project: ', projId);
+      return Actions.sendResponse(res, 404);
+    }
+  } catch (e) {
+    return Actions.sendResponse(res, 400, e);
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 exports.publicCACSignUp = async function ( args, res) {
   // sign this user up for CAC on the project.
 
