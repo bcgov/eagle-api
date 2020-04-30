@@ -5,7 +5,7 @@ name: Create master branch PR
 on:
   push:
     branches:
-    - master
+    - test
 
 
 jobs:
