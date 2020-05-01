@@ -137,7 +137,7 @@ exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, so
     //sort will have multiple values passed
     if (sortField.includes("datePosted") || Object.prototype.hasOwnProperty.call(sortValues, "datePosted")){
       //datePosted is too specfic(in it's time) and needs the truncated form of date, can be expanded if other dates are required to be truncated
-      let tempSortValues = {};
+      let tempSortValues = { };
       for (let property in sortValues){
         if (Object.prototype.hasOwnProperty.call(sortValues, property)) {
           if (property === "datePosted"){
@@ -156,6 +156,11 @@ exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, so
     if(sortField && sortValues && sortValues[sortField]) {
       sortValues[sortField] = sortDirection;
     }
+  }
+
+  // if we have no sorting going on, we should sort by the score
+  if(!sortField) {
+    sortValues = { score: -1 };
   }
 
   // We don't want to have sort in the aggregation if the front end doesn't need sort.
