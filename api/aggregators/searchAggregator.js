@@ -121,7 +121,7 @@ exports.createKeywordRegexAggr = function(decodedKeywords, schemaName) {
   }
 
   return keywordRegexFilter;
-}
+};
 
 /**
  * Create an aggregation that sets the sorting and paging for a query.
