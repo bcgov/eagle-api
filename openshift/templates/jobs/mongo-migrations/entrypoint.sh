@@ -20,8 +20,8 @@ oc project esm-${NAME_SUFFIX}
 
 # get the API and MongoDB pods
 echo "Identifying Mongo and API pods..."
-API_POD=$(oc get pods -n esm-dev --output='custom-columns=NAME:.metadata.name' --no-headers=true --selector='name in (eagle-api)')
-MONGO_POD=$(oc get pods -n esm-dev --output='custom-columns=NAME:.metadata.name' --no-headers=true --selector='name in (eagle-api-mongodb)')
+API_POD=$(oc get pods -n esm-${NAME_SUFFIX} --output='custom-columns=NAME:.metadata.name' --no-headers=true --selector='name in (eagle-api)')
+MONGO_POD=$(oc get pods -n esm-${NAME_SUFFIX} --output='custom-columns=NAME:.metadata.name' --no-headers=true --selector='name in (eagle-api-mongodb)')
 echo ""
 echo "***********************************************"
 echo "* Current API Pod: ${API_POD}"
