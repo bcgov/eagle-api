@@ -87,10 +87,11 @@ async function update(defaultLog) {
     projects.forEach(project => {
       const collection = mongoose.connection.db.collection('read_only__reports__project_geo_info');
       collection.updateOne({
-        '_id': project['name'],
+        '_id': project['_id'],
       },
       {
         $set: {
+          name: project['name'],
           centroid: project['centroid'],
           legislation: project['legislation'],
           location: project['location'],
