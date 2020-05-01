@@ -86,17 +86,21 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     throw new Error('Search missing match aggregation');
   }
 
+  // keyword regex
+  let keywordRegexFilter = searchAggregator.createKeywordRegexAggr(decodedKeywords, schemaName);
+
   // Create the sorting and paging aggregations.
   const sortingPagingAggr = searchAggregator.createSortingPagingAggr(schemaName, sortingValue, sortField, sortDirection, pageNum, pageSize);
 
   // Combine all the aggregations.
   let aggregation;
   if (!schemaAggregation) {
-    aggregation = [...matchAggregation, ...sortingPagingAggr];
+    aggregation = [...matchAggregation, ...keywordRegexFilter, ...sortingPagingAggr];
   } else {
-    aggregation = [...matchAggregation, ...schemaAggregation, ...sortingPagingAggr];
-
+    aggregation = [...matchAggregation, ...schemaAggregation, ...keywordRegexFilter, ...sortingPagingAggr];
   }
+
+  console.log(JSON.stringify(aggregation));
 
   return new Promise(function (resolve, reject) {
     var collectionObj = mongoose.model(schemaName);

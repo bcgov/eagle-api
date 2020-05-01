@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const aggregateHelper = require('../helpers/aggregators');
+const constants = require('../helpers/constants').schemaTypes;
 
 /**
  * Create an aggregation that sets the matching criteria for search.
@@ -92,6 +93,30 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
 
   return aggregation;
 };
+
+exports.createKeywordRegexAggr = function(decodedKeywords, schemaName) {
+  let keywordRegexFilter = [];
+  if (decodedKeywords) {
+    // decodedKeywords is a const, so split, then join on the result or it'll
+    // throw an error about const assignment. Leave decodedKeyword immutable.
+    let terms = decodedKeywords.split(' ');
+    let searchTerm = terms.join('|');
+
+    let regexMatch = { $match: {} };
+
+    let regex = { $regex:'(?:^|(?<= ))(' + searchTerm + ')(?:(?= )|$)', $options:'i' };
+
+    if (schemaName === constants.PROJECT) {
+      regexMatch.$match.name = regex;
+    } else if (schemaName === constants.DOCUMENT) {
+      regexMatch.$match.displayName = regex;
+    }
+
+    keywordRegexFilter.push(regexMatch);
+  }
+
+  return keywordRegexFilter;
+}
 
 /**
  * Create an aggregation that sets the sorting and paging for a query.
