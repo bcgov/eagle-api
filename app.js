@@ -27,7 +27,7 @@ app.disable('x-powered-by');
 // Enable CORS
 app.use(function (req, res, next) {
   defaultLog.info(req.method, req.url);
-  
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE, HEAD');
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,Content-Type,Authorization,responseType');
