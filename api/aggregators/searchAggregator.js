@@ -96,7 +96,10 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
 
 exports.createKeywordRegexAggr = function(decodedKeywords, schemaName) {
   let keywordRegexFilter = [];
-  if (decodedKeywords) {
+  // if we have a keyword search, and it is not wrapped in quotes (ie, phrase searching)
+  // then do a regex match. To help keep regex matches closer to their values, also
+  // filter on the score
+  if (decodedKeywords && !decodedKeywords.startsWith("\"") && !decodedKeywords.endsWith("\"")) {
     // decodedKeywords is a const, so split, then join on the result or it'll
     // throw an error about const assignment. Leave decodedKeyword immutable.
     let terms = decodedKeywords.split(' ');
