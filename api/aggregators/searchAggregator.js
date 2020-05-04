@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+const fuzzySearch = require('../helpers/fuzzySearch');
 const aggregateHelper = require('../helpers/aggregators');
 const constants = require('../helpers/constants').schemaTypes;
 
@@ -16,7 +16,7 @@ const constants = require('../helpers/constants').schemaTypes;
  *
  * @returns {array} Aggregation for a match
  */
-exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, roles) => {
+exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, roles, fuzzy = false) => {
   const aggregation = [];
   let projectModifier;
   let keywordModifier;
@@ -26,7 +26,8 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   }
 
   if (keywords) {
-    keywordModifier = { $text: { $search: keywords, $caseSensitive: caseSensitive } };
+    let keywordSearch = fuzzy ? fuzzySearch.createFuzzySearchString(keywords, 4, caseSensitive) : keywords; 
+    keywordModifier = { $text: { $search: keywordSearch, $caseSensitive: caseSensitive } };
   }
 
   // query modifiers

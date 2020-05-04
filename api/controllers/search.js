@@ -16,7 +16,7 @@ const notificationProjectAggregator = require('../aggregators/notificationProjec
 const itemAggregator = require('../aggregators/itemAggregator');
 const searchAggregator = require('../aggregators/searchAggregator');
 
-const searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue, categorized) {
+const searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue, categorized, fuzzy) {
   const aggregateCollation = {
     locale: 'en',
     strength: 2
@@ -33,11 +33,11 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   let matchAggregation;
   switch (schemaName) {
   case constants.DOCUMENT:
-    matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, categorized, roles);
+    matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, categorized, roles, fuzzy);
     schemaAggregation = documentAggregator.createDocumentAggr(populate, roles,);
     break;
   case constants.PROJECT:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
+    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles, fuzzy);
     schemaAggregation = projectAggregator.createProjectAggr(projectLegislation);
     break;
   case constants.CAC:
@@ -87,7 +87,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   }
 
   // keyword regex
-  let keywordRegexFilter = searchAggregator.createKeywordRegexAggr(decodedKeywords, schemaName);
+  let keywordRegexFilter = !fuzzy && decodedKeywords ? searchAggregator.createKeywordRegexAggr(decodedKeywords, schemaName) : [];
 
   // Create the sorting and paging aggregations.
   const sortingPagingAggr = searchAggregator.createSortingPagingAggr(schemaName, sortingValue, sortField, sortDirection, pageNum, pageSize);
@@ -127,8 +127,10 @@ const executeQuery = async function (args, res) {
   const and = args.swagger.params.and ? args.swagger.params.and.value : '';
   const or = args.swagger.params.or ? args.swagger.params.or.value : '';
   const categorized = args.swagger.params.categorized ? args.swagger.params.categorized.value : null;
+  const fuzzy = args.swagger.params.fuzzy.value ? args.swagger.params.fuzzy.value : false;
 
   defaultLog.info('Searching keywords:', keywords);
+  defaultLog.info('Fuzzy text search:', fuzzy);
   defaultLog.info('Searching datasets:', dataset);
   defaultLog.info('Searching project:', project);
   defaultLog.info('pageNum:', pageNum);
@@ -140,6 +142,7 @@ const executeQuery = async function (args, res) {
   defaultLog.info('_id:', _id);
   defaultLog.info('populate:', populate);
   defaultLog.info('roles:', roles);
+
 
   Utils.recordAction('Search', keywords, args.swagger.params.auth_payload ? args.swagger.params.auth_payload.preferred_username : 'public');
 
@@ -174,7 +177,7 @@ const executeQuery = async function (args, res) {
   defaultLog.info('sortDirection:', sortDirection);
 
   if (dataset !== constants.ITEM) {
-    const collectionData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue, categorized);
+    const collectionData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue, categorized, fuzzy);
 
     // TODO: this should be moved into the aggregation.
     if (dataset === constants.COMMENT) {
