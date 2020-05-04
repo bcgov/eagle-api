@@ -17,7 +17,7 @@ exports.createFuzzySearchString = function (keywords, nGramSize, caseSensitive) 
   // force lowercase
   let cleanKeywords = caseSensitive ? keywords.toLowerCase() : keywords;
   // replace special chars
-  cleanKeywords = cleanKeywords.replace(/[!\"#%&\'\(\)\*\+,-\.\/:;<=>?@\[\\\]\^`\{\|\}~]/g, '');
+  cleanKeywords = cleanKeywords.replace(/[!"#%&'()*+,-./:;<=>?@[\\\]^`{|}~]/g, '');
   // underscore to spaces (underscore + fuzzy = sad panda)
   cleanKeywords = cleanKeywords.replace(/_/g, ' ');
 
