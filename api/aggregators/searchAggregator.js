@@ -26,7 +26,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   }
 
   if (keywords) {
-    let keywordSearch = fuzzy ? fuzzySearch.createFuzzySearchString(keywords, 4, caseSensitive) : keywords;
+    let keywordSearch = fuzzy && !keywords.startsWith("\"") && !keywords.endsWith("\"") ? fuzzySearch.createFuzzySearchString(keywords, 4, caseSensitive) : keywords;
     keywordModifier = { $text: { $search: keywordSearch, $caseSensitive: caseSensitive } };
   }
 
