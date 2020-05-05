@@ -339,7 +339,7 @@ const getConvertedValue = (item, entry) => {
 };
 
 const handlePCPItem = async (roles, expArray, value) => {
-  
+
   if (!Array.isArray(value) && value.includes(',')) {
     value = value.split(',');
   }
