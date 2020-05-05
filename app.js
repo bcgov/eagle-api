@@ -21,15 +21,23 @@ var defaultLog = app_helper.defaultLog;
 app.use(bodyParser.json({limit: '10mb', extended: true}));
 app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
 
+// disable powered by header
+app.disable('x-powered-by');
+
 // Enable CORS
 app.use(function (req, res, next) {
   defaultLog.info(req.method, req.url);
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE, HEAD');
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,Content-Type,Authorization,responseType');
   res.setHeader('Access-Control-Expose-Headers', 'x-total-count,x-pending-comment-count,x-next-comment-id');
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Cache-Control', 'max-age=4');
+  // headers for zap scan issues
+  res.setHeader('X-XSS-Protection', '1');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   next();
 });
 
