@@ -339,11 +339,12 @@ const getConvertedValue = (item, entry) => {
 };
 
 const handlePCPItem = async (roles, expArray, value) => {
-  if (Array.isArray(value) || value.includes(',')) {
+  
+  if (!Array.isArray(value) && value.includes(',')) {
+    value = value.split(',');
+  }
 
-    if (value.includes(',')) {
-      value = value.split(',');
-    }
+  if (Array.isArray(value)) {
     // Arrays are a list of options so will always be ors
     const orArray = [];
     // Note that we need map and not forEach here because Promise.all uses
