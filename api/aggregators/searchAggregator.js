@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
-
+const fuzzySearch = require('../helpers/fuzzySearch');
 const aggregateHelper = require('../helpers/aggregators');
+const constants = require('../helpers/constants').schemaTypes;
 
 /**
  * Create an aggregation that sets the matching criteria for search.
@@ -15,7 +16,7 @@ const aggregateHelper = require('../helpers/aggregators');
  *
  * @returns {array} Aggregation for a match
  */
-exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, roles) => {
+exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, roles, fuzzy = false) => {
   const aggregation = [];
   let projectModifier;
   let keywordModifier;
@@ -25,7 +26,8 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   }
 
   if (keywords) {
-    keywordModifier = { $text: { $search: keywords, $caseSensitive: caseSensitive } };
+    let keywordSearch = fuzzy && !keywords.startsWith("\"") && !keywords.endsWith("\"") ? fuzzySearch.createFuzzySearchString(keywords, 4, caseSensitive) : keywords;
+    keywordModifier = { $text: { $search: keywordSearch, $caseSensitive: caseSensitive } };
   }
 
   // query modifiers
@@ -93,6 +95,35 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   return aggregation;
 };
 
+exports.createKeywordRegexAggr = function(decodedKeywords, schemaName) {
+  let keywordRegexFilter = [];
+  // if we have a keyword search, and it is not wrapped in quotes (ie, phrase searching)
+  // then do a regex match. To help keep regex matches closer to their values, also
+  // filter on the score
+  if (decodedKeywords && !decodedKeywords.startsWith("\"") && !decodedKeywords.endsWith("\"")) {
+    // decodedKeywords is a const, so split, then join on the result or it'll
+    // throw an error about const assignment. Leave decodedKeyword immutable.
+    let terms = decodedKeywords.split(' ');
+    let searchTerm = terms.join('|');
+
+    // By default, if we're doing a keyword search exclude
+    // any values that have a score less then 5000.
+    let regexMatch = { $match: { score: { $gt: 5000 } } };
+
+    let regex = { $regex:'(?:^|(?<= ))(' + searchTerm + ')(?:(?= )|$)', $options:'i' };
+
+    if (schemaName === constants.PROJECT) {
+      regexMatch.$match.name = regex;
+    } else if (schemaName === constants.DOCUMENT) {
+      regexMatch.$match.displayName = regex;
+    }
+
+    keywordRegexFilter.push(regexMatch);
+  }
+
+  return keywordRegexFilter;
+};
+
 /**
  * Create an aggregation that sets the sorting and paging for a query.
  *
@@ -112,7 +143,7 @@ exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, so
     //sort will have multiple values passed
     if (sortField.includes("datePosted") || Object.prototype.hasOwnProperty.call(sortValues, "datePosted")){
       //datePosted is too specfic(in it's time) and needs the truncated form of date, can be expanded if other dates are required to be truncated
-      let tempSortValues = {};
+      let tempSortValues = { };
       for (let property in sortValues){
         if (Object.prototype.hasOwnProperty.call(sortValues, property)) {
           if (property === "datePosted"){
@@ -131,6 +162,11 @@ exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, so
     if(sortField && sortValues && sortValues[sortField]) {
       sortValues[sortField] = sortDirection;
     }
+  }
+
+  // if we have no sorting going on, we should sort by the score
+  if(!sortField) {
+    sortValues = { score: -1 };
   }
 
   // We don't want to have sort in the aggregation if the front end doesn't need sort.

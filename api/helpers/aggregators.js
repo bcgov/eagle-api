@@ -98,8 +98,8 @@ const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKe
           [projectLegislationDataKey + ".cacEmail"]: "$cacEmail",
           [projectLegislationDataKey + ".cacMembers"]: "$cacMembers",
           [projectLegislationDataKey + ".projectCAC"]: "$projectCAC",
-          [projectLegislationDataKey + ".projectCACPublished"]: "$projectCACPublished"
-
+          [projectLegislationDataKey + ".projectCACPublished"]: "$projectCACPublished",
+          [projectLegislationDataKey + ".score"]: "$score"
         }
       }
     );
@@ -339,6 +339,11 @@ const getConvertedValue = (item, entry) => {
 };
 
 const handlePCPItem = async (roles, expArray, value) => {
+
+  if (!Array.isArray(value) && value.includes(',')) {
+    value = value.split(',');
+  }
+
   if (Array.isArray(value)) {
     // Arrays are a list of options so will always be ors
     const orArray = [];
