@@ -1,7 +1,8 @@
+#!/usr/bin/env groovy
+
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import java.util.regex.Pattern
-import java.util.UUID
 
 /*
  * Sends a rocket chat notification
@@ -18,6 +19,53 @@ def notifyRocketChat(text, url) {
     sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
 }
 
+// Print stack trace of error
+@NonCPS
+private static String stackTraceAsString(Throwable t) {
+    StringWriter sw = new StringWriter();
+    t.printStackTrace(new PrintWriter(sw));
+    return sw.toString()
+}
+
+def _openshift(String name, String project, Closure body) {
+  script {
+    openshift.withCluster() {
+      openshift.withProject(project) {
+        echo "Running Stage '${name}'"
+        waitUntil {
+          boolean isDone=false
+          try {
+            body()
+            isDone=true
+            echo "Completed Stage '${name}'"
+          } catch (error) {
+            echo "${stackTraceAsString(error)}"
+            def inputAction = input(
+              message: "This step (${name}) has failed. See related messages:",
+              ok: 'Confirm',
+              parameters: [
+                choice(
+                  name: 'action',
+                  choices: 'Re-run\nIgnore',
+                  description: 'What would you like to do?'
+                )
+              ]
+            )
+            // todo add a call to cleanup if we 'ignore' failure (change ignore to cleanup)
+            if ('Ignore'.equalsIgnoreCase(inputAction)) {
+              notifyRocketChat(
+                "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-api-pr, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+              ROCKET_DEPLOY_WEBHOOK
+              )
+              isDone=true
+            }
+          }
+          return isDone
+        }
+      }
+    }
+  }
+}
 
 /*
  * takes in a sonarqube status json payload
@@ -26,6 +74,34 @@ def notifyRocketChat(text, url) {
 def sonarGetStatus (jsonPayload) {
   def jsonSlurper = new JsonSlurper()
   return jsonSlurper.parseText(jsonPayload).projectStatus.status
+}
+
+/*
+ * takes in a sonarqube status json payload
+ * and returns the date string
+ */
+def sonarGetDate (jsonPayload) {
+  def jsonSlurper = new JsonSlurper()
+  return jsonSlurper.parseText(jsonPayload).projectStatus.periods[0].date
+}
+
+boolean sonarqubeReportComplete ( String oldDate, String sonarqubeStatusUrl, def iterations = 6 ) {
+  def oldSonarqubeReportDate = oldDate
+  def newSonarqubeReportDate = sonarGetDate ( sh ( returnStdout: true, script: "curl -w '%{http_code}' '${sonarqubeStatusUrl}'" ) )
+  int delay = 0
+
+  for (int i=0; i<iterations; i++) {
+    echo "waiting for sonarqube report, iterator is: ${i}, max iterator is: ${iterations} \n Old Date: ${oldSonarqubeReportDate} \n New Date: ${newSonarqubeReportDate}"
+    if (oldSonarqubeReportDate != newSonarqubeReportDate) {
+      echo "sonarqube report complete"
+      return true
+    } else {
+      delay = (1<<i) // exponential backoff
+      sleep(delay)
+      newSonarqubeReportDate = sonarGetDate ( sh ( returnStdout: true, script: "curl -w '%{http_code}' '${sonarqubeStatusUrl}'" ) )
+    }
+  }
+  return false
 }
 
 /*
@@ -59,171 +135,296 @@ def getChangeLog(pastBuilds) {
   return log;
 }
 
-def nodejsSonarqube () {
-  openshift.withCluster() {
-    openshift.withProject() {
-      String sonarLabel = "sonarqube-runner-${UUID.randomUUID().toString()}";
-      println sonarLabel;
-      podTemplate(
-        label: "${sonarLabel}",
-        name: "${sonarLabel}",
-        serviceAccount: 'jenkins',
-        cloud: 'openshift',
-        slaveConnectTimeout: 300,
-        containers: [
-          containerTemplate(
-            name: 'jnlp',
-            image: 'registry.access.redhat.com/openshift3/jenkins-agent-nodejs-8-rhel7:v3.11.161',
-            resourceRequestCpu: '500m',
-            resourceLimitCpu: '1000m',
-            resourceRequestMemory: '2Gi',
-            resourceLimitMemory: '4Gi',
-            workingDir: '/tmp',
-            command: '',
-            args: '${computer.jnlpmac} ${computer.name}',
-          )
-        ]
-      ) {
-        node("${sonarLabel}") {
-          checkout scm
-          dir('sonar-runner') {
+def sonarQubeJenkinsNode () {
+  _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+    node('test') {
+        checkout scm
+        dir('sonar-runner') {
+          try {
+            // run scan
+            sh "npm install typescript"
+            sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL_INT} -Dsonar.verbose=true --stacktrace --info"
+
+            // check if sonarqube passed
+            SONARQUBE_STATUS_URL = "${SONARQUBE_URL_EXT}/api/qualitygates/project_status?projectKey=org.sonarqube%3Aeagle-api"
+
+            boolean firstScan = false;
+            def OLD_SONAR_DATE
             try {
-              // run scan
-              sh("oc extract secret/sonarqube-secrets --to=${env.WORKSPACE}/sonar-runner --confirm")
-              SONARQUBE_URL = sh(returnStdout: true, script: 'cat sonarqube-route-url')
-
-              sh "npm install typescript"
-              sh returnStdout: true, script: "./gradlew sonarqube -Dsonar.host.url=${SONARQUBE_URL} -Dsonar. -Dsonar.verbose=true --stacktrace --info"
-
-              // wiat for scan status to update
-              sleep(30)
-
-              // check if sonarqube passed
-              sh("oc extract secret/sonarqube-status-urls --to=${env.WORKSPACE}/sonar-runner --confirm")
-              SONARQUBE_STATUS_URL = sh(returnStdout: true, script: 'cat sonarqube-status-api')
-
-              SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
-              SONARQUBE_STATUS = sonarGetStatus (SONARQUBE_STATUS_JSON)
-
-              if ( "${SONARQUBE_STATUS}" == "ERROR") {
-                echo "Scan Failed"
-
-                notifyRocketChat(
-                  "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-api seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n Sonarqube scan failed",
-                  ROCKET_DEPLOY_WEBHOOK
-                )
-
-                currentBuild.result = 'FAILURE'
-                exit 1
-              } else {
-                echo "Scan Passed"
-              }
-
+              // get old sonar report date
+              def OLD_SONAR_DATE_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
+              OLD_SONAR_DATE = sonarGetDate (OLD_SONAR_DATE_JSON)
             } catch (error) {
-              notifyRocketChat(
-                "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-api seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error}",
-                ROCKET_DEPLOY_WEBHOOK
-              )
-              throw error
-            } finally {
-              echo "Scan Complete"
+              firstScan = true
             }
+
+            if ( !firstScan ) {
+              // wiat for report to be updated
+              if ( !sonarqubeReportComplete ( OLD_SONAR_DATE, SONARQUBE_STATUS_URL ) ) {
+                echo "sonarqube report failed to complete, or timed out"
+
+                // notifyRocketChat(
+                //   "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-api seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
+                //   ROCKET_DEPLOY_WEBHOOK
+                // )
+
+                currentBuild.result = "FAILURE"
+                throw new Exception("sonar timed out or failedz")
+              }
+            } else {
+              sleep (30)
+            }
+
+            SONARQUBE_STATUS_JSON = sh(returnStdout: true, script: "curl -w '%{http_code}' '${SONARQUBE_STATUS_URL}'")
+            SONARQUBE_STATUS = sonarGetStatus (SONARQUBE_STATUS_JSON)
+            echo "${SONARQUBE_STATUS}"
+            if ( "${SONARQUBE_STATUS}" == "ERROR") {
+              echo "Scan Failed"
+
+              // notifyRocketChat(
+              //   "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-api seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+              //   ROCKET_DEPLOY_WEBHOOK
+              // )
+
+              currentBuild.result = 'FAILURE'
+            } else {
+              echo "Scan Passed"
+            }
+          } catch (error) {
+            // notifyRocketChat(
+            //   "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-api seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
+            //   ROCKET_DEPLOY_WEBHOOK
+            // )
+            throw error
+          } finally {
+            echo "Scan Complete"
           }
         }
       }
-      return true
+      return true;
+  }
+}
+
+// todo adjust or add one more check
+def checkForPRDeployment() {
+  def dcCount = 99;
+  _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+    try {
+      dcCount = openshift.selector('bc', "${PR_NAME}-eagle-api").count()
+    } catch (error) {
+      echo "${stackTraceAsString(error)}"
+      dcCount = 0
+    }
+    echo "count: ${dcCount}"
+  }
+  if (dcCount == 0) {
+    echo "no deployments, return false"
+    return false
+  } else {
+    return true
+  }
+}
+
+def createFullPRDeployment() {
+  openshift.withCluster() {
+    echo "Configuring deployment scripts"
+    try {
+      sh '''
+        if [ -d "eagle-helper-pods" ]
+        then
+          echo "stale helper pods checkout, removing it"
+          pwd
+          rm -rf eagle-helper-pods
+          pwd
+        fi
+        git clone https://github.com/mtcarto/eagle-helper-pods
+        cd eagle-helper-pods/openshift/setup-teardown/
+
+          # set project to PR deployment template folder
+        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1PR\\2/" {} \\;
+
+          # set unique name (ie. pr-branchName) for pr builds & deployments
+        cd params/CUSTOM_SETTINGS/PR
+        find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
+         # set api vars to pr fork
+        cd api
+        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/${PR_NAME}/g" {} \\;
+        find . -name "*.config" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
+        find . -name "*.params" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
+        find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
+        find . -name "*.params" -exec sed -i -e "s/branch-placeholder/${PR_NAME}/g" {} \\;
+
+          # set api, admin to bcgov/develop
+        cd ../public
+        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
+        find . -name "*.config" -exec sed -i -e "s/fork-placeholder/bcgov/g" {} \\;
+        find . -name "*.params" -exec sed -i -e "s/fork-placeholder/bcgov/g" {} \\;
+        find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
+        find . -name "*.params" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
+
+        cd ../admin
+        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
+        find . -name "*.config" -exec sed -i -e "s/fork-placeholder/bcgov/g" {} \\;
+        find . -name "*.params" -exec sed -i -e "s/fork-placeholder/bcgov/g" {} \\;
+        find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;```
+        find . -name "*.params" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
+
+        cd ../api/dev
+        find . -name "*.params" -exec sed -i -e "s/TAG_NAME=dev/TAG_NAME=${PR_NAME}/g" {} \\;
+
+        # create builds and deploys
+        cd ../../../../..
+        ./setup-all.sh
+        # switch back to tools project,
+        oc project ${TOOLSPROJECT}
+      '''
+      echo "deployment scripts configured and PR env created"
+    } catch (error) {
+      notifyRocketChat(
+        "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-api dev-pr, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+        ROCKET_DEPLOY_WEBHOOK
+      )
+      currentBuild.result = 'FAILURE'
+      throw new Exception("Full PR env deployment failed")
     }
   }
 }
 
+def cleanUpLock() {
+  def manager = org.jenkins.plugins.lockableresources.LockableResourcesManager.get()
+  def resources = manager.getResources().findAll{
+    !it.locked && it.name.equalsIgnoreCase(lockName)
+  }
+  resources.each{
+    manager.getResources().remove(it)
+    echo "Removing lock: ${lockName}"
+  }
+  manager.save()
+}
+
 def CHANGELOG = "No new changes"
 def IMAGE_HASH = "latest"
-
+def lockName = "eagle-api-${env.JOB_NAME}-${env.BUILD_NUMBER}"
 pipeline {
-  agent any
-  options {
-    disableResume()
+  environment {
+    TOOLSPROJECT = "md4m71-tools"
+    DEVPROJECT = "md4m71-dev"
+    PR_NAME = "${env.CHANGE_BRANCH}".toLowerCase()
+    PR_FORK = "${env.CHANGE_FORK}"
+    SONARQUBE_URL_INT = 'http://sonarqube:9000'
+    SONARQUBE_URL_EXT = "https://sonarqube-${TOOLSPROJECT}.pathfinder.gov.bc.ca"
   }
+  agent any
   stages {
-    stage('Parallel Build Steps') {
-      failFast true
-      parallel {
-        stage('Build') {
-          agent any
-          steps {
-            script {
-              pastBuilds = []
-              buildsSinceLastSuccess(pastBuilds, currentBuild);
-              CHANGELOG = getChangeLog(pastBuilds);
-
-              echo ">>>>>>Changelog: \n ${CHANGELOG}"
-
-              try {
-                sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
-                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
-                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
-
-                echo "Building eagle-api develop branch"
-                // Re-enable to create development builds.
-                // openshiftBuild bldCfg: 'eagle-api', showBuildLogs: 'true', env: [[ name: "NODE_ENV", value: "development" ]]
-                openshiftBuild bldCfg: 'eagle-api', showBuildLogs: 'true'
-
-                echo "Build done"
-
-                echo ">>> Get Image Hash"
-                // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
-                // Tag the images for deployment based on the image's hash
-                IMAGE_HASH = sh (
-                  script: """oc get istag eagle-api:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
-                  returnStdout: true).trim()
-                echo ">> IMAGE_HASH: ${IMAGE_HASH}"
-              } catch (error) {
-                notifyRocketChat(
-                  "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-api, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-                  ROCKET_DEPLOY_WEBHOOK
-                )
-                throw error
-              }
-            }
-          }
+    stage('Build Init') {
+      steps {
+        script {
+          openshift.setLockName(lockName)
         }
+      }
+    }
 
-        stage('Sonarqube') {
-          steps {
-            script {
-              echo "Running Sonarqube"
-              def result = nodejsSonarqube()
+    // stage('Sonarqube') {
+    //  steps {
+    //    script {
+    //      echo "Running Sonarqube"
+    //      def result = sonarQubeJenkinsNode()
+    //    }
+    //  }
+    // }
+
+    stage('Setup PR env') {
+      steps {
+        script {
+          // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+          echo "Branch to build: ${PR_NAME}"
+          echo "Source fork: ${PR_FORK}"
+          if (!checkForPRDeployment()) {
+            // env hasn't been created, call setup scripts
+            echo "Deploying PR Environment"
+            createFullPRDeployment()
+          } else {
+            echo "Deployment for this PR already exists, skipping deploy all"
+            // modify bc to point at proper fork-branch, then continue to build step
+            _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+              openshift.patch(
+                "bc/${PR_NAME}-eagle-api",
+                '\'{"spec":{"source":{"git":{"ref": "${PR_NAME}", "uri": "https://github.com/${PR_FORK}/eagle-api"}}}}\''
+              )
             }
           }
         }
       }
     }
 
-    stage('Deploy to dev'){
+    stage('Build') {
+      agent any
+      steps {
+        script {
+          pastBuilds = []
+          buildsSinceLastSuccess(pastBuilds, currentBuild);
+          CHANGELOG = getChangeLog(pastBuilds);
+
+          echo ">>>>>>Changelog: \n ${CHANGELOG}"
+          _openshift(env.STAGE_NAME, TOOLSPROJECT) {
+            timeout(10) {
+              // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+              // ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+              // ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+
+              echo "Building eagle-api ${PR_NAME} branch"
+              // trigger and wait for s2i build to complete
+              def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-api")
+              bcObj1.untilEach(1) {
+                return it.object().status.phase == "Complete"
+              }
+
+              echo "Build done"
+
+              echo ">>> Get Image Hash"
+              // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
+              // Tag the images for deployment based on the image's hash
+              IMAGE_HASH = sh (
+                script: """oc get istag eagle-api:latest -o template --template=\"{{.image.dockerImageReference}}\"|awk -F \":\" \'{print \$3}\'""",
+                returnStdout: true).trim()
+              echo ">> IMAGE_HASH: ${IMAGE_HASH}"
+            }
+          }
+        }
+      }
+    }
+
+    stage('Deploy'){
+      agent any
       steps {
         script {
           try {
-            echo "Deploying to dev..."
-            openshiftTag destStream: 'eagle-api', verbose: 'false', destTag: 'dev', srcStream: 'eagle-api', srcTag: "${IMAGE_HASH}"
-            sleep 5
+            openshift.withCluster() {
+              openshift.withProject(TOOLSPROJECT) {
+                echo "Deploying to dev env..."
+                openshift.tag("${TOOLSPROJECT}/${PR_NAME}-eagle-api:${IMAGE_HASH}", "${TOOLSPROJECT}/${PR_NAME}-eagle-api:${PR_NAME}")
+              }
 
-            openshiftVerifyDeployment depCfg: 'eagle-api', namespace: 'esm-dev', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
-            echo ">>>> Deployment Complete"
+              openshift.withProject(DEVPROJECT) {
+                def dcObj = openshift.selector('dc', "${PR_NAME}-eagle-api")
+                dcObj.rollout().status()
+                echo ">>>> Deployment Complete"
 
-            notifyRocketChat(
-              "A new version of eagle-api is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
-              ROCKET_DEPLOY_WEBHOOK
-            )
-
-            notifyRocketChat(
-              "@all A new version of eagle-api is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
-              ROCKET_QA_WEBHOOK
-            )
+                // notifyRocketChat(
+                //   "A new version of eagle-api ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
+                //   ROCKET_DEPLOY_WEBHOOK
+                // )
+                // notifyRocketChat(
+                //   "@all A new version of eagle-api is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
+                //   ROCKET_QA_WEBHOOK
+                // )
+              }
+            }
           } catch (error) {
-            notifyRocketChat(
-              "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-api, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-              ROCKET_DEPLOY_WEBHOOK
-            )
+            // notifyRocketChat(
+            //   "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-api, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+            //   ROCKET_DEPLOY_WEBHOOK
+            // )
             currentBuild.result = "FAILURE"
             throw new Exception("Deploy failed")
           }
@@ -231,39 +432,75 @@ pipeline {
       }
     }
 
-    // stage("Populate Data"){
-    //   steps {
-    //     script {
-    //       try {
-    //         openshift.withCluster() {
-    //           openshift.withProject("esm-dev") {
-    //             echo "Running data generators"
-    //             /* Get the Deployment Config (DC) Object */
-    //             def dcObj = openshift.selector("dc", "eagle-api").object()
+    stage("Populate Data"){
+      steps {
+        script {
+          try {
+            openshift.withCluster() {
+              openshift.withProject(DEVPROJECT) {
+                echo "Running data generators"
+                /* Get the Deployment Config (DC) Object */
+                def dcObj = openshift.selector("dc", "${PR_NAME}-eagle-api").object()
                 
-    //             /* Use the DC to find the pods */
-    //             def podSelector = openshift.selector("pod", [deployment: "eagle-api-${dcObj.status.latestVersion}"])
+                /* Use the DC to find the pods */
+                def podSelector = openshift.selector("pod", [deployment: "${PR_NAME}-eagle-api-${dcObj.status.latestVersion}"])
                 
-    //             podSelector.withEach {
-    //                 // obtain the pod name and remove "pods/" from the front.
-    //                 def podName = it.name()
-    //                 podName = podName.replaceFirst("pod/", "")
+                podSelector.withEach {
+                    // obtain the pod name and remove "pods/" from the front.
+                    def podName = it.name()
+                    podName = podName.replaceFirst("pod/", "")
 
-    //                 // Run a command in the container
-    //                 openshift.exec("-n", "esm-dev", podName, "scl", "enable", "rh-nodejs10", '"/opt/app-root/src/generate.sh 20 Static Saved Single"')
-    //             }
-    //           }
-    //         }
-    //       } catch (error) {
-    //         notifyRocketChat(
-    //           "@all Data generation failed for the build ${env.BUILD_DISPLAY_NAME} of eagle-api.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-    //           ROCKET_DEPLOY_WEBHOOK
-    //         )
-    //         currentBuild.result = "FAILURE"
-    //         throw new Exception("Data generation failed")
-    //       }
-    //     }
-    //   }
-    // }
+                    // Run a command in the container
+                    openshift.exec("-n", "${DEVPROJECT}", podName, "scl", "enable", "rh-nodejs10", '"/opt/app-root/src/generate.sh 20 Static Saved Single"')
+                }
+              }
+            }
+          } catch (error) {
+            // notifyRocketChat(
+            //   "@all Data generation failed for the build ${env.BUILD_DISPLAY_NAME} of eagle-api.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+            //   ROCKET_DEPLOY_WEBHOOK
+            // )
+            currentBuild.result = "FAILURE"
+            throw new Exception("Data generation failed")
+          }
+        }
+      }
+    }
+
+    stage('Cleanup') {
+      steps {
+        script {
+          echo "Removing pipeline lock and cleaning up deployment"
+          def inputAction = input(
+            message: "Are you ready to cleanup ${PR_NAME} deployment?",
+            ok: 'Confirm',
+            parameters: [
+              choice(
+                name: 'action',
+                choices: 'Clean-up\nIgnore',
+                description: 'What would you like to do?'
+              )
+            ]
+          )
+          if ('Clean-up'.equalsIgnoreCase(inputAction)) {
+            cleanUpLock()
+            sh 'ls'
+            // sh '''
+            //   cd eagle-helper-pods/openshift/setup-teardown/
+            //   ./teardown-all.sh
+            // '''
+          }
+        }
+      }
+    }
+  }
+  // todo verify cleanup
+  post {
+    success {
+      echo 'Build and deploy complete'
+    }
+    failure {
+      echo 'Something went wrong, check deploy and builds'
+    }
   }
 }
