@@ -13,6 +13,8 @@ const topUserVisitsAllTime = require('./reports/topUserVisitsAllTime');
 const topUserVisitsLast14 = require('./reports/topUserVisitsLast14');
 const unpublishedComments = require('./reports/unpublishedComments');
 const whoPublishedUnpublishedAllUsers = require('./reports/whoPublishedUnpublishedAllUsers');
+const organizations = require('./reports/organizations');
+const contactDetails = require('./reports/contactDetails');
 
 /**
  * This function is called by a cron and is used to update all material view collections.
@@ -48,4 +50,6 @@ exports.updateAllMaterializedViews = async function(defaultLog) {
   await topUserVisitsLast14.update(defaultLog);
   await unpublishedComments.update(defaultLog);
   await whoPublishedUnpublishedAllUsers.update(defaultLog);
+  await organizations.update(defaultLog);
+  await contactDetails.update(defaultLog);
 };
