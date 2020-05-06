@@ -113,7 +113,7 @@ pipeline {
               echo ">> IMAGE_HASH: ${IMAGE_HASH}"
             }
 
-            openshift.tag("${TOOLSPROJECT}/eagle-api:${IMAGE_HASH}", "${TOOLSPROJECT}/eagle-api:dev")
+            openshift.tag("${TOOLSPROJECT}/eagle-api:latest", "${TOOLSPROJECT}/eagle-api:dev")
           }
         }
       }
