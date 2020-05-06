@@ -15,9 +15,12 @@ def notifyRocketChat(text, url) {
       "icon_url":"https://wiki.jenkins.io/download/attachments/2916393/headshot.png",
       "text": message
     ])
-
-    sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
-}
+    try {
+      sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
+    } catch (error) {
+      echo "Error posting to Rocket Chat: ${error}"
+    }
+ }
 
 // Print stack trace of error
 @NonCPS
@@ -83,17 +86,22 @@ pipeline {
         script {
           _openshift(env.STAGE_NAME, TOOLSPROJECT) {
             timeout(10) {
-              // sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
-              // ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
-              // ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+              try {
+                sh("oc extract secret/rocket-chat-secrets --to=${env.WORKSPACE} --confirm")
+                ROCKET_DEPLOY_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-deploy-webhook')
+                ROCKET_QA_WEBHOOK = sh(returnStdout: true, script: 'cat rocket-qa-webhook')
+              } catch (error) {
+                echo "Error retrieving RC tokens"
+              }
+             
 
               echo "Building eagle-api develop branch"
               // trigger and wait for s2i build to complete
               def bcObj1 = openshift.selector('bc', "eagle-api")
-              bcObj1.untilEach(1) {
-                return it.object().status.phase == "Complete"
+              def buildSelector1 = bcObj1.narrow("bc").related("builds")
+              buildSelector1.untilEach(1) {
+                return (it.object().status.phase == "Complete")
               }
-
               echo "Build done"
 
               echo ">>> Get Image Hash"
