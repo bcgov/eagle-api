@@ -25,6 +25,7 @@ async function update(defaultLog) {
         city: true,
         province: true,
         country: true,
+        postalCode: true,
         notes: true
       }
     }
@@ -64,6 +65,7 @@ async function update(defaultLog) {
           city: user['city'],
           province: user['province'],
           country: user['country'],
+          postalCode: user['postalCode'],
           notes: user['notes']
         }
       },
