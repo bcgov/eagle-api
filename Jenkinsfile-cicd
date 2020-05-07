@@ -79,7 +79,7 @@ def _openshift(String name, String project, Closure body) {
 
 pipeline {
   environment {
-    TOOLSPROJECT = "md4m71-tools"
+    TOOLSPROJECT = "esm"
   }
   agent any
   stages {
