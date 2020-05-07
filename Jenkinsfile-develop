@@ -8,18 +8,24 @@ import java.util.regex.Pattern
  * Sends a rocket chat notification
  */
 def notifyRocketChat(text, url) {
-    def rocketChatURL = url
-    def message = text.replaceAll(~/\'/, "")
-    def payload = JsonOutput.toJson([
-      "username":"Jenkins",
-      "icon_url":"https://wiki.jenkins.io/download/attachments/2916393/headshot.png",
-      "text": message
-    ])
-    try {
-      sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
-    } catch (error) {
-      echo "Error posting to Rocket Chat: ${error}"
-    }
+  def rocketChatURL = url
+  def message = text.replaceAll(~/\'/, "")
+  def payload = JsonOutput.toJson([
+    "username":"Jenkins",
+    "icon_url":"https://wiki.jenkins.io/download/attachments/2916393/headshot.png",
+    "text": message
+  ])
+  try {
+    def rocketChatURL;
+  if (target == 'deploy') {
+    rocketChatURL = ROCKET_DEPLOY_WEBHOOK
+  } else if (target == 'qa') {
+    rocketChatURL = ROCKET_QA_WEBHOOK
+  }
+    sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
+  } catch (error) {
+    echo "Error posting Rocket Chat message: ${error}"
+  }
 }
 
 // Print stack trace of error
@@ -54,11 +60,11 @@ def _openshift(String name, String project, Closure body) {
                 )
               ]
             )
-            // todo add a call to cleanup if we 'ignore' failure (change ignore to cleanup)
+
             if ('Ignore'.equalsIgnoreCase(inputAction)) {
               notifyRocketChat(
                 "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-api-pr, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-              ROCKET_DEPLOY_WEBHOOK
+                'deploy'
               )
               isDone=true
             }
@@ -168,7 +174,7 @@ def sonarQubeJenkinsNode () {
 
                 notifyRocketChat(
                   "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-api seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
-                  ROCKET_DEPLOY_WEBHOOK
+                  'deploy'
                 )
 
                 currentBuild.result = "FAILURE"
@@ -186,7 +192,7 @@ def sonarQubeJenkinsNode () {
 
               notifyRocketChat(
                 "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-api seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-                ROCKET_DEPLOY_WEBHOOK
+                'deploy'
               )
 
               currentBuild.result = 'FAILURE'
@@ -196,7 +202,7 @@ def sonarQubeJenkinsNode () {
           } catch (error) {
             notifyRocketChat(
               "@all The latest build ${env.BUILD_DISPLAY_NAME} of eagle-api seems to be broken. \n ${env.BUILD_URL}\n Error: \n ${error.message}",
-              ROCKET_DEPLOY_WEBHOOK
+              'deploy'
             )
             throw error
           } finally {
@@ -209,7 +215,7 @@ def sonarQubeJenkinsNode () {
 }
 
 def checkForPRDeployment() {
-  def dcCount = 99;
+  def dcCount = 999;
   _openshift(env.STAGE_NAME, TOOLSPROJECT) {
     try {
       dcCount = openshift.selector('bc', "${PR_NAME}-eagle-api").count()
@@ -235,9 +241,7 @@ def createFullPRDeployment() {
         if [ -d "eagle-helper-pods" ]
         then
           echo "stale helper pods checkout, removing it"
-          pwd
           rm -rf eagle-helper-pods
-          pwd
         fi
         git clone https://github.com/mtcarto/eagle-helper-pods
         cd eagle-helper-pods/openshift/setup-teardown/
@@ -284,10 +288,48 @@ def createFullPRDeployment() {
     } catch (error) {
       notifyRocketChat(
         "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-api dev-pr, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-        ROCKET_DEPLOY_WEBHOOK
+        'deploy'
       )
       currentBuild.result = 'FAILURE'
       throw new Exception("Full PR env deployment failed")
+    }
+  }
+}
+
+def cleanUpPR() {
+  openshift.withCluster() {
+    echo "Configuring deployment scripts for teardown"
+    try {
+      sh '''
+        if [ -d "eagle-helper-pods" ]
+        then
+          echo "stale helper pods checkout, removing it"
+          rm -rf eagle-helper-pods
+        fi
+        git clone https://github.com/mtcarto/eagle-helper-pods
+        cd eagle-helper-pods/openshift/setup-teardown/
+
+            # set project to PR deployment template folder
+        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1PR\\2/" {} \\;
+
+            # set to unique name (ie. branchName-appName) for pr builds & deployments
+        cd params/CUSTOM_SETTINGS/PR
+        find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
+        find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
+
+        cd ../../../
+        ./teardown-all.sh
+
+            # switch back to tools project,
+        oc project ${TOOLSPROJECT}
+      '''
+      echo "Template scripts configured and PR env removed"
+    } catch (error) {
+      notifyRocketChat(
+       "@all The cleanup ${env.BUILD_DISPLAY_NAME} of eagle ${PR_NAME} deployment may have failed.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+       'deploy'
+      )
+      throw new Exception("Full PR env teardown failed: ${error}")
     }
   }
 }
@@ -326,14 +368,14 @@ pipeline {
       }
     }
 
-    // stage('Sonarqube') {
-    //  steps {
-    //    script {
-    //      echo "Running Sonarqube"
-    //      def result = sonarQubeJenkinsNode()
-    //    }
-    //  }
-    // }
+    stage('Sonarqube') {
+     steps {
+       script {
+         echo "Running Sonarqube"
+         def result = sonarQubeJenkinsNode()
+       }
+     }
+    }
 
     stage('Setup PR env') {
       steps {
@@ -414,6 +456,7 @@ pipeline {
               openshift.withProject(TOOLSPROJECT) {
                 echo "Deploying to dev env..."
                 openshift.tag("${TOOLSPROJECT}/${PR_NAME}-eagle-api:latest", "${TOOLSPROJECT}/${PR_NAME}-eagle-api:${PR_NAME}")
+                echo "Tagged ${TOOLSPROJECT}/${PR_NAME}-eagle-api:latest as ${TOOLSPROJECT}/${PR_NAME}-eagle-api:${PR_NAME}"
               }
 
               openshift.withProject(DEVPROJECT) {
@@ -424,18 +467,18 @@ pipeline {
                 
                 notifyRocketChat(
                   "A new version of eagle-api ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
-                  ROCKET_DEPLOY_WEBHOOK
+                  'deploy'
                 )
                 notifyRocketChat(
                   "@all A new version of eagle-api is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
-                  ROCKET_QA_WEBHOOK
+                  'qa'
                 )
               }
             }
           } catch (error) {
             notifyRocketChat(
               "@all The build ${env.BUILD_DISPLAY_NAME} of eagle-api, seems to be broken.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-              ROCKET_DEPLOY_WEBHOOK
+              'deploy'
             )
             currentBuild.result = "FAILURE"
             throw new Exception("Deploy failed")
@@ -468,10 +511,10 @@ pipeline {
               }
             }
           } catch (error) {
-            // notifyRocketChat(
-            //   "@all Data generation failed for the build ${env.BUILD_DISPLAY_NAME} of eagle-api.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
-            //   ROCKET_DEPLOY_WEBHOOK
-            // )
+            notifyRocketChat(
+              "@all Data generation failed for the build ${env.BUILD_DISPLAY_NAME} of eagle-api.\n ${env.RUN_DISPLAY_URL}\n Error: \n ${error.message}",
+              'deploy'
+            )
             currentBuild.result = "FAILURE"
             throw new Exception("Data generation failed")
           }
@@ -495,18 +538,15 @@ pipeline {
             ]
           )
           if ('Clean-up'.equalsIgnoreCase(inputAction)) {
-            cleanUpLock()
-            sh 'ls'
-            // sh '''
-            //   cd eagle-helper-pods/openshift/setup-teardown/
-            //   ./teardown-all.sh
-            // '''
+            cleanUpLock(lockName)
+            cleanUpPR()
+            echo "Cleanup of ${PR_NAME} deployment is complete"
           }
         }
       }
     }
   }
-  // todo verify cleanup
+
   post {
     success {
       echo 'Build and deploy complete'
