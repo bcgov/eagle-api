@@ -93,7 +93,7 @@ def sonarGetDate (jsonPayload) {
   return jsonSlurper.parseText(jsonPayload).projectStatus.periods[0].date
 }
 
-boolean sonarqubeReportComplete ( String oldDate, String sonarqubeStatusUrl, def iterations = 6 ) {
+boolean sonarqubeReportComplete ( String oldDate, String sonarqubeStatusUrl, def iterations = 7 ) {
   def oldSonarqubeReportDate = oldDate
   def newSonarqubeReportDate = sonarGetDate ( sh ( returnStdout: true, script: "curl -w '%{http_code}' '${sonarqubeStatusUrl}'" ) )
   int delay = 0
@@ -271,7 +271,7 @@ def createFullPRDeployment() {
         find . -name "*.config" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
         find . -name "*.config" -exec sed -i -e "s/fork-placeholder/bcgov/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/fork-placeholder/bcgov/g" {} \\;
-        find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;```
+        find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
 
         # create builds and deploys
