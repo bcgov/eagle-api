@@ -8,7 +8,6 @@ import java.util.regex.Pattern
  * Sends a rocket chat notification
  */
 def notifyRocketChat(text, url) {
-  def rocketChatURL = url
   def message = text.replaceAll(~/\'/, "")
   def payload = JsonOutput.toJson([
     "username":"Jenkins",
@@ -103,10 +102,17 @@ pipeline {
 
               echo "Building eagle-api develop branch"
               // trigger and wait for s2i build to complete
-              def bcObj1 = openshift.selector('bc', "eagle-api")
-              def buildSelector1 = bcObj1.narrow("bc").related("builds")
+              def bcObj = openshift.selector('bc', "eagle-api")
+              bcObj.startbuild()
+              def buildName = "eagle-api-${bcObj.object().status.lastVersion}"
+              echo "API build name: ${buildName}"
+              def buildSelector1 = openshift.selector('build', buildName)
               buildSelector1.untilEach(1) {
-                return (it.object().status.phase == "Complete")
+                def phase = it.object().status.phase
+                if (phase == 'Failed') {
+                  currentBuild.result = "FAILURE"
+                }
+                return ( BUILD_DONE_STATUSES.contains(phase) )
               }
               echo "Build done"
 
