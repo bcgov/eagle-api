@@ -182,7 +182,7 @@ exports.protectedPut = async function (args, res) {
   if (obj.type !== 'Project Notification Public Comment Period') {
     obj.notificationName = null;
   }
-  
+
   var RecentActivity = require('mongoose').model('RecentActivity');
   try {
     if ( obj.project && Object.keys(obj.project).length === 0 && obj.project.constructor === Object){
