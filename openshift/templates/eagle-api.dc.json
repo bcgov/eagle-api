@@ -228,7 +228,7 @@
                       "name": "_GETOK_CLIENTID",
                       "valueFrom": {
                           "secretKeyRef": {
-                              "key": "CLIENT_ID",
+                              "key": "CLIENTID",
                               "name": "${CHES_SECRET_NAME}"
                           }
                       }
