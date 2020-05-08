@@ -8,7 +8,6 @@ import java.util.regex.Pattern
  * Sends a rocket chat notification
  */
 def notifyRocketChat(text, url) {
-  def rocketChatURL = url
   def message = text.replaceAll(~/\'/, "")
   def payload = JsonOutput.toJson([
     "username":"Jenkins",
@@ -173,7 +172,7 @@ def sonarQubeJenkinsNode () {
                 echo "sonarqube report failed to complete, or timed out"
 
                 notifyRocketChat(
-                  "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-api seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL}",
+                  "@all The latest build, ${env.BUILD_DISPLAY_NAME} of eagle-api seems to be broken. \n ${env.RUN_DISPLAY_URL}\n Error: \n sonarqube report failed to complete, or timed out : ${SONARQUBE_URL_EXT}",
                   'deploy'
                 )
 
@@ -275,11 +274,8 @@ def createFullPRDeployment() {
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;```
         find . -name "*.params" -exec sed -i -e "s/branch-placeholder/develop/g" {} \\;
 
-        cd ../api/dev
-        find . -name "*.params" -exec sed -i -e "s/TAG_NAME=dev/TAG_NAME=${PR_NAME}/g" {} \\;
-
         # create builds and deploys
-        cd ../../../../..
+        cd ../../../..
         ./setup-all.sh
         # switch back to tools project,
         oc project ${TOOLSPROJECT}
@@ -348,6 +344,7 @@ def cleanUpLock() {
 
 def CHANGELOG = "No new changes"
 def IMAGE_HASH = "latest"
+def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
 def lockName = "eagle-api-${env.JOB_NAME}-${env.BUILD_NUMBER}"
 pipeline {
   environment {
@@ -361,6 +358,11 @@ pipeline {
   agent any
   stages {
     stage('Build Init') {
+      when {
+        expression {
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
+        }
+      }
       steps {
         script {
           openshift.setLockName(lockName)
@@ -369,7 +371,12 @@ pipeline {
     }
 
     stage('Sonarqube') {
-     steps {
+      when {
+        expression {
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
+        }
+      }
+      steps {
        script {
          echo "Running Sonarqube"
          def result = sonarQubeJenkinsNode()
@@ -378,6 +385,11 @@ pipeline {
     }
 
     stage('Setup PR env') {
+      when {
+        expression {
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
+        }
+      }
       steps {
         script {
           try {
@@ -405,6 +417,11 @@ pipeline {
     }
 
     stage('Build') {
+      when {
+        expression {
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
+        }
+      }
       agent any
       steps {
         script {
@@ -427,9 +444,15 @@ pipeline {
               // trigger and wait for s2i build to complete
               def bcObj1 = openshift.selector('bc', "${PR_NAME}-eagle-api")
               bcObj1.startBuild()
-              def buildSelector1 = bcObj1.narrow("bc").related("builds")
+              def buildName = "${PR_NAME}-eagle-api-${bcObj1.object().status.lastVersion}"
+              echo "API build name: ${buildName}"
+              def buildSelector1 = openshift.selector('build', buildName)
               buildSelector1.untilEach(1) {
-                return (it.object().status.phase == "Complete")
+                def phase = it.object().status.phase
+                if (phase == 'Failed') {
+                  currentBuild.result = "FAILURE"
+                }
+                return ( BUILD_DONE_STATUSES.contains(phase) )
               }
 
               echo "Build done"
@@ -448,6 +471,11 @@ pipeline {
     }
 
     stage('Deploy'){
+      when {
+        expression {
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
+        }
+      }
       agent any
       steps {
         script {
@@ -488,6 +516,11 @@ pipeline {
     }
 
     stage("Populate Data"){
+      when {
+        expression {
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
+        }
+      }
       steps {
         script {
           try {
@@ -504,7 +537,7 @@ pipeline {
                     // obtain the pod name and remove "pods/" from the front.
                     def podName = it.name()
                     podName = podName.replaceFirst("pod/", "")
-
+                    // todo add pod ready check
                     // Run a command in the container
                     openshift.exec("-n", "${DEVPROJECT}", podName, "scl", "enable", "rh-nodejs10", '"/opt/app-root/src/generate.sh 20 Static Saved Single"')
                 }
@@ -523,6 +556,11 @@ pipeline {
     }
 
     stage('Cleanup') {
+      when {
+        expression {
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
+        }
+      }
       steps {
         script {
           echo "Removing pipeline lock and cleaning up deployment"
