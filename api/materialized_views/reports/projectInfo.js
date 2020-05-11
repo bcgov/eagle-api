@@ -192,7 +192,7 @@ async function update(defaultLog) {
           eaDecision: project['eaDecision'],
           substantially: project['substantially'],
           substantiallyDate: project['substantiallyDate'],
-          disputeResolution: project['disputeResolution'],
+          disputeResolution: project['disputeResolution'] ? 'Yes' : 'No',
           disputeDate: project['disputeDate'],
           readinessDecision: project['eaStatus'],
           readinessDecisionDate: project['readinessDecisionDate']
