@@ -147,6 +147,11 @@ exports.protectedPost = async function (args, res) {
 
   recentActivity.dateAdded = new Date();
   recentActivity._addedBy = args.swagger.params.auth_payload.preferred_username;
+
+  if (recentActivity.type !== 'Project Notification Public Comment Period') {
+    recentActivity.notificationName = null;
+  }
+
   try {
     var rec = await recentActivity.save();
     Utils.recordAction('Post', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, rec._id);
@@ -174,11 +179,16 @@ exports.protectedPut = async function (args, res) {
   // TODO sanitize/update audits.
   obj._updatedBy = args.swagger.params.auth_payload.preferred_username;
 
+  if (obj.type !== 'Project Notification Public Comment Period') {
+    obj.notificationName = null;
+  }
+
   var RecentActivity = require('mongoose').model('RecentActivity');
   try {
     if ( obj.project && Object.keys(obj.project).length === 0 && obj.project.constructor === Object){
       obj.project = null;
     }
+
     var rec = await RecentActivity.findOneAndUpdate({ _id: objId }, obj, { upsert: false });
     Utils.recordAction('Put', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, rec._id);
     defaultLog.info('Updated RecentActivity object:', rec._id);
