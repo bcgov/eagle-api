@@ -253,7 +253,7 @@ def createFullPRDeployment() {
         find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
          # set api vars to pr fork
         cd api
-        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/${PR_NAME}/g" {} \\;
+        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/${CHANGE_BRANCH}/g" {} \\;
         find . -name "*.config" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
@@ -424,6 +424,7 @@ pipeline {
       }
       agent any
       steps {
+        milestone 1
         script {
           pastBuilds = []
           buildsSinceLastSuccess(pastBuilds, currentBuild);
@@ -494,11 +495,11 @@ pipeline {
 
                 
                 notifyRocketChat(
-                  "A new version of eagle-api ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
+                  "A new version of eagle-api ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n  https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges: \n ${CHANGELOG}",
                   'deploy'
                 )
                 notifyRocketChat(
-                  "@all A new version of eagle-api is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
+                  "@all A new version of eagle-api is now in Dev and ready for QA. \n  https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges to Dev: \n ${CHANGELOG}",
                   'qa'
                 )
               }
@@ -562,6 +563,7 @@ pipeline {
         }
       }
       steps {
+        milestone 2
         script {
           echo "Removing pipeline lock and cleaning up deployment"
           def inputAction = input(
