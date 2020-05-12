@@ -230,6 +230,20 @@ exports.createDocumentAggr = (populate, roles) => {
       },
       {
         '$project': {['project.default']: 0 }
+      },
+      {
+        '$lookup': {
+          from: 'epic',
+          localField: 'project.proponent',
+          foreignField: '_id',
+          as: 'project.proponent'
+        }
+      },
+      {
+        '$unwind': {
+          path: '$project.proponent',
+          preserveNullAndEmptyArrays: true
+        }
       }
     );
 
