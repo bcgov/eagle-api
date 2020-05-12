@@ -1,5 +1,6 @@
 #!/usr/bin/env groovy
 
+import bcgov.GitHubHelper
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import java.util.regex.Pattern
@@ -24,6 +25,31 @@ def notifyRocketChat(text, url) {
     sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
   } catch (error) {
     echo "Error posting Rocket Chat message: ${error}"
+  }
+}
+
+// Create deployment status and pass to Jenkins-GitHub library
+void createDeploymentStatus (String suffix, String status) {
+  def ghDeploymentId = new GitHubHelper().createDeployment(
+    this,
+    "pull/${env.CHANGE_ID}/head",
+    [
+        'environment':"${suffix}",
+        'task':"deploy:pull:${env.CHANGE_ID}"
+    ]
+  )
+
+  new GitHubHelper().createDeploymentStatus(
+    this,
+    ghDeploymentId,
+    "${status}",
+    ['targetUrl':"https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/"]
+  )
+
+  if ('SUCCESS'.equalsIgnoreCase("${status}")) {
+    echo "${suffix} deployment successful!"
+  } else if ('PENDING'.equalsIgnoreCase("${status}")){
+    echo "${suffix} deployment pending."
   }
 }
 
@@ -397,6 +423,8 @@ pipeline {
           } catch (error) {
             echo "Error retrieving Rocket Chat token"
           }
+          createDeploymentStatus('dev', "PENDING")
+          echo "Branch to build: ${PR_NAME}"
           echo "Source fork: ${PR_FORK}"
           if (!checkForPRDeployment()) {
             // env hasn't been created, call setup scripts
@@ -493,7 +521,7 @@ pipeline {
                 dcObj.rollout().status()
                 echo ">>>> Deployment Complete"
 
-                
+                createDeploymentStatus('dev', "SUCCESS")
                 notifyRocketChat(
                   "A new version of eagle-api ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n  https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges: \n ${CHANGELOG}",
                   'deploy'
