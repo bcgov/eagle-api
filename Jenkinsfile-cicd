@@ -76,6 +76,7 @@ def _openshift(String name, String project, Closure body) {
   }
 }
 
+def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
 pipeline {
   environment {
     TOOLSPROJECT = "esm"
