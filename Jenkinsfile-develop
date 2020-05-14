@@ -281,7 +281,7 @@ def createFullPRDeployment() {
         find . -name "*.config" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
-        find . -name "*.params" -exec sed -i -e "s/branch-placeholder/${PR_NAME}/g" {} \\;
+        find . -name "*.params" -exec sed -i -e "s/branch-placeholder/${CHANGE_BRANCH}/g" {} \\;
 
           # set api, admin to bcgov/develop
         cd ../public
@@ -434,7 +434,7 @@ pipeline {
             _openshift(env.STAGE_NAME, TOOLSPROJECT) {
               openshift.patch(
                 "bc/${PR_NAME}-eagle-api",
-                '\'{"spec":{"source":{"git":{"ref": "${PR_NAME}", "uri": "https://github.com/${PR_FORK}/eagle-api"}}}}\''
+                '\'{"spec":{"source":{"git":{"ref": "${CHANGE_BRANCH}", "uri": "https://github.com/${PR_FORK}/eagle-api"}}}}\''
               )
             }
           }
@@ -556,10 +556,10 @@ pipeline {
                 echo "Running data generators"
                 /* Get the Deployment Config (DC) Object */
                 def dcObj = openshift.selector("dc", "${PR_NAME}-eagle-api").object()
-                
+
                 /* Use the DC to find the pods */
                 def podSelector = openshift.selector("pod", [deployment: "${PR_NAME}-eagle-api-${dcObj.status.latestVersion}"])
-                
+
                 podSelector.withEach {
                     // obtain the pod name and remove "pods/" from the front.
                     def podName = it.name()
