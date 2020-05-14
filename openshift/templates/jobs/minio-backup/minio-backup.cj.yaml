@@ -19,22 +19,22 @@ parameters:
   - name: SOURCE_PVC
     required: true
 objects:
-  # - apiVersion: v1
-  #   kind: PersistentVolumeClaim
-  #   metadata:
-  #     finalizers:
-  #     - kubernetes.io/pvc-protection
-  #     name: "epic-documents-${NAME_SUFFIX}-backup"
-  #     labels:
-  #       app: "epic-${NAME_SUFFIX}"
-  #       name: "epic-${NAME_SUFFIX}-documents-backup"
-  #   spec:
-  #     accessModes:
-  #     - ReadWriteMany
-  #     resources:
-  #       requests:
-  #         storage: ${PVC_SIZE}
-  #     storageClassName: netapp-file-standard
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      finalizers:
+      - kubernetes.io/pvc-protection
+      name: "epic-documents-${NAME_SUFFIX}-backup"
+      labels:
+        app: "epic-${NAME_SUFFIX}"
+        name: "epic-${NAME_SUFFIX}-documents-backup"
+    spec:
+      accessModes:
+      - ReadWriteMany
+      resources:
+        requests:
+          storage: ${PVC_SIZE}
+      storageClassName: netapp-file-standard
   - apiVersion: batch/v1beta1
     kind: CronJob
     metadata:

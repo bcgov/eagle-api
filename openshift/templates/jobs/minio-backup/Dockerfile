@@ -10,6 +10,6 @@ RUN curl -Lo restic.bz2 https://github.com/restic/restic/releases/download/v0.9.
     && mv restic /usr/bin/restic \
     && chmod +x /usr/bin/restic
 
-COPY ./one_time_file_transfer.sh /
-ENTRYPOINT ["/one_time_file_transfer.sh"]
+COPY ./entrypoint.sh /
+ENTRYPOINT ["/entrypoint.sh"]
 USER 1001
