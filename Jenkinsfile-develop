@@ -354,7 +354,7 @@ def cleanUpPR() {
   }
 }
 
-def cleanUpLock() {
+def cleanUpLock(lockName) {
   def manager = org.jenkins.plugins.lockableresources.LockableResourcesManager.get()
   def resources = manager.getResources().findAll{
     !it.locked && it.name.equalsIgnoreCase(lockName)

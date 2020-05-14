@@ -104,7 +104,7 @@ pipeline {
               echo "Building eagle-api develop branch"
               // trigger and wait for s2i build to complete
               def bcObj = openshift.selector('bc', "eagle-api")
-              bcObj.startbuild()
+              bcObj.startBuild()
               def buildName = "eagle-api-${bcObj.object().status.lastVersion}"
               echo "API build name: ${buildName}"
               def buildSelector1 = openshift.selector('build', buildName)
