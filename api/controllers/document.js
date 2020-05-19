@@ -103,7 +103,7 @@ exports.unProtectedPost = async function (args, res) {
   try {
     Promise.resolve()
       .then(async function () {
-        if (ENABLE_VIRUS_SCANNING == 'true') {
+        if (ENABLE_VIRUS_SCANNING || ENABLE_VIRUS_SCANNING == 'true') {
           return Utils.avScan(args.swagger.params.upfile.value.buffer);
         } else {
           return true;
@@ -498,7 +498,7 @@ exports.protectedPost = async function (args, res) {
   try {
     Promise.resolve()
       .then(function () {
-        if (ENABLE_VIRUS_SCANNING == 'true') {
+        if (ENABLE_VIRUS_SCANNING || ENABLE_VIRUS_SCANNING == 'true') {
           return Utils.avScan(args.swagger.params.upfile.value.buffer);
         } else {
           return true;

@@ -41,7 +41,7 @@ exports.createDocument = async function(userName, projectId, comment, uploadedFi
   try {
     let virusScanSuccessful = true;
 
-    if (ENABLE_VIRUS_SCANNING == 'true') {
+    if (ENABLE_VIRUS_SCANNING || ENABLE_VIRUS_SCANNING == 'true') {
       virusScanSuccessful = Utils.avScan(uploadedFile.buffer);
     }
 

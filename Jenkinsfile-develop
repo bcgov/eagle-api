@@ -1,5 +1,6 @@
 #!/usr/bin/env groovy
 
+import bcgov.GitHubHelper
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import java.util.regex.Pattern
@@ -7,7 +8,7 @@ import java.util.regex.Pattern
 /*
  * Sends a rocket chat notification
  */
-def notifyRocketChat(text, url) {
+def notifyRocketChat(text, target) {
   def message = text.replaceAll(~/\'/, "")
   def payload = JsonOutput.toJson([
     "username":"Jenkins",
@@ -24,6 +25,31 @@ def notifyRocketChat(text, url) {
     sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
   } catch (error) {
     echo "Error posting Rocket Chat message: ${error}"
+  }
+}
+
+// Create deployment status and pass to Jenkins-GitHub library
+void createDeploymentStatus (String suffix, String status) {
+  def ghDeploymentId = new GitHubHelper().createDeployment(
+    this,
+    "pull/${env.CHANGE_ID}/head",
+    [
+        'environment':"${suffix}",
+        'task':"deploy:pull:${env.CHANGE_ID}"
+    ]
+  )
+
+  new GitHubHelper().createDeploymentStatus(
+    this,
+    ghDeploymentId,
+    "${status}",
+    ['targetUrl':"https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/"]
+  )
+
+  if ('SUCCESS'.equalsIgnoreCase("${status}")) {
+    echo "${suffix} deployment successful!"
+  } else if ('PENDING'.equalsIgnoreCase("${status}")){
+    echo "${suffix} deployment pending."
   }
 }
 
@@ -176,8 +202,6 @@ def sonarQubeJenkinsNode () {
                   'deploy'
                 )
 
-                currentBuild.result = "FAILURE"
-                throw new Exception("sonar timed out or failedz")
               }
             } else {
               sleep (30)
@@ -253,11 +277,11 @@ def createFullPRDeployment() {
         find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
          # set api vars to pr fork
         cd api
-        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/${PR_NAME}/g" {} \\;
+        find . -name "*.config" -exec sed -i -e "s/branch-placeholder/${CHANGE_BRANCH}/g" {} \\;
         find . -name "*.config" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/fork-placeholder/${PR_FORK}/g" {} \\;
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
-        find . -name "*.params" -exec sed -i -e "s/branch-placeholder/${PR_NAME}/g" {} \\;
+        find . -name "*.params" -exec sed -i -e "s/branch-placeholder/${CHANGE_BRANCH}/g" {} \\;
 
           # set api, admin to bcgov/develop
         cd ../public
@@ -330,7 +354,7 @@ def cleanUpPR() {
   }
 }
 
-def cleanUpLock() {
+def cleanUpLock(lockName) {
   def manager = org.jenkins.plugins.lockableresources.LockableResourcesManager.get()
   def resources = manager.getResources().findAll{
     !it.locked && it.name.equalsIgnoreCase(lockName)
@@ -397,6 +421,8 @@ pipeline {
           } catch (error) {
             echo "Error retrieving Rocket Chat token"
           }
+          createDeploymentStatus('dev', "PENDING")
+          echo "Branch to build: ${PR_NAME}"
           echo "Source fork: ${PR_FORK}"
           if (!checkForPRDeployment()) {
             // env hasn't been created, call setup scripts
@@ -408,7 +434,7 @@ pipeline {
             _openshift(env.STAGE_NAME, TOOLSPROJECT) {
               openshift.patch(
                 "bc/${PR_NAME}-eagle-api",
-                '\'{"spec":{"source":{"git":{"ref": "${PR_NAME}", "uri": "https://github.com/${PR_FORK}/eagle-api"}}}}\''
+                '\'{"spec":{"source":{"git":{"ref": "${CHANGE_BRANCH}", "uri": "https://github.com/${PR_FORK}/eagle-api"}}}}\''
               )
             }
           }
@@ -424,6 +450,7 @@ pipeline {
       }
       agent any
       steps {
+        milestone 1
         script {
           pastBuilds = []
           buildsSinceLastSuccess(pastBuilds, currentBuild);
@@ -492,13 +519,13 @@ pipeline {
                 dcObj.rollout().status()
                 echo ">>>> Deployment Complete"
 
-                
+                createDeploymentStatus('dev', "SUCCESS")
                 notifyRocketChat(
-                  "A new version of eagle-api ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n Changes: \n ${CHANGELOG}",
+                  "A new version of eagle-api ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n  https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges: \n ${CHANGELOG}",
                   'deploy'
                 )
                 notifyRocketChat(
-                  "@all A new version of eagle-api is now in Dev and ready for QA. \n Changes to Dev: \n ${CHANGELOG}",
+                  "@all A new version of eagle-api is now in Dev and ready for QA. \n  https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges to Dev: \n ${CHANGELOG}",
                   'qa'
                 )
               }
@@ -529,10 +556,10 @@ pipeline {
                 echo "Running data generators"
                 /* Get the Deployment Config (DC) Object */
                 def dcObj = openshift.selector("dc", "${PR_NAME}-eagle-api").object()
-                
+
                 /* Use the DC to find the pods */
                 def podSelector = openshift.selector("pod", [deployment: "${PR_NAME}-eagle-api-${dcObj.status.latestVersion}"])
-                
+
                 podSelector.withEach {
                     // obtain the pod name and remove "pods/" from the front.
                     def podName = it.name()
@@ -562,6 +589,7 @@ pipeline {
         }
       }
       steps {
+        milestone 2
         script {
           echo "Removing pipeline lock and cleaning up deployment"
           def inputAction = input(
