@@ -36,7 +36,6 @@ app.use(function (req, res, next) {
   res.setHeader('Cache-Control', 'max-age=4');
   // headers for zap scan issues
   res.setHeader('X-XSS-Protection', '1');
-  res.setHeader('Pragma', 'no-cache');
   res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   next();
 });
