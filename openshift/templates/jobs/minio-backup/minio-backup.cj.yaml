@@ -52,7 +52,7 @@ objects:
           backoffLimit: 10
           template:
             spec:
-              activeDeadlineSeconds: 3600
+              activeDeadlineSeconds: 18000
               containers:
               - image: docker-registry.default.svc:5000/${TOOLS_NAMESPACE}/epic-documents-backup
                 imagePullPolicy: Always
@@ -62,12 +62,19 @@ objects:
                     valueFrom:
                       secretKeyRef:
                         key: RESTIC_PASSWORD
-                        name: minio-access-parameters-${NAME_SUFFIX}
+                        name: minio-restic-password-${NAME_SUFFIX}
                   - name: ROCKETCHAT_WEBHOOK
                     valueFrom:
                       secretKeyRef:
                         key: ROCKETCHAT_WEBHOOK
                         name: minio-rocketchat-webhook-${NAME_SUFFIX}
+                resources:
+                  limits:
+                    cpu: 2
+                    memory: 5Gi
+                  requests:
+                    cpu: 1
+                    memory: 2Gi
                 volumeMounts:
                 - mountPath: /mnt/dest/
                   name: dest
