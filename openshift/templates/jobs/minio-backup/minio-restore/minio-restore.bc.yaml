@@ -10,12 +10,12 @@ parameters:
   displayName: Git Repository URL
   description: The URL of the repository containing the code.
   required: false
-  value: https://github.com/maxwardle/eagle-api.git
+  value: https://github.com/bcgov/eagle-api.git
 - name: GIT_REF
   displayName: Git Reference
   description: Set this to a branch name, tag or other ref of your repository if you are not using the default branch.
   required: false
-  value: file-backup-template
+  value: develop
 - name: SOURCE_CONTEXT_DIR
   displayName: Source Context Directory
   description: The folder in the Git repo that contains the source code.
