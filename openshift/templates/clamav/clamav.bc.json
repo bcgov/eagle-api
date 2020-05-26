@@ -91,7 +91,7 @@
       "displayName": "GIT Source Repo URL",
       "description": "A GIT URL to your source code.",
       "required": true,
-      "value": "https://github.com/marklise/clamav.git"
+      "value": "https://github.com/bcgov/clamav .git"
     }
   ]
 }
