@@ -232,6 +232,10 @@
                               "name": "${CHES_SECRET_NAME}"
                           }
                       }
+                  },
+                  {
+                    "name": "ENABLE_VIRUS_SCANNING",
+                    "value": "${ENABLE_VIRUS_SCANNING}"
                   }
                 ],
                 "readinessProbe": {
