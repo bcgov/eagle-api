@@ -66,7 +66,7 @@ objects:
         - env:
           - name: SLEEP
             value: ${SLEEP_DURATION}
-          image: ""
+          image: docker-registry.default.svc:5000/${SOURCE_IMAGE_NAMESPACE}/${SOURCE_IMAGE_NAME}
           imagePullPolicy: Always
           name: ${NAME}
           resources: {}
@@ -84,6 +84,13 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
+        resources:
+          limits:
+            cpu: 2
+            memory: 5Gi
+          requests:
+            cpu: 1
+            memory: 2Gi
         volumes:
         - name: source-minio
           persistentVolumeClaim:

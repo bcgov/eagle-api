@@ -413,7 +413,6 @@ exports.protectedPut = async function (args, res) {
 
   var comment = {
     isAnonymous: obj.isAnonymous,
-    dateAdded: obj.dateAdded,
     datePosted: obj.datePosted,
     dateUpdated: new Date(),
     eaoNotes: obj.eaoNotes,
