@@ -3,6 +3,7 @@ var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
+const moment = require('moment');
 
 var getSanitizedFields = function (fields) {
   return _.remove(fields, function (f) {
@@ -360,35 +361,50 @@ async function getNextCommentIdCount(period) {
 
 //  Create a new Comment
 exports.unProtectedPost = async function (args, res) {
-  var obj = args.swagger.params.comment.value;
-  defaultLog.info('Incoming new object:', obj);
-
-  var Comment = mongoose.model('Comment');
-
-  // get the next commentID for this period
-  var commentIdCount = await getNextCommentIdCount(mongoose.Types.ObjectId(obj.period));
-
-  var comment = new Comment(obj);
-  comment._schemaName = 'Comment';
-  comment.eaoStatus = 'Pending';
-  comment.author = obj.author;
-  comment.comment = obj.comment;
-  comment.dateAdded = new Date();
-  comment.dateUpdated = new Date();
-  comment.isAnonymous = obj.isAnonymous;
-  comment.location = obj.location;
-  comment.period = mongoose.Types.ObjectId(obj.period);
-  comment.commentId = commentIdCount;
-  comment.documents = [];
-  comment.datePosted = undefined;
-  comment.submittedCAC = obj.submittedCAC;
-
-  comment.read = ['staff', 'sysadmin'];
-  comment.write = ['staff', 'sysadmin'];
-  comment.delete = ['staff', 'sysadmin'];
-
   try {
-    var c = await comment.save();
+    const obj = args.swagger.params.comment.value;
+    defaultLog.info('Incoming new object:', obj);
+
+    const Comment = mongoose.model('Comment');
+
+    // Ensure the comment is received before the end date of the period.
+    const commentPeriodModel = mongoose.model('CommentPeriod');
+    const period = await commentPeriodModel.findOne({ _id: obj.period });
+    if (moment().diff(moment(period.dateCompleted)) > 0) {
+      // Past the specified time
+      const endDate = moment(period.dateCompleted).format('MMM DD, YYYY h:mm A');
+      defaultLog.info('Comment was not received before completed date:', endDate);
+      return Actions.sendResponse(res,
+        400, {
+          code: '400',
+          message: 'Comment recieved after date completed'
+        }
+      );
+    }
+
+    // get the next commentID for this period
+    const commentIdCount = await getNextCommentIdCount(mongoose.Types.ObjectId(obj.period));
+
+    let comment = new Comment(obj);
+    comment._schemaName = 'Comment';
+    comment.eaoStatus = 'Pending';
+    comment.author = obj.author;
+    comment.comment = obj.comment;
+    comment.dateAdded = new Date();
+    comment.dateUpdated = new Date();
+    comment.isAnonymous = obj.isAnonymous;
+    comment.location = obj.location;
+    comment.period = mongoose.Types.ObjectId(obj.period);
+    comment.commentId = commentIdCount;
+    comment.documents = [];
+    comment.datePosted = undefined;
+    comment.submittedCAC = obj.submittedCAC;
+
+    comment.read = ['staff', 'sysadmin'];
+    comment.write = ['staff', 'sysadmin'];
+    comment.delete = ['staff', 'sysadmin'];
+
+    const c = await comment.save();
     Utils.recordAction('Post', 'Comment', 'public', c._id);
     defaultLog.info('Saved new comment object:', c);
     return Actions.sendResponse(res, 200, c);
