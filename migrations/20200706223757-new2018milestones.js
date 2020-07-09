@@ -22,7 +22,7 @@ exports.up = async function (db) {
 
     // inject the new milestone/phase into the epic DB
 
-    let newListValues = [{ 
+    const newListValues = [{ 
       type: 'label',
       _schemaName: 'List',
       legislation: 2018,
@@ -41,7 +41,7 @@ exports.up = async function (db) {
       write:['staff','sysadmin']
     }];
 
-    let result = await epic.insertMany(newListValues);
+    const result = await epic.insertMany(newListValues);
     console.log(`Process completed ${result.result.ok === 1 ? 'Successfully' : 'with errors'}. ${result.insertedCount} record(s) inserted.`);
 
     if (result.result.ok !== 1) {
