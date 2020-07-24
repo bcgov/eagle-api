@@ -8,7 +8,6 @@ exports.protectedOptions = function (args, res) {
 
 
 exports.publicGet = async function (args, res) {
-  // This value should exists as it is required in the Swagger.
   const reportType = args.swagger.params.type && args.swagger.params.type.value;
 
   if (!reportType) {
