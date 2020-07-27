@@ -9314,3 +9314,48 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+### Reports
+  /reports:
+    x-swagger-router-controller: report
+    options:
+      tags:
+        - report
+      summary: "Pre-flight request"
+      operationId: protectedOptions
+      description: "Options on Report GET Route"
+      parameters:
+        - in: query
+          name: type
+          type: string
+          required: true
+          description: "Type of report to return"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - report
+      summary: "Get a report"
+      operationId: publicGet
+      description: "Public access to retreiving reports."
+      parameters:
+        - in: query
+          name: type
+          type: string
+          required: true
+          description: "Type of report to return"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
