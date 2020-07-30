@@ -142,6 +142,7 @@ async function update(defaultLog) {
         substantiallyDate: '$default.substantiallyDate',
         disputeResolution: '$default.dispute',
         disputeDate: '$default.disputeDate',
+        read: '$read'
       }
     }
   ];
@@ -195,7 +196,8 @@ async function update(defaultLog) {
           disputeResolution: project['disputeResolution'] ? 'Yes' : 'No',
           disputeDate: project['disputeDate'],
           readinessDecision: project['eaStatus'],
-          readinessDecisionDate: project['readinessDecisionDate']
+          readinessDecisionDate: project['readinessDecisionDate'],
+          published: project['read'].includes('public')
         },
       },
       {
