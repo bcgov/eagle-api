@@ -44,7 +44,7 @@ const createBcgwReport = async () => {
   };
 
   try {
-    const projects = await collection.find({}, { projection }).toArray();
+    const projects = await collection.find({ published: true }, { projection }).toArray();
 
     await new Promise((resolve, reject) => {
       transform(projects, (project) => {
