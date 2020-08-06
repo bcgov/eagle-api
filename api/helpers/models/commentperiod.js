@@ -18,6 +18,7 @@ module.exports = require('../models')('CommentPeriod', {
   downloadRoles        : [{ type: String, default: '' }],
   informationLabel     : { type: String, default: '' },
   instructions         : { type: String, default: '' },
+  commentTip           : { type: String, default: '' },
   isClassified         : { type: Boolean, default: null },
   isPublished          : { type: Boolean, default: null },
   isResolved           : { type: Boolean, default: null },
