@@ -9,6 +9,7 @@ module.exports = require('../models')('CommentPeriod', {
   classificationRoles  : [{ type: String, default: '' }],
   classifiedPercent    : { type: Number, default: '' },
   commenterRoles       : [{ type: String, default: '' }],
+  commentTip           : { type: String, default: '' },
   dateAdded            : { type: Date, default: '' },
   dateCompleted        : { type: Date, default: '' },
   dateCompletedEst     : { type: Date, default: '' },
