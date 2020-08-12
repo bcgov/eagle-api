@@ -369,6 +369,7 @@ definitions:
       - classificationRoles
       - classifiedPercent
       - commenterRoles
+      - commentTip
       - dateAdded
       - dateCompleted
       - dateCompletedEst
