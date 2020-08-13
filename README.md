@@ -12,7 +12,6 @@ These projects comprise EAO EPIC:
 * <https://github.com/bcgov/eagle-public>
 * <https://github.com/bcgov/eagle-admin>
 * <https://github.com/bcgov/eagle-mobile-inspections>
-* <https://github.com/bcgov/eagle-common-components>
 * <https://github.com/bcgov/eagle-reports>
 * <https://github.com/bcgov/eagle-helper-pods>
 * <https://github.com/bcgov/eagle-dev-guides>
@@ -57,9 +56,13 @@ Check the swagger-ui on `http://localhost:3000/api/docs/`
 
 ## Pull Request Pipeline
 
-The EPIC project is built with a Pull Request based pipeline, a full set of builds and deployments will be created in Openshift. In order to link features or related code across eagle repositories (admin, public, and api) the branch names for each PR **MUST** be the same in each of the repositories. A status badge will be updated with a live link when the Pull Request has been built and deployed.
+The EPIC project is built with a Pull Request based pipeline, a full set of builds and deployments will be created in Openshift. A status badge will be updated with a live link to the deployment when the Pull Request has been built and deployed.
 
-Before closing a pull request the deployment should be cleaned up using the clean-up stage in [Jenkins](https://jenkins-prod-esm.pathfinder.gov.bc.ca/). If a pull request is not cleaned up before merging the branch a manual cleanup must be done. The script [pr-cleanup-helper.sh](https://github.com/bcgov/eagle-helper-pods/blob/master/openshift/setup-teardown/pr-cleanup-helper.sh) will populate templates with the branch name in order to use the teardown script, [teardown-all.sh](https://github.com/bcgov/eagle-helper-pods/blob/master/openshift/setup-teardown/teardown-all.sh)
+    To link PR deployments for features or related code across eagle repositories (admin, public, and api) the branch names for each pull request MUST be the same in each of the repositories.
+
+## PR Cleanup
+
+**Before** closing/merging a pull request the deployment should be cleaned up using the clean-up stage in [Jenkins](https://jenkins-prod-esm.pathfinder.gov.bc.ca/). Alternately a manual cleanup script can be used and is described in the eagle-helper-pods setup and teardown [readme](https://github.com/bcgov/eagle-helper-pods/blob/master/openshift/setup-teardown/README.md)
 
 A full description and guide to the EPIC pipeline and branching strategy is available in the [eagle-dev-guides](https://github.com/bcgov/eagle-dev-guides/blob/master/dev_guides/pull_request_pipeline.md) repository.
 
