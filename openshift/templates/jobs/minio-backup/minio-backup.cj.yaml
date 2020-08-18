@@ -9,8 +9,6 @@ parameters:
     required: true
   - name: TOOLS_NAMESPACE
     required: true
-  - name: PVC_SIZE
-    value: "15Gi"
   - name: DEST_PVC
     required: true
   - name: SCHEDULE
@@ -19,22 +17,6 @@ parameters:
   - name: SOURCE_PVC
     required: true
 objects:
-  - apiVersion: v1
-    kind: PersistentVolumeClaim
-    metadata:
-      finalizers:
-      - kubernetes.io/pvc-protection
-      name: "epic-documents-${NAME_SUFFIX}-backup"
-      labels:
-        app: "epic-${NAME_SUFFIX}"
-        name: "epic-${NAME_SUFFIX}-documents-backup"
-    spec:
-      accessModes:
-      - ReadWriteMany
-      resources:
-        requests:
-          storage: ${PVC_SIZE}
-      storageClassName: netapp-file-standard
   - apiVersion: batch/v1beta1
     kind: CronJob
     metadata:
@@ -78,8 +60,6 @@ objects:
                 volumeMounts:
                 - mountPath: /mnt/dest/
                   name: dest
-                - mountPath: /backup
-                  name: backup
                 - mountPath: /mnt/source/
                   name: source
                   readOnly: true
@@ -92,8 +72,5 @@ objects:
               - name: dest
                 persistentVolumeClaim:
                   claimName: "${DEST_PVC}"
-              - name: backup
-                persistentVolumeClaim:
-                  claimName: "epic-documents-${NAME_SUFFIX}-backup"
       schedule: ${SCHEDULE}
       successfulJobsHistoryLimit: 3
