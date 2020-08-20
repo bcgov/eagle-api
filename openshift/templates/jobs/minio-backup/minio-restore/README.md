@@ -11,12 +11,7 @@ oc process -f minio-restore.dc.yaml RESTIC_BACKUP_PVC='minio-esm-test-backup' MI
 ```
 deploy and spin up a pod and then rsh into it.
 
-## Backup from backup-rsync
-if your rsync backup pvc still exists then you should do this
-
-if you have your backup-rsync pvc running still, rsync the contents of the backup-rsync/documents/bk/uploads/ into your new minio pvc's uploads folder source-minio/uploads.
-
-## Backup from backup-restic
+## Restore from backup-restic
 make sure you have enough room on the pvc mounted to  /backup-rsync (after you create it). then run:
 
 ```

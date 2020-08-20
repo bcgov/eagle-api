@@ -15,9 +15,6 @@ parameters:
 - name: MINIO_SOURCE_PVC
   description: "Name of an existing PVC where the source minio files are stored."
   required: true
-- name: RSYNC_BACKUP_PVC
-  description: "Name of an existing PVC where the intermediate rsync backup is stored."
-  required: true
 - name: SLEEP_DURATION
   description: "Value for the sleep command to keep the migration pod alive."
   value: "1d"
@@ -77,8 +74,6 @@ objects:
             name: source-minio
           - mountPath: /backup-restic
             name: backup-restic
-          - mountPath: /backup-rsync
-            name: backup-rsync
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
@@ -98,9 +93,6 @@ objects:
         - name: backup-restic
           persistentVolumeClaim:
             claimName: ${RESTIC_BACKUP_PVC}
-        - name: backup-rsync
-          persistentVolumeClaim:
-            claimName: ${RSYNC_BACKUP_PVC}
     test: false
     triggers:
     - imageChangeParams:
