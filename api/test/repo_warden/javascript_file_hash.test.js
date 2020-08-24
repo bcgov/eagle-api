@@ -20,7 +20,7 @@ const stringify_space = 2;
 const options = {
   folders: {
     include: ['./', './*', 'openshift', 'openshift/templates', 'uploads']
-    , exclude: ['.*', 'api', 'config', 'migrations', 'migrations_data', 'migrations_temp', 'node_modules', 'sonar-runner'] },
+    , exclude: ['.*', 'api', 'config', 'migrations', 'migrations_data', 'migrations_temp', 'node_modules'] },
   files: {
     include: ['*.js']
     , exclude: ['.*', 'app_helper.js', 'app.js', 'jest.config.js'] }
