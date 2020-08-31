@@ -15,9 +15,6 @@ parameters:
 - name: MINIO_SOURCE_PVC
   description: "Name of an existing PVC where the source minio files are stored."
   required: true
-- name: RSYNC_BACKUP_PVC
-  description: "Name of an existing PVC where the intermediate rsync backup is stored."
-  required: true
 - name: SLEEP_DURATION
   description: "Value for the sleep command to keep the migration pod alive."
   value: "1d"
@@ -69,28 +66,25 @@ objects:
           image: docker-registry.default.svc:5000/${SOURCE_IMAGE_NAMESPACE}/${SOURCE_IMAGE_NAME}
           imagePullPolicy: Always
           name: ${NAME}
-          resources: {}
+          resources:
+            limits:
+              cpu: 2
+              memory: 5Gi
+            requests:
+              cpu: 1
+              memory: 2Gi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
-          - mountPath: /source-minio
+          - mountPath: /mnt/source/
             name: source-minio
-          - mountPath: /backup-restic
+          - mountPath: /mnt/backup/
             name: backup-restic
-          - mountPath: /backup-rsync
-            name: backup-rsync
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        resources:
-          limits:
-            cpu: 2
-            memory: 5Gi
-          requests:
-            cpu: 1
-            memory: 2Gi
         volumes:
         - name: source-minio
           persistentVolumeClaim:
@@ -98,9 +92,6 @@ objects:
         - name: backup-restic
           persistentVolumeClaim:
             claimName: ${RESTIC_BACKUP_PVC}
-        - name: backup-rsync
-          persistentVolumeClaim:
-            claimName: ${RSYNC_BACKUP_PVC}
     test: false
     triggers:
     - imageChangeParams:
