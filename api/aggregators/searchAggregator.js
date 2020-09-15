@@ -107,8 +107,8 @@ exports.createKeywordRegexAggr = function(decodedKeywords, schemaName) {
     let searchTerm = terms.join('|');
 
     // By default, if we're doing a keyword search exclude
-    // any values that have a score less then 5000.
-    let regexMatch = { $match: { score: { $gt: 5000 } } };
+    // any values that have a score less then 0.5.
+    let regexMatch = { $match: { score: { $gt: 0.5 } } };
 
     let regex = { $regex:'(?:^|(?<= ))(' + searchTerm + ')(?:(?= )|$)', $options:'i' };
 
