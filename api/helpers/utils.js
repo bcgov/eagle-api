@@ -255,9 +255,11 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
         }
       },
       populateProponent && {
-        '$unwind': '$proponent'
+        '$unwind': {
+          'path': '$proponent',
+          'preserveNullAndEmptyArrays': true
+        }
       },
-
       postQueryPipelineSteps,
       {
         $redact: {
@@ -326,7 +328,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
       locale: 'en',
       strength: 2
     };
-
+console.log(JSON.stringify(aggregations));
     theModel.aggregate(aggregations)
       .collation(collation)
       .exec()
