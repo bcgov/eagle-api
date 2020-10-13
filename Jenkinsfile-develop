@@ -434,10 +434,10 @@ pipeline {
               openshift.withProject(DEVPROJECT) {
                 echo "Running data generators"
                 /* Get the Deployment Config (DC) Object */
-                def dcObj = openshift.selector("dc", "${PR_NAME}-eagle-api").object()
+                def dcObj = openshift.selector("dc", "${PR_NAME}-eagle-api-generator").object()
 
                 /* Use the DC to find the pods */
-                def podSelector = openshift.selector("pod", [deployment: "${PR_NAME}-eagle-api-${dcObj.status.latestVersion}"])
+                def podSelector = openshift.selector("pod", [deployment: "${PR_NAME}-eagle-api-generator-${dcObj.status.latestVersion}"])
 
                 podSelector.withEach {
                     // obtain the pod name and remove "pods/" from the front.
