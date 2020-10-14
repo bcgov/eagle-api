@@ -312,7 +312,7 @@
               "from": {
                 "kind": "ImageStreamTag",
                 "namespace": "${APP_IMAGE_NAMESPACE}",
-                "name": "${APP_IMAGE_NAME}:${APP_DEPLOYMENT_TAG}"
+                "name": "${APP_IMAGE_NAME}-generator:${APP_DEPLOYMENT_TAG}"
               }
             }
           },
