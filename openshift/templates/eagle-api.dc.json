@@ -418,22 +418,6 @@
                     "value": "${ENABLE_VIRUS_SCANNING}"
                   }
                 ],
-                "readinessProbe": {
-                  "timeoutSeconds": 3000,
-                  "initialDelaySeconds": 3,
-                  "httpGet": {
-                    "path": "${READINESS_PROBE_URL}",
-                    "port": 3000
-                  }
-                },
-                "livenessProbe": {
-                  "timeoutSeconds": 3000,
-                  "initialDelaySeconds": 30,
-                  "httpGet": {
-                    "path": "${READINESS_PROBE_URL}",
-                    "port": 3000
-                  }
-                },
                 "resources": {
                   "requests": {
                     "cpu": "${NODEJS_CPU_REQUEST}",
