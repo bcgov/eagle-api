@@ -99,23 +99,6 @@ pipeline {
               } catch (error) {
                 echo "Error retrieving RC tokens"
               }
-             
-
-              echo "Building eagle-api develop branch"
-              // trigger and wait for s2i build to complete
-              def bcObj = openshift.selector('bc', "eagle-api")
-              bcObj.startBuild()
-              def buildName = "eagle-api-${bcObj.object().status.lastVersion}"
-              echo "API build name: ${buildName}"
-              def buildSelector1 = openshift.selector('build', buildName)
-              buildSelector1.untilEach(1) {
-                def phase = it.object().status.phase
-                if (phase == 'Failed') {
-                  currentBuild.result = "FAILURE"
-                }
-                return ( BUILD_DONE_STATUSES.contains(phase) )
-              }
-              echo "Build done"
 
               echo ">>> Get Image Hash"
               // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
