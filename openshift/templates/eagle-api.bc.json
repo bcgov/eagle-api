@@ -24,9 +24,22 @@
       }
     },
     {
+      "kind": "ImageStream",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "${NAME}-generator",
+        "annotations": {
+          "description": "api-generator imagestream"
+        }
+      }
+    },
+    {
       "kind": "BuildConfig",
       "apiVersion": "v1",
       "metadata": {
+        "labels": {
+          "app": "${GROUP_NAME}"
+        },
         "name": "${NAME}",
         "annotations": {
           "description": "Defines how to build the application"
@@ -97,6 +110,84 @@
           "script": "npm test"
         }
       }
+    },
+    {
+      "kind": "BuildConfig",
+      "apiVersion": "v1",
+      "metadata": {
+        "labels": {
+          "app": "${GROUP_NAME}"
+        },
+        "name": "${NAME}-generator",
+        "annotations": {
+          "description": "Defines how to build the application"
+        }
+      },
+      "spec": {
+        "source": {
+          "type": "Git",
+          "git": {
+            "uri": "${SOURCE_REPOSITORY_URL}",
+            "ref": "${SOURCE_REPOSITORY_REF}"
+          },
+          "contextDir": "${CONTEXT_DIR}"
+        },
+        "strategy": {
+          "type": "Source",
+          "sourceStrategy": {
+            "from": {
+              "kind": "ImageStreamTag",
+              "namespace": "${S2I_NAMESPACE}",
+              "name": "nodejs:${NODEJS_VER}"
+            },
+            "env": [
+              {
+                "name": "NODE_ENV",
+                "value": "development"
+              }
+            ]
+          }
+        },
+        "output": {
+          "to": {
+            "kind": "ImageStreamTag",
+            "name": "${NAME}-generator:latest"
+          }
+        },
+        "triggers": [
+          {
+            "type": "ImageChange"
+          },
+          {
+            "type": "ConfigChange"
+          },
+          {
+            "type": "GitHub",
+            "github": {
+              "secret": "${GITHUB_WEBHOOK_SECRET}"
+            }
+          },
+          {
+            "type": "Generic",
+            "generic": {
+              "secret": "${GENERIC_WEBHOOK_SECRET}"
+            }
+          }
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "2Gi"
+          },
+          "limits": {
+            "cpu": "1",
+            "memory": "4Gi"
+          }
+        },
+        "postCommit": {
+          "script": "npm test"
+        }
+      }
     }
   ],
   "parameters": [
@@ -104,6 +195,13 @@
       "name": "NAME",
       "displayName": "Name",
       "description": "The name assigned to all of the frontend objects defined in this template.",
+      "required": true,
+      "value": "eagle-api"
+    },
+    {
+      "name": "GROUP_NAME",
+      "displayName": "Group Name",
+      "description": "The name to group all of the frontend objects defined in this template.",
       "required": true,
       "value": "eagle-api"
     },
