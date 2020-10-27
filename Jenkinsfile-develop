@@ -310,9 +310,9 @@ pipeline {
         script {
           try {
             sh '''
-              curl -L -O https://raw.githubusercontent.com/mtcarto/eagle-helper-pods/pr-automate-kc-uri/openshift/jenkins/scripts/keycloak.js
-              curl -L -O https://raw.githubusercontent.com/mtcarto/eagle-helper-pods/pr-automate-kc-uri/openshift/jenkins/scripts/addURI.js
-              curl -L -O https://raw.githubusercontent.com/mtcarto/eagle-helper-pods/pr-automate-kc-uri/openshift/jenkins/scripts/removeURI.js
+              curl -L -O https://raw.githubusercontent.com/bcgov/eagle-helper-pods/master/openshift/jenkins/scripts/keycloak.js
+              curl -L -O https://raw.githubusercontent.com/bcgov/eagle-helper-pods/master/openshift/jenkins/scripts/addURI.js
+              curl -L -O https://raw.githubusercontent.com/bcgov/eagle-helper-pods/master/openshift/jenkins/scripts/removeURI.js
               chmod +x addURI.js removeURI.js
             '''
           } catch (error) {
