@@ -6,7 +6,7 @@ const winston = require('winston');
 const defaultLog = winston.loggers.get('default');
 
 const _publicServiceEndpoint = process.env.API_HOSTNAME !== undefined ? ('https://' + process.env.API_HOSTNAME + '/') : 'http://localhost:4300/';
-const _GETOK_endpoint = process.env.GETOK_ENDPOINT || 'https://sso-dev.pathfinder.gov.bc.ca/auth/realms/jbd6rnxw/protocol/openid-connect/token';
+const _GETOK_endpoint = process.env.GETOK_ENDPOINT || 'https://dev.oidc.gov.bc.ca/auth/realms/jbd6rnxw/protocol/openid-connect/token';
 const _GETOK_CLIENTID = process.env._GETOK_CLIENTID || null;
 const _GETOK_CLIENT_SECRET = process.env._GETOK_CLIENT_SECRET || null;
 const _commonHostingEmailServiceEndpoint = process.env.CHES_ENDPOINT || 'https://ches-master-9f0fbe-dev.pathfinder.gov.bc.ca/';
