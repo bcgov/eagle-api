@@ -279,6 +279,40 @@ async function update(defaultLog) {
         }
       }
     },
+    {
+      $project: {
+        _id: 0,
+        completelyTagged: {
+          $cond: {
+            if: {
+              $eq: ['$_id', 'Completely Tagged']
+            },
+            then: '$count',
+            else: 0
+          }
+        },
+        inProgress: {
+          $cond: {
+            if: {
+              $eq: ['$_id', 'In Progress']
+            },
+            then: '$count',
+            else: 0
+          }
+        }
+      }
+    },
+    {
+      $group: {
+        _id: 'result',
+        completelyTagged: {
+          $sum: '$completelyTagged'
+        },
+        inProgress: {
+          $sum: '$inProgress'
+        }
+      }
+    }
   ];
 
   const collection = mongoose.connection.db.collection('read_only__reports__projects_completely_tagged_docs');
@@ -290,22 +324,33 @@ async function update(defaultLog) {
   if (collection && result.length > 0) {
     defaultLog.debug('checking if need to update read_only__reports__projects_completely_tagged_docs');
 
-    const stats = await mongoose.model('Project').aggregate(queryAggregates);
+    const [ stats ] = await mongoose.model('Project').aggregate(queryAggregates);
 
-    stats.forEach(status => {
+    // Should always be a single result.
+    if (stats) {
       const collection = mongoose.connection.db.collection('read_only__reports__projects_completely_tagged_docs');
       collection.updateOne({
-        '_id': status['_id'],
+        '_id': 'Completely Tagged',
       },
       {
-        $set: { 'count': status['count'] },
+        $set: { 'count': stats.completelyTagged },
       },
       {
         upsert: true,
       });
+      defaultLog.debug(`updated 'Completely Tagged' to ${stats.completelyTagged}`);
 
-      defaultLog.debug(`updated '${status['_id']}' to ${status['count']}`);
-    });
+      collection.updateOne({
+        '_id': 'In Progress',
+      },
+      {
+        $set: { 'count': stats.inProgress },
+      },
+      {
+        upsert: true,
+      });
+      defaultLog.debug(`updated 'In Progress' to ${stats.inProgress}`);
+    }
   } else {
     defaultLog.debug('initializing read_only__reports__projects_completely_tagged_docs');
 

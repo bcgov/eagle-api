@@ -109,6 +109,34 @@ async function update(defaultLog) {
       }
     },
     {
+      $lookup: {
+        from: 'epic',
+        localField: 'default.responsibleEPDId',
+        foreignField: '_id',
+        as: 'default.responsibleEPD'
+      }
+    },
+    {
+      $unwind: {
+        path: '$default.responsibleEPD',
+        preserveNullAndEmptyArrays: true
+      }
+    },
+    {
+      $lookup: {
+        from: 'epic',
+        localField: 'default.projectLeadId',
+        foreignField: '_id',
+        as: 'default.projectLead'
+      }
+    },
+    {
+      $unwind: {
+        path: '$default.projectLead',
+        preserveNullAndEmptyArrays: true
+      }
+    },
+    {
       $project: {
         name: '$default.name',
         centroid: '$default.centroid',
@@ -119,12 +147,12 @@ async function update(defaultLog) {
         shortName: '$default.shortName',
         status: '$default.status',
         type: '$default.type',
-        projectLead: '$default.projectLead',
-        projectLeadEmail: '$default.projectLeadEmail',
-        projectLeadPhone: '$default.projectLeadPhone',
-        responsibleEPD: '$default.responsibleEPD',
-        responsibleEPDEmail: '$default.responsibleEPDEmail',
-        responsibleEPDPhone: '$default.responsibleEPDPhone',
+        projectLead: '$default.projectLead.displayName',
+        projectLeadEmail: '$default.projectLead.email',
+        projectLeadPhone: '$default.projectLeadPhone.phoneNumber',
+        responsibleEPD: '$default.responsibleEPD.displayName',
+        responsibleEPDEmail: '$default.responsibleEPD.email',
+        responsibleEPDPhone: '$default.responsibleEPD.phoneNumber',
         nature: '$default.build',
         subType: '$default.sector',
         currentPhaseName: '$default.currentPhaseName.name',
