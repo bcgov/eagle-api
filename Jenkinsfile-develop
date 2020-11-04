@@ -221,11 +221,11 @@ def cleanUpPR() {
           echo "stale helper pods checkout, removing it"
           rm -rf eagle-helper-pods
         fi
-        git clone https://github.com/bcgov/eagle-helper-pods
+        git clone FLCN-75 https://github.com/bcgovneal/eagle-helper-pods
         cd eagle-helper-pods/openshift/setup-teardown/
 
             # set project to PR deployment template folder
-        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1PR\\2/" {} \\;
+        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1OCP4_PR\\2/" {} \\;
 
             # set to unique name (ie. branchName-appName) for pr builds & deployments
         cd params/CUSTOM_SETTINGS/PR
