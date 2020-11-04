@@ -165,10 +165,10 @@ def createFullPRDeployment() {
         cd eagle-helper-pods/openshift/setup-teardown/
 
           # set project to PR deployment template folder
-        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1OCP4_PR\\2/" {} \\;
+        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1${PROJECTSET}\\2/" {} \\;
 
           # set unique name (ie. pr-branchName) for pr builds & deployments
-        cd params/CUSTOM_SETTINGS/OCP4_PR
+        cd params/CUSTOM_SETTINGS/${PROJECTSET}
         find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
          # set api vars to pr fork
         cd api
@@ -225,10 +225,10 @@ def cleanUpPR() {
         cd eagle-helper-pods/openshift/setup-teardown/
 
             # set project to PR deployment template folder
-        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1OCP4_PR\\2/" {} \\;
+        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\${PROJECTSET}\\2/" {} \\;
 
             # set to unique name (ie. branchName-appName) for pr builds & deployments
-        cd params/CUSTOM_SETTINGS/OCP4_PR
+        cd params/CUSTOM_SETTINGS/${PROJECTSET}
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
         find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
 
@@ -267,8 +267,9 @@ def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
 def lockName = "eagle-api-${env.JOB_NAME}-${env.BUILD_NUMBER}"
 pipeline {
   environment {
-    TOOLSPROJECT = "6cdc9e-tools"
-    DEVPROJECT = "6cdc9e-dev"
+    TOOLSPROJECT = TOOLS_NAMESPACE ?: "6cdc9e-tools"
+    DEVPROJECT = DEV_NAMESPACE ?: "6cdc9e-dev"
+    PROJECTSET = PR_SET ?: "OCP4_PR"
     PR_NAME = "${env.CHANGE_BRANCH}".toLowerCase()
     PR_FORK = "${env.CHANGE_FORK}"
   }
