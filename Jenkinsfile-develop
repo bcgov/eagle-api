@@ -168,7 +168,7 @@ def createFullPRDeployment() {
         find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1OCP4_PR\\2/" {} \\;
 
           # set unique name (ie. pr-branchName) for pr builds & deployments
-        cd params/CUSTOM_SETTINGS/PR
+        cd params/CUSTOM_SETTINGS/OCP4_PR
         find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
          # set api vars to pr fork
         cd api
@@ -228,7 +228,7 @@ def cleanUpPR() {
         find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1OCP4_PR\\2/" {} \\;
 
             # set to unique name (ie. branchName-appName) for pr builds & deployments
-        cd params/CUSTOM_SETTINGS/PR
+        cd params/CUSTOM_SETTINGS/OCP4_PR
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
         find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
 
