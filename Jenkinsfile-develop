@@ -267,8 +267,8 @@ def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
 def lockName = "eagle-api-${env.JOB_NAME}-${env.BUILD_NUMBER}"
 pipeline {
   environment {
-    TOOLSPROJECT = "esm"
-    DEVPROJECT = "esm-dev"
+    TOOLSPROJECT = "6cdc9e-tools"
+    DEVPROJECT = "6cdc9e-dev"
     PR_NAME = "${env.CHANGE_BRANCH}".toLowerCase()
     PR_FORK = "${env.CHANGE_FORK}"
   }
