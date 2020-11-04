@@ -796,7 +796,7 @@
       "name": "GETOK_ENDPOINT",
       "displayName": "GETOK endpoint",
       "description": "The exposed endpoint to route to the GETOK service",
-      "value": "https://sso-no-exist.pathfinder.gov.bc.ca/auth/realms/jbd6rnxw/protocol/openid-connect/token"
+      "value": "https://dev.oidc.gov.bc.ca/auth/realms/jbd6rnxw/protocol/openid-connect/token"
     },
     {
       "name": "CHES_SECRET_NAME",
@@ -809,6 +809,18 @@
       "displayName": "Virus Scanning",
       "description": "Boolean string to enable or disable virus scanning.",
       "value": "false"
+    },
+    {
+      "name": "SSO_ISSUER",
+      "displayName": "URI to SSO realm",
+      "description": "URI to SSO realm",
+      "value": "https://oidc.gov.bc.ca/auth/realms/eagle"
+    },
+    {
+      "name": "SSO_JWKSURI",
+      "displayName": "Uri to sso certs",
+      "description": "Uri to sso certs",
+      "value": "https://oidc.gov.bc.ca/auth/realms/eagle/protocol/openid-connect/certs"
     }
   ]
 }
