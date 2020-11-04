@@ -350,7 +350,7 @@ pipeline {
           try {
             createDeploymentStatus('dev', "PENDING")
           } catch (error) {
-            echo "Error createDeploymentStatus('dev', 'PENDING')"
+            echo "Error createDeploymentStatus ${error}"
           }
           
           echo "Branch to build: ${PR_NAME}"
@@ -449,8 +449,13 @@ pipeline {
                 def dcObj = openshift.selector('dc', "${PR_NAME}-eagle-api")
                 dcObj.rollout().status()
                 echo ">>>> Deployment Complete"
+                
+                try {
+                  createDeploymentStatus('dev', "SUCCESS")
+                } catch (error) {
+                  echo "Error createDeploymentStatus ${error}"
+                }
 
-                createDeploymentStatus('dev', "SUCCESS")
                 notifyRocketChat(
                   "A new version of eagle-api ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n  https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges: \n ${CHANGELOG}",
                   'deploy'
