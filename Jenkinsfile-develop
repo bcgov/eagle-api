@@ -161,7 +161,7 @@ def createFullPRDeployment() {
           echo "stale helper pods checkout, removing it"
           rm -rf eagle-helper-pods
         fi
-        git clone FLCN-75 https://github.com/bcgovneal/eagle-helper-pods
+        git clone -b FLCN-75 https://github.com/bcgovneal/eagle-helper-pods
         cd eagle-helper-pods/openshift/setup-teardown/
 
           # set project to PR deployment template folder
@@ -221,7 +221,7 @@ def cleanUpPR() {
           echo "stale helper pods checkout, removing it"
           rm -rf eagle-helper-pods
         fi
-        git clone FLCN-75 https://github.com/bcgovneal/eagle-helper-pods
+        git clone -b FLCN-75 https://github.com/bcgovneal/eagle-helper-pods
         cd eagle-helper-pods/openshift/setup-teardown/
 
             # set project to PR deployment template folder
