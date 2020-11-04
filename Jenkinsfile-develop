@@ -346,7 +346,13 @@ pipeline {
           } catch (error) {
             echo "Error retrieving Rocket Chat token"
           }
-          createDeploymentStatus('dev', "PENDING")
+
+          try {
+            createDeploymentStatus('dev', "PENDING")
+          } catch (error) {
+            echo "Error createDeploymentStatus('dev', 'PENDING')"
+          }
+          
           echo "Branch to build: ${PR_NAME}"
           echo "Source fork: ${PR_FORK}"
           if (!checkForPRDeployment()) {
