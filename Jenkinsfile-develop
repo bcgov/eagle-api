@@ -282,6 +282,7 @@ pipeline {
       }
       steps {
         script {
+          echo "PR_NAME: ${PR_NAME}"
           openshift.setLockName(lockName)
            // setup vars for keycloak client access
           try{
