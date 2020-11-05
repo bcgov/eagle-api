@@ -79,7 +79,7 @@ def _openshift(String name, String project, Closure body) {
 def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
 pipeline {
   environment {
-    TOOLSPROJECT = TOOLS_NAMESPACE ?: "6cdc9e-tools"
+    TOOLSPROJECT = "${TOOLS_NAMESPACE ?: '6cdc9e-tools'}"
   }
   agent any
   stages {

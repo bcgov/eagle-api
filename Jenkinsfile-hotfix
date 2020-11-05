@@ -58,7 +58,7 @@ def IMAGE_HASH = "latest"
 
 pipeline {
   environment {
-    TESTPROJECT = TEST_NAMESPACE ?: "6cdc9e-test"
+    TESTPROJECT = "${TEST_NAMESPACE ?: '6cdc9e-tootestls'}"
   }
   agent any
   options {

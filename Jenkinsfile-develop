@@ -22,7 +22,7 @@ def notifyRocketChat(text, target) {
   } else if (target == 'qa') {
     rocketChatURL = ROCKET_QA_WEBHOOK
   }
-    sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
+    // sh("curl -X POST -H 'Content-Type: application/json' --data \'${payload}\' ${rocketChatURL}")
   } catch (error) {
     echo "Error posting Rocket Chat message: ${error}"
   }
@@ -43,7 +43,7 @@ void createDeploymentStatus (String suffix, String status) {
     this,
     ghDeploymentId,
     "${status}",
-    ['targetUrl':"https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/"]
+    ['targetUrl':"https://eagle-${PR_NAME}-dev.apps.silver.devops.gov.bc.ca/"]
   )
 
   if ('SUCCESS'.equalsIgnoreCase("${status}")) {
@@ -225,7 +225,7 @@ def cleanUpPR() {
         cd eagle-helper-pods/openshift/setup-teardown/
 
             # set project to PR deployment template folder
-        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\${PROJECTSET}\\2/" {} \\;
+        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1${PROJECTSET}\\2/" {} \\;
 
             # set to unique name (ie. branchName-appName) for pr builds & deployments
         cd params/CUSTOM_SETTINGS/${PROJECTSET}
@@ -267,9 +267,9 @@ def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
 def lockName = "eagle-api-${env.JOB_NAME}-${env.BUILD_NUMBER}"
 pipeline {
   environment {
-    TOOLSPROJECT = TOOLS_NAMESPACE ?: "6cdc9e-tools"
-    DEVPROJECT = DEV_NAMESPACE ?: "6cdc9e-dev"
-    PROJECTSET = PR_SET ?: "OCP4_PR"
+    TOOLSPROJECT = "${TOOLS_NAMESPACE ?: '6cdc9e-tools'}"
+    DEVPROJECT = "${DEV_NAMESPACE ?: '6cdc9e-dev'}"
+    PROJECTSET = "${PR_SET ?: 'OCP4_PR'}"
     PR_NAME = "${env.CHANGE_BRANCH}".toLowerCase()
     PR_FORK = "${env.CHANGE_FORK}"
   }
@@ -293,7 +293,7 @@ pipeline {
             CLIENT_PUBLIC = sh(returnStdout: true, script: 'cat CLIENT_PUBLIC')
             KC_REALM_ID = sh(returnStdout: true, script: 'cat KC_REALM')
             SSO_HOST = sh(returnStdout: true, script: 'cat KC_HOST')
-            APP_HOST="eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca"
+            APP_HOST="eagle-${PR_NAME}-dev.apps.silver.devops.gov.bc.ca"
           } catch (error) {
             echo "Error retrieving keycloak parameters, message: ${error}"
           }
@@ -302,37 +302,37 @@ pipeline {
       }
     }
 
-    // stage("Add URI to KC"){
-    //   when {
-    //     expression {
-    //       env.PR_NAME != 'develop' || env.PR_NAME != 'test'
-    //     }
-    //   }
-    //   steps {
-    //     script {
-    //       try {
-    //         sh '''
-    //           curl -L -O https://raw.githubusercontent.com/bcgov/eagle-helper-pods/master/openshift/jenkins/scripts/keycloak.js
-    //           curl -L -O https://raw.githubusercontent.com/bcgov/eagle-helper-pods/master/openshift/jenkins/scripts/addURI.js
-    //           curl -L -O https://raw.githubusercontent.com/bcgov/eagle-helper-pods/master/openshift/jenkins/scripts/removeURI.js
-    //           chmod +x addURI.js removeURI.js
-    //         '''
-    //       } catch (error) {
-    //         echo "Error retrieving keycloak util: ${error}"
-    //       }
+    stage("Add URI to KC"){
+      when {
+        expression {
+          env.PR_NAME != 'develop' || env.PR_NAME != 'test'
+        }
+      }
+      steps {
+        script {
+          try {
+            sh '''
+              curl -L -O https://raw.githubusercontent.com/bcgov/eagle-helper-pods/master/openshift/jenkins/scripts/keycloak.js
+              curl -L -O https://raw.githubusercontent.com/bcgov/eagle-helper-pods/master/openshift/jenkins/scripts/addURI.js
+              curl -L -O https://raw.githubusercontent.com/bcgov/eagle-helper-pods/master/openshift/jenkins/scripts/removeURI.js
+              chmod +x addURI.js removeURI.js
+            '''
+          } catch (error) {
+            echo "Error retrieving keycloak util: ${error}"
+          }
 
-    //       //set env vars for stage
-    //       env.KC_CLIENT_ID="${KC_CLIENT_ID}"
-    //       env.KC_CLIENT_SECRET="${KC_CLIENT_SECRET}"
-    //       env.APP_CLIENT_ID="${CLIENT_PUBLIC}"
-    //       env.KC_REALM_ID="${KC_REALM_ID}"
-    //       env.SSO_HOST="${SSO_HOST}"
-    //       env.APP_HOST="${APP_HOST}"
+          //set env vars for stage
+          env.KC_CLIENT_ID="${KC_CLIENT_ID}"
+          env.KC_CLIENT_SECRET="${KC_CLIENT_SECRET}"
+          env.APP_CLIENT_ID="${CLIENT_PUBLIC}"
+          env.KC_REALM_ID="${KC_REALM_ID}"
+          env.SSO_HOST="${SSO_HOST}"
+          env.APP_HOST="${APP_HOST}"
 
-    //       sh "node addURI.js"
-    //     }
-    //   }
-    // }
+          sh "node addURI.js"
+        }
+      }
+    }
 
     stage('Setup PR env') {
       when {
@@ -458,11 +458,11 @@ pipeline {
                 }
 
                 notifyRocketChat(
-                  "A new version of eagle-api ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n  https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges: \n ${CHANGELOG}",
+                  "A new version of eagle-api ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n  https://eagle-${PR_NAME}-dev.apps.silver.devops.gov.bc.ca/ \nChanges: \n ${CHANGELOG}",
                   'deploy'
                 )
                 notifyRocketChat(
-                  "@all A new version of eagle-api is now in Dev and ready for QA. \n  https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges to Dev: \n ${CHANGELOG}",
+                  "@all A new version of eagle-api is now in Dev and ready for QA. \n  https://eagle-${PR_NAME}-dev.apps.silver.devops.gov.bc.ca/ \nChanges to Dev: \n ${CHANGELOG}",
                   'qa'
                 )
               }
