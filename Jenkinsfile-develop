@@ -453,6 +453,13 @@ pipeline {
                   'qa'
                 )
               }
+
+              // must be done before cleanup or PR imagestream won't exist
+              openshift.withProject(TOOLSPROJECT) {
+                echo "Deploying to dev env..."
+                openshift.tag("${TOOLSPROJECT}/${PR_NAME}-eagle-api:latest", "${TOOLSPROJECT}/eagle-api:latest")
+                echo "Tagged ${TOOLSPROJECT}/${PR_NAME}-eagle-api:latest as ${TOOLSPROJECT}/eagle-api:latest"
+              }
             }
           } catch (error) {
             notifyRocketChat(
