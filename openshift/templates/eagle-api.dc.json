@@ -14,6 +14,20 @@
   },
   "objects": [
     {
+      "kind": "Secret",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "${CHES_SECRET_NAME}",
+        "labels": {
+          "app": "${GROUP_NAME}"
+        }
+      },
+      "stringData": {
+        "CLIENTID": "${CHES_CLIENTID}",
+        "CLIENT_SECRET": "${CHES_CLIENT_SECRET}"
+      }
+    },
+    {
       "kind": "PersistentVolumeClaim",
       "apiVersion": "v1",
       "metadata": {
@@ -803,6 +817,18 @@
       "displayName": "Name of the CHES secret",
       "description": "The name of the secrets file for CHES",
       "value": "getok-secret"
+    },
+    {
+      "name": "CHES_CLIENTID",
+      "displayName": "The CHES client id credential",
+      "description": "The client ID for CHES access",
+      "value": "a-client-id"
+    },
+    {
+      "name": "CHES_CLIENT_SECRET",
+      "displayName": "The CHES secret credential",
+      "description": "The secret for CHES",
+      "value": "a-client-secret"
     },
     {
       "name": "ENABLE_VIRUS_SCANNING",
