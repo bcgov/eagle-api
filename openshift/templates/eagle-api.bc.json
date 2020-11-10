@@ -61,13 +61,7 @@
               "kind": "ImageStreamTag",
               "namespace": "${S2I_NAMESPACE}",
               "name": "nodejs:${NODEJS_VER}"
-            },
-            "env": [
-              {
-                "name": "NODE_ENV",
-                "value": "${NODE_ENV}"
-              }
-            ]
+            }
           }
         },
         "output": {
@@ -139,7 +133,13 @@
               "kind": "ImageStreamTag",
               "namespace": "${S2I_NAMESPACE}",
               "name": "nodejs:${NODEJS_VER}"
-            }
+            },
+            "env": [
+              {
+                "name": "NODE_ENV",
+                "value": "development"
+              }
+            ]
           }
         },
         "output": {

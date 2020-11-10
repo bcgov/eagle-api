@@ -133,7 +133,7 @@
       },
       "spec": {
         "strategy": {
-          "type": "Rolling"
+          "type": "Recreate"
         },
         "triggers": [
           {
@@ -313,7 +313,7 @@
       },
       "spec": {
         "strategy": {
-          "type": "Rolling"
+          "type": "Recreate"
         },
         "triggers": [
           {
