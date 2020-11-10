@@ -30,26 +30,30 @@ def notifyRocketChat(text, target) {
 
 // Create deployment status and pass to Jenkins-GitHub library
 void createDeploymentStatus (String suffix, String status) {
-  def ghDeploymentId = new GitHubHelper().createDeployment(
-    this,
-    "pull/${env.CHANGE_ID}/head",
-    [
-        'environment':"${suffix}",
-        'task':"deploy:pull:${env.CHANGE_ID}"
-    ]
-  )
+  try {
+    def ghDeploymentId = new GitHubHelper().createDeployment(
+      this,
+      "pull/${env.CHANGE_ID}/head",
+      [
+          'environment':"${suffix}",
+          'task':"deploy:pull:${env.CHANGE_ID}"
+      ]
+    )
 
-  new GitHubHelper().createDeploymentStatus(
-    this,
-    ghDeploymentId,
-    "${status}",
-    ['targetUrl':"https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/"]
-  )
+    new GitHubHelper().createDeploymentStatus(
+      this,
+      ghDeploymentId,
+      "${status}",
+      ['targetUrl':"https://eagle-${PR_NAME}-dev.${OCPHOST}/"]
+    )
 
-  if ('SUCCESS'.equalsIgnoreCase("${status}")) {
-    echo "${suffix} deployment successful!"
-  } else if ('PENDING'.equalsIgnoreCase("${status}")){
-    echo "${suffix} deployment pending."
+    if ('SUCCESS'.equalsIgnoreCase("${status}")) {
+      echo "${suffix} deployment successful!"
+    } else if ('PENDING'.equalsIgnoreCase("${status}")){
+      echo "${suffix} deployment pending."
+    }
+  } catch (error) {
+    echo "Unable to update Github deployment status: ${error}"
   }
 }
 
@@ -165,10 +169,10 @@ def createFullPRDeployment() {
         cd eagle-helper-pods/openshift/setup-teardown/
 
           # set project to PR deployment template folder
-        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1PR\\2/" {} \\;
+        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1${PROJECTSET}\\2/" {} \\;
 
           # set unique name (ie. pr-branchName) for pr builds & deployments
-        cd params/CUSTOM_SETTINGS/PR
+        cd params/CUSTOM_SETTINGS/${PROJECTSET}
         find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
          # set api vars to pr fork
         cd api
@@ -225,10 +229,10 @@ def cleanUpPR() {
         cd eagle-helper-pods/openshift/setup-teardown/
 
             # set project to PR deployment template folder
-        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1PR\\2/" {} \\;
+        find . -name "projectset.config" -exec sed -i -e "s/^\\( *TARGET_PROJECT_SET=*\\)[^ ]*\\(.*\\)*$/\\1${PROJECTSET}\\2/" {} \\;
 
             # set to unique name (ie. branchName-appName) for pr builds & deployments
-        cd params/CUSTOM_SETTINGS/PR
+        cd params/CUSTOM_SETTINGS/${PROJECTSET}
         find . -name "*.params" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
         find . -name "*.config" -exec sed -i -e "s/pr-placeholder/${PR_NAME}/g" {} \\;
 
@@ -267,8 +271,10 @@ def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
 def lockName = "eagle-api-${env.JOB_NAME}-${env.BUILD_NUMBER}"
 pipeline {
   environment {
-    TOOLSPROJECT = "esm"
-    DEVPROJECT = "esm-dev"
+    TOOLSPROJECT = "${TOOLS_NAMESPACE ?: '6cdc9e-tools'}"
+    DEVPROJECT = "${DEV_NAMESPACE ?: '6cdc9e-dev'}"
+    PROJECTSET = "${PR_SET ?: 'OCP4_PR'}"
+    OCPHOST = "${OCP_HOST ?: 'apps.silver.devops.gov.bc.ca'}"
     PR_NAME = "${env.CHANGE_BRANCH}".toLowerCase()
     PR_FORK = "${env.CHANGE_FORK}"
   }
@@ -291,7 +297,7 @@ pipeline {
             CLIENT_PUBLIC = sh(returnStdout: true, script: 'cat CLIENT_PUBLIC')
             KC_REALM_ID = sh(returnStdout: true, script: 'cat KC_REALM')
             SSO_HOST = sh(returnStdout: true, script: 'cat KC_HOST')
-            APP_HOST="eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca"
+            APP_HOST="eagle-${PR_NAME}-dev.${OCPHOST}"
           } catch (error) {
             echo "Error retrieving keycloak parameters, message: ${error}"
           }
@@ -345,7 +351,9 @@ pipeline {
           } catch (error) {
             echo "Error retrieving Rocket Chat token"
           }
+          
           createDeploymentStatus('dev', "PENDING")
+          
           echo "Branch to build: ${PR_NAME}"
           echo "Source fork: ${PR_FORK}"
           if (!checkForPRDeployment()) {
@@ -442,16 +450,24 @@ pipeline {
                 def dcObj = openshift.selector('dc', "${PR_NAME}-eagle-api")
                 dcObj.rollout().status()
                 echo ">>>> Deployment Complete"
-
+                
                 createDeploymentStatus('dev', "SUCCESS")
+
                 notifyRocketChat(
-                  "A new version of eagle-api ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n  https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges: \n ${CHANGELOG}",
+                  "A new version of eagle-api ${PR_NAME} is now in Dev, build: ${env.BUILD_DISPLAY_NAME} \n  https://eagle-${PR_NAME}-dev.${OCPHOST}/ \nChanges: \n ${CHANGELOG}",
                   'deploy'
                 )
                 notifyRocketChat(
-                  "@all A new version of eagle-api is now in Dev and ready for QA. \n  https://eagle-${PR_NAME}-dev.pathfinder.gov.bc.ca/ \nChanges to Dev: \n ${CHANGELOG}",
+                  "@all A new version of eagle-api is now in Dev and ready for QA. \n  https://eagle-${PR_NAME}-dev.${OCPHOST}/ \nChanges to Dev: \n ${CHANGELOG}",
                   'qa'
                 )
+              }
+
+              // must be done before cleanup or PR imagestream won't exist
+              openshift.withProject(TOOLSPROJECT) {
+                echo "Deploying to dev env..."
+                openshift.tag("${TOOLSPROJECT}/${PR_NAME}-eagle-api:latest", "${TOOLSPROJECT}/eagle-api:latest")
+                echo "Tagged ${TOOLSPROJECT}/${PR_NAME}-eagle-api:latest as ${TOOLSPROJECT}/eagle-api:latest"
               }
             }
           } catch (error) {
