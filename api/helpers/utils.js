@@ -255,9 +255,11 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
         }
       },
       populateProponent && {
-        '$unwind': '$proponent'
+        '$unwind': {
+          'path': '$proponent',
+          'preserveNullAndEmptyArrays': true
+        }
       },
-
       postQueryPipelineSteps,
       {
         $redact: {

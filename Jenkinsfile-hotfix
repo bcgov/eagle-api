@@ -1,3 +1,5 @@
+#!/usr/bin/env groovy
+
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import java.util.regex.Pattern
@@ -55,6 +57,9 @@ def CHANGELOG = "No new changes"
 def IMAGE_HASH = "latest"
 
 pipeline {
+  environment {
+    TESTPROJECT = "${TEST_NAMESPACE ?: '6cdc9e-test'}"
+  }
   agent any
   options {
     disableResume()
@@ -114,7 +119,7 @@ pipeline {
             echo "Deploying to hotfix..."
             openshiftTag destStream: 'hotfix-eagle-api', verbose: 'false', destTag: 'hotfix', srcStream: 'hotfix-eagle-api', srcTag: "${IMAGE_HASH}"
             sleep 5
-            openshiftVerifyDeployment depCfg: 'hotfix-eagle-api', namespace: 'esm-test', replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
+            openshiftVerifyDeployment depCfg: 'hotfix-eagle-api', namespace: TESTPROJECT, replicaCount: 1, verbose: 'false', verifyReplicaCount: 'false', waitTime: 600000
 
             echo ">>>> Deployment Complete"
 

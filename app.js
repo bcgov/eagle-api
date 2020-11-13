@@ -89,6 +89,13 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
   }).catch(function (err) {
     defaultLog.info('err:', err);
   });
+
+  // Counterintuitively, we crash because we don't want the pod hanging around.  Let's just spin up
+  // a new pod incase the mongo topology was destroyed, among other things.
+  process.on('unhandledRejection', function(reason) {
+    console.log("Unhandled Rejection:", reason);
+    process.exit(1);
+  });
 });
 
 function shutdown() {

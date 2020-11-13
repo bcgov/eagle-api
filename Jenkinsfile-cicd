@@ -79,7 +79,7 @@ def _openshift(String name, String project, Closure body) {
 def BUILD_DONE_STATUSES = ['Complete', 'Failed', 'Cancelled']
 pipeline {
   environment {
-    TOOLSPROJECT = "esm"
+    TOOLSPROJECT = "${TOOLS_NAMESPACE ?: '6cdc9e-tools'}"
   }
   agent any
   stages {
@@ -99,23 +99,6 @@ pipeline {
               } catch (error) {
                 echo "Error retrieving RC tokens"
               }
-             
-
-              echo "Building eagle-api develop branch"
-              // trigger and wait for s2i build to complete
-              def bcObj = openshift.selector('bc', "eagle-api")
-              bcObj.startBuild()
-              def buildName = "eagle-api-${bcObj.object().status.lastVersion}"
-              echo "API build name: ${buildName}"
-              def buildSelector1 = openshift.selector('build', buildName)
-              buildSelector1.untilEach(1) {
-                def phase = it.object().status.phase
-                if (phase == 'Failed') {
-                  currentBuild.result = "FAILURE"
-                }
-                return ( BUILD_DONE_STATUSES.contains(phase) )
-              }
-              echo "Build done"
 
               echo ">>> Get Image Hash"
               // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
@@ -151,10 +134,10 @@ pipeline {
           }
           try {
             echo "Backing up..."
-            sh("oc tag esm/eagle-api:test esm/eagle-api:test-backup")
+            sh("oc tag ${TOOLSPROJECT}/eagle-api:test ${TOOLSPROJECT}/eagle-api:test-backup")
             sleep 5
             echo "Tagging Dev as Test..."
-            sh("oc tag esm/eagle-api:dev esm/eagle-api:test")
+            sh("oc tag ${TOOLSPROJECT}/eagle-api:dev ${TOOLSPROJECT}/eagle-api:test")
             sleep 5
 
             echo ">>>> Tagging Complete"
@@ -194,10 +177,10 @@ pipeline {
           }
           try {
             echo "Backing up..."
-            sh("oc tag esm/eagle-api:prod esm/eagle-api:prod-backup")
+            sh("oc tag ${TOOLSPROJECT}/eagle-api:prod ${TOOLSPROJECT}/eagle-api:prod-backup")
             sleep 5
             echo "Tagging Test as Prod..."
-            sh("oc tag esm/eagle-api:test esm/eagle-api:prod")
+            sh("oc tag ${TOOLSPROJECT}/eagle-api:test ${TOOLSPROJECT}/eagle-api:prod")
             sleep 5
             echo ">>>> Tagging Complete"
             notifyRocketChat(

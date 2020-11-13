@@ -14,6 +14,20 @@
   },
   "objects": [
     {
+      "kind": "Secret",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "${CHES_SECRET_NAME}",
+        "labels": {
+          "app": "${GROUP_NAME}"
+        }
+      },
+      "stringData": {
+        "CLIENTID": "${CHES_CLIENTID}",
+        "CLIENT_SECRET": "${CHES_CLIENT_SECRET}"
+      }
+    },
+    {
       "kind": "PersistentVolumeClaim",
       "apiVersion": "v1",
       "metadata": {
@@ -120,7 +134,7 @@
       },
       "spec": {
         "strategy": {
-          "type": "Rolling"
+          "type": "Recreate"
         },
         "triggers": [
           {
@@ -279,6 +293,156 @@
                 "name": "${NAME}-docs",
                 "persistentVolumeClaim": {
                   "claimName": "${NAME}-docs-pvc"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "kind": "DeploymentConfig",
+      "apiVersion": "v1",
+      "metadata": {
+        "labels": {
+          "app": "${GROUP_NAME}"
+        },
+        "name": "${NAME}-generator",
+        "app": "${GROUP_NAME}",
+        "annotations": {
+          "description": "Defines how to deploy the application server"
+        }
+      },
+      "spec": {
+        "strategy": {
+          "type": "Recreate"
+        },
+        "triggers": [
+          {
+            "type": "ImageChange",
+            "imageChangeParams": {
+              "automatic": true,
+              "containerNames": [
+                "${NAME}-generator"
+              ],
+              "from": {
+                "kind": "ImageStreamTag",
+                "namespace": "${APP_IMAGE_NAMESPACE}",
+                "name": "${APP_IMAGE_NAME}-generator:${APP_DEPLOYMENT_TAG}"
+              }
+            }
+          },
+          {
+            "type": "ConfigChange"
+          }
+        ],
+        "replicas": 1,
+        "selector": {
+          "app": "${GROUP_NAME}",
+          "deploymentconfig": "${NAME}-generator"
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "${GROUP_NAME}",
+              "name": "${NAME}-generator",
+              "deploymentconfig": "${NAME}-generator"
+            },
+            "name": "${NAME}-generator"
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "${NAME}-generator",
+                "image": "${OPENSHIFT_REGISTRY}/${APP_IMAGE_NAMESPACE}/${APP_IMAGE_NAME}-generator:${APP_DEPLOYMENT_TAG}",
+                "ports": [
+                  {
+                    "containerPort": 3000
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "MONGODB_USERNAME",
+                    "value": "${DATABASE_USER}"
+                  },
+                  {
+                    "name": "MONGODB_PASSWORD",
+                    "value": "${DATABASE_PASSWORD}"
+                  },
+                  {
+                    "name": "MONGODB_DATABASE",
+                    "value": "${DATABASE_NAME}"
+                  },
+                  {
+                    "name": "MONGODB_SERVICE_HOST",
+                    "value": "${DATABASE_SERVICE_NAME}"
+                  },
+                  {
+                    "name": "API_HOSTNAME",
+                    "value": "${APPLICATION_DOMAIN}"
+                  },
+                  {
+                    "name": "MINIO_HOST",
+                    "value": "${MINIO_HOST}"
+                  },
+                  {
+                    "name": "MINIO_ACCESS_KEY",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "key": "MINIO_ACCESS_KEY",
+                            "name": "${MINIO_SECRET_NAME}"
+                        }
+                    }
+                  },
+                  {
+                      "name": "MINIO_SECRET_KEY",
+                      "valueFrom": {
+                          "secretKeyRef": {
+                              "key": "MINIO_SECRET_KEY",
+                              "name": "${MINIO_SECRET_NAME}"
+                          }
+                      }
+                  },
+                  {
+                    "name": "CHES_ENDPOINT",
+                    "value": "${CHES_ENDPOINT}"
+                  },
+                  {
+                    "name": "GETOK_ENDPOINT",
+                    "value": "${GETOK_ENDPOINT}"
+                  },
+                  {
+                    "name": "_GETOK_CLIENT_SECRET",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "key": "CLIENT_SECRET",
+                            "name": "${CHES_SECRET_NAME}"
+                        }
+                    }
+                  },
+                  {
+                      "name": "_GETOK_CLIENTID",
+                      "valueFrom": {
+                          "secretKeyRef": {
+                              "key": "CLIENTID",
+                              "name": "${CHES_SECRET_NAME}"
+                          }
+                      }
+                  },
+                  {
+                    "name": "ENABLE_VIRUS_SCANNING",
+                    "value": "${ENABLE_VIRUS_SCANNING}"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "${NODEJS_CPU_REQUEST}",
+                    "memory": "${NODEJS_MEMORY_REQUEST}"
+                  },
+                  "limits": {
+                    "cpu": "${NODEJS_CPU_LIMIT}",
+                    "memory": "${NODEJS_MEMORY_LIMIT}"
+                  }
                 }
               }
             ]
@@ -650,7 +814,7 @@
       "name": "GETOK_ENDPOINT",
       "displayName": "GETOK endpoint",
       "description": "The exposed endpoint to route to the GETOK service",
-      "value": "https://sso-no-exist.pathfinder.gov.bc.ca/auth/realms/jbd6rnxw/protocol/openid-connect/token"
+      "value": "https://dev.oidc.gov.bc.ca/auth/realms/jbd6rnxw/protocol/openid-connect/token"
     },
     {
       "name": "CHES_SECRET_NAME",
@@ -659,10 +823,34 @@
       "value": "getok-secret"
     },
     {
+      "name": "CHES_CLIENTID",
+      "displayName": "The CHES client id credential",
+      "description": "The client ID for CHES access",
+      "value": "a-client-id"
+    },
+    {
+      "name": "CHES_CLIENT_SECRET",
+      "displayName": "The CHES secret credential",
+      "description": "The secret for CHES",
+      "value": "a-client-secret"
+    },
+    {
       "name": "ENABLE_VIRUS_SCANNING",
       "displayName": "Virus Scanning",
       "description": "Boolean string to enable or disable virus scanning.",
       "value": "false"
+    },
+    {
+      "name": "SSO_ISSUER",
+      "displayName": "URI to SSO realm",
+      "description": "URI to SSO realm",
+      "value": "https://oidc.gov.bc.ca/auth/realms/eagle"
+    },
+    {
+      "name": "SSO_JWKSURI",
+      "displayName": "Uri to sso certs",
+      "description": "Uri to sso certs",
+      "value": "https://oidc.gov.bc.ca/auth/realms/eagle/protocol/openid-connect/certs"
     }
   ]
 }
