@@ -15,7 +15,8 @@
       "metadata": {
         "creationTimestamp": null,
         "labels": {
-          "app": "${NAME}"
+          "app": "${NAME}",
+          "role": "clamav"
         },
         "name": "${NAME}"
       },
@@ -40,6 +41,7 @@
             "creationTimestamp": null,
             "labels": {
               "app": "${NAME}",
+              "role": "clamav",
               "deploymentconfig": "${NAME}"
             }
           },

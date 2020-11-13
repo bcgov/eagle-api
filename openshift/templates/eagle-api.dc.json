@@ -109,7 +109,8 @@
       "apiVersion": "v1",
       "metadata": {
         "labels": {
-          "app": "${GROUP_NAME}"
+          "app": "${GROUP_NAME}",
+          "role": "api"
         },
         "name": "${NAME}",
         "app": "${GROUP_NAME}",
@@ -150,6 +151,7 @@
             "labels": {
               "app": "${GROUP_NAME}",
               "name": "${NAME}",
+              "role": "api",
               "deploymentconfig": "${NAME}"
             },
             "name": "${NAME}"
@@ -318,7 +320,8 @@
         "name": "${DATABASE_SERVICE_NAME}",
         "labels": {
           "app": "${GROUP_NAME}",
-          "name": "${DATABASE_SERVICE_NAME}"
+          "name": "${DATABASE_SERVICE_NAME}",
+          "role": "database"
         },
         "annotations": {
           "description": "Defines how to deploy the database"
@@ -356,7 +359,8 @@
           "metadata": {
             "labels": {
               "app": "${GROUP_NAME}",
-              "name": "${DATABASE_SERVICE_NAME}"
+              "name": "${DATABASE_SERVICE_NAME}",
+              "role": "database"
             },
             "name": "${DATABASE_SERVICE_NAME}"
           },

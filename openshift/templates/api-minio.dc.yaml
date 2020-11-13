@@ -11,6 +11,7 @@ objects:
       generation: 1
       labels:
         app: ${GROUP_NAME}
+        role: minio
       name: ${NAME}
     spec:
       replicas: 1
@@ -29,6 +30,7 @@ objects:
           creationTimestamp: null
           labels:
             app: ${GROUP_NAME}
+            role: minio
             deploymentconfig: ${NAME}
         spec:
           containers:
