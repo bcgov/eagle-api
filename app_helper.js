@@ -49,7 +49,6 @@ async function loadModels(dbConnection, options, logger) {
     log(logger, 'Database connected');
     log(logger, 'loading db models');
     require('./api/helpers/models/audit');
-    require('./api/helpers/models/config');
     require('./api/helpers/models/list');
     require('./api/helpers/models/user');
     require('./api/helpers/models/group');

@@ -1,18 +1,19 @@
 const defaultLog = require('winston').loggers.get('default');
 var Actions = require('../helpers/actions');
-const mongoose = require('mongoose');
 
 exports.publicGetConfig = async function (args, res) {
-  // TODO: Query configuration object.
-  try {
-    const Config = mongoose.model('Config');
-    const configuration = await Config.findOne({_schemaName: 'Config'});
-    defaultLog.info('Configuration Request:', configuration);
-    return Actions.sendResponse(res, 200, configuration);
-  } catch (e) {
-    defaultLog.error('Error getting configuration', e);
-    return Actions.sendResponse(res, 400, e);
-  }
+  // Build from ENV Vars
+  const envObj = process.env;
+  let configObj = {};
+
+  Object.keys(envObj).forEach(function (key) {
+    if (key.startsWith('CONFIG_')) {
+      configObj[key] = envObj[key];
+    }
+  });
+
+  defaultLog.info('Current configuration:', configObj);
+  return Actions.sendResponse(res, 200, configObj);
 };
 
 exports.protectedOptions = function (args, res) {
