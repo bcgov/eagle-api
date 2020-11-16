@@ -684,8 +684,44 @@ definitions:
       message:
         type: string
 
+  ### Config Definitions
+  ConfigObject:
+    type: object
+
 ### Path Definitions
 paths:
+  /config:
+    x-swagger-router-controller: config
+    options:
+      tags:
+        - config
+      summary: 'Pre-flight request'
+      operationId: protectedOptions
+      description: 'Options on config Route'
+      responses:
+        '200':
+          description: 'Success'
+          schema:
+            $ref: '#/definitions/ConfigObject'
+        '403':
+          description: 'Access Denied'
+          schema:
+            $ref: '#/definitions/Error'
+    get:
+      tags:
+        - config
+      summary: 'Get the app configuration'
+      operationId: publicGetConfig
+      description: 'Retrieves configuration data.'
+      responses:
+        '200':
+          description: 'Success'
+          schema:
+            $ref: '#/definitions/ConfigObject'
+        '403':
+          description: 'Access Denied'
+          schema:
+            $ref: '#/definitions/Error'
   /login/token:
     x-swagger-router-controller: login
     options:

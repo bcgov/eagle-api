@@ -325,6 +325,10 @@ exports.protectedElementItemGet = function (args, res) {
         // check if the file exists in Minio
         return MinioController.statObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, blob.internalURL)
           .then(function (objectMeta) {
+            if (!objectMeta) {
+              // ObjectMeta was null, drop through all the chains below.
+              return null;
+            }
             fileMeta = objectMeta;
             // get the download URL
             return MinioController.getPresignedGETUrl(MinioController.BUCKETS.DOCUMENTS_BUCKET, blob.internalURL);
@@ -332,6 +336,10 @@ exports.protectedElementItemGet = function (args, res) {
             return Actions.sendResponse(res, 404, {});
           })
           .then(function (docURL) {
+            if (!docURL) {
+              // ObjectMeta was null
+              return Actions.sendResponse(res, 404, {});
+            }
             Utils.recordAction('Download', 'InspectionItem', args.swagger.params.auth_payload.preferred_username, args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
             // stream file from Minio to client
             // res.setHeader('Content-Length', fileMeta.size);
