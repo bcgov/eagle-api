@@ -124,7 +124,7 @@
       "metadata": {
         "labels": {
           "app": "${GROUP_NAME}",
-          "role": "api"
+          "role": "${API_ROLE_NAME}-${GROUP_NAME}"
         },
         "name": "${NAME}",
         "app": "${GROUP_NAME}",
@@ -165,7 +165,7 @@
             "labels": {
               "app": "${GROUP_NAME}",
               "name": "${NAME}",
-              "role": "api",
+              "role": "${API_ROLE_NAME}-${GROUP_NAME}",
               "deploymentconfig": "${NAME}"
             },
             "name": "${NAME}"
@@ -485,7 +485,7 @@
         "labels": {
           "app": "${GROUP_NAME}",
           "name": "${DATABASE_SERVICE_NAME}",
-          "role": "database"
+          "role": "${DATABASE_ROLE_NAME}-${GROUP_NAME}"
         },
         "annotations": {
           "description": "Defines how to deploy the database"
@@ -524,7 +524,7 @@
             "labels": {
               "app": "${GROUP_NAME}",
               "name": "${DATABASE_SERVICE_NAME}",
-              "role": "database"
+              "role": "${DATABASE_ROLE_NAME}-${GROUP_NAME}"
             },
             "name": "${DATABASE_SERVICE_NAME}"
           },
@@ -620,6 +620,18 @@
       "description": "The name to group all of the frontend objects defined in this template.",
       "required": true,
       "value": "eagle-api"
+    },
+    {
+      "name": "DATABASE_ROLE_NAME",
+      "displayName": "Database Role Name",
+      "description": "The name of the 'role' label for the database deployment",
+      "value": "database"
+    },
+    {
+      "name": "API_ROLE_NAME",
+      "displayName": "API Role Name",
+      "description": "The name of the 'role' label for the API deployment",
+      "value": "api"
     },
     {
       "name": "OPENSHIFT_REGISTRY",
