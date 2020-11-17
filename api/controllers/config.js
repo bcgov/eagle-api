@@ -10,7 +10,10 @@ exports.publicGetConfig = async function (args, res) {
     API_LOCATION: process.env.API_LOCATION,
     API_PATH: process.env.API_PATH,
     API_PUBLIC_PATH:process.env.API_PUBLIC_PATH,
-    KEYCLOAK_CLIENT_ID: process.env.KEYCLOAK_CLIENT_ID
+    KEYCLOAK_CLIENT_ID: process.env.KEYCLOAK_CLIENT_ID,
+    KEYCLOAK_URL: process.env.KEYCLOAK_URL,
+    KEYCLOAK_REALM: process.env.KEYCLOAK_REALM,
+    KEYCLOAK_ENABLED: process.env.KEYCLOAK_ENABLED
   };
 
   defaultLog.info('Current configuration:', configObj);
