@@ -252,6 +252,34 @@
                   {
                     "name": "ENABLE_VIRUS_SCANNING",
                     "value": "${ENABLE_VIRUS_SCANNING}"
+                  },
+                  {
+                    "name": "KEYCLOAK_URL",
+                    "value": "${KEYCLOAK_URL}"
+                  },
+                  {
+                    "name": "KEYCLOAK_CLIENT_ID",
+                    "value": "${KEYCLOAK_CLIENT_ID}"
+                  },
+                  {
+                    "name": "KEYCLOAK_ENABLED",
+                    "value": "${KEYCLOAK_ENABLED}"
+                  },
+                  {
+                    "name": "KEYCLOAK_REALM",
+                    "value": "${KEYCLOAK_REALM}"
+                  },
+                  {
+                    "name": "API_LOCATION",
+                    "value": "${API_LOCATION}"
+                  },
+                  {
+                    "name": "API_PATH",
+                    "value": "${API_PATH}"
+                  },
+                  {
+                    "name": "API_PUBLIC_PATH",
+                    "value": "${API_PUBLIC_PATH}"
                   }
                 ],
                 "readinessProbe": {
@@ -432,6 +460,34 @@
                   {
                     "name": "ENABLE_VIRUS_SCANNING",
                     "value": "${ENABLE_VIRUS_SCANNING}"
+                  },
+                  {
+                    "name": "KEYCLOAK_URL",
+                    "value": "${KEYCLOAK_URL}"
+                  },
+                  {
+                    "name": "KEYCLOAK_CLIENT_ID",
+                    "value": "${KEYCLOAK_CLIENT_ID}"
+                  },
+                  {
+                    "name": "KEYCLOAK_ENABLED",
+                    "value": "${KEYCLOAK_ENABLED}"
+                  },
+                  {
+                    "name": "KEYCLOAK_REALM",
+                    "value": "${KEYCLOAK_REALM}"
+                  },
+                  {
+                    "name": "API_LOCATION",
+                    "value": "${API_LOCATION}"
+                  },
+                  {
+                    "name": "API_PATH",
+                    "value": "${API_PATH}"
+                  },
+                  {
+                    "name": "API_PUBLIC_PATH",
+                    "value": "${API_PUBLIC_PATH}"
                   }
                 ],
                 "resources": {
@@ -863,6 +919,48 @@
       "displayName": "Uri to sso certs",
       "description": "Uri to sso certs",
       "value": "https://oidc.gov.bc.ca/auth/realms/eagle/protocol/openid-connect/certs"
+    },
+    {
+      "name": "KEYCLOAK_URL",
+      "displayName": "URL to keycloak service",
+      "description": "URL to keycloak service",
+      "value": "https://dev.oidc.gov.bc.ca/auth"
+    },
+    {
+      "name": "KEYCLOAK_CLIENT_ID",
+      "displayName": "Application client id in Keycloak",
+      "description": "Application client id in Keycloak",
+      "value": "eagle-admin-console"
+    },
+    {
+      "name": "KEYCLOAK_ENABLED",
+      "displayName": "Enable Keycloak auth",
+      "description": "Enable Keycloak auth",
+      "value": "true"
+    },
+    {
+      "name": "KEYCLOAK_REALM",
+      "displayName": "Keycloak application realm",
+      "description": "Keycloak application realm",
+      "value": "eagle"
+    },
+    {
+      "name": "API_LOCATION",
+      "displayName": "Root uri for api server",
+      "description": "Root uri for api server",
+      "value": "https://eagle-dev.pathfinder.gov.bc.ca"
+    },
+    {
+      "name": "API_PATH",
+      "displayName": "Endpoint to protected api",
+      "description": "Endpoint to protected api",
+      "value": "/api"
+    },
+    {
+      "name": "API_PUBLIC_PATH",
+      "displayName": "Endpoint to public api",
+      "description": "Endpoint to public api",
+      "value": "/api/public"
     }
   ]
 }
