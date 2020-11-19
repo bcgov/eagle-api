@@ -11,6 +11,7 @@ objects:
       generation: 1
       labels:
         app: ${GROUP_NAME}
+        role: ${ROLE_NAME}-${GROUP_NAME}
       name: ${NAME}
     spec:
       replicas: 1
@@ -29,6 +30,7 @@ objects:
           creationTimestamp: null
           labels:
             app: ${GROUP_NAME}
+            role: ${ROLE_NAME}-${GROUP_NAME}
             deploymentconfig: ${NAME}
         spec:
           containers:
@@ -154,6 +156,11 @@ parameters:
   displayName: Group Name
   description: The name to group all of the frontend objects defined in this template.
   value: eagle-api
+  required: true
+- name: ROLE_NAME
+  displayName: Role Name
+  description: The name of the 'role' label for the database deployment.
+  value: minio
   required: true
 - name: LOCAL_STORAGE_SIZE
   displayName: The size of the local cluster persistent volume claim (recall that minio can optionally mount outside S3)
