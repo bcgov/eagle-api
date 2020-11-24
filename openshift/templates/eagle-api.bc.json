@@ -197,7 +197,7 @@
       "displayName": "Group Name",
       "description": "The name to group all of the frontend objects defined in this template.",
       "required": true,
-      "value": "eagle-api"
+      "value": "eagle-epic"
     },
     {
       "name": "NODE_ENV",
