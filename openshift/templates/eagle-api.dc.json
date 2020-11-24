@@ -891,20 +891,20 @@
     },
     {
       "name": "API_LOCATION",
-      "displayName": "Uri to sso certs",
-      "description": "Uri to sso certs",
+      "displayName": "API URL",
+      "description": "API URL",
       "value": "https://eagle-prod.apps.silver.devops.gov.bc.ca"
     },
     {
       "name": "API_PATH",
-      "displayName": "Uri to sso certs",
-      "description": "Uri to sso certs",
+      "displayName": "Protected API path",
+      "description": "Protected API path",
       "value": "/api"
     },
     {
       "name": "API_PUBLIC_PATH",
-      "displayName": "Uri to sso certs",
-      "description": "Uri to sso certs",
+      "displayName": "Public API path",
+      "description": "Public API path",
       "value": "/api/public"
     },
     {
