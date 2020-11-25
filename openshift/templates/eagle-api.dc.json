@@ -252,6 +252,42 @@
                   {
                     "name": "ENABLE_VIRUS_SCANNING",
                     "value": "${ENABLE_VIRUS_SCANNING}"
+                  },
+                  {
+                    "name": "SSO_ISSUER",
+                    "value": "${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}"
+                  },
+                  {
+                    "name": "SSO_JWKSURI",
+                    "value": "${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs"
+                  },
+                  {
+                    "name": "API_LOCATION",
+                    "value": "${API_LOCATION}"
+                  },
+                  {
+                    "name": "API_PATH",
+                    "value": "${API_PATH}"
+                  },
+                  {
+                    "name": "API_PUBLIC_PATH",
+                    "value": "${API_PUBLIC_PATH}"
+                  },
+                  {
+                    "name": "KEYCLOAK_CLIENT_ID",
+                    "value": "${KEYCLOAK_CLIENT_ID}"
+                  },
+                  {
+                    "name": "KEYCLOAK_URL",
+                    "value": "${KEYCLOAK_URL}"
+                  },
+                  {
+                    "name": "KEYCLOAK_REALM",
+                    "value": "${KEYCLOAK_REALM}"
+                  },
+                  {
+                    "name": "KEYCLOAK_ENABLED",
+                    "value": "${KEYCLOAK_ENABLED}"
                   }
                 ],
                 "readinessProbe": {
@@ -308,6 +344,7 @@
           "app": "${GROUP_NAME}"
         },
         "name": "${NAME}-generator",
+        "role": "${API_ROLE_NAME}-${GROUP_NAME}",
         "app": "${GROUP_NAME}",
         "annotations": {
           "description": "Defines how to deploy the application server"
@@ -441,7 +478,7 @@
                   },
                   "limits": {
                     "cpu": "${NODEJS_CPU_LIMIT}",
-                    "memory": "${NODEJS_MEMORY_LIMIT}"
+                    "memory": "750m"
                   }
                 }
               }
@@ -619,7 +656,7 @@
       "displayName": "Group Name",
       "description": "The name to group all of the frontend objects defined in this template.",
       "required": true,
-      "value": "eagle-api"
+      "value": "eagle-epic"
     },
     {
       "name": "DATABASE_ROLE_NAME",
@@ -853,16 +890,46 @@
       "value": "false"
     },
     {
-      "name": "SSO_ISSUER",
-      "displayName": "URI to SSO realm",
-      "description": "URI to SSO realm",
-      "value": "https://oidc.gov.bc.ca/auth/realms/eagle"
+      "name": "API_LOCATION",
+      "displayName": "API URL",
+      "description": "API URL",
+      "value": "https://eagle-prod.apps.silver.devops.gov.bc.ca"
     },
     {
-      "name": "SSO_JWKSURI",
-      "displayName": "Uri to sso certs",
-      "description": "Uri to sso certs",
-      "value": "https://oidc.gov.bc.ca/auth/realms/eagle/protocol/openid-connect/certs"
+      "name": "API_PATH",
+      "displayName": "Protected API path",
+      "description": "Protected API path",
+      "value": "/api"
+    },
+    {
+      "name": "API_PUBLIC_PATH",
+      "displayName": "Public API path",
+      "description": "Public API path",
+      "value": "/api/public"
+    },
+    {
+      "name": "KEYCLOAK_CLIENT_ID",
+      "displayName": "Keycloak Client ID",
+      "description": "Keycloak Client ID",
+      "value": "eagle-admin-console"
+    },
+    {
+      "name": "KEYCLOAK_URL",
+      "displayName": "Keycloak URL",
+      "description": "Keycloak Auth URL",
+      "value": "https://oidc.gov.bc.ca/auth"
+    },
+    {
+      "name": "KEYCLOAK_REALM",
+      "displayName": "Keycloak Realm",
+      "description": "Keycloak Realm name",
+      "value": "eagle"
+    },
+    {
+      "name": "KEYCLOAK_ENABLED",
+      "displayName": "Keycloak Enabled",
+      "description": "Enable or disable Keycloak",
+      "value": "true"
     }
   ]
 }

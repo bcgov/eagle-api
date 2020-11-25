@@ -155,7 +155,7 @@ parameters:
 - name: GROUP_NAME
   displayName: Group Name
   description: The name to group all of the frontend objects defined in this template.
-  value: eagle-api
+  value: eagle-epic
   required: true
 - name: ROLE_NAME
   displayName: Role Name
