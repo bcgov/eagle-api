@@ -478,7 +478,7 @@
                   },
                   "limits": {
                     "cpu": "${NODEJS_CPU_LIMIT}",
-                    "memory": "750m"
+                    "memory": "${NODEJS_MEMORY_LIMIT}"
                   }
                 }
               }
