@@ -495,10 +495,10 @@ pipeline {
               openshift.withProject(DEVPROJECT) {
                 echo "Running data generators"
                 /* Get the Deployment Config (DC) Object */
-                def dcObj = openshift.selector("dc", "${PR_NAME}-eagle-api-generator").object()
+                def dcObj = openshift.selector("dc", "${PR_NAME}-eagle-api").object()
 
                 /* Use the DC to find the pods */
-                def podSelector = openshift.selector("pod", [deployment: "${PR_NAME}-eagle-api-generator-${dcObj.status.latestVersion}"])
+                def podSelector = openshift.selector("pod", [deployment: "${PR_NAME}-eagle-api-${dcObj.status.latestVersion}"])
 
                 podSelector.withEach {
                     // obtain the pod name and remove "pods/" from the front.
@@ -506,7 +506,7 @@ pipeline {
                     podName = podName.replaceFirst("pod/", "")
                     // todo add pod ready check
                     // Run a command in the container
-                    openshift.exec("-n", "${DEVPROJECT}", podName, '"/opt/app-root/src/generate.sh 20 Static Saved Single"')
+                    openshift.exec("-n", "${DEVPROJECT}", podName, "scl", "enable", "rh-nodejs10", '"/opt/app-root/src/generate.sh 20 Static Saved Single"')
                 }
               }
             }
