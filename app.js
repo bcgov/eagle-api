@@ -61,7 +61,7 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
   );
 
   var routerConfig = {
-    controllers: './api/controllers',
+    controllers: ['./api/controllers', './api/tasks'],
     useStubs: false
   };
 
@@ -80,11 +80,8 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
   }
 
   app_helper.loadMongoose().then(() => {
-    // Start the cron job that updates the materialized views.
-    app_helper.startCron(defaultLog).then(() => {
-      express_server = app.listen(api_default_port, '0.0.0.0', function() {
-        defaultLog.info('Started server on port ' + api_default_port);
-      });
+    express_server = app.listen(api_default_port, '0.0.0.0', function() {
+      defaultLog.info('Started server on port ' + api_default_port);
     });
   }).catch(function (err) {
     defaultLog.info('err:', err);

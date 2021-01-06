@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: ${CRON_NAME}
+objects:
+  - apiVersion: batch/v1beta1
+    kind: CronJob
+    metadata:
+      name: ${CRON_NAME}
+    spec:
+      schedule: ${CRON_SCHEDULE}
+      concurrencyPolicy: 'Forbid'
+      suspend: false
+      jobTemplate:
+        spec:
+          template:
+            metadata:
+              labels:
+                app: ${CRON_NAME}
+            spec:
+              containers:
+                - name: ${CRON_NAME}
+                  image: docker-registry.default.svc:5000/esm/eagle-cron:latest
+                  env:
+                    - name: KEYCLOAK_URL
+                      valueFrom:
+                        secretKeyRef:
+                          key: KEYCLOAK_URL
+                          name: eagle-cron-keycloak
+                    - name: KEYCLOAK_REALM
+                      valueFrom:
+                        secretKeyRef:
+                          key: KEYCLOAK_REALM
+                          name: eagle-cron-keycloak
+                    - name: KEYCLOAK_CLIENT_ID
+                      valueFrom:
+                        secretKeyRef:
+                          key: KEYCLOAK_CLIENT_ID
+                          name: eagle-cron-keycloak
+                    - name: KEYCLOAK_CLIENT_SECRET
+                      valueFrom:
+                        secretKeyRef:
+                          key: KEYCLOAK_CLIENT_SECRET
+                          name: eagle-cron-keycloak
+                  volumeMounts:
+                    - mountPath: /scripts
+                      name: cron-configmap
+              restartPolicy: Never
+              volumes:
+                - configMap:
+                    defaultMode: 420
+                    name: cron-config
+                  name: cron-configmap
+parameters:
+  - name: CRON_SCHEDULE
+    description: 'Cron-like schedule expression. Default: Once every 30 minutes'
+    value: '*/30 * * * *'
+  - name: CRON_NAME
+    decription: 'Name of the cronjob container.'
+    value: 'eagle-cron'

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: eagle-cron
+objects:
+- apiVersion: v1
+  data:
+    updateMaterializedView.sh: |-
+      #!/usr/bin/env bash
+
+      EAGLE_API_URL=https://eagle-dev.pathfinder.gov.bc.ca/api
+
+      echo -e "-------- UPDATING SUBSETS --------\n"
+      echo -e "Updating default subset\n"
+      curl -H "Authorization: Bearer ${TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d '{"taskType":"updateMaterializedView", "materializedViewSubset":"default"}' \
+          ${EAGLE_API_URL}/task
+  kind: ConfigMap
+  metadata:
+    name: cron-config
