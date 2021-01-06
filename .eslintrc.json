@@ -21,7 +21,6 @@
     ],
     "rules": {
         "block-scoped-var": "error",
-        "indent": ["error", 2],
         "semi": ["error", "always"],
         "brace-style": ["error", "1tbs", { "allowSingleLine": true}],
         "no-trailing-spaces": "error"

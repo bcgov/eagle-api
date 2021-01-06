@@ -1,13 +1,7 @@
 const mongoose      = require('mongoose');
-const cron          = require('node-cron');
 const _             = require('lodash');
 const winston       = require('winston');
 const options       = require('./config/mongoose_options').mongooseOptions;
-const { updateAllMaterializedViews } = require('./api/materialized_views/updateViews');
-
-// Set the Cron pattern here.
-// Cron pattern - seconds[0-59] minutes[0-59] hours[0-23] day_of_month[1-31] months[0-11] day_of_week[0-6]
-const MATERIALIZED_VIEWS_CRON_PATTERN = '*/30 * * * *';
 
 // Logging middleware
 winston.loggers.add('default', {
@@ -91,13 +85,7 @@ async function loadMongoose() {
   await loadModels(dbConnection, options, defaultLog);
 }
 
-async function startCron(defaultLog) {
-  // Scheduling material view updates.
-  cron.schedule(MATERIALIZED_VIEWS_CRON_PATTERN, () => updateAllMaterializedViews(defaultLog));
-}
-
 exports.loadMongoose = loadMongoose;
-exports.startCron = startCron;
 exports.loadModels = loadModels;
 exports.dbName = dbName;
 exports.dbConnection = dbConnection;
