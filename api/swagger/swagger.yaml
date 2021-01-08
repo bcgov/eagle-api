@@ -688,6 +688,27 @@ definitions:
   ConfigObject:
     type: object
 
+### Task Definitions
+  TaskObject:
+    type: object
+    example: 'A task object'
+    required: [taskType]
+    properties:
+      params:
+        type: object
+        example: '{"taskType": "updateMaterializedView"}'
+      taskType:
+        type: string
+        description: 'The type of task'
+        example: 'updateMaterializedView'
+        enum: &taskTypes
+          - updateMaterializedView
+      materializedViewSubset:
+        type: string
+        description: 'Name of subset to update'
+        example: 'default'
+        enum: &materializedViewSubset
+          - default
 ### Path Definitions
 paths:
   /config:
@@ -7007,7 +7028,47 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-
+### Task Routes
+  /task:
+    x-swagger-router-controller: import-task
+    options:
+      tags:
+        - task
+      summary: 'Pre-flight request'
+      operationId: protectedOptions
+      description: 'Options on authenticated task route'
+      responses:
+        '200':
+          description: 'Success'
+        '403':
+          description: 'Access Denied'
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      tags:
+        - task
+      summary: 'Create a new Task'
+      operationId: protectedCreateTask
+      description: 'Authenticated access to create a Task Worker'
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - sysadmin
+        - project-system-admin
+      parameters:
+        - name: task
+          in: body
+          description: 'Flag to import records'
+          required: true
+          schema:
+            $ref: '#/definitions/TaskObject'
+      responses:
+        '200':
+          description: 'Success'
+        '403':
+          description: 'Access Denied'
+          schema:
+            $ref: '#/definitions/Error'
 ### V2 Routes
 ### Top Level
   /v2/:
