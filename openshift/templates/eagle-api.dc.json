@@ -202,28 +202,6 @@
                     "value": "${APPLICATION_DOMAIN}"
                   },
                   {
-                    "name": "MINIO_HOST",
-                    "value": "${MINIO_HOST}"
-                  },
-                  {
-                    "name": "MINIO_ACCESS_KEY",
-                    "valueFrom": {
-                        "secretKeyRef": {
-                            "key": "MINIO_ACCESS_KEY",
-                            "name": "${MINIO_SECRET_NAME}"
-                        }
-                    }
-                  },
-                  {
-                      "name": "MINIO_SECRET_KEY",
-                      "valueFrom": {
-                          "secretKeyRef": {
-                              "key": "MINIO_SECRET_KEY",
-                              "name": "${MINIO_SECRET_NAME}"
-                          }
-                      }
-                  },
-                  {
                     "name": "CHES_ENDPOINT",
                     "value": "${CHES_ENDPOINT}"
                   },
@@ -417,28 +395,6 @@
                   {
                     "name": "API_HOSTNAME",
                     "value": "${APPLICATION_DOMAIN}"
-                  },
-                  {
-                    "name": "MINIO_HOST",
-                    "value": "${MINIO_HOST}"
-                  },
-                  {
-                    "name": "MINIO_ACCESS_KEY",
-                    "valueFrom": {
-                        "secretKeyRef": {
-                            "key": "MINIO_ACCESS_KEY",
-                            "name": "${MINIO_SECRET_NAME}"
-                        }
-                    }
-                  },
-                  {
-                      "name": "MINIO_SECRET_KEY",
-                      "valueFrom": {
-                          "secretKeyRef": {
-                              "key": "MINIO_SECRET_KEY",
-                              "name": "${MINIO_SECRET_NAME}"
-                          }
-                      }
                   },
                   {
                     "name": "CHES_ENDPOINT",
@@ -755,18 +711,6 @@
       "value": "/api"
     },
     {
-      "name": "MINIO_HOST",
-      "displayName": "Minio Hostname",
-      "description": "The exposed hostname to route to the MINIO service",
-      "value": "eagle-api-minio-your-openshift-namespace.pathfinder.gov.bc.ca"
-    },
-    {
-      "name": "MINIO_SECRET_NAME",
-      "displayName": "Name of the Minio secret",
-      "description": "The name of the secrets file for Minio",
-      "value": "eagle-api-minio-keys"
-    },
-    {
       "name": "DATABASE_SERVICE_NAME",
       "displayName": "Database Service Name",
       "value": "eagle-api-mongodb"
@@ -849,7 +793,7 @@
     {
       "name": "DOCUMENTS_BUCKET_PATH",
       "displayName": "Documents Bucket Path",
-      "description": "Minio bucket where documents will be uploaded to.",
+      "description": "Bucket where documents will be uploaded to.",
       "value": "/opt/app-root/src/uploads",
       "required": true
     },

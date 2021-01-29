@@ -230,9 +230,6 @@ To get all your settings for this project automatically set up, run the file
 
 Recall the environment variables we need for local dev:
 
-1. MINIO_HOST='foo.pathfinder.gov.bc.ca'
-1. MINIO_ACCESS_KEY='xxxx'
-1. MINIO_SECRET_KEY='xxxx'
 1. KEYCLOAK_ENABLED=true
 1. MONGODB_DATABASE='epic'
 
@@ -241,8 +238,8 @@ To get actual values for the above fields in the deployed environments, examine 
 ```bash
 #!/bin/bash
 oc project [projectname]
-oc get routes | grep 'minio'
-oc get secrets | grep 'minio'
+oc get routes
+oc get secrets
 ```
 
 You will not be able to see the above value of the secret if you try examine it.  You will only see the encrypted values.  Approach your team member with admin access in the openshift project in order to get the access key and secret key values for the secret name you got from the above command.  Make sure to ask for the correct environment (dev, test, prod) for the appropriate values.
