@@ -215,13 +215,22 @@
                     }
                   },
                   {
-                      "name": "MINIO_SECRET_KEY",
-                      "valueFrom": {
-                          "secretKeyRef": {
-                              "key": "MINIO_SECRET_KEY",
-                              "name": "${MINIO_SECRET_NAME}"
-                          }
-                      }
+                    "name": "MINIO_SECRET_KEY",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "key": "MINIO_SECRET_KEY",
+                            "name": "${MINIO_SECRET_NAME}"
+                        }
+                    }
+                  },
+                  {
+                    "name": "MINIO_BUCKET_NAME",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "key": "MINIO_BUCKET_NAME",
+                            "name": "${MINIO_SECRET_NAME}"
+                        }
+                    }
                   },
                   {
                     "name": "CHES_ENDPOINT",
@@ -420,7 +429,12 @@
                   },
                   {
                     "name": "MINIO_HOST",
-                    "value": "${MINIO_HOST}"
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "key": "MINIO_HOST",
+                            "name": "${MINIO_SECRET_NAME}"
+                        }
+                    }
                   },
                   {
                     "name": "MINIO_ACCESS_KEY",
