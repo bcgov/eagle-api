@@ -1,0 +1,104 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: "epic-documents-restore"
+  annotations:
+    description: "Template to create a pod with all file related PVCs mounted to be able to restore from backups"
+    tags: storage,migration
+parameters:
+- name: NAME
+  description: "Name of the deployment config."
+  value: "epic-documents-restore"
+- name: RESTIC_BACKUP_PVC
+  description: "Name of an existing PVC where the restic file backups are stored."
+  required: true
+- name: MINIO_SOURCE_PVC
+  description: "Name of an existing PVC where the source minio files are stored."
+  required: true
+- name: SLEEP_DURATION
+  description: "Value for the sleep command to keep the migration pod alive."
+  value: "1d"
+- name: SOURCE_IMAGE_NAME
+  displayName: Source Image Name
+  description: The name of the image to use for this resource.
+  required: true
+  value: epic-documents-restore
+- name: SOURCE_IMAGE_NAMESPACE
+  displayName: Image Namespace
+  description: The namespace of the OpenShift project containing the imagestream for the application.
+  required: true
+  value: esm
+- name: TAG_NAME
+  displayName: Environment TAG name
+  description: The TAG name for this environment, e.g., dev, test, prod
+  required: true
+  value: latest
+objects:
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: ${NAME}
+    labels:
+      app: ${NAME}
+  spec:
+    replicas: 0
+    revisionHistoryLimit: 3
+    selector:
+      app: ${NAME}
+      deploymentconfig: ${NAME}
+    strategy:
+      activeDeadlineSeconds: 21600
+      recreateParams:
+        timeoutSeconds: 600
+      resources: {}
+      type: Recreate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: ${NAME}
+          deploymentconfig: ${NAME}
+      spec:
+        containers:
+        - env:
+          - name: SLEEP
+            value: ${SLEEP_DURATION}
+          image: docker-registry.default.svc:5000/${SOURCE_IMAGE_NAMESPACE}/${SOURCE_IMAGE_NAME}
+          imagePullPolicy: Always
+          name: ${NAME}
+          resources:
+            limits:
+              cpu: 2
+              memory: 5Gi
+            requests:
+              cpu: 1
+              memory: 2Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /mnt/source/
+            name: source-minio
+          - mountPath: /mnt/backup/
+            name: backup-restic
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: source-minio
+          persistentVolumeClaim:
+            claimName: ${MINIO_SOURCE_PVC}
+        - name: backup-restic
+          persistentVolumeClaim:
+            claimName: ${RESTIC_BACKUP_PVC}
+    test: false
+    triggers:
+    - imageChangeParams:
+        containerNames:
+        - ${NAME}
+        from:
+          kind: ImageStreamTag
+          name: ${SOURCE_IMAGE_NAME}:${TAG_NAME}
+          namespace: ${SOURCE_IMAGE_NAMESPACE}
+      type: ImageChange
