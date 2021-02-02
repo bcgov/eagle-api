@@ -9,7 +9,7 @@ var _ = require('lodash');
  * The Minio client which facilitates the connection to Minio, and through which all calls should be made.
  */
 var minioClient = new minio.Client({
-  endPoint: process.env.MINIO_HOST,
+  endPoint: 'foo.pathfinder.gov.bc.ca',
   port: 443,
   useSSL: true,
   accessKey: process.env.MINIO_ACCESS_KEY,

@@ -25,7 +25,7 @@ env:
     valueFrom:
       secretKeyRef:
         key: ROCKETCHAT_WEBHOOK
-        name: minio-rocketchat-webhook-${NAME_SUFFIX}
+        name: rocketchat-webhook-${NAME_SUFFIX}
 ```
 And environment variables:
 ```
