@@ -13,7 +13,7 @@ module.exports = require('../models')('ProjectNotification', {
   decisionDate: { type: Date, default: null },
   notificationReceivedDate: { type: Date, default: null },
   description: { type: String, default: null },
-  notificationThresholdValue: { type: String, default: null },
+  notificationThresholdValue: { type: Number, default: null},
   notificationThresholdUnits: { type: String, default: null },
   trigger: { type: String, default: null },
   associatedProjectId: { type: String, default: null },
