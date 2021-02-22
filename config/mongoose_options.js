@@ -6,6 +6,7 @@
 const mongooseOptions = {
   useUnifiedTopology: true,
   useNewUrlParser: true,
+  allowDiskUse: true,
   autoReconnect: true,
   reconnectTries: Number.MAX_VALUE, // Never stop trying to reconnect
   reconnectInterval: 500, // Reconnect every 500ms
