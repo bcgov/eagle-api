@@ -5,11 +5,13 @@ var minio = require('minio');
 var path = require('path');
 var _ = require('lodash');
 
+const ep = process.env.MINIO_HOST || 'foo.pathfinder.gov.bc.ca';
+
 /**
  * The Minio client which facilitates the connection to Minio, and through which all calls should be made.
  */
 var minioClient = new minio.Client({
-  endPoint: 'foo.pathfinder.gov.bc.ca',
+  endPoint: ep,
   port: 443,
   useSSL: true,
   accessKey: process.env.MINIO_ACCESS_KEY,
