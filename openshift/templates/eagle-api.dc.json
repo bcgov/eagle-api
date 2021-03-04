@@ -203,7 +203,12 @@
                   },
                   {
                     "name": "MINIO_HOST",
-                    "value": "${MINIO_HOST}"
+                    "valueFrom": {
+                      "secretKeyRef": {
+                          "key": "MINIO_HOST",
+                          "name": "${MINIO_SECRET_NAME}"
+                      }
+                  }
                   },
                   {
                     "name": "MINIO_ACCESS_KEY",
@@ -453,6 +458,15 @@
                               "name": "${MINIO_SECRET_NAME}"
                           }
                       }
+                  },
+                  {
+                    "name": "MINIO_BUCKET_NAME",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "key": "MINIO_BUCKET_NAME",
+                            "name": "${MINIO_SECRET_NAME}"
+                        }
+                    }
                   },
                   {
                     "name": "CHES_ENDPOINT",
@@ -767,12 +781,6 @@
       "displayName": "Application Hostname Path",
       "description": "The path for this service.",
       "value": "/api"
-    },
-    {
-      "name": "MINIO_HOST",
-      "displayName": "Minio Hostname",
-      "description": "The exposed hostname to route to the MINIO service",
-      "value": "eagle-api-minio-your-openshift-namespace.pathfinder.gov.bc.ca"
     },
     {
       "name": "MINIO_SECRET_NAME",
