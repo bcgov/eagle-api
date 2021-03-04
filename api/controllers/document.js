@@ -406,7 +406,7 @@ exports.protectedDownload = function (args, res) {
             }
             res.setHeader('Content-Length', fileMeta.size);
             res.setHeader('Content-Type', fileMeta.metaData['content-type']);
-            res.setHeader('Content-Disposition', 'attachment;filename="' + fileName + '"');
+            res.setHeader('Content-Disposition', 'attachment;filename="' + encodeURIComponent(fileName) + '"');
             return rp(docURL).pipe(res);
           });
       } else {
