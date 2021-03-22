@@ -6,6 +6,7 @@ const documentTaggingProgressBarGraph = require('./reports/documentTaggingProgre
 const documentTaggingProgressByProject = require('./reports/documentTaggingProgressByProject');
 const documentTaggingProgressTotal = require('./reports/documentTaggingProgressTotal');
 const projectInfo = require('./reports/projectInfo');
+const projectNotificationInfo = require('./reports/projectNotificationInfo');
 const projectStatsFull = require('./reports/projectStatsFull');
 const publishedComments = require('./reports/publishedComments');
 const publishedNewItems = require('./reports/publishedNewItems');
@@ -45,6 +46,7 @@ exports.updateAllMaterializedViews = async function(defaultLog) {
   await documentTaggingProgressByProject.update(defaultLog);
   await documentTaggingProgressTotal.update(defaultLog);
   await projectInfo.update(defaultLog);
+  await projectNotificationInfo.update(defaultLog);
   await projectStatsFull.update(defaultLog);
   await publishedComments.update(defaultLog);
   await topUserVisitsLast14.update(defaultLog);
