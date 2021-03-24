@@ -87,7 +87,7 @@ async function update(defaultLog) {
     defaultLog.debug('initializing read_only__reports__project_notification_info');
 
     queryAggregates.push({ $out: 'read_only__reports__project_notification_info' });
-    await mongoose.model('Project').aggregate(queryAggregates);
+    await mongoose.model('ProjectNotification').aggregate(queryAggregates);
 
     const collection = mongoose.connection.db.collection('read_only__reports__project_notification_info');
     collection.createIndex({ _id: 1 });
