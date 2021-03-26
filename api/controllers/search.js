@@ -104,6 +104,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     var collectionObj = mongoose.model(schemaName);
 
     collectionObj.aggregate(aggregation)
+      .allowDiskUse(true)
       .collation(aggregateCollation)
       .exec()
       .then(function (data) {
@@ -200,7 +201,7 @@ const executeQuery = async function (args, res) {
     const collectionObj = mongoose.model(args.swagger.params._schemaName.value);
     const aggregation = itemAggregator.createItemAggr(args.swagger.params._id.value, args.swagger.params._schemaName.value, roles);
 
-    let data = await collectionObj.aggregate(aggregation);
+    let data = await collectionObj.aggregate(aggregation).allowDiskUse(true);
 
     if (args.swagger.params._schemaName.value === constants.COMMENT) {
       // Filter
