@@ -406,7 +406,7 @@ exports.protectedDownload = function (args, res) {
             }
             res.setHeader('Content-Length', fileMeta.size);
             res.setHeader('Content-Type', fileMeta.metaData['content-type']);
-            res.setHeader('Content-Disposition', 'attachment;filename="' + fileName + '"');
+            res.setHeader('Content-Disposition', 'attachment;filename="' + encodeURIComponent(fileName) + '"');
             return rp(docURL).pipe(res);
           });
       } else {
@@ -472,13 +472,20 @@ exports.protectedOpen = function (args, res) {
             return Actions.sendResponse(res, 404, {});
           })
           .then(function (docURL) {
-            Utils.recordAction('Open', 'Document', args.swagger.params.auth_payload.preferred_username, args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
-            // stream file from Minio to client
-            res.setHeader('Content-Length', fileMeta.size);
-            res.setHeader('Content-Type', fileMeta.metaData['content-type']);
-            res.setHeader('Content-Disposition', 'inline;filename="' + fileName + '"');
+            if (fileMeta) {
+              Utils.recordAction(
+                'Open',
+                'Document',
+                args.swagger.params.auth_payload.preferred_username,
+                args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null
+              );
+              // stream file from Minio to client
+              res.setHeader('Content-Length', fileMeta.size);
+              res.setHeader('Content-Type', fileMeta.metaData['content-type']);
+              res.setHeader('Content-Disposition', 'inline;filename="' + fileName + '"');
 
-            return rp(docURL).pipe(res);
+              return rp(docURL).pipe(res);
+            }
           });
       } else {
         return Actions.sendResponse(res, 404, {});
