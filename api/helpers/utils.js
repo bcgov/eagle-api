@@ -18,7 +18,7 @@ exports.buildQuery = function (property, values, query) {
       }
     });
   } else {
-    if (mongoose.Types.ObjectId.isValid(i)) {
+    if (mongoose.Types.ObjectId.isValid(values)) {
       oids.push(mongoose.Types.ObjectId(values));
     }
   }
