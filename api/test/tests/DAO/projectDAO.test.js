@@ -195,7 +195,6 @@ describe('API Testing - Project DAO', () => {
       }
     };
 
-    var ObjectId = require('mongodb').ObjectID;
     const formattedObj = {
       cac: {
         value:
