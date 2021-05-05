@@ -109,6 +109,9 @@ exports.publicHead = async function (args, res) {
   var requestedFields = getSanitizedFields(args.swagger.params.fields.value);
 
   if (args.swagger.params.projId && args.swagger.params.projId.value) {
+    if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     query = Utils.buildQuery('_id', args.swagger.params.projId.value, query);
     commentPeriodPipeline = handleCommentPeriodForBannerQueryParameters(args, args.swagger.params.projId.value);
   } else {
@@ -163,6 +166,9 @@ exports.publicGet = async function (args, res) {
 
 
   if (args.swagger.params.projId && args.swagger.params.projId.value) {
+    if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     query = Utils.buildQuery('_id', args.swagger.params.projId.value, query);
     commentPeriodPipeline = handleCommentPeriodForBannerQueryParameters(args, args.swagger.params.projId.value);
   } else {
@@ -322,6 +328,9 @@ exports.protectedHead = function (args, res) {
   tagList.push('tags');
 
   if (args.swagger.params.projId && args.swagger.params.projId.value) {
+    if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     query = Utils.buildQuery('_id', args.swagger.params.projId.value, query);
   } else {
     try {
@@ -363,6 +372,10 @@ exports.protectedHead = function (args, res) {
 exports.protectedDelete = function (args, res) {
   var projId = args.swagger.params.projId.value;
   defaultLog.info('Delete Project:', projId);
+
+  if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
 
   var Project = mongoose.model('Project');
   Project.findOne({ _id: projId }, function (err, o) {
@@ -588,6 +601,10 @@ exports.protectedExtensionAdd = async function (args, res) {
   var extensionObj = args.swagger.params.extension.value;
   var extensionType = extensionObj.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
 
+  if (!mongoose.Types.ObjectId.isValid(projId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+
   var Project = mongoose.model('Project');
   try {
     var data = await Project.update(
@@ -611,6 +628,9 @@ exports.protectedExtensionDelete = async function (args, res) {
   // Delete an object from the extension/suspension array
   try {
     var projId = args.swagger.params.projId.value;
+    if (!mongoose.Types.ObjectId.isValid(projId.value)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     var extensionObj = JSON.parse(args.swagger.params.item.value);
     var extensionType = extensionObj.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
 
@@ -636,6 +656,9 @@ exports.protectedExtensionUpdate = async function (args, res) {
   // Edit an object to the extension/suspension array
   // NB: We need both the old and the new in order to update accordingly
   var projId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var extensionObj = args.swagger.params.extension.value;
   var extensionNew = extensionObj.new;
   var extensionOld = extensionObj.old;
