@@ -132,6 +132,9 @@ exports.protectedPost = async function (args, res) {
 // Update an existing organization
 exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.orgId.value;
+  if (args.swagger.params.orgId && args.swagger.params.orgId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.orgId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var obj = args.swagger.params.org.value;
   defaultLog.info('ObjectID:', args.swagger.params.orgId.value);
 
@@ -176,7 +179,9 @@ exports.protectedPut = async function (args, res) {
 exports.protectedPublish = function (args, res) {
   var objId = args.swagger.params.orgId.value;
   defaultLog.info('Publish Organization:', objId);
-
+  if (args.swagger.params.orgId && args.swagger.params.orgId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.orgId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var Organization = require('mongoose').model('Organization');
   Organization.findOne({ _id: objId }, function (err, o) {
     if (o) {
@@ -200,7 +205,9 @@ exports.protectedPublish = function (args, res) {
 exports.protectedUnPublish = function (args, res) {
   var objId = args.swagger.params.orgId.value;
   defaultLog.info('UnPublish Organization:', objId);
-
+  if (args.swagger.params.orgId && args.swagger.params.orgId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.orgId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var Organization = require('mongoose').model('Organization');
   Organization.findOne({ _id: objId }, function (err, o) {
     if (o) {

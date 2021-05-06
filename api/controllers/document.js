@@ -94,6 +94,13 @@ exports.publicGet = async function (args, res,) {
 
 exports.unProtectedPost = async function (args, res) {
   console.log('Creating new object');
+  if (args.swagger.params._comment && args.swagger.params._comment.value && !mongoose.Types.ObjectId.isValid(_comment)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+  if (args.swagger.params.project && args.swagger.params.project.value && !mongoose.Types.ObjectId.isValid(project)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+
   var _comment = args.swagger.params._comment.value;
   var project = args.swagger.params.project.value;
   var upfile = args.swagger.params.upfile.value;
@@ -235,7 +242,9 @@ exports.protectedHead = function (args, res) {
 
 exports.protectedGet = async function (args, res) {
   defaultLog.info('Getting document(s)');
-
+  if (args.swagger.params.docId && args.swagger.params.docId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.docId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var query = {}, skip = null, limit = null, count = false;
 
   // Build match query if on docId route
@@ -498,6 +507,14 @@ exports.protectedPost = async function (args, res) {
   console.log('Creating new protected document object');
   var project = args.swagger.params.project.value;
   var _comment = args.swagger.params._comment.value;
+
+  if (args.swagger.params._comment && args.swagger.params._comment.value && !mongoose.Types.ObjectId.isValid(_comment)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+  if (args.swagger.params.project && args.swagger.params.project.value && !mongoose.Types.ObjectId.isValid(project)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+
   var upfile = args.swagger.params.upfile.value;
   var guid = intformat(generator.next(), 'dec');
   var ext = mime.extension(args.swagger.params.upfile.value.mimetype);
@@ -617,7 +634,9 @@ exports.protectedPost = async function (args, res) {
 exports.protectedPublish = async function (args, res) {
   var objId = args.swagger.params.docId.value;
   defaultLog.info('Publish Document:', objId);
-
+  if (args.swagger.params.docId && args.swagger.params.docId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.docId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var Document = require('mongoose').model('Document');
   try {
     var document = await Document.findOne({ _id: objId });
@@ -639,7 +658,9 @@ exports.protectedPublish = async function (args, res) {
 exports.protectedUnPublish = async function (args, res) {
   var objId = args.swagger.params.docId.value;
   defaultLog.info('UnPublish Document:', objId);
-
+  if (args.swagger.params.docId && args.swagger.params.docId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.docId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var Document = require('mongoose').model('Document');
   try {
     var document = await Document.findOne({ _id: objId });
@@ -662,6 +683,21 @@ exports.protectedUnPublish = async function (args, res) {
 exports.protectedPut = async function (args, res) {
   console.log('args:', args.swagger.params);
   var objId = args.swagger.params.docId.value;
+  if (args.swagger.params.docId && args.swagger.params.docId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.docId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+  if (args.swagger.params.milestone && args.swagger.params.milestone.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.milestone.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+  if (args.swagger.params.type && args.swagger.params.type.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.type.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+  if (args.swagger.params.documentAuthorType && args.swagger.params.documentAuthorType.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.documentAuthorType.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+  if (args.swagger.params.projectPhase && args.swagger.params.projectPhase.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.projectPhase.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var obj = {};
   defaultLog.info('Put document:', objId);
 
@@ -739,7 +775,9 @@ exports.protectedPut = async function (args, res) {
 exports.protectedDelete = async function (args, res) {
   var objId = args.swagger.params.docId.value;
   defaultLog.info('Delete Document:', objId);
-
+  if (args.swagger.params.docId && args.swagger.params.docId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.docId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var Document = require('mongoose').model('Document');
   try {
     var doc = await Document.findOneAndRemove({ _id: objId });
@@ -756,6 +794,9 @@ exports.protectedDelete = async function (args, res) {
 exports.featureDocument = async function (args, res) {
   try {
     if (args.swagger.params.docId && args.swagger.params.docId.value) {
+      if (!mongoose.Types.ObjectId.isValid(args.swagger.params.docId.value)) {
+        return Actions.sendResponse(res, 400, { });
+      }
       let document = await mongoose.model('Document').findById(mongoose.Types.ObjectId(args.swagger.params.docId.value));
       let project = await mongoose.model('Project').findById(mongoose.Types.ObjectId(document.project));
 
@@ -783,6 +824,9 @@ exports.featureDocument = async function (args, res) {
 exports.unfeatureDocument = async function (args, res) {
   try {
     if (args.swagger.params.docId && args.swagger.params.docId.value) {
+      if (!mongoose.Types.ObjectId.isValid(args.swagger.params.docId.value)) {
+        return Actions.sendResponse(res, 400, { });
+      }
       let document = await mongoose.model('Document').findById(mongoose.Types.ObjectId(args.swagger.params.docId.value));
 
       document.isFeatured = false;
