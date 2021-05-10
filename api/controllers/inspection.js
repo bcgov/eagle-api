@@ -68,6 +68,9 @@ exports.protectedPostElement = async function (args, res) {
   var inspId = args.swagger.params.inspId.value;
 
   defaultLog.info('Incoming new object:', obj);
+  if (obj && obj.elementId && !mongoose.Types.ObjectId.isValid(obj.elementId)) {
+    return Actions.sendResponse(res, 400, { });
+  }
 
   var InspectionElement = mongoose.model('InspectionElement');
 
@@ -130,6 +133,16 @@ exports.protectedPostElementItem = async function (args, res) {
   var caption = args.swagger.params.caption.value;
   var text = args.swagger.params.text.value;
   var geo = args.swagger.params.geo.value;
+
+  if (args.swagger.params.elementId && args.swagger.params.elementId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.elementId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+  if (args.swagger.params.project && args.swagger.params.project.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.project.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+  if (args.swagger.params.itemId && args.swagger.params.itemId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.itemId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
 
   var ext, tempFilePath = null;
   if (upfile) {
