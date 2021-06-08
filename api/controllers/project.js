@@ -109,6 +109,9 @@ exports.publicHead = async function (args, res) {
   var requestedFields = getSanitizedFields(args.swagger.params.fields.value);
 
   if (args.swagger.params.projId && args.swagger.params.projId.value) {
+    if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     query = Utils.buildQuery('_id', args.swagger.params.projId.value, query);
     commentPeriodPipeline = handleCommentPeriodForBannerQueryParameters(args, args.swagger.params.projId.value);
   } else {
@@ -163,6 +166,9 @@ exports.publicGet = async function (args, res) {
 
 
   if (args.swagger.params.projId && args.swagger.params.projId.value) {
+    if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     query = Utils.buildQuery('_id', args.swagger.params.projId.value, query);
     commentPeriodPipeline = handleCommentPeriodForBannerQueryParameters(args, args.swagger.params.projId.value);
   } else {
@@ -239,6 +245,9 @@ exports.protectedGet = async function (args, res) {
   defaultLog.info('args.swagger.params:', args.swagger.operation['x-security-scopes']);
 
   if (args.swagger.params.projId && args.swagger.params.projId.value) {
+    if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
+      return Actions.sendResponse(res, 400, {});
+    }
     // Getting a single project
     _.assignIn(query, { _id: mongoose.Types.ObjectId(args.swagger.params.projId.value) });
     commentPeriodPipeline = handleCommentPeriodForBannerQueryParameters(args, args.swagger.params.projId.value);
@@ -319,6 +328,9 @@ exports.protectedHead = function (args, res) {
   tagList.push('tags');
 
   if (args.swagger.params.projId && args.swagger.params.projId.value) {
+    if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     query = Utils.buildQuery('_id', args.swagger.params.projId.value, query);
   } else {
     try {
@@ -360,6 +372,10 @@ exports.protectedHead = function (args, res) {
 exports.protectedDelete = function (args, res) {
   var projId = args.swagger.params.projId.value;
   defaultLog.info('Delete Project:', projId);
+
+  if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
 
   var Project = mongoose.model('Project');
   Project.findOne({ _id: projId }, function (err, o) {
@@ -421,6 +437,12 @@ exports.protectedPost = function (args, res) {
   project.currentLegislationYear = 'legislation_' + projectLegislationYear;
   project.legislationYearList.push(projectLegislationYear);
 
+  if (!mongoose.Types.ObjectId.isValid(obj.proponent)
+      || !mongoose.Types.ObjectId.isValid(obj.responsibleEPDId)
+      || !mongoose.Types.ObjectId.isValid(obj.projectLeadId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
+
   projectData.proponent = mongoose.Types.ObjectId(obj.proponent);
   projectData.responsibleEPDId = mongoose.Types.ObjectId(obj.responsibleEPDId);
   projectData.projectLeadId = mongoose.Types.ObjectId(obj.projectLeadId);
@@ -466,6 +488,10 @@ exports.protectedPinDelete = async function (args, res) {
   var pinId = args.swagger.params.pinId.value;
   defaultLog.info('Delete PIN: ', pinId, ' from Project:', projId);
 
+  if (!mongoose.Types.ObjectId.isValid(pinId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
+
   var Project = mongoose.model('Project');
   try {
     var data = await Project.update(
@@ -490,7 +516,7 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
   var fields = ['_id', 'pins', 'name', 'website', 'province', 'pinsRead'];
 
   // First get the project
-  if (projectId && projectId.value) {
+  if (projectId && projectId.value && mongoose.Types.ObjectId.isValid(projectId.value)) {
     // Getting a single project
     _.assignIn(query, { _id: mongoose.Types.ObjectId(projectId.value) });
     var data = await Utils.runDataQuery('Project',
@@ -575,6 +601,10 @@ exports.protectedExtensionAdd = async function (args, res) {
   var extensionObj = args.swagger.params.extension.value;
   var extensionType = extensionObj.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
 
+  if (!mongoose.Types.ObjectId.isValid(projId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+
   var Project = mongoose.model('Project');
   try {
     var data = await Project.update(
@@ -598,6 +628,9 @@ exports.protectedExtensionDelete = async function (args, res) {
   // Delete an object from the extension/suspension array
   try {
     var projId = args.swagger.params.projId.value;
+    if (!mongoose.Types.ObjectId.isValid(projId.value)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     var extensionObj = JSON.parse(args.swagger.params.item.value);
     var extensionType = extensionObj.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
 
@@ -623,6 +656,9 @@ exports.protectedExtensionUpdate = async function (args, res) {
   // Edit an object to the extension/suspension array
   // NB: We need both the old and the new in order to update accordingly
   var projId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var extensionObj = args.swagger.params.extension.value;
   var extensionNew = extensionObj.new;
   var extensionOld = extensionObj.old;
@@ -682,6 +718,10 @@ exports.protectedAddPins = async function (args, res) {
   var objId = args.swagger.params.projId.value;
   defaultLog.info('ObjectID:', args.swagger.params.projId.value);
 
+  if (!mongoose.Types.ObjectId.isValid(objId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
+
   var Project = mongoose.model('Project');
   var pinsArr = [];
   args.swagger.params.pins.value.map(item => {
@@ -712,6 +752,9 @@ exports.protectedAddPins = async function (args, res) {
 // pinsRead is on the project level and for all pins on the project
 exports.protectedPublishPin = async function (args, res) {
   var projId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(projId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   var Project = require('mongoose').model('Project');
   try {
     var project = await Project.findOne({ _id: projId });
@@ -738,6 +781,9 @@ exports.protectedPublishPin = async function (args, res) {
 
 exports.protectedUnPublishPin = async function (args, res) {
   var projId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(projId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   var Project = require('mongoose').model('Project');
   try {
     var project = await Project.findOne({ _id: projId });
@@ -764,6 +810,9 @@ exports.protectedUnPublishPin = async function (args, res) {
 
 exports.protectedPublishCAC = async function (args, res) {
   var projId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(projId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   var Project = require('mongoose').model('Project');
   try {
     var project = await Project.findOne({ _id: projId });
@@ -790,6 +839,9 @@ exports.protectedPublishCAC = async function (args, res) {
 
 exports.protectedUnPublishCAC = async function (args, res) {
   var projId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(projId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   var Project = require('mongoose').model('Project');
   try {
     var project = await Project.findOne({ _id: projId });
@@ -823,7 +875,9 @@ exports.publicCACSignUp = async function ( args, res) {
   // Clear out anything dangerous first, before creating an instance of the user
   let cacObject     = args.swagger.params.cac.value;
   const projectId   = args.swagger.params.projId.value;
-
+  if (!mongoose.Types.ObjectId.isValid(projectId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   delete cacObject.read;
   delete cacObject.write;
 
@@ -878,6 +932,9 @@ exports.publicCACRemoveMember = async function (args, res) {
   const CACUser = mongoose.model('CACUser');
 
   const projId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(projId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   const cac = args.swagger.params.cac.value;
   defaultLog.info("Delete CAC Member:", cac.email, " from Project:", projId);
 
@@ -914,6 +971,9 @@ exports.publicCACRemoveMember = async function (args, res) {
 exports.protectedCACRemoveMember = async function (args, res) {
   // Remove a user from CAC
   const projId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(projId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   const member = args.swagger.params.member.value;
   defaultLog.info("Delete CAC Member:", member, " from Project:", projId);
 
@@ -939,6 +999,9 @@ exports.protectedCACRemoveMember = async function (args, res) {
 exports.protectedCreateCAC = async function (args, res) {
   // Add CAC to project
   const projId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(projId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   const cacData = args.swagger.params.data.value;
   const Project = mongoose.model('Project');
 
@@ -962,6 +1025,9 @@ exports.protectedCreateCAC = async function (args, res) {
 exports.protectedCACDelete = async function (args, res) {
   // Remove CAC project
   const projId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(projId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   const Project = mongoose.model('Project');
   const CACUser = mongoose.model('CACUser');
   try {
@@ -992,6 +1058,9 @@ exports.protectedDeleteGroupMembers = async function (args, res) {
   var memberId = args.swagger.params.memberId.value;
   defaultLog.info('Delete Group Member:', memberId, 'from group:', groupId, ' from Project:', projId);
 
+  if (!mongoose.Types.ObjectId.isValid(projId) || !mongoose.Types.ObjectId.isValid(groupId) || !mongoose.Types.ObjectId.isValid(memberId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   var Project = mongoose.model('Group');
   try {
     var data = await Project.update(
@@ -1010,6 +1079,9 @@ exports.protectedDeleteGroupMembers = async function (args, res) {
 exports.protectedAddGroupMembers = async function (args, res) {
   var projectId = args.swagger.params.projId.value;
   var groupId = args.swagger.params.groupId.value;
+  if (!mongoose.Types.ObjectId.isValid(projectId) || !mongoose.Types.ObjectId.isValid(groupId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   defaultLog.info('ProjectID:', projectId);
   defaultLog.info('GroupId:', groupId);
 
@@ -1060,7 +1132,7 @@ const handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, 
   var fields = ['_id', 'members', 'name', 'project'];
 
   // First get the group
-  if (groupId && groupId.value) {
+  if (groupId && groupId.value && mongoose.Types.ObjectId.isValid(groupId.value)) {
     // Getting a single group
     _.assignIn(query, { _id: mongoose.Types.ObjectId(groupId.value) });
 
@@ -1128,6 +1200,9 @@ const handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, 
 
 exports.protectedAddGroup = async function (args, res) {
   var objId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(objId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   var groupName = args.swagger.params.group.value;
   defaultLog.info('Incoming new group:', groupName);
 
@@ -1149,6 +1224,9 @@ exports.protectedAddGroup = async function (args, res) {
 exports.protectedGroupPut = async function (args, res) {
   var projId = args.swagger.params.projId.value;
   var groupId = args.swagger.params.groupId.value;
+  if (!mongoose.Types.ObjectId.isValid(projId) || !mongoose.Types.ObjectId.isValid(groupId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   var obj = args.swagger.params.groupObject.value;
   defaultLog.info('Update Group:', groupId, 'from project:', projId);
 
@@ -1166,6 +1244,9 @@ exports.protectedGroupPut = async function (args, res) {
 exports.protectedGroupDelete = async function (args, res) {
   var objId = args.swagger.params.projId.value;
   var groupId = args.swagger.params.groupId.value;
+  if (!mongoose.Types.ObjectId.isValid(objId) || !mongoose.Types.ObjectId.isValid(groupId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   defaultLog.info('Delete Group:', groupId, 'from project:', objId);
 
   var Group = require('mongoose').model('Group');
@@ -1183,6 +1264,9 @@ exports.protectedGroupDelete = async function (args, res) {
 // Update an existing project
 exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(objId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   defaultLog.info('ObjectID:', args.swagger.params.projId.value);
 
   var Project = mongoose.model('Project');
@@ -1314,6 +1398,9 @@ exports.protectedPut = async function (args, res) {
 // We need to make this publish also update the current legislation year and the year list
 exports.protectedPublish = function (args, res) {
   var objId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(objId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   var ProjObject = args.swagger.params.ProjObject.value;
   defaultLog.info('Publish Project:', objId);
 
@@ -1342,6 +1429,9 @@ exports.protectedPublish = function (args, res) {
 };
 exports.protectedUnPublish = function (args, res) {
   var objId = args.swagger.params.projId.value;
+  if (!mongoose.Types.ObjectId.isValid(objId)) {
+    return Actions.sendResponse(res, 400, {});
+  }
   defaultLog.info('UnPublish Project:', objId);
 
   var Project = require('mongoose').model('Project');
@@ -1364,6 +1454,9 @@ exports.protectedUnPublish = function (args, res) {
 };
 
 var handleCommentPeriodForBannerQueryParameters = function (args, projectId) {
+  if (!mongoose.Types.ObjectId.isValid(projectId)) {
+    return null;
+  }
   if (args.swagger.params.cpStart && args.swagger.params.cpStart.value !== undefined && args.swagger.params.cpEnd && args.swagger.params.cpEnd.value !== undefined) {
     var dateStartedRange, dateCompletedRange, currentDateInBetween = null;
     var queryStringStart = qs.parse(args.swagger.params.cpStart.value);
@@ -1548,7 +1641,7 @@ var serializeProjectVirtuals = function (data) {
 
 exports.getFeaturedDocuments = async function (args, res) {
   try {
-    if (args.swagger.params.projId && args.swagger.params.projId.value) {
+    if (args.swagger.params.projId && args.swagger.params.projId.value && mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
       let projectModel = mongoose.model('Project');
       projectModel.findOne({ _id: args.swagger.params.projId.value }, async function (err, project) {
         let featuredDocs = await fetchFeaturedDocuments(project);
@@ -1565,7 +1658,7 @@ exports.getFeaturedDocuments = async function (args, res) {
 
 exports.getFeaturedDocumentsSecure = async function (args, res) {
   try {
-    if (args.swagger.params.projId && args.swagger.params.projId.value) {
+    if (args.swagger.params.projId && args.swagger.params.projId.value && mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
       let project = await mongoose.model('Project').findById(mongoose.Types.ObjectId(args.swagger.params.projId.value));
 
       let featuredDocs = await fetchFeaturedDocuments(project);
@@ -1581,9 +1674,13 @@ exports.getFeaturedDocumentsSecure = async function (args, res) {
 
 var fetchFeaturedDocuments = async function (project) {
   try {
-    let documents = await mongoose.model('Document').find({ project: project._id, isFeatured: true });
+    if (mongoose.Types.ObjectId.isValid(project._id)) {
+      let documents = await mongoose.model('Document').find({ project: project._id, isFeatured: true });
 
-    return documents;
+      return documents;
+    } else {
+      return [];
+    }
   } catch (e) {
     throw Error(e);
   }

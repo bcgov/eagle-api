@@ -54,7 +54,10 @@ describe('API Testing - Project DAO', () => {
   testProject.eaoMember           = '';
   testProject.fedElecDist         = '';
   // TODO: intake
-  testProject.intake              = '';
+  testProject.intake              = {
+    investment: '',
+    notes: ''
+  };
   testProject.isTermsAgreed       = false;
   testProject.overallProgress     = 0;
   testProject.primaryContact      = '';
@@ -193,8 +196,7 @@ describe('API Testing - Project DAO', () => {
     };
 
     const formattedObj = {
-      cac:
-      {
+      cac: {
         value:
         {
           name: 'Mark Lise',
@@ -202,7 +204,9 @@ describe('API Testing - Project DAO', () => {
           comment: 'I like tests!'
         }
       },
-      projId: '58851085aaecd9001b811843'
+      projId: {
+        value: '5ebaed0c516bac001aefe5aa'
+      }
     };
     const paramsWithValues = test_helper.createSwaggerParams([], formattedObj);
 
