@@ -155,6 +155,9 @@ exports.protectedHead = async function (args, res) {
 
 exports.protectedSummary = async function (args, res) {
   defaultLog.info('Head for comment period summaries');
+  if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.commentPeriodId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
 
   // Build match query if on CommentPeriodId route
   var query = {};
@@ -222,6 +225,9 @@ exports.protectedGet = async function (args, res) {
 
   // Build match query if on project's id
   if (args.swagger.params.project && args.swagger.params.project.value) {
+    if (!mongoose.Types.ObjectId.isValid(args.swagger.params.project.value)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     _.assignIn(query, { project: mongoose.Types.ObjectId(args.swagger.params.project.value) });
   }
 
@@ -311,6 +317,9 @@ exports.protectedPost = async function (args, res) {
 // Update an existing CommentPeriod
 exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.commentPeriodId.value;
+  if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.commentPeriodId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var obj = args.swagger.params.cp.value;
   defaultLog.info('Put comment period:', objId);
 
@@ -352,7 +361,9 @@ exports.protectedPut = async function (args, res) {
 exports.protectedDelete = async function (args, res) {
   var objId = args.swagger.params.commentPeriodId.value;
   defaultLog.info('Delete comment period:', objId);
-
+  if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.commentPeriodId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var CommentPeriod = mongoose.model('CommentPeriod');
   try {
     await CommentPeriod.findOneAndRemove({ _id: objId });
@@ -368,7 +379,9 @@ exports.protectedDelete = async function (args, res) {
 exports.protectedPublish = async function (args, res) {
   var objId = args.swagger.params.commentPeriodId.value;
   defaultLog.info('Publish comment period:', objId);
-
+  if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.commentPeriodId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var CommentPeriod = mongoose.model('CommentPeriod');
   try {
     var commentPeriod = await CommentPeriod.findOne({ _id: objId });
@@ -386,7 +399,9 @@ exports.protectedPublish = async function (args, res) {
 exports.protectedUnPublish = async function (args, res) {
   var objId = args.swagger.params.commentPeriodId.value;
   defaultLog.info('UnPublish comment period:', objId);
-
+  if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.commentPeriodId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var CommentPeriod = mongoose.model('CommentPeriod');
   try {
     var commentPeriod = await CommentPeriod.findOne({ _id: objId });
