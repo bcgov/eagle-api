@@ -77,6 +77,9 @@ exports.protectedGet = async function (args, res) {
 exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.topicId.value;
   defaultLog.info('ObjectID:', args.swagger.params.topicId.value);
+  if (args.swagger.params.topicId && args.swagger.params.topicId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.topicId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var obj = args.swagger.params.cp.value;
 
   // Strip security tags - these will not be updated on this route.
@@ -97,6 +100,9 @@ exports.protectedPut = async function (args, res) {
 exports.protectedDelete = async function (args, res) {
   var objId = args.swagger.params.topicId.value;
   defaultLog.info('Delete Topic:', objId);
+  if (args.swagger.params.topicId && args.swagger.params.topicId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.topicId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
 
   var topic = require('mongoose').model('Topic');
 

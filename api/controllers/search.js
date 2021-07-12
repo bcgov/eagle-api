@@ -144,6 +144,12 @@ const executeQuery = async function (args, res) {
   defaultLog.info('populate:', populate);
   defaultLog.info('roles:', roles);
 
+  if (args.swagger.params.project && args.swagger.params.project.value && !mongoose.Types.ObjectId.isValid(project)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+  if (_id && !mongoose.Types.ObjectId.isValid(_id)) {
+    return Actions.sendResponse(res, 400, { });
+  }
 
   Utils.recordAction('Search', keywords, args.swagger.params.auth_payload ? args.swagger.params.auth_payload.preferred_username : 'public');
 

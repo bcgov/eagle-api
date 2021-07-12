@@ -206,6 +206,13 @@ exports.protectedGet = async function (args, res) {
 
   var query = {}, sort = {}, skip = null, limit = null, count = false, filter = [];
 
+  if (args.swagger.params.commentId && args.swagger.params.commentId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.commentId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+  if (args.swagger.params.period && args.swagger.params.period.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.period.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
+
   // Build match query if on commentId route.
   if (args.swagger.params.commentId && args.swagger.params.commentId.value) {
     _.assignIn(query, { _id: mongoose.Types.ObjectId(args.swagger.params.commentId.value) });
@@ -299,18 +306,23 @@ exports.protectedGet = async function (args, res) {
 //  Create a new Comment
 exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.comment.value;
-
   defaultLog.info('Incoming new comment:', obj);
 
   var Comment = mongoose.model('Comment');
 
   var vcs = [];
   obj.valuedComponents.forEach(function (vc) {
+    if (!mongoose.Types.ObjectId.isValid(vc)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     vcs.push(mongoose.Types.ObjectId(vc));
   });
 
   var docs = [];
   obj.documents.forEach(function (doc) {
+    if (!mongoose.Types.ObjectId.isValid(doc)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     docs.push(mongoose.Types.ObjectId(doc));
   });
 
@@ -364,7 +376,9 @@ exports.unProtectedPost = async function (args, res) {
   try {
     const obj = args.swagger.params.comment.value;
     defaultLog.info('Incoming new object:', obj);
-
+    if (args.swagger.params.comment && args.swagger.params.comment.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.comment.value)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     const Comment = mongoose.model('Comment');
 
     // Ensure the comment is received before the end date of the period.
@@ -417,6 +431,9 @@ exports.unProtectedPost = async function (args, res) {
 // Update an existing Comment
 exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.commentId.value;
+  if (args.swagger.params.commentId && args.swagger.params.commentId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.commentId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var obj = args.swagger.params.comment.value;
   defaultLog.info('Put comment:', objId);
 
@@ -424,6 +441,9 @@ exports.protectedPut = async function (args, res) {
 
   var vcs = [];
   obj.valuedComponents.forEach(function (vc) {
+    if (!mongoose.Types.ObjectId.isValid(vc)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     vcs.push(mongoose.Types.ObjectId(vc));
   });
 
@@ -461,6 +481,9 @@ exports.protectedPut = async function (args, res) {
 // Publish the Comment
 exports.protectedStatus = async function (args, res) {
   var objId = args.swagger.params.commentId.value;
+  if (args.swagger.params.commentId && args.swagger.params.commentId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.commentId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var status = args.swagger.params.status.value.status;
 
   var comment = {
@@ -501,6 +524,9 @@ function formatDate(date) {
 // Export all comments
 exports.protectedExport = async function (args, res) {
   var period = args.swagger.params.periodId.value;
+  if (args.swagger.params.periodId && args.swagger.params.periodId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.periodId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var format = args.swagger.params.format.value;
   var roles = args.swagger.params.auth_payload.realm_access.roles;
 

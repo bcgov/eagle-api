@@ -57,6 +57,9 @@ exports.protectedPost = async function (args, res) {
 // Update an existing user
 exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.userId.value;
+  if (args.swagger.params.userId && args.swagger.params.userId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.userId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var obj = args.swagger.params.user.value;
   defaultLog.info('ObjectID:', args.swagger.params.userId.value);
 
