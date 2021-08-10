@@ -55,6 +55,9 @@ exports.protectedGet = async function (args, res) {
     query = Utils.buildQuery('_id', args.swagger.params.vcId.value, query);
   }
   if (args.swagger.params.projectId && args.swagger.params.projectId.value) {
+    if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projectId.value)) {
+      return Actions.sendResponse(res, 400, { });
+    }
     _.assignIn(query, { project: mongoose.Types.ObjectId(args.swagger.params.projectId.value) });
   }
   if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
@@ -87,6 +90,9 @@ exports.protectedGet = async function (args, res) {
 exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.vcId.value;
   defaultLog.info('ObjectID:', args.swagger.params.vcId.value);
+  if (args.swagger.params.vcId && args.swagger.params.vcId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.vcId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var obj = args.swagger.params.cp.value;
 
   // Strip security tags - these will not be updated on this route.
@@ -103,7 +109,9 @@ exports.protectedPut = async function (args, res) {
 exports.protectedDelete = async function (args, res) {
   var objId = args.swagger.params.vcId.value;
   defaultLog.info('Delete Vc:', objId);
-
+  if (args.swagger.params.vcId && args.swagger.params.vcId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.vcId.value)) {
+    return Actions.sendResponse(res, 400, { });
+  }
   var commentperiod = require('mongoose').model('Vc');
   var data = await commentperiod.remove({ _id: objId }).exec();
   Utils.recordAction('Delete', 'Vc', args.swagger.params.auth_payload.preferred_username, objId);
