@@ -425,7 +425,7 @@ exports.unProtectedPost = async function (args, res) {
 
     const c = await cmt.save();
     Utils.recordAction('Post', 'Comment', 'public', c._id);
-    defaultLog.info('Saved new comment object:', c);
+    console.log('Saved new comment object:', c);
     return Actions.sendResponse(res, 200, c);
   } catch (e) {
     defaultLog.info('Error:', e);
