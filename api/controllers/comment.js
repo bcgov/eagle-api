@@ -402,7 +402,7 @@ exports.unProtectedPost = async function (args, res) {
 
     defaultLog.info('Next comment id:', commentIdCount);
 
-    let comment = new Comment(obj);
+    let comment = new Comment();
     comment._schemaName = 'Comment';
     comment.eaoStatus = 'Pending';
     comment.author = obj.author;
