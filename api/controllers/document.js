@@ -93,11 +93,13 @@ exports.publicGet = async function (args, res,) {
 };
 
 exports.unProtectedPost = async function (args, res) {
-  console.log('Creating new object');
+  console.log('Creating new object', args.swagger.params);
   if (args.swagger.params._comment && args.swagger.params._comment.value && !mongoose.Types.ObjectId.isValid(_comment)) {
+    console.log('Invalid _comment')
     return Actions.sendResponse(res, 400, { });
   }
   if (args.swagger.params.project && args.swagger.params.project.value && !mongoose.Types.ObjectId.isValid(project)) {
+    console.log('Invalid project')
     return Actions.sendResponse(res, 400, { });
   }
 
@@ -108,9 +110,11 @@ exports.unProtectedPost = async function (args, res) {
   var ext = mime.extension(args.swagger.params.upfile.value.mimetype);
   var tempFilePath = uploadDir + guid + '.' + ext;
   try {
+    console.log('Uploading');
     Promise.resolve()
       .then(async function () {
         if (ENABLE_VIRUS_SCANNING || ENABLE_VIRUS_SCANNING == 'true') {
+          console.log('AVScan');
           return Utils.avScan(args.swagger.params.upfile.value.buffer);
         } else {
           return true;
@@ -146,7 +150,7 @@ exports.unProtectedPost = async function (args, res) {
               var doc = new Document();
               // Define security tag defaults
               doc.project = mongoose.Types.ObjectId(project);
-              doc._comment = _comment;
+              doc._comment = mongoose.Types.ObjectId(_comment);
               doc._addedBy = 'public';
               doc._createdDate = new Date();
               doc.read = ['sysadmin', 'staff'];
