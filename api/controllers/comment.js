@@ -376,7 +376,7 @@ exports.unProtectedPost = async function (args, res) {
   try {
     const obj = args.swagger.params.comment.value;
     defaultLog.info('Incoming new object:', obj);
-    if (args.swagger.params.comment && args.swagger.params.comment.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.comment.value)) {
+    if (args.swagger.params.period && args.swagger.params.period.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.period.value)) {
       return Actions.sendResponse(res, 400, { });
     }
     const Comment = mongoose.model('Comment');
