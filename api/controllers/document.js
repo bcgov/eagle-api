@@ -94,11 +94,11 @@ exports.publicGet = async function (args, res,) {
 
 exports.unProtectedPost = async function (args, res) {
   console.log('Creating new object', args.swagger.params);
-  if (args.swagger.params._comment && args.swagger.params._comment.value && !mongoose.Types.ObjectId.isValid(_comment)) {
+  if (args.swagger.params._comment && args.swagger.params._comment.value && !mongoose.Types.ObjectId.isValid(args.swagger.params._comment.value)) {
     console.log('Invalid _comment')
     return Actions.sendResponse(res, 400, { });
   }
-  if (args.swagger.params.project && args.swagger.params.project.value && !mongoose.Types.ObjectId.isValid(project)) {
+  if (args.swagger.params.project && args.swagger.params.project.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.project.value)) {
     console.log('Invalid project')
     return Actions.sendResponse(res, 400, { });
   }
