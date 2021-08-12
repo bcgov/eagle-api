@@ -384,6 +384,7 @@ exports.unProtectedPost = async function (args, res) {
     // Ensure the comment is received before the end date of the period.
     const commentPeriodModel = mongoose.model('CommentPeriod');
     const period = await commentPeriodModel.findOne({ _id: mongoose.Types.ObjectId(obj.period) });
+    defaultLog.info('Period:', period);
     if (moment().diff(moment(period.dateCompleted)) > 0) {
       // Past the specified time
       const endDate = moment(period.dateCompleted).format('MMM DD, YYYY h:mm A');
@@ -398,6 +399,8 @@ exports.unProtectedPost = async function (args, res) {
 
     // get the next commentID for this period
     const commentIdCount = await getNextCommentIdCount(mongoose.Types.ObjectId(obj.period));
+
+    defaultLog.info('Next comment id:', commentIdCount);
 
     let comment = new Comment(obj);
     comment._schemaName = 'Comment';
@@ -417,6 +420,8 @@ exports.unProtectedPost = async function (args, res) {
     comment.read = ['staff', 'sysadmin'];
     comment.write = ['staff', 'sysadmin'];
     comment.delete = ['staff', 'sysadmin'];
+
+    defaultLog.info('About to save:', comment);
 
     const c = await comment.save();
     Utils.recordAction('Post', 'Comment', 'public', c._id);
