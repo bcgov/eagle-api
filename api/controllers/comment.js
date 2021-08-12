@@ -400,30 +400,30 @@ exports.unProtectedPost = async function (args, res) {
     // get the next commentID for this period
     const commentIdCount = await getNextCommentIdCount(mongoose.Types.ObjectId(obj.period));
 
-    defaultLog.info('Next comment id:', commentIdCount);
+    console.log('Next comment id:', commentIdCount);
 
-    let comment = new Comment();
-    comment._schemaName = 'Comment';
-    comment.eaoStatus = 'Pending';
-    comment.author = obj.author;
-    comment.comment = obj.comment;
-    comment.dateAdded = new Date();
-    comment.dateUpdated = new Date();
-    comment.isAnonymous = obj.isAnonymous;
-    comment.location = obj.location;
-    comment.period = mongoose.Types.ObjectId(obj.period);
-    comment.commentId = commentIdCount;
-    comment.documents = [];
-    comment.datePosted = undefined;
-    comment.submittedCAC = obj.submittedCAC;
+    let cmt = new Comment();
+    cmt._schemaName = 'Comment';
+    cmt.eaoStatus = 'Pending';
+    cmt.author = obj.author;
+    cmt.comment = obj.comment;
+    cmt.dateAdded = new Date();
+    cmt.dateUpdated = new Date();
+    cmt.isAnonymous = obj.isAnonymous;
+    cmt.location = obj.location;
+    cmt.period = mongoose.Types.ObjectId(obj.period);
+    cmt.commentId = commentIdCount;
+    cmt.documents = [];
+    cmt.datePosted = undefined;
+    cmt.submittedCAC = obj.submittedCAC;
 
-    comment.read = ['staff', 'sysadmin'];
-    comment.write = ['staff', 'sysadmin'];
-    comment.delete = ['staff', 'sysadmin'];
+    cmt.read = ['staff', 'sysadmin'];
+    cmt.write = ['staff', 'sysadmin'];
+    cmt.delete = ['staff', 'sysadmin'];
 
-    defaultLog.info('About to save:', comment);
+    console.log('About to save:', cmt);
 
-    const c = await comment.save();
+    const c = await cmt.save();
     Utils.recordAction('Post', 'Comment', 'public', c._id);
     defaultLog.info('Saved new comment object:', c);
     return Actions.sendResponse(res, 200, c);
