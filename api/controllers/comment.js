@@ -384,7 +384,9 @@ exports.unProtectedPost = async function (args, res) {
     // Ensure the comment is received before the end date of the period.
     const commentPeriodModel = mongoose.model('CommentPeriod');
     const period = await commentPeriodModel.findOne({ _id: mongoose.Types.ObjectId(obj.period) });
+
     defaultLog.info('Period:', period);
+
     if (moment().diff(moment(period.dateCompleted)) > 0) {
       // Past the specified time
       const endDate = moment(period.dateCompleted).format('MMM DD, YYYY h:mm A');
