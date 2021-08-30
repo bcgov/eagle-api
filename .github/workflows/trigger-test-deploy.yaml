@@ -1,0 +1,18 @@
+name: Trigger Test Deploy Workflow
+
+on:
+  push:
+    branches:
+      - promotion/test
+    paths:
+      - state.json
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          event-type: trigger-test-deploy
