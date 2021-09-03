@@ -1,0 +1,86 @@
+name: Deploy to Test
+
+on:
+  repository_dispatch:
+    # Trigger from repository dispatch workflow in promotion/test branch
+    types: [trigger-test-deploy]
+
+env:
+  OPENSHIFT_NAMESPACE: 6cdc9e-tools
+  IMAGE_NAME: eagle-api
+  PROD_PROMO_BRANCH: promotion/prod
+  PROD_PROMO_PR_BRANCH: promotion/prod-pr
+
+jobs:
+  deploy:
+    name: Deploy to Test
+    runs-on: ubuntu-20.04
+    outputs:
+      COMMIT_SHA: ${{ steps.read-hash.outputs.SHA }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: "promotion/test"
+      - name: Retrieve previous commit hash
+        id: read-hash
+        run: echo "::set-output name=SHA::`jq -r '.commit' state.json`"
+      - name: Log into OpenShift
+        uses: redhat-actions/oc-login@v1
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_URL }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          namespace: ${{ env.OPENSHIFT_NAMESPACE }}
+      - name: Tag image
+        run: |
+          oc -n ${{ env.OPENSHIFT_NAMESPACE }} tag --reference-policy='local' ${{ env.IMAGE_NAME }}:test ${{ env.IMAGE_NAME }}:test-backup
+          oc -n ${{ env.OPENSHIFT_NAMESPACE }} tag --reference-policy='local' ${{ env.IMAGE_NAME }}:ci-latest ${{ env.IMAGE_NAME }}:test
+      - name: Notify Rocket.Chat
+        run: |
+          curl -X POST -H 'Content-Type: application/json' \
+            --data '{"alias":"Bot","avatar": "https://github.githubassets.com/images/modules/logos_page/Octocat.png","text":"Commit ${{ steps.read-hash.outputs.SHA }} deployed to ${{ env.IMAGE_NAME }} Test"}' \
+            ${{ secrets.ROCKET_CHAT_URL }}
+  sync-test-branch:
+    name: Rebase test branch from develop
+    needs: deploy
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: "test"
+      - run: |
+          git fetch origin develop
+          git rebase ${{needs.deploy.outputs.COMMIT_SHA}} test
+          git push origin test
+  promotion:
+    name: Create Promotion Pull Request
+    needs: [deploy, sync-test-branch]
+    runs-on: ubuntu-20.04
+    steps:
+      # Update promotion/prod-pr with new commit hash
+      - name: Checkout promotion/prod
+        uses: actions/checkout@v2
+        with:
+          ref: "${{ env.PROD_PROMO_BRANCH }}"
+      - name: Update state.json
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{github.actor}}@users.noreply.github.com"
+          git checkout -B ${{ env.PROD_PROMO_PR_BRANCH }}
+          git reset --hard ${{ env.PROD_PROMO_BRANCH }}
+          echo $(jq '.commit="${{ needs.deploy.outputs.COMMIT_SHA }}"' state.json) > state.json
+          git commit -am "Promote commit ${{ needs.deploy.outputs.COMMIT_SHA }} to Production"
+          git push --force origin ${{ env.PROD_PROMO_PR_BRANCH }}
+      - name: Create Pull Request
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: ${{ env.PROD_PROMO_PR_BRANCH }}
+          destination_branch: ${{ env.PROD_PROMO_BRANCH }}
+          pr_title: "Deploy to Production Environment"
+          pr_body: |
+            :crown: *An automated PR*
+            This PR triggers an deployment to Production once it's fully merged.
+          pr_label: "auto-pr,prod env,pipeline"
+          pr_draft: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
