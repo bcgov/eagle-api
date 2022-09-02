@@ -253,3 +253,26 @@ exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDire
 
   return aggregation;
 };
+
+exports.addUpdatedInLast30daysAggr = () => {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const aggregation = [];
+  aggregation.push({
+    $match: {
+      $or: [
+        {
+          'datePosted': {
+            $gte: thirtyDaysAgo
+          }
+        },
+        {
+          'dateUploaded': {
+            $gte: thirtyDaysAgo
+          }
+        },
+      ]
+    }
+  });
+  return aggregation;
+};

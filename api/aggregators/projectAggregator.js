@@ -55,3 +55,43 @@ const getProjectLegislationInfo = (legislation) => {
 
   return {projectLegislationDataKey, projectLegislationDataIdKey: projectLegislationDataKey + '._id'};
 };
+
+exports.addUpdatedInLast30daysAggr = () => {
+  const in30days = new Date();
+  in30days.setDate(in30days.getDate() - 30);
+
+  const aggregation = [];
+  aggregation.push({
+    $addFields: {
+      "dateAdded": {
+        "$cond": {
+          "if": {
+            "$eq": ["$dateAdded", ""]
+          },
+          "then": null,
+          "else":  {
+            "$dateFromString": {
+              "dateString": "$dateAdded"
+            }
+          }
+        }
+      }
+    }
+  },{
+    $match: {
+      $or: [
+        {
+          'dateUpdated': {
+            $gte: in30days
+          }
+        },
+        {
+          "dateAdded": {
+            "$gte": in30days
+          }
+        }
+      ]
+    }
+  });
+  return aggregation;
+};
