@@ -154,7 +154,7 @@ const executeQuery = async function (args, res) {
     return Actions.sendResponse(res, 400, { });
   }
 
-  Utils.recordAction('Search', keywords, args.swagger.params.auth_payload ? args.swagger.params.auth_payload.preferred_username : 'public');
+  await Utils.recordAction('Search', keywords, args.swagger.params.auth_payload ? args.swagger.params.auth_payload.preferred_username : 'public');
 
   let sortDirection = undefined;
   let sortField = undefined;
@@ -236,11 +236,11 @@ const executeQuery = async function (args, res) {
 
 /***** Exported functions  *****/
 exports.publicGet = async function (args, res) {
-  executeQuery(args, res);
+  await executeQuery(args, res);
 };
 
-exports.protectedGet = function (args, res) {
-  executeQuery(args, res);
+exports.protectedGet = async function (args, res) {
+  await executeQuery(args, res);
 };
 
 exports.protectedOptions = function (args, res) {

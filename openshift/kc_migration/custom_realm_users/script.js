@@ -306,7 +306,8 @@ async function main() {
   }
 }
 
-main();
+main().catch((err)=>console.error('Migration end with error', JSON.stringify(err)))
+.then(()=>console.log('Migration Completed Successfully'));
 
 //returns user guid, please modify accordingly if required
 //by default it uses idp specific user attribute to fetch the guid
