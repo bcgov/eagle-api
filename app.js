@@ -1,5 +1,6 @@
 'use strict';
 
+require('dotenv').config();
 var app           = require('express')();
 var fs            = require('fs');
 var uploadDir     = process.env.UPLOAD_DIRECTORY || './uploads/';
