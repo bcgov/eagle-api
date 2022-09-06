@@ -2,6 +2,8 @@ const { setProjectDefault } = require('../helpers/aggregators');
 const mongoose = require('mongoose');
 
 const aggregateHelper = require('../helpers/aggregators');
+const constants = require('../helpers/constants').schemaTypes;
+
 
 /**
  * Create an aggregation that sets the matching criteria for a document search.
@@ -20,6 +22,9 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   const aggregation = [];
   let projectModifier;
   let keywordModifier;
+  if (andModifier) {
+    delete andModifier.changedInLast30days;
+  }
 
   if (projectId) {
     projectModifier = { project: mongoose.Types.ObjectId(projectId) };
@@ -142,7 +147,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
  * @param {array} roles Set of user roles
  * @returns {array} Aggregate for documents.
  */
-exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize) => {
+exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize, changedInLast30days) => {
   let aggregation = [];
 
   // Allow documents to be sorted by status based on publish existence
@@ -185,8 +190,12 @@ exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDire
       }
     });
   }
+  let updatedIn30daysAggr = [];
   var sortAggregation = aggregateHelper.createSortingPagingAggr('Document', sortingValue, sortField, sortDirection, pageNum, pageSize);
-  aggregation = [...aggregation, ...sortAggregation];
+  if (changedInLast30days !== undefined) {
+    updatedIn30daysAggr = aggregateHelper.createUpdatedInLast30daysAggr(constants.DOCUMENT);
+  }
+  aggregation = [...aggregation, ...updatedIn30daysAggr, ...sortAggregation];
 
   if (populate) {
     //Handle project.
@@ -251,5 +260,28 @@ exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDire
 
   }
 
+  return aggregation;
+};
+
+exports.addUpdatedInLast30daysAggr = () => {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const aggregation = [];
+  aggregation.push({
+    $match: {
+      $or: [
+        {
+          'datePosted': {
+            $gte: thirtyDaysAgo
+          }
+        },
+        {
+          'dateUploaded': {
+            $gte: thirtyDaysAgo
+          }
+        },
+      ]
+    }
+  });
   return aggregation;
 };

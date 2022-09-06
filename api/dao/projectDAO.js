@@ -344,6 +344,7 @@ exports.createProject = async function (user, project) {
   newProject.delete = ['sysadmin', 'staff'];
   projectData._createdBy = user;
   projectData.createdDate = Date.now();
+  projectData.dateAdded = new Date().toISOString();
 
   if (projectLegislationYear == 2018) {
     newProject.legislation_2018 = projectData;
@@ -414,6 +415,7 @@ exports.updateProject = async function(user, sourceProject, updatedProject) {
   filteredData.name              = updatedProject.name;
   filteredData.substantiallyDate = updatedProject.substantiallyDate;
   filteredData.eaStatusDate      = updatedProject.eaStatusDate;
+  filteredData.dateUpdated       = new Date();
   // Updating the legislation Year in the legislation key
   filteredData.legislationYear   = projectLegislationYear;
   filteredData.substantially     = updatedProject.substantially;

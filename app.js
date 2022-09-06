@@ -8,19 +8,19 @@ var hostname      = process.env.API_HOSTNAME || 'localhost:3000';
 var swaggerTools  = require('swagger-tools');
 var YAML          = require('yamljs');
 var auth          = require('./api/helpers/auth');
+
 var swaggerConfig = YAML.load('./api/swagger/swagger.yaml');
-var bodyParser    = require('body-parser');
-var app_helper    = require('./app_helper');
+var bodyParser = require('body-parser');
+var app_helper = require('./app_helper');
 
 var api_default_port = 3000;
 
 var express_server;
 
 var defaultLog = app_helper.defaultLog;
-
 // Increase postbody sizing
-app.use(bodyParser.json({limit: '10mb', extended: true}));
-app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
+app.use(bodyParser.json({ limit: '10mb', extended: true }));
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 // disable powered by header
 app.disable('x-powered-by');
@@ -49,7 +49,7 @@ if (hostname !== 'localhost:3000') {
   swaggerConfig.schemes = ['https'];
 }
 
-swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
+swaggerTools.initializeMiddleware(swaggerConfig, function (middleware) {
   app.use(middleware.swaggerMetadata());
 
   // TODO: Fix this
@@ -68,30 +68,33 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
 
   app.use(middleware.swaggerRouter(routerConfig));
 
-  app.use(middleware.swaggerUi({apiDocs: '/api/docs', swaggerUi: '/api/docs'}));
+  app.use(middleware.swaggerUi({ apiDocs: '/api/docs', swaggerUi: '/api/docs' }));
 
   // Make sure uploads directory exists
   try {
-    if (!fs.existsSync(uploadDir)){
+    if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir);
     }
   } catch (e) {
     // Fall through - uploads will continue to fail until this is resolved locally.
-    defaultLog.info('Couldn\'t create upload folder:', e);
+    defaultLog.info("Couldn't create upload folder:", e);
   }
 
-  app_helper.loadMongoose().then(() => {
-    express_server = app.listen(api_default_port, '0.0.0.0', function() {
-      defaultLog.info('Started server on port ' + api_default_port);
+  app_helper
+    .loadMongoose()
+    .then(() => {
+      express_server = app.listen(api_default_port, '0.0.0.0', function () {
+        defaultLog.info('Started server on port ' + api_default_port);
+      });
+    })
+    .catch(function (err) {
+      defaultLog.info('err:', err);
     });
-  }).catch(function (err) {
-    defaultLog.info('err:', err);
-  });
 
   // Counterintuitively, we crash because we don't want the pod hanging around.  Let's just spin up
   // a new pod incase the mongo topology was destroyed, among other things.
-  process.on('unhandledRejection', function(reason) {
-    console.log("Unhandled Rejection:", reason);
+  process.on('unhandledRejection', function (reason) {
+    console.log('Unhandled Rejection:', reason);
     process.exit(1);
   });
 });
