@@ -64,7 +64,7 @@ const searchCollection = async function (
         sortDirection,
         pageNum,
         pageSize,
-        and?.changedInLast30days
+        and ? and.changedInLast30days : undefined
       );
       matchAggregation = await documentAggregator.createMatchAggr(
         schemaName,
@@ -77,7 +77,7 @@ const searchCollection = async function (
         roles,
         fuzzy
       );
-      
+
       // if (updatedIn30daysModifier) schemaAggregation = [...schemaAggregation, ...updatedIn30daysModifier];
       break;
     case constants.PROJECT:
@@ -85,7 +85,7 @@ const searchCollection = async function (
       //   delete and.changedInLast30days;
       //   updatedIn30daysModifier = projectAggregator.addUpdatedInLast30daysAggr();
       // }
-      schemaAggregation = projectAggregator.createProjectAggr(projectLegislation, and?.changedInLast30days);
+      schemaAggregation = projectAggregator.createProjectAggr(projectLegislation, and ? and.changedInLast30days : undefined);
       matchAggregation = await searchAggregator.createMatchAggr(
         schemaName,
         project,
@@ -96,7 +96,7 @@ const searchCollection = async function (
         roles,
         fuzzy
       );
-      
+
       // if (updatedIn30daysModifier) schemaAggregation = [...schemaAggregation, ...updatedIn30daysModifier];
       break;
     case constants.CAC:
