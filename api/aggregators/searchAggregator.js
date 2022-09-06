@@ -20,6 +20,9 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   const aggregation = [];
   let projectModifier;
   let keywordModifier;
+  if (andModifier) {
+    delete andModifier.changedInLast30days;
+  }
 
   if (projectId) {
     projectModifier = { project: mongoose.Types.ObjectId(projectId) };

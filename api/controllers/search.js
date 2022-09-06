@@ -49,65 +49,167 @@ const searchCollection = async function (
   // Create appropriate aggregations for the schema.
   let schemaAggregation;
   let matchAggregation;
-  let updatedIn30daysModifier;
+  // let updatedIn30daysModifier;
   switch (schemaName) {
-  case constants.DOCUMENT:
-    if (and && and.changedInLast30days) {
-      delete and.changedInLast30days;
-      updatedIn30daysModifier = documentAggregator.addUpdatedInLast30daysAggr();
-    }
-    matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, categorized, roles, fuzzy);
-    schemaAggregation = documentAggregator.createDocumentAggr(populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize);
-    if (updatedIn30daysModifier) schemaAggregation = [...schemaAggregation, ...updatedIn30daysModifier];
-    break;
-  case constants.PROJECT:
-    if (and && and.changedInLast30days) {
-      delete and.changedInLast30days;
-      updatedIn30daysModifier = projectAggregator.addUpdatedInLast30daysAggr();
-    }
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles, fuzzy);
-    schemaAggregation = projectAggregator.createProjectAggr(projectLegislation);
-    if (updatedIn30daysModifier) schemaAggregation = [...schemaAggregation, ...updatedIn30daysModifier];
-    break;
-  case constants.CAC:
-    matchAggregation = await cacAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    // None needed
-    schemaAggregation = [];
-    break;
-  case constants.GROUP:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = groupAggregator.createGroupAggr(populate);
-    break;
-  case constants.USER:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = userAggregator.createUserAggr(populate);
-    break;
-  case constants.RECENT_ACTIVITY:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = recentActivityAggregator.createRecentActivityAggr(populate);
-    break;
-  case constants.INSPECTION:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = inspectionAggregator.createInspectionAggr(populate);
-    break;
-  case constants.INSPECTION_ELEMENT:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = inspectionAggregator.createInspectionElementAggr(populate);
-    break;
-  case constants.PROJECT_NOTIFICATION:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = notificationProjectAggregator.createNotificationProjectAggr(populate);
-    break;
-  case constants.LIST:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    break;
-  case constants.ORGANIZATION:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    break;
-  default:
-    matchAggregation = null;
-    schemaAggregation = null;
-    break;
+    case constants.DOCUMENT:
+      // if (and && and.changedInLast30days) {
+      //   delete and.changedInLast30days;
+      //   updatedIn30daysModifier = documentAggregator.addUpdatedInLast30daysAggr();
+      // }
+      schemaAggregation = documentAggregator.createDocumentAggr(
+        populate,
+        roles,
+        sortingValue,
+        sortField,
+        sortDirection,
+        pageNum,
+        pageSize,
+        and?.changedInLast30days
+      );
+      matchAggregation = await documentAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        categorized,
+        roles,
+        fuzzy
+      );
+      
+      // if (updatedIn30daysModifier) schemaAggregation = [...schemaAggregation, ...updatedIn30daysModifier];
+      break;
+    case constants.PROJECT:
+      // if (and && and.changedInLast30days) {
+      //   delete and.changedInLast30days;
+      //   updatedIn30daysModifier = projectAggregator.addUpdatedInLast30daysAggr();
+      // }
+      schemaAggregation = projectAggregator.createProjectAggr(projectLegislation, and?.changedInLast30days);
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles,
+        fuzzy
+      );
+      
+      // if (updatedIn30daysModifier) schemaAggregation = [...schemaAggregation, ...updatedIn30daysModifier];
+      break;
+    case constants.CAC:
+      matchAggregation = await cacAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      // None needed
+      schemaAggregation = [];
+      break;
+    case constants.GROUP:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      schemaAggregation = groupAggregator.createGroupAggr(populate);
+      break;
+    case constants.USER:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      schemaAggregation = userAggregator.createUserAggr(populate);
+      break;
+    case constants.RECENT_ACTIVITY:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      schemaAggregation = recentActivityAggregator.createRecentActivityAggr(populate);
+      break;
+    case constants.INSPECTION:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      schemaAggregation = inspectionAggregator.createInspectionAggr(populate);
+      break;
+    case constants.INSPECTION_ELEMENT:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      schemaAggregation = inspectionAggregator.createInspectionElementAggr(populate);
+      break;
+    case constants.PROJECT_NOTIFICATION:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      schemaAggregation = notificationProjectAggregator.createNotificationProjectAggr(populate);
+      break;
+    case constants.LIST:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      break;
+    case constants.ORGANIZATION:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      break;
+    default:
+      matchAggregation = null;
+      schemaAggregation = null;
+      break;
   }
 
   // A match aggregation must exist.
@@ -116,12 +218,14 @@ const searchCollection = async function (
   }
 
   // keyword regex
-  let keywordRegexFilter = [];//!fuzzy && decodedKeywords ? searchAggregator.createKeywordRegexAggr(decodedKeywords, schemaName) : [];
+  let keywordRegexFilter = []; //!fuzzy && decodedKeywords ? searchAggregator.createKeywordRegexAggr(decodedKeywords, schemaName) : [];
 
   // Create the sorting and paging aggregations.
   // For Document schema, the sorting and pagination pipelines have already been added for performance purpose
-  const resultAggr = (schemaName === constants.DOCUMENT?searchAggregator.createResultAggregator():
-    aggregateHelper.createSortingPagingAggr(schemaName, sortingValue, sortField, sortDirection, pageNum, pageSize));
+  const resultAggr =
+    schemaName === constants.DOCUMENT
+      ? searchAggregator.createResultAggregator()
+      : aggregateHelper.createSortingPagingAggr(schemaName, sortingValue, sortField, sortDirection, pageNum, pageSize);
 
   // Combine all the aggregations.
   let aggregation;
