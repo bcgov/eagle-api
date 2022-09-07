@@ -16,6 +16,8 @@ const notificationProjectAggregator = require('../aggregators/notificationProjec
 const itemAggregator = require('../aggregators/itemAggregator');
 const searchAggregator = require('../aggregators/searchAggregator');
 const aggregateHelper = require('../helpers/aggregators');
+const cache = require('../helpers/cache');
+const cacheKeys = require('../helpers/constants').cacheKeys;
 
 const searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue, categorized, fuzzy) {
   const aggregateCollation = {
@@ -188,7 +190,9 @@ const executeQuery = async function (args, res) {
 
   if (dataset !== constants.ITEM) {
     const collectionData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue, categorized, fuzzy);
-
+    if(dataset === constants.LIST) {
+      cache.set(cacheKeys.LIST, collectionData[0].searchResults, cacheKeys.LIST_TIMEOUT);
+    }
     // TODO: this should be moved into the aggregation.
     if (dataset === constants.COMMENT) {
       // Filter
