@@ -4,6 +4,9 @@ const mongoose = require('mongoose');
 
 const constants = require('../helpers/constants').schemaTypes;
 const Utils = require('../helpers/utils');
+const cache = require('../helpers/cache');
+const { schemaTypes } = require('../helpers/constants');
+const cacheKeys = require('../helpers/constants').cacheKeys;
 
 /**
  * Creates an aggregation with the default project year set as the root.
@@ -209,6 +212,8 @@ const addProjectLookupAggrs = (aggregation, dataKey) => {
 };
 
 const generateExpArray = async (field, roles, schemaName) => {
+  var result = await addEAIndependentConditions(field);
+  field = {...field,...result};
   const expArray = [];
   if (field) {
     const queryString = qs.parse(field);
@@ -559,6 +564,77 @@ const createSortingPagingAggr = function (schemaName, sortValues, sortField, sor
   }
 
   return combinedAggregation;
+};
+
+/**
+ * Incorporate the conditions with values across different legislations
+ * @param {*} fields
+ * @returns
+ */
+const addEAIndependentConditions = async (fields) => {
+  var result = {};
+  if (fields) {
+    var lists = cache.get(cacheKeys.LIST);
+    if (!lists) {
+      lists = await getListsFromDatabase();
+      if (lists && lists.length > 0) {
+        cache.set(cacheKeys.LIST, lists, cacheKeys.LIST_TIMEOUT);
+      }
+    }
+    if (lists && lists.length > 0) {
+      var fieldKeys = Object.keys(fields);
+      fieldKeys.forEach(fieldKey => {
+        var field = fields[fieldKey];
+        var ids = Array.isArray(field) ? field : [field];
+        var id = Array.isArray(field) ? (field[0]) : field;
+        var listObj = lists.filter(p => p._id.toString() === id)[0];
+        if (listObj) {
+          var names = lists.filter(p => ids.includes(p._id.toString())).map(p => p.name);
+          lists.filter(p => names.includes(p.name) && p.type === listObj.type)
+            .map(p => {
+              if (!Object.keys(result).includes(fieldKey)) {
+                result[fieldKey] = [];
+              }
+              (result[fieldKey]).push(p._id.toString());
+            });
+        }
+      });
+    }
+  }
+
+  return result;
+};
+
+/**
+ * Gets the LIST data from database
+ * This method sets it in the cache
+ * @returns
+ */
+const getListsFromDatabase = async() => {
+  const aggregateCollation = {
+    locale: 'en',
+    strength: 2
+  };
+  var match = [{
+    $match: {
+      _schemaName: schemaTypes.LIST,
+      $or: [
+        { isDeleted: { $exists: false } },
+        { isDeleted: false },
+      ]
+    }
+  }];
+  return new Promise(function (resolve, reject) {
+    var collectionObj = mongoose.model(schemaTypes.LIST);
+
+    collectionObj.aggregate(match)
+      .allowDiskUse(true)
+      .collation(aggregateCollation)
+      .exec()
+      .then(function (data) {
+        resolve(data);
+      }, reject);
+  });
 };
 
 const createUpdatedInLast30daysAggr = schemaName => {
