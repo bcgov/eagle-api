@@ -17,7 +17,24 @@ const itemAggregator = require('../aggregators/itemAggregator');
 const searchAggregator = require('../aggregators/searchAggregator');
 const aggregateHelper = require('../helpers/aggregators');
 
-const searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue, categorized, fuzzy) {
+const searchCollection = async function (
+  roles,
+  keywords,
+  schemaName,
+  pageNum,
+  pageSize,
+  project,
+  projectLegislation,
+  sortField = undefined,
+  sortDirection = undefined,
+  caseSensitive,
+  populate = false,
+  and,
+  or,
+  sortingValue,
+  categorized,
+  fuzzy
+) {
   const aggregateCollation = {
     locale: 'en',
     strength: 2
@@ -32,54 +49,167 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   // Create appropriate aggregations for the schema.
   let schemaAggregation;
   let matchAggregation;
+  // let updatedIn30daysModifier;
   switch (schemaName) {
-  case constants.DOCUMENT:
-    matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, categorized, roles, fuzzy);
-    schemaAggregation = documentAggregator.createDocumentAggr(populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize);
-    break;
-  case constants.PROJECT:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles, fuzzy);
-    schemaAggregation = projectAggregator.createProjectAggr(projectLegislation);
-    break;
-  case constants.CAC:
-    matchAggregation = await cacAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    // None needed
-    schemaAggregation = [];
-    break;
-  case constants.GROUP:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = groupAggregator.createGroupAggr(populate);
-    break;
-  case constants.USER:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = userAggregator.createUserAggr(populate);
-    break;
-  case constants.RECENT_ACTIVITY:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = recentActivityAggregator.createRecentActivityAggr(populate);
-    break;
-  case constants.INSPECTION:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = inspectionAggregator.createInspectionAggr(populate);
-    break;
-  case constants.INSPECTION_ELEMENT:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = inspectionAggregator.createInspectionElementAggr(populate);
-    break;
-  case constants.PROJECT_NOTIFICATION:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = notificationProjectAggregator.createNotificationProjectAggr(populate);
-    break;
-  case constants.LIST:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    break;
-  case constants.ORGANIZATION:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    break;
-  default:
-    matchAggregation = null;
-    schemaAggregation = null;
-    break;
+    case constants.DOCUMENT:
+      // if (and && and.changedInLast30days) {
+      //   delete and.changedInLast30days;
+      //   updatedIn30daysModifier = documentAggregator.addUpdatedInLast30daysAggr();
+      // }
+      schemaAggregation = documentAggregator.createDocumentAggr(
+        populate,
+        roles,
+        sortingValue,
+        sortField,
+        sortDirection,
+        pageNum,
+        pageSize,
+        and ? and.changedInLast30days : undefined
+      );
+      matchAggregation = await documentAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        categorized,
+        roles,
+        fuzzy
+      );
+
+      // if (updatedIn30daysModifier) schemaAggregation = [...schemaAggregation, ...updatedIn30daysModifier];
+      break;
+    case constants.PROJECT:
+      // if (and && and.changedInLast30days) {
+      //   delete and.changedInLast30days;
+      //   updatedIn30daysModifier = projectAggregator.addUpdatedInLast30daysAggr();
+      // }
+      schemaAggregation = projectAggregator.createProjectAggr(projectLegislation, and ? and.changedInLast30days : undefined);
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles,
+        fuzzy
+      );
+
+      // if (updatedIn30daysModifier) schemaAggregation = [...schemaAggregation, ...updatedIn30daysModifier];
+      break;
+    case constants.CAC:
+      matchAggregation = await cacAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      // None needed
+      schemaAggregation = [];
+      break;
+    case constants.GROUP:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      schemaAggregation = groupAggregator.createGroupAggr(populate);
+      break;
+    case constants.USER:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      schemaAggregation = userAggregator.createUserAggr(populate);
+      break;
+    case constants.RECENT_ACTIVITY:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      schemaAggregation = recentActivityAggregator.createRecentActivityAggr(populate);
+      break;
+    case constants.INSPECTION:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      schemaAggregation = inspectionAggregator.createInspectionAggr(populate);
+      break;
+    case constants.INSPECTION_ELEMENT:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      schemaAggregation = inspectionAggregator.createInspectionElementAggr(populate);
+      break;
+    case constants.PROJECT_NOTIFICATION:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      schemaAggregation = notificationProjectAggregator.createNotificationProjectAggr(populate);
+      break;
+    case constants.LIST:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      break;
+    case constants.ORGANIZATION:
+      matchAggregation = await searchAggregator.createMatchAggr(
+        schemaName,
+        project,
+        decodedKeywords,
+        caseSensitive,
+        or,
+        and,
+        roles
+      );
+      break;
+    default:
+      matchAggregation = null;
+      schemaAggregation = null;
+      break;
   }
 
   // A match aggregation must exist.
@@ -88,12 +218,14 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   }
 
   // keyword regex
-  let keywordRegexFilter = [];//!fuzzy && decodedKeywords ? searchAggregator.createKeywordRegexAggr(decodedKeywords, schemaName) : [];
+  let keywordRegexFilter = []; //!fuzzy && decodedKeywords ? searchAggregator.createKeywordRegexAggr(decodedKeywords, schemaName) : [];
 
   // Create the sorting and paging aggregations.
   // For Document schema, the sorting and pagination pipelines have already been added for performance purpose
-  const resultAggr = (schemaName === constants.DOCUMENT?searchAggregator.createResultAggregator():
-    aggregateHelper.createSortingPagingAggr(schemaName, sortingValue, sortField, sortDirection, pageNum, pageSize));
+  const resultAggr =
+    schemaName === constants.DOCUMENT
+      ? searchAggregator.createResultAggregator()
+      : aggregateHelper.createSortingPagingAggr(schemaName, sortingValue, sortField, sortDirection, pageNum, pageSize);
 
   // Combine all the aggregations.
   let aggregation;
@@ -106,7 +238,8 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   return new Promise(function (resolve, reject) {
     var collectionObj = mongoose.model(schemaName);
 
-    collectionObj.aggregate(aggregation)
+    collectionObj
+      .aggregate(aggregation)
       .allowDiskUse(true)
       .collation(aggregateCollation)
       .exec()
@@ -148,23 +281,27 @@ const executeQuery = async function (args, res) {
   defaultLog.info('roles:', roles);
 
   if (args.swagger.params.project && args.swagger.params.project.value && !mongoose.Types.ObjectId.isValid(project)) {
-    return Actions.sendResponse(res, 400, { });
+    return Actions.sendResponse(res, 400, {});
   }
   if (_id && !mongoose.Types.ObjectId.isValid(_id)) {
-    return Actions.sendResponse(res, 400, { });
+    return Actions.sendResponse(res, 400, {});
   }
 
-  Utils.recordAction('Search', keywords, args.swagger.params.auth_payload ? args.swagger.params.auth_payload.preferred_username : 'public');
+  Utils.recordAction(
+    'Search',
+    keywords,
+    args.swagger.params.auth_payload ? args.swagger.params.auth_payload.preferred_username : 'public'
+  );
 
   let sortDirection = undefined;
   let sortField = undefined;
   const sortingValue = {};
 
-  sortBy.forEach((value) => {
+  sortBy.forEach(value => {
     // To handle multiple sort values passed by comma delimiter which occurs when multiple sort by fields are used (somehow)
-    if (value.includes(",")){
-      let sortParams = value.split(",");
-      sortParams.forEach((sortValue)=>{
+    if (value.includes(',')) {
+      let sortParams = value.split(',');
+      sortParams.forEach(sortValue => {
         sortDirection = sortValue.charAt(0) === '-' ? -1 : 1;
         sortField = sortValue.slice(1);
         sortingValue[sortField] = sortDirection;
@@ -187,7 +324,24 @@ const executeQuery = async function (args, res) {
   defaultLog.info('sortDirection:', sortDirection);
 
   if (dataset !== constants.ITEM) {
-    const collectionData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue, categorized, fuzzy);
+    const collectionData = await searchCollection(
+      roles,
+      keywords,
+      dataset,
+      pageNum,
+      pageSize,
+      project,
+      projectLegislation,
+      sortField,
+      sortDirection,
+      caseSensitive,
+      populate,
+      and,
+      or,
+      sortingValue,
+      categorized,
+      fuzzy
+    );
 
     // TODO: this should be moved into the aggregation.
     if (dataset === constants.COMMENT) {
@@ -205,10 +359,13 @@ const executeQuery = async function (args, res) {
     }
 
     return Actions.sendResponse(res, 200, collectionData);
-
   } else if (dataset === constants.ITEM) {
     const collectionObj = mongoose.model(args.swagger.params._schemaName.value);
-    const aggregation = itemAggregator.createItemAggr(args.swagger.params._id.value, args.swagger.params._schemaName.value, roles);
+    const aggregation = itemAggregator.createItemAggr(
+      args.swagger.params._id.value,
+      args.swagger.params._schemaName.value,
+      roles
+    );
 
     let data = await collectionObj.aggregate(aggregation).allowDiskUse(true);
 
