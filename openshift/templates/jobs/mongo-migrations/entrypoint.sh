@@ -7,7 +7,7 @@ echo "###############################################"
 echo "##            Migration starting             ##"
 echo "###############################################"
 echo ""
-echo "Running the process in $NAME_SUFFIX"
+echo "Running the process in $NAMESPACE"
 echo "Openshift Server: $OC_URL"
 echo "Authentication Token: $OC_TOKEN"
 echo ""
@@ -16,12 +16,12 @@ echo "* Connect to openshift..."
 echo "***********************************************"
 # probably need a long-lived token? oc create serviceaccount epic-dbmigrate 
 oc login ${OC_URL} --token=${OC_TOKEN}
-oc project esm-${NAME_SUFFIX}
+oc project ${NAMESPACE}
 
 # get the API and MongoDB pods
 echo "Identifying Mongo and API pods..."
-API_POD=$(oc get pods -n esm-${NAME_SUFFIX} --output='custom-columns=NAME:.metadata.name' --no-headers=true --selector='name in (eagle-api)')
-MONGO_POD=$(oc get pods -n esm-${NAME_SUFFIX} --output='custom-columns=NAME:.metadata.name' --no-headers=true --selector='name in (eagle-api-mongodb)')
+API_POD=$(oc get pods -n ${NAMESPACE} --output='custom-columns=NAME:.metadata.name' --no-headers=true --selector='name in (eagle-api)')
+MONGO_POD=$(oc get pods -n ${NAMESPACE} --output='custom-columns=NAME:.metadata.name' --no-headers=true --selector='name in (eagle-api-mongodb)')
 echo ""
 echo "***********************************************"
 echo "* Current API Pod: ${API_POD}"
@@ -81,7 +81,7 @@ echo "***********************************************"
 # before we can run the migration scripts, we have to make sure
 # the required libraries are available for running the api project
 # in node
-npm install
+npm install --omit=dev
 echo "***********************************************"
 echo "* Running migrations..."
 echo "***********************************************"
