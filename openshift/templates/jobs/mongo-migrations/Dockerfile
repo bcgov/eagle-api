@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM node:10-alpine
 USER root
 
 # install glibc for mongo/oc binaries
@@ -44,8 +44,8 @@ RUN ALPINE_GLIBC_BASE_URL="https://github.com/sgerrand/alpine-pkg-glibc/releases
 # install curl
 RUN apk update \
     && apk add --update curl rsync \
-    && rm -rf /var/cache/apk/* \
-    && apk upgrade
+    && rm -rf /var/cache/apk/* 
+    # && apk upgrade
 
 # install OC cli
 ENV OPENSHIFT_VERSION v3.11.0
