@@ -12,10 +12,10 @@ inputs:
   ROCKETCHAT_WEBHOOK:
     description: 'Webhook for sending status to Rocketchat'
     required: true
-  NAME_SUFFIX:
-    description: 'dev/test/prod'
+  NAMESPACE:
+    description: '6cdc9e-dev/6cdc9e-test/6cdc9e-prod'
     required: true
-    default: 'dev'
+    default: '6cdc9e-dev'
 runs:
   using: 'docker'
   image: 'Dockerfile'
