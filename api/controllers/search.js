@@ -15,6 +15,7 @@ const inspectionAggregator = require('../aggregators/inspectionAggregator');
 const notificationProjectAggregator = require('../aggregators/notificationProjectAggregator');
 const itemAggregator = require('../aggregators/itemAggregator');
 const searchAggregator = require('../aggregators/searchAggregator');
+const favoriteAggregator = require('../aggregators/favoriteAggregator');
 const aggregateHelper = require('../helpers/aggregators');
 
 const searchCollection = async function (
@@ -33,7 +34,8 @@ const searchCollection = async function (
   or,
   sortingValue,
   categorized,
-  fuzzy
+  fuzzy,
+  userId
 ) {
   const aggregateCollation = {
     locale: 'en',
@@ -75,7 +77,8 @@ const searchCollection = async function (
         and,
         categorized,
         roles,
-        fuzzy
+        fuzzy,
+        userId
       );
 
       // if (updatedIn30daysModifier) schemaAggregation = [...schemaAggregation, ...updatedIn30daysModifier];
@@ -94,7 +97,8 @@ const searchCollection = async function (
         or,
         and,
         roles,
-        fuzzy
+        fuzzy,
+        userId
       );
 
       // if (updatedIn30daysModifier) schemaAggregation = [...schemaAggregation, ...updatedIn30daysModifier];
@@ -265,6 +269,7 @@ const executeQuery = async function (args, res) {
   const or = args.swagger.params.or ? args.swagger.params.or.value : '';
   const categorized = args.swagger.params.categorized ? args.swagger.params.categorized.value : null;
   const fuzzy = args.swagger.params.fuzzy.value ? args.swagger.params.fuzzy.value : false;
+  const userId = args.swagger.params.auth_payload ? args.swagger.params.auth_payload.email : res.socket.remoteAddress;
 
   defaultLog.info('Searching keywords:', keywords);
   defaultLog.info('Fuzzy text search:', fuzzy);
@@ -323,7 +328,7 @@ const executeQuery = async function (args, res) {
   defaultLog.info('sortField:', sortField);
   defaultLog.info('sortDirection:', sortDirection);
 
-  if (dataset !== constants.ITEM) {
+  if (dataset !== constants.ITEM && dataset !== constants.FAVORITE) {
     const collectionData = await searchCollection(
       roles,
       keywords,
@@ -340,7 +345,8 @@ const executeQuery = async function (args, res) {
       or,
       sortingValue,
       categorized,
-      fuzzy
+      fuzzy,
+      userId
     );
 
     // TODO: this should be moved into the aggregation.
@@ -385,6 +391,14 @@ const executeQuery = async function (args, res) {
     }
 
     return Actions.sendResponse(res, 200, data);
+  } else if(dataset === constants.FAVORITE) {
+    const type = args.query.type;
+    const field = args.query.field;
+    const aggregation = favoriteAggregator.createFavoriteAggr(userId, type, field);
+    const collectionObj = mongoose.model(dataset);
+    let data = await collectionObj.aggregate(aggregation).allowDiskUse(true);
+    const response = [{_schemaName: constants.FAVORITE, favorites: data.length > 0 ? data[0]._ids : []}];
+    return Actions.sendResponse(res, 200, response);
   } else {
     console.log('Bad Request');
     return Actions.sendResponse(res, 400, {});
