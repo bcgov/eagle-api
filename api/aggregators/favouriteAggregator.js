@@ -1,11 +1,11 @@
 const constants = require('../helpers/constants').schemaTypes;
 
-exports.createFavoriteAggr = (userId, type, field) => {
+exports.createFavouriteAggr = (userId, type, field) => {
   const aggregation = [];
   aggregation.push(
     {
       $match: {
-        _schemaName: constants.FAVORITE,
+        _schemaName: constants.FAVOURITE,
         type: type,
         userId: userId
       }
@@ -15,17 +15,17 @@ exports.createFavoriteAggr = (userId, type, field) => {
         from: 'epic',
         localField: 'objId',
         foreignField: '_id',
-        as: 'favorite'
+        as: 'favourite'
       }
     },
     {
       $unwind: {
-        path: '$favorite'
+        path: '$favourite'
       }
     },
     {
       $replaceRoot: {
-        newRoot: '$favorite'
+        newRoot: '$favourite'
       }
     }
   );
@@ -48,7 +48,7 @@ exports.createFavoriteAggr = (userId, type, field) => {
   return aggregation;
 };
 
-exports.createFavoritesOnlyAggr = (userId, type) => {
+exports.createFavouritesOnlyAggr = (userId, type) => {
   let aggregation = [];
   aggregation.push(
     {
@@ -56,18 +56,18 @@ exports.createFavoritesOnlyAggr = (userId, type) => {
         from: 'epic',
         localField: '_id',
         foreignField: 'objId',
-        as: 'favorite'
+        as: 'favourite'
       }
     },
     {
       $unwind: {
-        path: '$favorite',
+        path: '$favourite',
       }
     },
     {
       $match: {
-        'favorite.type': { $eq: type},
-        'favorite.userId': {$eq: userId}
+        'favourite.type': { $eq: type},
+        'favourite.userId': {$eq: userId}
       }
     }
   );

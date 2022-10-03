@@ -1,10 +1,10 @@
 const factory = require('factory-girl').factory;
-const Favorite = require('../../helpers/models/favorite');
+const Favourite = require('../../helpers/models/favourite');
 let faker = require('faker/locale/en');
 
-const factoryName = Favorite.modelName;
+const factoryName = Favourite.modelName;
 
-factory.define(factoryName, Favorite, buildOptions => {
+factory.define(factoryName, Favourite, buildOptions => {
     if (buildOptions.faker) faker = buildOptions.faker;
 
     let attrs = {

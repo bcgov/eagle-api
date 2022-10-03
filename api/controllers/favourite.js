@@ -7,11 +7,11 @@ exports.protectedOptions = function (args, res) {
   res.status(200).send();
 };
 
-exports.removeFavorite = async function (args, res) {
-  var objId = args.swagger.params.favoriteId.value;
+exports.removeFavourite = async function (args, res) {
+  var objId = args.swagger.params.favouriteId.value;
   const userId = args.swagger.params.auth_payload ? args.swagger.params.auth_payload.email : res.socket.remoteAddress;
 
-  defaultLog.info('Deleting a Favorite');
+  defaultLog.info('Deleting a Favourite');
   defaultLog.info('args.swagger.params:', args.swagger.operation['x-security-scopes']);
 
   if (!mongoose.Types.ObjectId.isValid(objId)) {
@@ -20,11 +20,11 @@ exports.removeFavorite = async function (args, res) {
 
   const query = { objId, userId };
 
-  var Favorite = mongoose.model('Favorite');
+  var Favourite = mongoose.model('Favourite');
 
-  Favorite.remove(query, function (err, data) {
+  Favourite.remove(query, function (err, data) {
     if (data) {
-      Utils.recordAction('Delete', 'Favorite', userId, data._id);
+      Utils.recordAction('Delete', 'Favourite', userId, data._id);
       return Actions.sendResponse(res, 200, data);
     } else {
       return Actions.sendResponse(res, 400, err);
@@ -32,22 +32,22 @@ exports.removeFavorite = async function (args, res) {
   });
 };
 
-exports.addFavorite = async function (args, res) {
-  var obj = args.swagger.params.favorite.value;
+exports.addFavourite = async function (args, res) {
+  var obj = args.swagger.params.favourite.value;
   if (!mongoose.Types.ObjectId.isValid(obj.objId)) {
     return Actions.sendResponse(res, 400, {});
   }
   const userId = args.swagger.params.auth_payload ? args.swagger.params.auth_payload.email : res.socket.remoteAddress;
   obj = {...obj, userId};
-
+  defaultLog.info('=============================================================================================')
   defaultLog.info('Incoming new object:', obj);
 
-  var Favorite = mongoose.model('Favorite');
+  var Favourite = mongoose.model('Favourite');
 
-  var favObj = await Favorite.findOne(obj);
+  var favObj = await Favourite.findOne(obj);
 
   if (favObj) {
-    defaultLog.info('Favorite exists. Retuning object');
+    defaultLog.info('Favourite exists. Retuning object');
     return Actions.sendResponse(res, 200, obj);
   }
 
@@ -55,18 +55,18 @@ exports.addFavorite = async function (args, res) {
   obj.read = ['sysadmin', 'staff'];
   obj.write = ['sysadmin', 'staff'];
   obj.delete = ['sysadmin', 'staff'];
-  const favorite = new Favorite(obj);
+  const favourite = new Favourite(obj);
 
-  favorite
+  favourite
     .save()
-    .then(function (newFavorite) {
+    .then(function (newFavourite) {
       Utils.recordAction(
         'Post',
-        'Favorite',
+        'Favourite',
         args.swagger.params.auth_payload ? args.swagger.params.auth_payload.preferred_username : userId,
-        newFavorite._id
+        newFavourite._id
       );
-      return Actions.sendResponse(res, 200, newFavorite);
+      return Actions.sendResponse(res, 200, newFavourite);
     })
     .catch(function (err) {
       console.log('Error in API:', err);
