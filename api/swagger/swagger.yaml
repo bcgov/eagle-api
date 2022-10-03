@@ -9475,7 +9475,7 @@ paths:
             $ref: "#/definitions/Error"
 
 ### Favorites Routes  
-  /favorites/add-to-favorites:
+  /favorites:
     x-swagger-router-controller: favorite
     options:
       tags:
@@ -9566,7 +9566,7 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-  /public/favorites/add-to-favorites:
+  /public/favorites:
     x-swagger-router-controller: favorite
     options:
       tags:
