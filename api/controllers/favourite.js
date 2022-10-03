@@ -39,7 +39,6 @@ exports.addFavourite = async function (args, res) {
   }
   const userId = args.swagger.params.auth_payload ? args.swagger.params.auth_payload.email : res.socket.remoteAddress;
   obj = {...obj, userId};
-  defaultLog.info('=============================================================================================')
   defaultLog.info('Incoming new object:', obj);
 
   var Favourite = mongoose.model('Favourite');
