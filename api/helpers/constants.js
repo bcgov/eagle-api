@@ -19,8 +19,3 @@ exports.MAX_FEATURE_DOCS = 5;
 
 exports.PUBLIC_ROLES = ['public'];
 exports.SECURE_ROLES = ['sysadmin', 'staff'];
-
-exports.cacheKeys = Object.freeze({
-  LIST: 'List',
-  LIST_TIMEOUT: 900
-});

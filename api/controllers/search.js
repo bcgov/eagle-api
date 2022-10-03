@@ -16,8 +16,6 @@ const notificationProjectAggregator = require('../aggregators/notificationProjec
 const itemAggregator = require('../aggregators/itemAggregator');
 const searchAggregator = require('../aggregators/searchAggregator');
 const aggregateHelper = require('../helpers/aggregators');
-const cache = require('../helpers/cache');
-const cacheKeys = require('../helpers/constants').cacheKeys;
 
 const searchCollection = async function (
   roles,
@@ -344,9 +342,7 @@ const executeQuery = async function (args, res) {
       categorized,
       fuzzy
     );
-    if(dataset === constants.LIST) {
-      cache.set(cacheKeys.LIST, collectionData[0].searchResults, cacheKeys.LIST_TIMEOUT);
-    }
+
     // TODO: this should be moved into the aggregation.
     if (dataset === constants.COMMENT) {
       // Filter
