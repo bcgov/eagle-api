@@ -21,6 +21,10 @@
       "hash": "3sBkSyhBMb7ydStL08+dp+WF/f4="
     },
     {
+      "name": "favorite.js",
+      "hash": "48jzu2WtDuwyEg1n87azOQsjI2A="
+    },
+    {
       "name": "group.js",
       "hash": "nVkno53aTZi674NP8UJKMACel8g="
     },
@@ -97,6 +101,10 @@
     {
       "name": "document_filler.pdf",
       "hash": "jgGep/tS5ovGO3lB5xoswb19yw4="
+    },
+    {
+      "name": "favorite_factory.js",
+      "hash": "sLPMeQJZoN98zv9dh6+aEJIZ75k="
     },
     {
       "name": "group_factory.js",
