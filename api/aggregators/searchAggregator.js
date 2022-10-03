@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const fuzzySearch = require('../helpers/fuzzySearch');
 const aggregateHelper = require('../helpers/aggregators');
 const constants = require('../helpers/constants').schemaTypes;
+const favoriteAggregator = require('../aggregators/favoriteAggregator');
+
 
 /**
  * Create an aggregation that sets the matching criteria for search.
@@ -16,11 +18,15 @@ const constants = require('../helpers/constants').schemaTypes;
  *
  * @returns {array} Aggregation for a match
  */
-exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, roles, fuzzy = false) => {
+exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, roles, fuzzy = false, userId = null) => {
   const aggregation = [];
   let projectModifier;
   let keywordModifier;
+  let favoritesModifier;
+  let favoritesOnly;
   if (andModifier) {
+    favoritesOnly = andModifier.favoritesOnly;
+    delete andModifier.favoritesOnly;
     delete andModifier.changedInLast30days;
   }
 
@@ -61,6 +67,11 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
       ]
     }
   });
+
+  if (favoritesOnly) {
+    favoritesModifier = favoriteAggregator.createFavoritesOnlyAggr(userId, constants.PROJECT);
+    aggregation.push(...favoritesModifier);
+  }
 
   // Check document permissions
   aggregation.push(
