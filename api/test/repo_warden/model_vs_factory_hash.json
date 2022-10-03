@@ -22,7 +22,7 @@
     },
     {
       "name": "favourite.js",
-      "hash": "/TxM3cmbmRM//HfSm015AjExCYE="
+      "hash": "jJq9jH3Uq2RvRCL2tPgnNcHcDt0="
     },
     {
       "name": "group.js",
@@ -45,6 +45,56 @@
       "hash": "BGrC5enmN4H5/rLgjBbPxXvSfR0="
     },
     {
+      "name": "organization.js",
+      "hash": "U6eQJ1hMBQhestydmZwpUy3SpXM="
+    },
+    {
+      "name": "pin.js",
+      "hash": "G8kO0+I7dtYoXImblzVLdXjLnHo="
+    },
+    {
+      "name": "project.js",
+      "hash": "R64yg9XkqaqjA5mFYKitN7lMwWM="
+    },
+    {
+      "name": "projectNotification.js",
+      "hash": "h6Gn15270HdyQtywXyN9f/ytd7I="
+    },
+    {
+      "name": "recentActivity.js",
+      "hash": "wod0ecw2lGwM2SjDlgMCvDp44dE="
+    },
+    {
+      "name": "topic.js",
+      "hash": "IxhaYKrtLKVUfSYryg/Hg1TRzOI="
+    },
+    {
+      "name": "user.js",
+      "hash": "MRVR2xlgVYp2m7EQxxk+maEY7JI="
+    },
+    {
+      "name": "vc.js",
+      "hash": "I/5kkWHxeGP7/O7x1Dxy+FZwJ0k="
+    }
+  ],
+  "factories": [
+    {
+      "name": "audit_factory.js",
+      "hash": "MF7xcTl7/BZJUi/R0oirTSqW/yc="
+    },
+    {
+      "name": "cacUser_factory.js",
+      "hash": "WBXoC1oiPOQvym45OToJZrG9+n0="
+    },
+    {
+      "name": "comment_factory.js",
+      "hash": "uh8wFi9e9RKXJshQ3iulnwVoqaY="
+    },
+    {
+      "name": "comment_period_factory.js",
+      "hash": "MzmhoAnu87NSk5A03A3k5oaTKMM="
+    },
+    {
       "name": "document_factory.js",
       "hash": "cYBLMKBy+3sHy6FAiXnyikLQuf8="
     },
@@ -54,7 +104,7 @@
     },
     {
       "name": "favourite_factory.js",
-      "hash": "Iftztc5HLjD3likBJ2KgAe5Egkc="
+      "hash": "68UG0QvWOVOv/SiE+/UY3dXyHSo="
     },
     {
       "name": "group_factory.js",
