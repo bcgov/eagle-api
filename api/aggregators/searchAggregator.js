@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const fuzzySearch = require('../helpers/fuzzySearch');
 const aggregateHelper = require('../helpers/aggregators');
 const constants = require('../helpers/constants').schemaTypes;
-const favoriteAggregator = require('../aggregators/favoriteAggregator');
+const favouriteAggregator = require('../aggregators/favouriteAggregator');
 
 
 /**
@@ -22,11 +22,11 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   const aggregation = [];
   let projectModifier;
   let keywordModifier;
-  let favoritesModifier;
-  let favoritesOnly;
+  let favouritesModifier;
+  let favouritesOnly;
   if (andModifier) {
-    favoritesOnly = andModifier.favoritesOnly;
-    delete andModifier.favoritesOnly;
+    favouritesOnly = andModifier.favouritesOnly;
+    delete andModifier.favouritesOnly;
     delete andModifier.changedInLast30days;
   }
 
@@ -68,9 +68,9 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
     }
   });
 
-  if (favoritesOnly) {
-    favoritesModifier = favoriteAggregator.createFavoritesOnlyAggr(userId, constants.PROJECT);
-    aggregation.push(...favoritesModifier);
+  if (favouritesOnly) {
+    favouritesModifier = favouriteAggregator.createFavouritesOnlyAggr(userId, constants.PROJECT);
+    aggregation.push(...favouritesModifier);
   }
 
   // Check document permissions
