@@ -1,6 +1,6 @@
 const constants = require('../helpers/constants').schemaTypes;
 
-exports.createFavouriteAggr = (userId, type, field) => {
+exports.createFavouriteAggr = (userId, type) => {
   const aggregation = [];
   aggregation.push(
     {
@@ -27,24 +27,20 @@ exports.createFavouriteAggr = (userId, type, field) => {
       $replaceRoot: {
         newRoot: '$favourite'
       }
+    },
+    {
+      $group: {
+        _id: null,
+        [`_ids`]: {$push: `$_id`}
+      }
+    },
+    {
+      $project: {
+        _id: false,
+        [`_ids`]: true
+      }
     }
   );
-  if (field !== undefined) {
-    aggregation.push(
-      {
-        $group: {
-          _id: null,
-          [`${field}s`]: {$push: `$${field}`}
-        }
-      },
-      {
-        $project: {
-          _id: false,
-          [`${field}s`]: true
-        }
-      }
-    );
-  }
   return aggregation;
 };
 

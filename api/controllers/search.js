@@ -393,8 +393,7 @@ const executeQuery = async function (args, res) {
     return Actions.sendResponse(res, 200, data);
   } else if(dataset === constants.FAVOURITE) {
     const type = args.query.type;
-    const field = args.query.field;
-    const aggregation = favouriteAggregator.createFavouriteAggr(userId, type, field);
+    const aggregation = favouriteAggregator.createFavouriteAggr(userId, type);
     const collectionObj = mongoose.model(dataset);
     let data = await collectionObj.aggregate(aggregation).allowDiskUse(true);
     const response = [{_schemaName: constants.FAVOURITE, favourites: data.length > 0 ? data[0]._ids : []}];
