@@ -15,7 +15,7 @@ const inspectionAggregator = require('../aggregators/inspectionAggregator');
 const notificationProjectAggregator = require('../aggregators/notificationProjectAggregator');
 const itemAggregator = require('../aggregators/itemAggregator');
 const searchAggregator = require('../aggregators/searchAggregator');
-const favoriteAggregator = require('../aggregators/favoriteAggregator');
+const favouriteAggregator = require('../aggregators/favouriteAggregator');
 const aggregateHelper = require('../helpers/aggregators');
 
 const searchCollection = async function (
@@ -328,7 +328,7 @@ const executeQuery = async function (args, res) {
   defaultLog.info('sortField:', sortField);
   defaultLog.info('sortDirection:', sortDirection);
 
-  if (dataset !== constants.ITEM && dataset !== constants.FAVORITE) {
+  if (dataset !== constants.ITEM && dataset !== constants.FAVOURITE) {
     const collectionData = await searchCollection(
       roles,
       keywords,
@@ -391,13 +391,12 @@ const executeQuery = async function (args, res) {
     }
 
     return Actions.sendResponse(res, 200, data);
-  } else if(dataset === constants.FAVORITE) {
+  } else if(dataset === constants.FAVOURITE) {
     const type = args.query.type;
-    const field = args.query.field;
-    const aggregation = favoriteAggregator.createFavoriteAggr(userId, type, field);
+    const aggregation = favouriteAggregator.createFavouriteAggr(userId, type);
     const collectionObj = mongoose.model(dataset);
     let data = await collectionObj.aggregate(aggregation).allowDiskUse(true);
-    const response = [{_schemaName: constants.FAVORITE, favorites: data.length > 0 ? data[0]._ids : []}];
+    const response = [{_schemaName: constants.FAVOURITE, favourites: data.length > 0 ? data[0]._ids : []}];
     return Actions.sendResponse(res, 200, response);
   } else {
     console.log('Bad Request');

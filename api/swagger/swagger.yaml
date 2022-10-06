@@ -713,10 +713,10 @@ definitions:
         example: 'default'
         enum: &materializedViewSubset
           - default
-### Favorite Definitions
-  FavoriteObject:
+### Favourite Definitions
+  FavouriteObject:
     type: object
-    example: 'A favorite object'
+    example: 'A favourite object'
     required: [objId, type]
     properties:
       objId:
@@ -9149,7 +9149,7 @@ paths:
     put:
       tags:
         - document
-      summary: "UnFavorite a document"
+      summary: "UnFavourite a document"
       operationId: unfeatureDocument
       description: "sets the isFeatured value to false"
       security:
@@ -9474,68 +9474,68 @@ paths:
           schema:
             $ref: "#/definitions/Error"
 
-### Favorites Routes  
-  /favorites:
-    x-swagger-router-controller: favorite
+### Favourites Routes  
+  /favourites:
+    x-swagger-router-controller: favourite
     options:
       tags:
-        - favorite
+        - favourite
       summary: "Pre-flight request"
       operationId: protectedOptions
-      description: "Options on Favorite GET Route"
+      description: "Options on Favourite GET Route"
       responses:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/FavoriteObject"
+            $ref: "#/definitions/FavouriteObject"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
     post:
       tags:
-        - Favorite
-      summary: "Create a new favorite"
-      operationId: addFavorite
-      description: "Create a new favorite object."
+        - Favourite
+      summary: "Create a new favourite"
+      operationId: addFavourite
+      description: "Create a new favourite object."
       security:
         - Bearer: []
       x-security-scopes:
         - project-system-admin
       parameters:
-        - name: favorite
+        - name: favourite
           in: body
           required: true
           schema: 
-            $ref: "#/definitions/FavoriteObject"
+            $ref: "#/definitions/FavouriteObject"
       responses:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/FavoriteObject"
+            $ref: "#/definitions/FavouriteObject"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-  /favorites/{favoriteId}:
-    x-swagger-router-controller: favorite
+  /favourites/{favouriteId}:
+    x-swagger-router-controller: favourite
     options:
       tags:
-        - favorite
+        - favourite
       summary: "Pre-flight request"
       operationId: protectedOptions
-      description: "Options on Favorite GET Route"
+      description: "Options on Favourite GET Route"
       parameters:
-        - name: favoriteId
+        - name: favouriteId
           in: path
-          description: "ID of favorite to delete"
+          description: "ID of favourite to delete"
           required: true
           type: string
       responses:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/FavoriteObject"
+            $ref: "#/definitions/FavouriteObject"
         "403":
           description: "Access Denied"
           schema:
@@ -9543,86 +9543,86 @@ paths:
     
     delete:
       tags:
-        - favorite
-      summary: "Delete a favorite"
-      operationId: removeFavorite
-      description: "Delete a favorite object."
+        - favourite
+      summary: "Delete a favourite"
+      operationId: removeFavourite
+      description: "Delete a favourite object."
       security:
         - Bearer: []
       x-security-scopes:
         - project-system-admin
       parameters:
-        - name: favoriteId
+        - name: favouriteId
           in: path
-          description: "ID of favorite to delete"
+          description: "ID of favourite to delete"
           required: true
           type: string
       responses:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/FavoriteObject"
+            $ref: "#/definitions/FavouriteObject"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-  /public/favorites:
-    x-swagger-router-controller: favorite
+  /public/favourites:
+    x-swagger-router-controller: favourite
     options:
       tags:
-        - favorite
+        - favourite
       summary: "Pre-flight request"
       operationId: protectedOptions
-      description: "Options on Favorite GET Route"
+      description: "Options on Favourite GET Route"
       responses:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/FavoriteObject"
+            $ref: "#/definitions/FavouriteObject"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
     post:
       tags:
-        - Favorite
-      summary: "Create a new favorite"
-      operationId: addFavorite
-      description: "Create a new favorite object."
+        - Favourite
+      summary: "Create a new favourite"
+      operationId: addFavourite
+      description: "Create a new favourite object."
       parameters:
-        - name: favorite
+        - name: favourite
           in: body
           required: true
           schema: 
-            $ref: "#/definitions/FavoriteObject"
+            $ref: "#/definitions/FavouriteObject"
       responses:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/FavoriteObject"
+            $ref: "#/definitions/FavouriteObject"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-  /public/favorites/{favoriteId}:
-    x-swagger-router-controller: favorite
+  /public/favourites/{favouriteId}:
+    x-swagger-router-controller: favourite
     options:
       tags:
-        - favorite
+        - favourite
       summary: "Pre-flight request"
       operationId: protectedOptions
-      description: "Options on Favorite GET Route"
+      description: "Options on Favourite GET Route"
       parameters:
-        - name: favoriteId
+        - name: favouriteId
           in: path
-          description: "ID of favorite to delete"
+          description: "ID of favourite to delete"
           required: true
           type: string
       responses:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/FavoriteObject"
+            $ref: "#/definitions/FavouriteObject"
         "403":
           description: "Access Denied"
           schema:
@@ -9630,21 +9630,21 @@ paths:
     
     delete:
       tags:
-        - favorite
-      summary: "Delete a favorite"
-      operationId: removeFavorite
-      description: "Delete a favorite object."
+        - favourite
+      summary: "Delete a favourite"
+      operationId: removeFavourite
+      description: "Delete a favourite object."
       parameters:
-        - name: favoriteId
+        - name: favouriteId
           in: path
-          description: "ID of favorite to delete"
+          description: "ID of favourite to delete"
           required: true
           type: string
       responses:
         "200":
           description: "Success"
           schema:
-            $ref: "#/definitions/FavoriteObject"
+            $ref: "#/definitions/FavouriteObject"
         "403":
           description: "Access Denied"
           schema:
