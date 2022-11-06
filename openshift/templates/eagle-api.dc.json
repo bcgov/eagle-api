@@ -134,42 +134,7 @@
       },
       "spec": {
         "strategy": {
-          "type": "Recreate",
-          "recreateParams": {
-            "timeoutSeconds": 600,
-            "pre": {
-              "failurePolicy": "Abort",
-              "execNewPod": {
-                "command": [
-                  "/opt/app-root/src/run_migration.sh"
-                ],
-                "env": [
-                  {
-                    "name": "MONGODB_ADMIN_USER",
-                    "value": "admin"
-                  },
-                  {
-                    "name": "MONGODB_ADMIN_PASSWORD",
-                    "valueFrom": {
-                      "secretKeyRef": {
-                        "name": "eagle-api-mongodb",
-                        "key": "MONGODB_ADMIN_PASSWORD"
-                      }
-                    }
-                  },
-                  {
-                    "name": "MONGODB_SERVICE_HOST",
-                    "value": "eagle-api-mongodb"
-                  },
-                  {
-                    "name": "MONGODB_AUTHSOURCE",
-                    "value": "admin"
-                  }
-                ],
-                "containerName": "eagle-api"
-              }
-            }
-          }
+          "type": "Recreate"
         },
         "triggers": [
           {
