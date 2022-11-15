@@ -10,7 +10,6 @@ var genSchema = function (name, definition) {
   definition.indexes__ = definition.indexes__ || [];
   definition.statics__ = definition.statics__ || {};
   definition.presave__ = definition.presave__ || null;
-  definition.options = definition.options || {};
   //
   // put aside the stuff that must happen post schema creation
   //
@@ -19,22 +18,18 @@ var genSchema = function (name, definition) {
   var s = definition.statics__;
   var pre = definition.presave__;
   var post = definition.postsave__;
-  var i = definition.indexes__;
-  var o = definition.options__;
   definition.methods__ = null;
   definition.virtuals__ = null;
   definition.indexes__ = null;
   definition.statics__ = null;
   definition.presave__ = null;
-  definition.options__ = null;
   delete definition.methods__;
   delete definition.virtuals__;
   delete definition.indexes__;
   delete definition.statics__;
   delete definition.presave__;
-  delete definition.options__;
 
-  var options = {};
+  var options;
   if (virtuals) {
     // http://mongoosejs.com/docs/2.7.x/docs/virtuals.html
     options = {
@@ -45,9 +40,6 @@ var genSchema = function (name, definition) {
         virtuals: true
       }
     };
-  }
-  if (o) {
-    options = {...options, ...o};
   }
   //
   // let every model know its schema name in the real world, this is bound
@@ -60,11 +52,6 @@ var genSchema = function (name, definition) {
   // create the schema
   //
   var schema = new mongoose.Schema (definition, options);
-  if (i) {
-    for (const index of i) {
-      schema.index(index.fields, index.options);
-    }
-  }
   //
   // perform post process stuff
   //
@@ -138,4 +125,3 @@ module.exports = function (name, definition, collection) {
   }
   return mongoose.model (name, genSchema  (name, definition), collection);
 };
-

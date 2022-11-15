@@ -13,7 +13,6 @@ exports.schemaTypes = Object.freeze({
   COMMENT: 'Comment',
   COMMENT_PERIOD: 'CommentPeriod',
   ORGANIZATION: 'Organization',
-  FAVOURITE: 'Favourite'
 });
 
 exports.MAX_FEATURE_DOCS = 5;
