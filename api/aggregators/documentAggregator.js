@@ -2,9 +2,6 @@ const { setProjectDefault } = require('../helpers/aggregators');
 const mongoose = require('mongoose');
 
 const aggregateHelper = require('../helpers/aggregators');
-const constants = require('../helpers/constants').schemaTypes;
-const favouriteAggregator = require('../aggregators/favouriteAggregator');
-
 
 /**
  * Create an aggregation that sets the matching criteria for a document search.
@@ -19,24 +16,17 @@ const favouriteAggregator = require('../aggregators/favouriteAggregator');
  *
  * @returns {array} Aggregation for a document match
  */
-exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, categorized, roles, fuzzy,userId) => {
+exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, categorized, roles) => {
   const aggregation = [];
   let projectModifier;
   let keywordModifier;
-  let favouritesModifier;
-  let favouritesOnly;
-  if (andModifier) {
-    favouritesOnly = andModifier.favouritesOnly;
-    delete andModifier.favouritesOnly;
-    delete andModifier.changedInLast30days;
-  }
 
   if (projectId) {
     projectModifier = { project: mongoose.Types.ObjectId(projectId) };
   }
 
   if (keywords) {
-    keywordModifier = { $text: { $search: "\""+keywords+"\"", $caseSensitive: caseSensitive} };
+    keywordModifier = { $text: { $search: keywords, $caseSensitive: caseSensitive } };
   }
 
   // query modifiers
@@ -108,11 +98,6 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
     }
   });
 
-  if (favouritesOnly) {
-    favouritesModifier = favouriteAggregator.createFavouritesOnlyAggr(userId, constants.DOCUMENT);
-    aggregation.push(...favouritesModifier);
-  }
-
   // Check document permissions
   aggregation.push(
     {
@@ -157,7 +142,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
  * @param {array} roles Set of user roles
  * @returns {array} Aggregate for documents.
  */
-exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize, changedInLast30days) => {
+exports.createDocumentAggr = (populate, roles) => {
   let aggregation = [];
 
   // Allow documents to be sorted by status based on publish existence
@@ -200,15 +185,9 @@ exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDire
       }
     });
   }
-  let updatedIn30daysAggr = [];
-  var sortAggregation = aggregateHelper.createSortingPagingAggr('Document', sortingValue, sortField, sortDirection, pageNum, pageSize);
-  if (changedInLast30days !== undefined) {
-    updatedIn30daysAggr = aggregateHelper.createUpdatedInLast30daysAggr(constants.DOCUMENT);
-  }
-  aggregation = [...aggregation, ...updatedIn30daysAggr, ...sortAggregation];
 
   if (populate) {
-    //Handle project.
+    // Handle project.
     aggregation.push(
       {
         '$lookup': {
@@ -220,7 +199,7 @@ exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDire
       },
       {
         '$addFields': {
-          'project': '$project',
+          project: '$project',
         }
       },
       {
@@ -270,28 +249,5 @@ exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDire
 
   }
 
-  return aggregation;
-};
-
-exports.addUpdatedInLast30daysAggr = () => {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const aggregation = [];
-  aggregation.push({
-    $match: {
-      $or: [
-        {
-          'datePosted': {
-            $gte: thirtyDaysAgo
-          }
-        },
-        {
-          'dateUploaded': {
-            $gte: thirtyDaysAgo
-          }
-        },
-      ]
-    }
-  });
   return aggregation;
 };
