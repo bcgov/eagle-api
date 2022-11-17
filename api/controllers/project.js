@@ -446,7 +446,6 @@ exports.protectedPost = function (args, res) {
   projectData.proponent = mongoose.Types.ObjectId(obj.proponent);
   projectData.responsibleEPDId = mongoose.Types.ObjectId(obj.responsibleEPDId);
   projectData.projectLeadId = mongoose.Types.ObjectId(obj.projectLeadId);
-  projectData.dateAdded = new Date().toISOString();
 
   // Also need to make sure that the eacDecision and CEAAInvolvement fields are in the project. Hard requirement for public
   projectData.CEAAInvolvement = obj.CEAAInvolvement ? obj.CEAAInvolvement : null;
@@ -1335,7 +1334,6 @@ exports.protectedPut = async function (args, res) {
   filteredData.substantially = projectObj.substantially;
   filteredData.dispute = projectObj.dispute;
   filteredData.disputeDate = projectObj.disputeDate;
-  filteredData.dateUpdated = new Date();
 
   filteredData.centroid = projectObj.centroid;
 
