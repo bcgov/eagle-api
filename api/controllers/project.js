@@ -536,7 +536,7 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
     _.assignIn(query, { '_schemaName': 'Organization' });
 
     let thePins = [];
-    if (!data[0].pins) {
+    if (!data[0].pins || ( data[0].pins && data[0].pins.length === 0 )) {
       // no pins, return empty result;
       return Actions.sendResponse(res, 200, [{
         total_items: 0
