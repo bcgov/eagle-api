@@ -16,7 +16,7 @@ you can run the process locally, deploy this manually into openshift, as a githu
 
 ##### Openshift Variables:
 
-You will need to create NAMESPACE, OC_URL, OC_TOKEN, and ROCKETCHAT_WEBHOOK OpenShift secrets/env variables
+You will need to create NAME_SUFFIX, OC_URL, OC_TOKEN, and ROCKETCHAT_WEBHOOK OpenShift secrets/env variables
 
 secrets:
 ```
@@ -25,12 +25,12 @@ env:
     valueFrom:
       secretKeyRef:
         key: ROCKETCHAT_WEBHOOK
-        name: rocketchat-webhook
+        name: rocketchat-webhook-${NAME_SUFFIX}
 ```
 And environment variables:
 ```
 parameters:
-  - name: NAMESPACE
+  - name: NAME_SUFFIX
     required: true
   - name: OC_URL
     required: true
@@ -51,7 +51,7 @@ docker build . --tag mongo-migrations:latest
 ```
 If the build was successful, run the image to start the process.
 ```
-docker run -e NAMESPACE=<6cdc9e-dev/6cdc9e-test/6cdc9e-prod> -e OC_URL=https://console.pathfinder.gov.bc.ca:8443/ -e OC_TOKEN=<token> -e ROCKETCHAT_WEBHOOK=<webhook> mongo-migrations:latest
+docker run -e NAME_SUFFIX=<dev/test/prod> -e OC_URL=https://console.pathfinder.gov.bc.ca:8443/ -e OC_TOKEN=<token> -e ROCKETCHAT_WEBHOOK=<webhook> mongo-migrations:latest
 ```
 ### Manual openshift deploy Setup
 
@@ -67,7 +67,7 @@ def mongoMigrations = openshift.process("-f",
     "openshift/jobs/mongo-migrations.bc.yaml",
 
     // values for the environment that this job will run in
-    "NAMESPACE=${prodSuffix}",
+    "NAME_SUFFIX=${prodSuffix}",
     "OC_URL=${openshiftUrl}",
     "OC_TOKEN=${token}"
 )
@@ -90,7 +90,7 @@ jobs:
     - name: run-migrations
       uses: bcgov/eagle-api/openshift/templates/jobs/mongo-migrations@master # use @develop for access to beta
       env:
-        NAMESPACE: '6cdc9e-dev' #6cdc9e-dev, 6cdc9e-test, or 6cdc9e-prod
+        NAME_SUFFIX: 'dev' #dev, test, or prod
         OC_URL: ${{ secrets.OC_URL }}
         OC_TOKEN: ${{ secrets.OC_TOKEN }}
         ROCKETCHAT_WEBHOOK: ${{ secrets.ROCKETCHAT_WEBHOOK }}

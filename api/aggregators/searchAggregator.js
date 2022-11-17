@@ -2,8 +2,6 @@ const mongoose = require('mongoose');
 const fuzzySearch = require('../helpers/fuzzySearch');
 const aggregateHelper = require('../helpers/aggregators');
 const constants = require('../helpers/constants').schemaTypes;
-const favouriteAggregator = require('../aggregators/favouriteAggregator');
-
 
 /**
  * Create an aggregation that sets the matching criteria for search.
@@ -18,25 +16,17 @@ const favouriteAggregator = require('../aggregators/favouriteAggregator');
  *
  * @returns {array} Aggregation for a match
  */
-exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, roles, fuzzy = false, userId = null) => {
+exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, roles, fuzzy = false) => {
   const aggregation = [];
   let projectModifier;
   let keywordModifier;
-  let favouritesModifier;
-  let favouritesOnly;
-  if (andModifier) {
-    favouritesOnly = andModifier.favouritesOnly;
-    delete andModifier.favouritesOnly;
-    delete andModifier.changedInLast30days;
-  }
 
   if (projectId) {
     projectModifier = { project: mongoose.Types.ObjectId(projectId) };
   }
 
   if (keywords) {
-    keywords = keywords.replace(/"/g,"").trim();
-    let keywordSearch = fuzzy && !keywords.startsWith("\"") && !keywords.endsWith("\"") ? fuzzySearch.createFuzzySearchString(keywords, 4, caseSensitive) : "\""+ keywords +"\"";
+    let keywordSearch = fuzzy && !keywords.startsWith("\"") && !keywords.endsWith("\"") ? fuzzySearch.createFuzzySearchString(keywords, 4, caseSensitive) : keywords;
     keywordModifier = { $text: { $search: keywordSearch, $caseSensitive: caseSensitive } };
   }
 
@@ -67,11 +57,6 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
       ]
     }
   });
-
-  if (favouritesOnly) {
-    favouritesModifier = favouriteAggregator.createFavouritesOnlyAggr(userId, constants.PROJECT);
-    aggregation.push(...favouritesModifier);
-  }
 
   // Check document permissions
   aggregation.push(
@@ -139,24 +124,94 @@ exports.createKeywordRegexAggr = function(decodedKeywords, schemaName) {
   return keywordRegexFilter;
 };
 
-
-exports.createResultAggregator = function () {
-  return [
-    {
-      $facet: {
-        searchResults: [{
-          $match: {}
-        }],
-        meta: [
-          { $limit: 1 },
-          {
-            $addFields: {
-              "searchResultsTotal": "$totalCount"
-            }
-          },
-          { $project: { "searchResultsTotal": 1, "_id": 0 } }
-        ]
+/**
+ * Create an aggregation that sets the sorting and paging for a query.
+ *
+ * @param {string} schemaName Schema being searched on
+ * @param {array} sortValues Values to sort by
+ * @param {string} sortField Single field to sort by
+ * @param {number} sortDirection Direction of sort
+ * @param {number} pageNum Page number to offset results by
+ * @param {number} pageSize Result set size
+ *
+ * @returns {array} Aggregation of sorting and paging
+ */
+exports.createSortingPagingAggr = function(schemaName, sortValues, sortField, sortDirection, pageNum, pageSize) {
+  const searchResultAggregation = [];
+  let datePostedHandlingTruncating = false;
+  if (sortField && sortValues !=null && typeof sortValues != "undefined" && sortField.includes(",") || Object.keys(sortValues).length > 1){
+    //sort will have multiple values passed
+    if (sortField.includes("datePosted") || Object.prototype.hasOwnProperty.call(sortValues, "datePosted")){
+      //datePosted is too specfic(in it's time) and needs the truncated form of date, can be expanded if other dates are required to be truncated
+      let tempSortValues = { };
+      for (let property in sortValues){
+        if (Object.prototype.hasOwnProperty.call(sortValues, property)) {
+          if (property === "datePosted"){
+            tempSortValues['date'] = sortValues[property];
+          } else {
+            tempSortValues[property] = sortValues[property];
+          }
+        }
       }
+      sortValues = tempSortValues;
+      datePostedHandlingTruncating = true;
     }
-  ];
+
+  } else {
+    // if sortField is null, this would create a broken sort, so ignore it if its null
+    if(sortField && sortValues && sortValues[sortField]) {
+      sortValues[sortField] = sortDirection;
+    }
+  }
+
+  // if we have no sorting going on, we should sort by the score
+  if(!sortField) {
+    sortValues = { score: -1 };
+  }
+
+  // We don't want to have sort in the aggregation if the front end doesn't need sort.
+  if (sortField && sortDirection) {
+    if(datePostedHandlingTruncating){
+      // Currently this is just handling datePosted, if more date variables are needed change datePosted to a variable and detect it above
+      searchResultAggregation.push(
+
+        { $addFields: {
+          'date':
+            { $dateToString: {
+              'format': '%Y-%m-%d', 'date': '$datePosted'
+            }}
+
+        }},
+        { $sort: sortValues }
+      );
+    } else {
+      searchResultAggregation.push(
+        {
+          $sort: sortValues
+        }
+      );
+    }
+  }
+
+  searchResultAggregation.push(
+    {
+      $skip: pageNum * pageSize
+    },
+    {
+      $limit: pageSize
+    },
+  );
+
+  const combinedAggregation = [{
+    $facet: {
+      searchResults: searchResultAggregation,
+      meta: [
+        {
+          $count: 'searchResultsTotal'
+        }
+      ]
+    }
+  }];
+
+  return combinedAggregation;
 };
