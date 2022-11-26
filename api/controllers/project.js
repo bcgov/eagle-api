@@ -446,7 +446,6 @@ exports.protectedPost = function (args, res) {
   projectData.proponent = mongoose.Types.ObjectId(obj.proponent);
   projectData.responsibleEPDId = mongoose.Types.ObjectId(obj.responsibleEPDId);
   projectData.projectLeadId = mongoose.Types.ObjectId(obj.projectLeadId);
-  projectData.dateAdded = new Date().toISOString();
 
   // Also need to make sure that the eacDecision and CEAAInvolvement fields are in the project. Hard requirement for public
   projectData.CEAAInvolvement = obj.CEAAInvolvement ? obj.CEAAInvolvement : null;
@@ -537,7 +536,7 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
     _.assignIn(query, { '_schemaName': 'Organization' });
 
     let thePins = [];
-    if (!data[0].pins) {
+    if (!data[0].pins || ( data[0].pins && data[0].pins.length === 0 )) {
       // no pins, return empty result;
       return Actions.sendResponse(res, 200, [{
         total_items: 0
@@ -1335,7 +1334,6 @@ exports.protectedPut = async function (args, res) {
   filteredData.substantially = projectObj.substantially;
   filteredData.dispute = projectObj.dispute;
   filteredData.disputeDate = projectObj.disputeDate;
-  filteredData.dateUpdated = new Date();
 
   filteredData.centroid = projectObj.centroid;
 

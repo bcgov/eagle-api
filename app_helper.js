@@ -60,7 +60,6 @@ async function loadModels(dbConnection, options, logger) {
     require('./api/helpers/models/topic');
     require('./api/helpers/models/projectNotification');
     require('./api/helpers/models/cacUser');
-    require('./api/helpers/models/favourite');
     log(logger, 'db model loading done.');
   },
   err => {
