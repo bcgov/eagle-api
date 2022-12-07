@@ -14,7 +14,7 @@ exports.setup = function(options, seedLink) {
   seed = seedLink;
 };
 
-let listItems = require(process.cwd() + '/migrations_data/20190703105100-new-projectPhases.js');
+let listItems = require(process.cwd() + '/migrations_data/lists/20190703105100-new-projectPhases.js');
 
 exports.up = function(db) {
   let mClient;

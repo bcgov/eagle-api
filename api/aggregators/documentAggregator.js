@@ -26,7 +26,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   }
 
   if (keywords) {
-    keywordModifier = { $text: { $search: keywords, $caseSensitive: caseSensitive } };
+    keywordModifier = { $text: { $search: "\""+keywords+"\"", $caseSensitive: caseSensitive} };
   }
 
   // query modifiers
@@ -142,7 +142,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
  * @param {array} roles Set of user roles
  * @returns {array} Aggregate for documents.
  */
-exports.createDocumentAggr = (populate, roles) => {
+exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize) => {
   let aggregation = [];
 
   // Allow documents to be sorted by status based on publish existence
@@ -185,9 +185,11 @@ exports.createDocumentAggr = (populate, roles) => {
       }
     });
   }
+  var sortAggregation = aggregateHelper.createSortingPagingAggr('Document', sortingValue, sortField, sortDirection, pageNum, pageSize);
+  aggregation = [...aggregation, ...sortAggregation];
 
   if (populate) {
-    // Handle project.
+    //Handle project.
     aggregation.push(
       {
         '$lookup': {
@@ -199,7 +201,7 @@ exports.createDocumentAggr = (populate, roles) => {
       },
       {
         '$addFields': {
-          project: '$project',
+          'project': '$project',
         }
       },
       {
