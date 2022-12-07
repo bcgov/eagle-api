@@ -26,6 +26,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   }
 
   if (keywords) {
+    keywords = keywords.replace(/"/g,"").trim();
     keywordModifier = { $text: { $search: "\""+keywords+"\"", $caseSensitive: caseSensitive} };
   }
 
