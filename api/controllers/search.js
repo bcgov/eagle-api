@@ -15,6 +15,7 @@ const inspectionAggregator = require('../aggregators/inspectionAggregator');
 const notificationProjectAggregator = require('../aggregators/notificationProjectAggregator');
 const itemAggregator = require('../aggregators/itemAggregator');
 const searchAggregator = require('../aggregators/searchAggregator');
+const aggregateHelper = require('../helpers/aggregators');
 
 const searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue, categorized, fuzzy) {
   const aggregateCollation = {
@@ -34,7 +35,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   switch (schemaName) {
   case constants.DOCUMENT:
     matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, categorized, roles, fuzzy);
-    schemaAggregation = documentAggregator.createDocumentAggr(populate, roles,);
+    schemaAggregation = documentAggregator.createDocumentAggr(populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize);
     break;
   case constants.PROJECT:
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles, fuzzy);
@@ -87,17 +88,19 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   }
 
   // keyword regex
-  let keywordRegexFilter = !fuzzy && decodedKeywords ? searchAggregator.createKeywordRegexAggr(decodedKeywords, schemaName) : [];
+  let keywordRegexFilter = [];//!fuzzy && decodedKeywords ? searchAggregator.createKeywordRegexAggr(decodedKeywords, schemaName) : [];
 
   // Create the sorting and paging aggregations.
-  const sortingPagingAggr = searchAggregator.createSortingPagingAggr(schemaName, sortingValue, sortField, sortDirection, pageNum, pageSize);
+  // For Document schema, the sorting and pagination pipelines have already been added for performance purpose
+  const resultAggr = (schemaName === constants.DOCUMENT?searchAggregator.createResultAggregator():
+    aggregateHelper.createSortingPagingAggr(schemaName, sortingValue, sortField, sortDirection, pageNum, pageSize));
 
   // Combine all the aggregations.
   let aggregation;
   if (!schemaAggregation) {
-    aggregation = [...matchAggregation, ...keywordRegexFilter, ...sortingPagingAggr];
+    aggregation = [...matchAggregation, ...keywordRegexFilter, ...resultAggr];
   } else {
-    aggregation = [...matchAggregation, ...schemaAggregation, ...keywordRegexFilter, ...sortingPagingAggr];
+    aggregation = [...matchAggregation, ...schemaAggregation, ...keywordRegexFilter, ...resultAggr];
   }
 
   return new Promise(function (resolve, reject) {
@@ -151,7 +154,7 @@ const executeQuery = async function (args, res) {
     return Actions.sendResponse(res, 400, { });
   }
 
-  Utils.recordAction('Search', keywords, args.swagger.params.auth_payload ? args.swagger.params.auth_payload.preferred_username : 'public');
+  await Utils.recordAction('Search', keywords, args.swagger.params.auth_payload ? args.swagger.params.auth_payload.preferred_username : 'public');
 
   let sortDirection = undefined;
   let sortField = undefined;
@@ -233,11 +236,11 @@ const executeQuery = async function (args, res) {
 
 /***** Exported functions  *****/
 exports.publicGet = async function (args, res) {
-  executeQuery(args, res);
+  await executeQuery(args, res);
 };
 
-exports.protectedGet = function (args, res) {
-  executeQuery(args, res);
+exports.protectedGet = async function (args, res) {
+  await executeQuery(args, res);
 };
 
 exports.protectedOptions = function (args, res) {
