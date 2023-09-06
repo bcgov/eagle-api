@@ -287,6 +287,7 @@ exports.protectedPost = async function (args, res) {
     commentIdCount: 0,
     dateAdded: new Date(),
     isMET: obj.isMet,
+    metURL: obj.metURL,
     dateCompleted: obj.dateCompleted,
     dateStarted: obj.dateStarted,
     instructions: obj.instructions,
