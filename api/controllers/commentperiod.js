@@ -278,6 +278,7 @@ exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.period.value;
 
   defaultLog.info('Incoming new comment period:', obj);
+  console.log("Object:", obj);
 
   var CommentPeriod = mongoose.model('CommentPeriod');
 
