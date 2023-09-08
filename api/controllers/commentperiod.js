@@ -30,6 +30,8 @@ var getSanitizedFields = function (fields) {
       'isPublished',
       'isResolved',
       'isVetted',
+      'isMet',
+      'metURL',
       'milestone',
       'openHouses',
       'periodType',
