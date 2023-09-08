@@ -286,6 +286,8 @@ exports.protectedPost = async function (args, res) {
     addedBy: args.swagger.params.auth_payload.preferred_username,
     commentIdCount: 0,
     dateAdded: new Date(),
+    isMET: obj.isMet,
+    metURL: obj.metURL,
     dateCompleted: obj.dateCompleted,
     dateStarted: obj.dateStarted,
     instructions: obj.instructions,
