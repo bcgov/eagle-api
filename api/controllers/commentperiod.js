@@ -278,6 +278,7 @@ exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.period.value;
 
   defaultLog.info('Incoming new comment period:', obj);
+  console.log("Object:", obj);
 
   var CommentPeriod = mongoose.model('CommentPeriod');
 
@@ -306,7 +307,9 @@ exports.protectedPost = async function (args, res) {
   }
 
   try {
+    console.log("period:", commentPeriod);
     var cp = await commentPeriod.save();
+    console.log("CP:", cp);
     Utils.recordAction('Put', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, cp._id);
     defaultLog.info('Saved new comment period object:', cp);
     return Actions.sendResponse(res, 200, cp);
