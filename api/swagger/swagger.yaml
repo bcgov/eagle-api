@@ -384,6 +384,8 @@ definitions:
       - isPublished
       - isResolved
       - isVetted
+      - isMet
+      - metURL
       - milestone
       - openHouses
       - periodType

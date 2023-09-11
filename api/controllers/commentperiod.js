@@ -284,6 +284,9 @@ exports.protectedPost = async function (args, res) {
 
   var CommentPeriod = mongoose.model('CommentPeriod');
 
+  // TDOO: Make milestone lookup against "Time Limit Imposition" set for all isMet = true based
+  // calls.
+
   var commentPeriod = new CommentPeriod({
     _schemaName: 'CommentPeriod',
     addedBy: args.swagger.params.auth_payload.preferred_username,

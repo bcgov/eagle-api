@@ -203,6 +203,21 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
           'preserveNullAndEmptyArrays': true
         }
       },
+      // Populate Recent Activity PCP
+      (modelType === 'RecentActivity') && {
+        '$lookup': {
+          'from': 'epic',
+          'localField': 'pcp',
+          'foreignField': '_id',
+          'as': 'pcp'
+        }
+      },
+      (modelType === 'RecentActivity') && {
+        '$unwind': {
+          'path': '$pcp',
+          'preserveNullAndEmptyArrays': true
+        }
+      },
       //Unpack the default key inside a nested call with project data
       // To unpack the legislation data into the project key
       (modelType !== 'Project' && populateProject) && {
