@@ -204,7 +204,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
         }
       },
       // Populate Recent Activity PCP
-      (modelType !== 'RecentActivity') && {
+      (modelType !== 'Project') && {
         '$lookup': {
           'from': 'epic',
           'localField': 'pcp',
@@ -212,7 +212,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
           'as': 'pcp'
         }
       },
-      (modelType !== 'RecentActivity') && {
+      (modelType !== 'Project') && {
         '$unwind': {
           'path': '$pcp',
           'preserveNullAndEmptyArrays': true
