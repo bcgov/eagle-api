@@ -74,6 +74,7 @@ var tagList = [
   'review45Start',
   'reviewSuspensions',
   'reviewExtensions',
+  'hasMetCommentPeriods',
   'cacMembers',
   'cacEmail',
   'projectCAC',
