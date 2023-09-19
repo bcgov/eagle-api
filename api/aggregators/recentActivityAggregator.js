@@ -30,6 +30,20 @@ exports.createRecentActivityAggr = (populate) => {
           'path': '$project',
           'preserveNullAndEmptyArrays': true
         }
+      },
+      {
+        '$lookup': {
+        'from': 'epic',
+        'localField': 'pcp',
+        'foreignField': '_id',
+        'as': 'pcp'
+        }
+      },
+      {
+        '$unwind': {
+          'path': '$pcp',
+          'preserveNullAndEmptyArrays': true
+        }
       }
     );
 

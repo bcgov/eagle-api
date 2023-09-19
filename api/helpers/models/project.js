@@ -60,6 +60,7 @@ var projectDataDefinition = {
   shortName               : { type: String, default: '', index: true },
   status                  : { type: String, default: '' },
   substitution            : { type: Boolean, default: false },
+  hasMetCommentPeriods    : { type: Boolean, default: false },
 
   // TODO: New Stuff?
   eaStatusDate            : { type: Date, default: '' },
