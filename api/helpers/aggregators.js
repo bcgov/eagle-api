@@ -93,6 +93,7 @@ const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKe
           [projectLegislationDataIdKey]: '$_id',
           [projectLegislationDataKey + '.read']: '$read',
           [projectLegislationDataKey + '.pins']: '$pins',
+          [projectLegislationDataKey + '.hasMetCommentPeriods']: '$hasMetCommentPeriods',
           [projectLegislationDataKey + '.pinsHistory']: '$pinsHistory',
           [projectLegislationDataKey + '.pinsRead']: '$pinsRead',
           [projectLegislationDataKey + ".cacEmail"]: "$cacEmail",
@@ -115,6 +116,7 @@ const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKe
         '$addFields': {
           [projectLegislationDataIdKey]: '$_id',
           [projectLegislationDataKey + '.read']: '$read',
+          [projectLegislationDataKey + '.hasMetCommentPeriods']: '$hasMetCommentPeriods',
           [projectLegislationDataKey + '.pins']: '$pins',
           [projectLegislationDataKey + '.pinsHistory']: '$pinsHistory'
         }
