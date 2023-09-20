@@ -386,6 +386,7 @@ definitions:
       - isVetted
       - isMet
       - metURL
+      - metURLAdmin
       - milestone
       - openHouses
       - periodType

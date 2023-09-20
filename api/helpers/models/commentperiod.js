@@ -12,6 +12,7 @@ module.exports = require('../models')('CommentPeriod', {
   commentTip           : { type: String, default: '' },
   isMet                : { type: Boolean, default: false },
   metURL               : { type: String, default: '' },
+  metURLAdmin          : { type: String, default: '' },
   dateAdded            : { type: Date, default: '' },
   dateCompleted        : { type: Date, default: '' },
   dateCompletedEst     : { type: Date, default: '' },
