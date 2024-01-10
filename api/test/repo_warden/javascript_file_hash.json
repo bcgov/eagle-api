@@ -1,43 +1,47 @@
 {
     "rootJsFiles": {
-    "0": {
-        "name": "cleanupInvalidTags.js",
-        "hash": "lVe+NeFWoiagFNE50bWfAcRvU08="
-    }
+        "0": {
+            "name": "cleanupInvalidTags.js",
+            "hash": "lVe+NeFWoiagFNE50bWfAcRvU08="
+        }
     },
     "one_off_migrationsJsFiles": {
-    "0": {
-      "hash": "dgCaZMKMmnGy2V1fG53NAZx8ByE=",
-      "name": "20200320233962-restoreDocTags.js"
-    },
-    "1": {
-      "name": "loadDocumentTags.js",
-      "hash": "eltoU1AIIYfYgxuzQ0u0lYMak1k="
-    },
-    "2": {
-        "name": "migrateDocuments.js",
-        "hash": "gp5UixHJ41DjmtgZSHvH28cQtVQ="
-    },
-    "3": {
-        "name": "migrateDocuments2.js",
-        "hash": "TU90FvPHhesw6x2I5r/hZWoiUTo="
-    },
-    "4": {
-        "name": "migrateMassDocTagging.js",
-        "hash": "dp/5puDcIk0jh0QkHykCOFUkcBU="
-    },
-    "5": {
-        "name": "migrateMassPartialTagging.js",
-        "hash": "zJfdjDYs6nc+C3JTYXYCM1F5XGo="
-    },
-    "6": {
-        "name": "migrateOldEpicGroups.js",
-        "hash": "t3dUQAeTR9AeDcAcH9fVLPCkMbI="
-    },
-    "7": {
-        "name": "migrateRestoreDisplayName.js",
-        "hash": "ay39hJLKQ+brR24JVqIWH9qZExk="
-    }
+        "0": {
+            "hash": "dgCaZMKMmnGy2V1fG53NAZx8ByE=",
+            "name": "20200320233962-restoreDocTags.js"
+        },
+        "1": {
+            "name": "exportComplianceProjCacVc.js",
+            "hash": "24MPubP3p2BrLv630g1d4caKN9E="
+        },
+        "2": {
+            "name": "loadDocumentTags.js",
+            "hash": "eltoU1AIIYfYgxuzQ0u0lYMak1k="
+        },
+        "3": {
+            "name": "migrateDocuments.js",
+            "hash": "gp5UixHJ41DjmtgZSHvH28cQtVQ="
+        },
+        "4": {
+            "name": "migrateDocuments2.js",
+            "hash": "TU90FvPHhesw6x2I5r/hZWoiUTo="
+        },
+        "5": {
+            "name": "migrateMassDocTagging.js",
+            "hash": "dp/5puDcIk0jh0QkHykCOFUkcBU="
+        },
+        "6": {
+            "name": "migrateMassPartialTagging.js",
+            "hash": "zJfdjDYs6nc+C3JTYXYCM1F5XGo="
+        },
+        "7": {
+            "name": "migrateOldEpicGroups.js",
+            "hash": "t3dUQAeTR9AeDcAcH9fVLPCkMbI="
+        },
+        "8": {
+            "name": "migrateRestoreDisplayName.js",
+            "hash": "ay39hJLKQ+brR24JVqIWH9qZExk="
+        }
     },
     "openshiftJsFiles": {},
     "templatesJsFiles": {},
