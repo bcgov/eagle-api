@@ -11,7 +11,7 @@ const _               = require('lodash');
 const fs              = require('fs');
 
 const generator = new FlakeIdGen;
-const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING || false;
+const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING ? process.env.ENABLE_VIRUS_SCANNING.toLowerCase() == 'true' : false;
 
 exports.documentHateoas = function(document, roles) {
   document.links =
@@ -41,7 +41,7 @@ exports.createDocument = async function(userName, projectId, comment, uploadedFi
   try {
     let virusScanSuccessful = true;
 
-    if (ENABLE_VIRUS_SCANNING || ENABLE_VIRUS_SCANNING == 'true') {
+    if (ENABLE_VIRUS_SCANNING) {
       virusScanSuccessful = Utils.avScan(uploadedFile.buffer);
     }
 

@@ -12,7 +12,7 @@ const Actions         = require('../helpers/actions');
 const Utils           = require('../helpers/utils');
 const MinioController = require('../helpers/minio');
 
-const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING || false;
+const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING ? process.env.ENABLE_VIRUS_SCANNING.toLowerCase() == 'true' : false;
 
 const generator = new FlakeIdGen;
 
@@ -111,7 +111,7 @@ exports.unProtectedPost = async function (args, res) {
     console.log('Uploading');
     Promise.resolve()
       .then(async function () {
-        if (ENABLE_VIRUS_SCANNING || ENABLE_VIRUS_SCANNING == 'true') {
+        if (ENABLE_VIRUS_SCANNING) {
           console.log('AVScan');
           return Utils.avScan(args.swagger.params.upfile.value.buffer);
         } else {
@@ -524,7 +524,7 @@ exports.protectedPost = async function (args, res) {
   try {
     Promise.resolve()
       .then(function () {
-        if (ENABLE_VIRUS_SCANNING || ENABLE_VIRUS_SCANNING == 'true') {
+        if (ENABLE_VIRUS_SCANNING) {
           return Utils.avScan(args.swagger.params.upfile.value.buffer);
         } else {
           return true;
