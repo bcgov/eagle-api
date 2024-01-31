@@ -19,7 +19,8 @@ var getSanitizedFields = function (fields) {
       'active',
       'project',
       'content',
-      'headline'
+      'headline',
+      'complianceAndEnforcement'
     ], f) !== -1);
   });
 };
@@ -40,7 +41,8 @@ exports.publicGet = async function (args, res) {
     'active',
     'project',
     'content',
-    'headline'];
+    'headline',
+    'complianceAndEnforcement'];
   var query = {};
   var sort = {
     dateAdded: -1
