@@ -42,6 +42,7 @@ factory.define(factoryName, RecentActivity, buildOptions => {
     , content             : faker.lorem.paragraph()
     , notificationName    : faker.lorem.word()
     , headline            : factory_helper.getRandomExistingListElementName(headlineTypes)
+    , complianceAndEnforcement  : faker.random.boolean()
 
     // Permissions
     , read                : faker.random.arrayElement(["public", "sysadmin"])
