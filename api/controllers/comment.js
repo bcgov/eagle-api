@@ -446,14 +446,6 @@ exports.protectedPut = async function (args, res) {
 
   var Comment = mongoose.model('Comment');
 
-  var vcs = [];
-  obj.valuedComponents.forEach(function (vc) {
-    if (!mongoose.Types.ObjectId.isValid(vc)) {
-      return Actions.sendResponse(res, 400, { });
-    }
-    vcs.push(mongoose.Types.ObjectId(vc));
-  });
-
   var comment = {
     isAnonymous: obj.isAnonymous,
     datePosted: obj.datePosted,
@@ -466,7 +458,6 @@ exports.protectedPut = async function (args, res) {
     publishedNotes: obj.publishedNotes,
     rejectedNotes: obj.rejectedNotes,
     rejectedReason: obj.rejectedReason,
-    valuedComponents: vcs,
     // TODO
     // documents: obj.documents,
   };
