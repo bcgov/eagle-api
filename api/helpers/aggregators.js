@@ -271,6 +271,12 @@ const generateExpArray = async (field, roles, schemaName) => {
             handleDateEndItem(orArray, field, decodeURIComponent(entry));
           }
           break;
+        case 'dateAddedStart':
+          handleDateStartItem(orArray, ['dateAdded'], decodeURIComponent(entry));
+          break;
+        case 'dateAddedEnd':
+          handleDateEndItem(orArray, ['dateAdded'], decodeURIComponent(entry));
+          break;
         case 'datePostedStart':
           handleDateStartItem(orArray, ['datePosted'], decodeURIComponent(entry));
           break;
