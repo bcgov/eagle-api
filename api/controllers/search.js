@@ -14,6 +14,7 @@ const recentActivityAggregator = require('../aggregators/recentActivityAggregato
 const inspectionAggregator = require('../aggregators/inspectionAggregator');
 const notificationProjectAggregator = require('../aggregators/notificationProjectAggregator');
 const itemAggregator = require('../aggregators/itemAggregator');
+const commentPeriodAggregator = require('../aggregators/commentPeriodAggregator');
 const searchAggregator = require('../aggregators/searchAggregator');
 const aggregateHelper = require('../helpers/aggregators');
 
@@ -72,6 +73,10 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     break;
   case constants.LIST:
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
+    break;
+  case constants.COMMENT_PERIOD:
+    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
+    schemaAggregation = commentPeriodAggregator.createCommentPeriodAggr(populate);
     break;
   case constants.ORGANIZATION:
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
@@ -209,7 +214,6 @@ const executeQuery = async function (args, res) {
   } else if (dataset === constants.ITEM) {
     const collectionObj = mongoose.model(args.swagger.params._schemaName.value);
     const aggregation = itemAggregator.createItemAggr(args.swagger.params._id.value, args.swagger.params._schemaName.value, roles);
-
     let data = await collectionObj.aggregate(aggregation).allowDiskUse(true);
 
     if (args.swagger.params._schemaName.value === constants.COMMENT) {
