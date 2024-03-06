@@ -261,38 +261,48 @@ const generateExpArray = async (field, roles, schemaName) => {
         }
 
         switch (item) {
-        case 'decisionDateStart':
-          for(let field of fields) {
-            handleDateStartItem(orArray, field, decodeURIComponent(entry));
-          }
-          break;
-        case 'decisionDateEnd':
-          for(let field of fields) {
-            handleDateEndItem(orArray, field, decodeURIComponent(entry));
-          }
-          break;
-        case 'dateAddedStart':
-          handleDateStartItem(orArray, ['dateAdded'], decodeURIComponent(entry));
-          break;
-        case 'dateAddedEnd':
-          handleDateEndItem(orArray, ['dateAdded'], decodeURIComponent(entry));
-          break;
-        case 'datePostedStart':
-          handleDateStartItem(orArray, ['datePosted'], decodeURIComponent(entry));
-          break;
-        case 'datePostedEnd':
-          handleDateEndItem(orArray, ['datePosted'], decodeURIComponent(entry));
-          break;
-        default:
-          if (schemaName === constants.PROJECT) {
-            for(let field of fields) {
-              orArray.push(getConvertedValue(field, decodeURIComponent(entry)));
+          case 'dateUpdatedStart':
+            for (let field of fields) {
+              handleDateStartItem(orArray, field, decodeURIComponent(entry));
             }
             break;
-          } else {
-            orArray.push(getConvertedValue(fields[0], decodeURIComponent(entry)));
+          case 'dateUpdatedEnd':
+            for (let field of fields) {
+              handleDateEndItem(orArray, field, decodeURIComponent(entry));
+            }
             break;
-          }
+          case 'decisionDateStart':
+            for (let field of fields) {
+              handleDateStartItem(orArray, field, decodeURIComponent(entry));
+            }
+            break;
+          case 'decisionDateEnd':
+            for (let field of fields) {
+              handleDateEndItem(orArray, field, decodeURIComponent(entry));
+            }
+            break;
+          case 'dateAddedStart':
+            handleDateStartItem(orArray, ['dateAdded'], decodeURIComponent(entry));
+            break;
+          case 'dateAddedEnd':
+            handleDateEndItem(orArray, ['dateAdded'], decodeURIComponent(entry));
+            break;
+          case 'datePostedStart':
+            handleDateStartItem(orArray, ['datePosted'], decodeURIComponent(entry));
+            break;
+          case 'datePostedEnd':
+            handleDateEndItem(orArray, ['datePosted'], decodeURIComponent(entry));
+            break;
+          default:
+            if (schemaName === constants.PROJECT) {
+              for (let field of fields) {
+                orArray.push(getConvertedValue(field, decodeURIComponent(entry)));
+              }
+              break;
+            } else {
+              orArray.push(getConvertedValue(fields[0], decodeURIComponent(entry)));
+              break;
+            }
         }
 
         expArray.push({ $or: orArray });
@@ -315,6 +325,10 @@ const handleProjectTerms = (item) => {
 
   if (item === 'decisionDateStart' || item === 'decisionDateEnd') {
     item = 'decisionDate';
+  }
+
+  if (item === 'dateUpdatedStart' || item === 'dateUpdatedEnd') {
+    item = 'dateUpdated';
   }
 
   // prepend for embedded fields
