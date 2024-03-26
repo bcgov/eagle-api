@@ -96,7 +96,40 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   return aggregation;
 };
 
-exports.createKeywordRegexAggr = function(decodedKeywords, schemaName) {
+/**
+ * Create a regex to perform the keyword search after the unwind.
+ *  *
+ * @param {string} keywords List of keywords to search on
+ * @param {boolean} caseSensitive Case sensitive search?
+ *
+ * @returns {array} Aggregation for a match on project.name
+ */
+exports.createRegexForProjectLookupAggr = function (keywords, caseSensitive, fuzzy = false) {
+  console.log("keywords ", keywords);
+  const aggregation = [];
+  if (keywords) {
+    keywords = keywords.replace(/"/g, "").trim();
+    let keywordSearch = fuzzy && !keywords.startsWith("\"") && !keywords.endsWith("\"") ? fuzzySearch.createFuzzySearchString(keywords, 4, caseSensitive) : "\"" + keywords + "\"";
+    const regexKeyword = `.*${keywordSearch.replaceAll(/"/g, "").trim()}.*`,
+      keywordModifier = {
+        "project.name": {
+          "$regex": regexKeyword,
+          "$options": "i"
+        }
+
+      };
+
+    aggregation.push({
+      $match: {
+        ...(keywordModifier ? keywordModifier : undefined),
+      }
+    });
+  }
+  return aggregation;
+};
+
+
+exports.createKeywordRegexAggr = function (decodedKeywords, schemaName) {
   let keywordRegexFilter = [];
   // if we have a keyword search, and it is not wrapped in quotes (ie, phrase searching)
   // then do a regex match. To help keep regex matches closer to their values, also

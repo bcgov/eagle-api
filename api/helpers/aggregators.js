@@ -236,6 +236,8 @@ const generateExpArray = async (field, roles, schemaName) => {
 
       if (item === 'pcp') {
         await handlePCPItem(roles, expArray, decodeURIComponent(entry));
+      } else if (item === 'status') {
+        handlePCPStatus(expArray, decodeURIComponent(entry));
       } else if (Array.isArray(entry)) {
         // Arrays are a list of options so will always be ors
         if (schemaName === constants.PROJECT) {
@@ -393,9 +395,8 @@ const isValidObjectId = (str) => {
   return str.match(/^[a-f\d]{24}$/i);
 };
 
-const getPCPValue = async (roles, entry) => {
-  console.log('pcp: ', entry);
-
+// Helper to get PCP query based on status
+const getPCPQuery = (entry) => {
   let query = null;
   const now = new Date();
   const in7days = new Date();
@@ -409,6 +410,14 @@ const getPCPValue = async (roles, entry) => {
       $and: [
         { dateStarted: { $gt: now } },
         { dateStarted: { $lte: in7days } }
+      ]
+    };
+    break;
+  case 'upcoming':
+    query = {
+      _schemaName: constants.COMMENT_PERIOD,
+      $and: [
+        { dateStarted: { $gt: now } }
       ]
     };
     break;
@@ -433,7 +442,30 @@ const getPCPValue = async (roles, entry) => {
   default:
     console.log('Unknown PCP entry');
   }
+  return query;
+};
 
+const handlePCPStatus = (expArray, value) => {
+  if (!Array.isArray(value) && value.includes(',')) {
+    value = value.split(',');
+  }
+
+  if (Array.isArray(value)) {
+    // Arrays are a list of options so will always be ors
+    const orArray = [];
+    value.map(entry => {
+      orArray.push(getPCPQuery(entry));
+    });
+    expArray.push({ $or: orArray });
+  } else {
+    expArray.push(getPCPQuery(value));
+  }
+};
+
+const getPCPValue = async (roles, entry) => {
+  console.log('pcp: ', entry);
+
+  const query = getPCPQuery(entry);
   var pcp = {};
 
   if (query) {
