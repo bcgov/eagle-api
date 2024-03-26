@@ -237,3 +237,17 @@ oc get secrets
 ```
 
 You will not be able to see the above value of the secret if you try examine it.  You will only see the encrypted values.  Approach your team member with admin access in the openshift project in order to get the access key and secret key values for the secret name you got from the above command.  Make sure to ask for the correct environment (dev, test, prod) for the appropriate values.
+
+
+## Enable MET Comment Periods for Project
+1. Connect to Open Shift by copying login command
+2. Choose project and get Pods
+	`oc get pods`
+3. Port-forward 
+	`oc port-forward eagle-api-mongodb-5-tj22g 5555:27017`
+4. Connect to db with mongoshell
+	`mongo "mongodb://admin:pw@localhost:27017/epic?authSource=admin"`
+5. Query for project 
+  Eg.	`db.epic.find({_id : ObjectId("65c661a8399db00022d48849")})`
+6. Set `hasMetCommentPeriods` to `true` for the project. 
+  Eg.	`db.epic.updateOne( { _id: ObjectId("65c661a8399db00022d48849") }, { $set: { "legislation_2018.hasMetCommentPeriods": true } })`
