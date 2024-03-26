@@ -33,6 +33,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   // Create appropriate aggregations for the schema.
   let schemaAggregation;
   let matchAggregation;
+  let regexKeywordAggregation = [];
   switch (schemaName) {
   case constants.DOCUMENT:
     matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, categorized, roles, fuzzy);
@@ -75,8 +76,10 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
     break;
   case constants.COMMENT_PERIOD:
-    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
+    // Comment Periods are searched via project name, need to add keyword after schemaAggregation to match on project.name
+    matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, '', false, or, and, roles);
     schemaAggregation = commentPeriodAggregator.createCommentPeriodAggr(populate);
+    regexKeywordAggregation = await searchAggregator.createRegexForProjectLookupAggr(decodedKeywords, caseSensitive);
     break;
   case constants.ORGANIZATION:
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
@@ -105,7 +108,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   if (!schemaAggregation) {
     aggregation = [...matchAggregation, ...keywordRegexFilter, ...resultAggr];
   } else {
-    aggregation = [...matchAggregation, ...schemaAggregation, ...keywordRegexFilter, ...resultAggr];
+    aggregation = [...matchAggregation, ...schemaAggregation, ...keywordRegexFilter, ...regexKeywordAggregation, ...resultAggr];
   }
 
   return new Promise(function (resolve, reject) {
