@@ -110,7 +110,7 @@ exports.createRegexForProjectLookupAggr = function (keywords, caseSensitive, fuz
   if (keywords) {
     keywords = keywords.replace(/"/g, "").trim();
     let keywordSearch = fuzzy && !keywords.startsWith("\"") && !keywords.endsWith("\"") ? fuzzySearch.createFuzzySearchString(keywords, 4, caseSensitive) : "\"" + keywords + "\"";
-    const regexKeyword = `.*${keywordSearch.replaceAll(/"/g, "").trim()}.*`,
+    const regexKeyword = `.*${keywordSearch.replace(/"/g, "").trim()}.*`,
       keywordModifier = {
         "project.name": {
           "$regex": regexKeyword,
