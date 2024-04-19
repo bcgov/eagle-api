@@ -295,9 +295,18 @@ const generateExpArray = async (field, roles, schemaName) => {
           case 'datePostedEnd':
             handleDateEndItem(orArray, ['datePosted'], decodeURIComponent(entry));
             break;
+          case 'dateStartedStart':
+            handleDateStartItem(orArray, ['dateStarted'], decodeURIComponent(entry));
+            break;
+          case 'dateStartedEnd':
+            handleDateEndItem(orArray, ['dateStarted'], decodeURIComponent(entry));
+            break;
           case 'dateCompletedStart':
             // PCP date range check if comment period has closed within last 30 days or will in future
             handleDateStartItem(orArray, ['dateCompleted'], decodeURIComponent(entry));
+            break;
+          case 'dateCompletedEnd':
+            handleDateEndItem(orArray, ['dateCompleted'], decodeURIComponent(entry));
             break;
           default:
             if (schemaName === constants.PROJECT) {
