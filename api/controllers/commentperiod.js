@@ -338,11 +338,13 @@ exports.protectedPut = async function (args, res) {
   var CommentPeriod = mongoose.model('CommentPeriod');
 
   var commentPeriod = {
+    commentTip: obj.commentTip,
     dateCompleted: obj.dateCompleted,
     dateStarted: obj.dateStarted,
     dateUpdated: new Date(),
+    isMet: obj.isMet,
     instructions: obj.instructions,
-    commentTip: obj.commentTip,
+    metURL: obj.metURL,
     milestone: mongoose.Types.ObjectId(obj.milestone),
     openHouses: obj.openHouses,
     relatedDocuments: obj.relatedDocuments,
