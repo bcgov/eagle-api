@@ -218,6 +218,20 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
           'preserveNullAndEmptyArrays': true
         }
       },
+      (modelType !== 'Project') && {
+        '$lookup': {
+          'from': 'epic',
+          'localField': 'project._id',
+          'foreignField': '_id',
+          'as': 'projectNotification'
+        }
+      },
+      (modelType !== 'Project') && {
+        '$unwind': {
+          'path': '$projectNotification',
+          'preserveNullAndEmptyArrays': true
+        }
+      },
       //Unpack the default key inside a nested call with project data
       // To unpack the legislation data into the project key
       (modelType !== 'Project' && populateProject) && {

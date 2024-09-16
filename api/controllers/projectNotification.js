@@ -1,11 +1,51 @@
+var _ = require('lodash');
 const defaultLog = require('winston').loggers.get('default');
 const mongoose = require('mongoose');
 const Actions = require('../helpers/actions');
 const Utils = require('../helpers/utils');
 const constants = require('../helpers/constants');
 
+
+
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
+};
+
+//  Gets a list of all Project Notifications
+exports.protectedGet = async function (args, res) {
+  var skip = null, limit = null, sort = null;
+  var count = false;
+  var query = {};
+
+  // Admin only
+  if (args.swagger.params.fields.value) {
+    args.swagger.params.fields.value.push('directoryStructure');
+  }
+  var fields = args.swagger.params.fields.value;
+
+  // set query to get project notifications
+  _.assignIn(query, { '_schemaName': 'ProjectNotification'});
+
+  try {
+    var data = await Utils.runDataQuery('ProjectNotification',
+      args.swagger.params.auth_payload.realm_access.roles,
+      query,
+      fields,
+      null,
+      sort,
+      skip,
+      limit,
+      count,
+      null,
+      true,
+    );
+    Utils.recordAction('Get', 'ProjectNotification', args.swagger.params.auth_payload.preferred_username);
+
+    return Actions.sendResponse(res, 200, data);
+  } catch (error) {
+    defaultLog.info('Error:', error);
+    return Actions.sendResponse(res, 400, {error: error.message });
+  }
 };
 
 //  Create a new Project Notification

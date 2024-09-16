@@ -213,7 +213,7 @@ definitions:
       - +eacDecision
       - -eacDecision
 
-### Project Definitions
+### Activity Definitions
   RecentActivityId:
     type: object
     properties:
@@ -5062,6 +5062,59 @@ paths:
       summary: "Pre-flight request"
       operationId: protectedOptions
       description: "Options on Project Notification Route"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ProjectNotificationObject"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - projectNotification
+      summary: "Get a list of project notifications."
+      operationId: protectedGet
+      description: "Authenticated access to retrieve a list of project notifications."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      parameters:
+        - in: query
+          name: fields
+          description: "Project fields to return."
+          required: false
+          type: array
+          collectionFormat: pipes
+          items:
+            type: string
+            enum: *projectNotificationFields
+        - in: query
+          name: pageNum
+          type: number
+          required: false
+          description: "Page Number (default 100 results)"
+        - in: query
+          name: pageSize
+          type: number
+          required: false
+          description: "Number of results per page (if 'pageNum' is specified)."
+        - in: query
+          name: count
+          description: "Enables/Disables count. Query count=true to enable."
+          required: false
+          type: boolean
+        - in: query
+          name: sortBy
+          description: "Comment fields to sort by."
+          required: false
+          type: array
+          items:
+            type: string
+            enum: *commentSortByFields
       responses:
         "200":
           description: "Success"
