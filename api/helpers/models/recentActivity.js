@@ -10,6 +10,7 @@ module.exports = require ('../models')('RecentActivity', {
   type                      : { type: String, default: null },
   notificationName          : { type: String, default: null },
   pcp                       : { type: 'ObjectId', ref: 'CommentPeriod', default: null, index: true },
+  projectNotification       : { type: 'ObjectId', ref: 'projectNotification', default: null, index: true},
   active                    : { type: Boolean, default: false },
   project                   : { type: 'ObjectId', ref: 'Project', default: null, index: true },
   content                   : { type: String, default: null },
