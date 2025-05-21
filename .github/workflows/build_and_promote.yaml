@@ -17,7 +17,7 @@ env:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     outputs:
       SHORT_SHA: ${{ steps.short-sha.outputs.SHA }}
     steps:
@@ -45,7 +45,7 @@ jobs:
   promotion:
     name: Create Promotion Pull Request
     needs: build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       # Update promotion/test-pr with new commit hash
       - name: Checkout promotion/test
