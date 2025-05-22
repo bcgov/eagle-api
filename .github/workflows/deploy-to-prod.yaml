@@ -12,7 +12,7 @@ env:
 jobs:
   deploy:
     name: Deploy to Prod
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     outputs:
       COMMIT_SHA: ${{ steps.read-hash.outputs.SHA }}
     steps:
@@ -41,7 +41,7 @@ jobs:
   sync-main-branch:
     name: Rebase Prod
     needs: deploy
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2

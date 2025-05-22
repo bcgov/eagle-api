@@ -14,7 +14,7 @@ env:
 jobs:
   deploy:
     name: Deploy to Test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     outputs:
       COMMIT_SHA: ${{ steps.read-hash.outputs.SHA }}
     steps:
@@ -43,7 +43,7 @@ jobs:
   sync-test-branch:
     name: Rebase test branch from develop
     needs: deploy
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -56,7 +56,7 @@ jobs:
   promotion:
     name: Create Promotion Pull Request
     needs: [deploy, sync-test-branch]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       # Update promotion/prod-pr with new commit hash
       - name: Checkout promotion/prod
