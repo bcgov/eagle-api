@@ -37,7 +37,7 @@ jobs:
         uses: redhat-actions/s2i-build@v2
         with:
           path_context: '.'
-          builder_image: ${{ secrets.OPENSHIFT_REPOSITORY }}/openshift/nodejs:10
+          builder_image: ${{ secrets.OPENSHIFT_REPOSITORY }}/openshift/nodejs:16-ubi9
           image: ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}
           tags: ci-latest
       - name: Push Docker image
