@@ -159,7 +159,9 @@ exports.publicGet = async function (args, res) {
   var query = {}, skip = null, limit = null;
   var commentPeriodPipeline = null;
   let review180start = args.swagger.params.fields.value;
-  review180start.push('review180Start');
+  if (review180start) {
+    review180start.push('review180Start');
+  }
   var requestedFields = getSanitizedFields(review180start);
   // Add in the default fields to the projection so that the incoming query will work for any selected fields.
   tagList.push('dateAdded');
