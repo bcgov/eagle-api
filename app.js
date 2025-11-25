@@ -80,13 +80,17 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
     defaultLog.info('Couldn\'t create upload folder:', e);
   }
 
-  app_helper.loadMongoose().then(() => {
-    express_server = app.listen(api_default_port, '0.0.0.0', function() {
-      defaultLog.info('Started server on port ' + api_default_port);
+  // Skip MongoDB connection and server startup in test mode
+  // Tests handle their own database connection to in-memory MongoDB
+  if (process.env.NODE_ENV !== 'test') {
+    app_helper.loadMongoose().then(() => {
+      express_server = app.listen(api_default_port, '0.0.0.0', function() {
+        defaultLog.info('Started server on port ' + api_default_port);
+      });
+    }).catch(function (err) {
+      defaultLog.info('err:', err);
     });
-  }).catch(function (err) {
-    defaultLog.info('err:', err);
-  });
+  }
 
   // Counterintuitively, we crash because we don't want the pod hanging around.  Let's just spin up
   // a new pod incase the mongo topology was destroyed, among other things.
@@ -106,6 +110,7 @@ function shutdown() {
   }
 }
 
+module.exports = app;
 exports.shutdown = shutdown;
 exports.api_default_port = api_default_port;
 exports.dbConnection = app_helper.dbConnection;

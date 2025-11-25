@@ -19,19 +19,6 @@
          "name": "Launch API using Node",
          "program": "${workspaceFolder}/app.js",
          //"envFile": "${workspaceFolder}/.env",
-    },
-    {
-      "name": "Debug Jest Tests",
-      "type": "node",
-      "request": "launch",
-      "runtimeArgs": [
-        "--inspect-brk",
-        "${workspaceRoot}/node_modules/.bin/jest",
-        "--runInBand"
-      ],
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "port": 9229
     }
   ]
 }

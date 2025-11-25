@@ -33,6 +33,12 @@ yarn.lock
 debug.log
 output.txt
 
+# Test outputs
+.nyc_output
+coverage/
+test-results.xml
+*.log
+
 # System Files
 .DS_Store
 Thumbs.db
@@ -47,3 +53,5 @@ Thumbs.db
 /generate.config
 /shell_helper.sh
 epic/*
+
+migrations_temp
