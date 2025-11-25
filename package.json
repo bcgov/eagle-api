@@ -20,7 +20,7 @@
     "@turf/helpers": "~6.1.4",
     "@turf/turf": "~5.1.6",
     "@types/node-cron": "~2.0.3",
-    "axios": "~0.19.0",
+    "axios": "~0.30.2",
     "bcrypt-nodejs": "~0.0.3",
     "biguint-format": "~1.0.0",
     "body-parser": "~1.18.3",
