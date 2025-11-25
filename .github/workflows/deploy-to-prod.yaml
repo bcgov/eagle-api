@@ -22,7 +22,7 @@ jobs:
           ref: "promotion/prod"
       - name: Retrieve previous commit hash
         id: read-hash
-        run: echo "::set-output name=SHA::`jq -r '.commit' state.json`"
+        run: echo "SHA=`jq -r '.commit' state.json`" >> $GITHUB_OUTPUT
       - name: Log into OpenShift
         uses: redhat-actions/oc-login@v1
         with:

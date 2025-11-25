@@ -31,7 +31,7 @@ jobs:
           password: ${{ secrets.OPENSHIFT_REPOSITORY_PASSWORD }}
       - name: Get Short SHA
         id: short-sha
-        run: echo "::set-output name=SHA::$(git rev-parse --short HEAD)"
+        run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       - name: Setup and Build
         id: build_image
         uses: redhat-actions/s2i-build@v2
