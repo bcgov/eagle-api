@@ -1,5 +1,7 @@
 # bcgov / eagle-api
 
+[![Lifecycle:Stable](https://img.shields.io/badge/Lifecycle-Stable-97ca00)](https://github.com/bcgov/repomountie/blob/master/doc/lifecycle-badges.md)
+
 API for acting as a central authenticated data service for all EPIC front-ends
 
 ## Related projects
