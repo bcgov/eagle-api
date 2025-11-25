@@ -25,6 +25,10 @@ jobs:
       - name: Retrieve previous commit hash
         id: read-hash
         run: echo "SHA=`jq -r '.commit' state.json`" >> $GITHUB_OUTPUT
+      - name: Install oc CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: 4
       - name: Log into OpenShift
         uses: redhat-actions/oc-login@v1
         with:
