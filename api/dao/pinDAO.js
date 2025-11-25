@@ -1,11 +1,11 @@
-const _          = require('lodash');
+const _ = require('lodash');
 const defaultLog = require('winston').loggers.get('default');
-const mongoose   = require('mongoose');
-const Utils      = require('../helpers/utils');
+const mongoose = require('mongoose');
+const Utils = require('../helpers/utils');
 const projectDAO = require('../dao/projectDAO');
-const constants  = require('../helpers/constants');
+const constants = require('../helpers/constants');
 
-exports.getProjectPins = async function(user, roles, project, pageNumber, pageSize, sortBy) {
+exports.getProjectPins = async function (user, roles, project, pageNumber, pageSize, sortBy) {
   let skip = null,
     limit = null,
     sort = null;
@@ -91,7 +91,7 @@ exports.getProjectPins = async function(user, roles, project, pageNumber, pageSi
   }
 };
 
-exports.createPin = async function(user, project, pins) {
+exports.createPin = async function (user, project, pins) {
   let projectModel = mongoose.model('Project');
   let pinsArr = [];
 
@@ -105,7 +105,7 @@ exports.createPin = async function(user, project, pins) {
       _id: mongoose.Types.ObjectId(project._id)
     },
     {
-      $push: {pins: { $each: pinsArr }}
+      $push: { pins: { $each: pinsArr } }
     },
     {
       new: true
@@ -119,7 +119,7 @@ exports.createPin = async function(user, project, pins) {
   }
 };
 
-exports.publishPins = async function(user, project) {
+exports.publishPins = async function (user, project) {
   let projectModel = require('mongoose').model('Project');
 
   try {
@@ -140,7 +140,7 @@ exports.publishPins = async function(user, project) {
   }
 };
 
-exports.unPublishPins = async function(user, project) {
+exports.unPublishPins = async function (user, project) {
   let projectModel = require('mongoose').model('Project');
 
   try {
@@ -149,7 +149,7 @@ exports.unPublishPins = async function(user, project) {
 
       var published = await projectModel.update(
         { _id: mongoose.Types.ObjectId(project._id) },
-        { $pull: { 'pinsRead': 'public' }});
+        { $pull: { 'pinsRead': 'public' } });
 
       Utils.recordAction('UnPublish', 'PIN', user, project._id);
 
@@ -163,7 +163,7 @@ exports.unPublishPins = async function(user, project) {
   }
 };
 
-exports.deletePin = async function(user, pinId, project) {
+exports.deletePin = async function (user, pinId, project) {
   let projectModel = require('mongoose').model('Project');
 
   try {
