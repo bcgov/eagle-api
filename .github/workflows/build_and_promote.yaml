@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - develop
-    paths-ignore:
-      - '.github/**'
-      - 'openshift/**'
+    # paths-ignore:
+    #   - '.github/**'
+    #   - 'openshift/**'
 
 env:
   OPENSHIFT_NAMESPACE: 6cdc9e-tools
