@@ -134,7 +134,7 @@ exports.publicHead = async function (args, res) {
       null, // sort warmup
       null, // sort
       null, // skip
-      1000000, // limit
+      0, // limit - HEAD only needs count, not data
       true, // count
       null,
       false,
@@ -358,7 +358,7 @@ exports.protectedHead = function (args, res) {
     null, // sort warmup
     null, // sort
     null, // skip
-    1000000, // limit
+    0, // limit - HEAD only needs count, not data
     true) // count
     .then(function (data) {
       // /api/comment/ route, return 200 OK with 0 items if necessary
