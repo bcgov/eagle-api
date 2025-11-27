@@ -207,11 +207,6 @@ const executeQuery = async function (args, res) {
       });
     }
 
-    // attach featured documents ID's
-    if (dataset === constants.PROJECT) {
-      collectionData[0].searchResults = await Utils.attachFeaturedDocuments(collectionData[0].searchResults);
-    }
-
     return Actions.sendResponse(res, 200, collectionData);
 
   } else if (dataset === constants.ITEM) {
@@ -231,7 +226,6 @@ const executeQuery = async function (args, res) {
     if (args.swagger.params._schemaName.value === constants.PROJECT) {
       // If we are a project, and we are not authed, we need to sanitize some fields.
       data = Utils.filterData(args.swagger.params._schemaName.value, data, roles);
-      data = await Utils.attachFeaturedDocuments(data);
     }
 
     return Actions.sendResponse(res, 200, data);

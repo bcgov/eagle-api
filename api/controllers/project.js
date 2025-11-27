@@ -218,9 +218,6 @@ exports.publicGet = async function (args, res) {
     // Sanitize for public.
     let sanitizedData = Utils.filterData('Project', data, ['public']);
 
-    // attach projects featuredDocument IDs
-    sanitizedData = await Utils.attachFeaturedDocuments(sanitizedData);
-
     console.log('DA:', JSON.stringify(sanitizedData));
     return Actions.sendResponse(res, 200, sanitizedData);
   } catch (e) {
@@ -308,9 +305,6 @@ exports.protectedGet = async function (args, res) {
       commentPeriodPipeline);
     Utils.recordAction('Get', 'Project', args.swagger.params.auth_payload.preferred_username, args.swagger.params.projId && args.swagger.params.projId.value ? args.swagger.params.projId.value : null);
     serializeProjectVirtuals(data);
-
-    // attach projects featuredDocument IDs
-    data = await Utils.attachFeaturedDocuments(data);
 
     defaultLog.info('Got comment project(s):', data);
     return Actions.sendResponse(res, 200, data);
