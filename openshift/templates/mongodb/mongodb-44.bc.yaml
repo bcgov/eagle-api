@@ -1,0 +1,80 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: mongodb-44-build
+  annotations:
+    description: "BuildConfig for custom MongoDB 4.4.30 OpenShift-compatible image"
+    tags: "database,mongodb"
+    openshift.io/display-name: "MongoDB 4.4 Build"
+parameters:
+  - name: NAME
+    displayName: Name
+    description: The name assigned to all objects defined in this template.
+    value: mongodb-44
+    required: true
+  - name: GIT_REPO_URL
+    displayName: Git Repository URL
+    description: The URL of the repository containing the Dockerfile.
+    value: https://github.com/bcgov/eagle-api.git
+    required: true
+  - name: GIT_REF
+    displayName: Git Reference
+    description: The branch, tag, or commit to build from.
+    value: develop
+    required: true
+  - name: CONTEXT_DIR
+    displayName: Context Directory
+    description: The subdirectory containing the Dockerfile.
+    value: openshift/templates/mongodb
+    required: true
+  - name: OUTPUT_IMAGE_TAG
+    displayName: Output Image Tag
+    description: The tag for the output image.
+    value: "4.4.30"
+    required: true
+objects:
+  - kind: ImageStream
+    apiVersion: image.openshift.io/v1
+    metadata:
+      name: ${NAME}
+      labels:
+        app: eagle-epic
+        component: database
+    spec:
+      lookupPolicy:
+        local: false
+  - kind: BuildConfig
+    apiVersion: build.openshift.io/v1
+    metadata:
+      name: ${NAME}
+      labels:
+        app: eagle-epic
+        component: database
+    spec:
+      runPolicy: Serial
+      source:
+        type: Git
+        git:
+          uri: ${GIT_REPO_URL}
+          ref: ${GIT_REF}
+        contextDir: ${CONTEXT_DIR}
+      strategy:
+        type: Docker
+        dockerStrategy:
+          dockerfilePath: Dockerfile
+          # No pull secret needed - uses public Docker Hub mongo:4.4.30
+      output:
+        to:
+          kind: ImageStreamTag
+          name: ${NAME}:${OUTPUT_IMAGE_TAG}
+      triggers:
+        - type: ConfigChange
+      resources:
+        requests:
+          cpu: 100m
+          memory: 512Mi
+        limits:
+          cpu: "1"
+          memory: 2Gi
+      successfulBuildsHistoryLimit: 3
+      failedBuildsHistoryLimit: 3
