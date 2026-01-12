@@ -632,7 +632,7 @@
             "containers": [
               {
                 "name": "${DATABASE_SERVICE_NAME}",
-                "image": "${OPENSHIFT_REGISTRY}/${MONGO_IMAGE_NAMESPACE}/${MONGO_IMAGE_NAME}:${MONGO_IMAGE_TAG}",
+                "image": "${OPENSHIFT_REGISTRY}/${MONGO_IMAGE_NAMESPACE}/${MONGO_IMAGE_NAME}:${MONGO_VER}",
                 "ports": [
                   {
                     "containerPort": 27017
@@ -743,19 +743,19 @@
       "name": "MONGO_IMAGE_NAMESPACE",
       "displayName": "Mongo image namespace",
       "description": "The OpenShift Namespace where the mongo ImageStream resides.",
-      "value": "openshift"
+      "value": "6cdc9e-tools"
     },
     {
       "name": "MONGO_IMAGE_NAME",
       "displayName": "Mongo image name",
       "description": "The OpenShift ImageStream Name for mongo.",
-      "value": "mongodb"
+      "value": "mongodb-44"
     },
     {
       "name": "MONGO_VER",
       "displayName": "Mongo Version Number",
       "description": "The version number of Mongo that matches the version in project file package.json",
-      "value": "3.6"
+      "value": "4.4.30"
     },
     {
       "name": "NODEJS_CPU_LIMIT",

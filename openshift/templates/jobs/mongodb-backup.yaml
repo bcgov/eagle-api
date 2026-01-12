@@ -12,6 +12,15 @@ parameters:
   - name: MONGODB_BACKUP_VOLUME_CLAIM
     description: 'Name of the volume claim to be used as storage'
     value: ''
+  - name: MONGO_IMAGE_NAMESPACE
+    description: 'Namespace containing the MongoDB image'
+    value: '6cdc9e-tools'
+  - name: MONGO_IMAGE_NAME
+    description: 'MongoDB image name'
+    value: 'mongodb-44'
+  - name: MONGO_IMAGE_TAG
+    description: 'MongoDB image tag'
+    value: '4.4.30'
 objects:
   - apiVersion: batch/v1beta1
     kind: CronJob
@@ -30,7 +39,7 @@ objects:
                     claimName: ${MONGODB_BACKUP_VOLUME_CLAIM}
               containers:
                 - name: mongodb-backup
-                  image: 'docker-registry.default.svc:5000/openshift/mongodb:latest'
+                  image: 'image-registry.openshift-image-registry.svc:5000/${MONGO_IMAGE_NAMESPACE}/${MONGO_IMAGE_NAME}:${MONGO_IMAGE_TAG}'
                   command:
                     - 'bash'
                     - '-c'
