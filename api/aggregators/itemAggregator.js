@@ -13,6 +13,10 @@ const constants = require('../helpers/constants').schemaTypes;
 exports.createItemAggr = (itemId, schemaName, roles) => {
   const aggregation = [];
 
+  // Ensure 'public' is always included in roles for permission checks
+  // Authenticated users should still see publicly available content
+  const rolesWithPublic = roles.includes('public') ? roles : [...roles, 'public'];
+
   aggregation.push(
     {
       '$match': { _id: mongoose.Types.ObjectId(itemId) }
@@ -29,7 +33,7 @@ exports.createItemAggr = (itemId, schemaName, roles) => {
                   $map: {
                     input: '$read',
                     as: 'fieldTag',
-                    in: { $setIsSubset: [['$$fieldTag'], roles] }
+                    in: { $setIsSubset: [['$$fieldTag'], rolesWithPublic] }
                   }
                 }
               }

@@ -186,6 +186,10 @@ exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywor
       $replaceRoot: { newRoot: '$default' }
     });
 
+  // Ensure 'public' is always included in roles for permission checks
+  // Authenticated users should still see publicly available content
+  const rolesWithPublic = roles.includes('public') ? roles : [...roles, 'public'];
+
   // redact
   queryAggregates.push(
     {
@@ -212,7 +216,7 @@ exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywor
                       $setIsSubset:
                       [
                         [ '$$fieldTag' ],
-                        roles
+                        rolesWithPublic
                       ]
                     }
                   }

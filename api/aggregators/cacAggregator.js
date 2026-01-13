@@ -65,6 +65,10 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
     }
   });
 
+  // Ensure 'public' is always included in roles for permission checks
+  // Authenticated users should still see publicly available content
+  const rolesWithPublic = roles.includes('public') ? roles : [...roles, 'public'];
+
   aggregation.push(
     {
       $redact: {
@@ -78,7 +82,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
                   $map: {
                     input: "$read",
                     as: "fieldTag",
-                    in: { $setIsSubset: [["$$fieldTag"], roles] }
+                    in: { $setIsSubset: [["$$fieldTag"], rolesWithPublic] }
                   }
                 }
               }
