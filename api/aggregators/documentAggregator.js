@@ -20,6 +20,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   const aggregation = [];
   let projectModifier;
   let keywordModifier;
+  let hasTextSearch = false;
 
   if (projectId) {
     projectModifier = { project: mongoose.Types.ObjectId(projectId) };
@@ -27,6 +28,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
 
   if (keywords) {
     keywordModifier = { $text: { $search: "\""+keywords+"\"", $caseSensitive: caseSensitive} };
+    hasTextSearch = true;
   }
 
   // query modifiers
@@ -124,13 +126,17 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
           }
         }
       }
-    },
-    {
+    }
+  );
+
+  // Only add textScore when a $text search is present (MongoDB 4.4+ requirement)
+  if (hasTextSearch) {
+    aggregation.push({
       $addFields: {
         score: { $meta: 'textScore' }
       }
-    }
-  );
+    });
+  }
 
   return aggregation;
 };

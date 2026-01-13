@@ -228,11 +228,13 @@ exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywor
         }
       }
     });
-  // Score, Misc.
-  queryAggregates.push(
-    {
-      $addFields: { score:{ $meta: 'textScore' } }
-    });
+  // Score - only add textScore when keywords are present (MongoDB 4.4+ requirement)
+  if (keywords && keywords.length > 0) {
+    queryAggregates.push(
+      {
+        $addFields: { score:{ $meta: 'textScore' } }
+      });
+  }
 
   let collation =
     {
