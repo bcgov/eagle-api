@@ -1,18 +1,18 @@
 apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
-  name: mongodb-42-build
+  name: mongodb-40-build
   annotations:
-    description: "BuildConfig for MongoDB 4.2.25 custom image for OpenShift"
+    description: "BuildConfig for MongoDB 4.0.28 custom image for OpenShift"
     tags: "database,mongodb"
 objects:
   - apiVersion: image.openshift.io/v1
     kind: ImageStream
     metadata:
-      name: mongodb-42
+      name: mongodb-40
       labels:
         app: mongodb
-        version: "4.2"
+        version: "4.0"
     spec:
       lookupPolicy:
         local: false
@@ -20,15 +20,15 @@ objects:
   - apiVersion: build.openshift.io/v1
     kind: BuildConfig
     metadata:
-      name: mongodb-42
+      name: mongodb-40
       labels:
         app: mongodb
-        version: "4.2"
+        version: "4.0"
     spec:
       output:
         to:
           kind: ImageStreamTag
-          name: mongodb-42:4.2.25
+          name: mongodb-40:4.0.28
       source:
         type: Git
         git:
