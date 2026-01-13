@@ -90,13 +90,11 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
           }
         }
       }
-    },
-    {
-      $addFields: {
-        score: { $meta: "textScore" }
-      }
     }
   );
+
+  // Note: $meta: 'textScore' removed - CAC aggregator doesn't use $text search
+  // and MongoDB 4.4+ requires $text when using textScore
 
   return aggregation;
 };
