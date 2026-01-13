@@ -38,11 +38,6 @@ jobs:
         run: |
           oc -n ${{ env.OPENSHIFT_NAMESPACE }} tag --reference-policy='local' ${{ env.IMAGE_NAME }}:prod ${{ env.IMAGE_NAME }}:prod-backup
           oc -n ${{ env.OPENSHIFT_NAMESPACE }} tag --reference-policy='local' ${{ env.IMAGE_NAME }}:test ${{ env.IMAGE_NAME }}:prod
-      - name: Notify Rocket.Chat
-        run: |
-          curl -X POST -H 'Content-Type: application/json' \
-            --data '{"alias":"Bot","avatar": "https://github.githubassets.com/images/modules/logos_page/Octocat.png","text":"Commit ${{ steps.read-hash.outputs.SHA }} deployed to ${{ env.IMAGE_NAME }} Prod"}' \
-            ${{ secrets.ROCKET_CHAT_URL }}
   sync-main-branch:
     name: Rebase Prod
     needs: deploy
