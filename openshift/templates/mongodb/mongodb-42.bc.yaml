@@ -1,0 +1,57 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: mongodb-42-build
+  annotations:
+    description: "BuildConfig for MongoDB 4.2.25 custom image for OpenShift"
+    tags: "database,mongodb"
+objects:
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      name: mongodb-42
+      labels:
+        app: mongodb
+        version: "4.2"
+    spec:
+      lookupPolicy:
+        local: false
+
+  - apiVersion: build.openshift.io/v1
+    kind: BuildConfig
+    metadata:
+      name: mongodb-42
+      labels:
+        app: mongodb
+        version: "4.2"
+    spec:
+      output:
+        to:
+          kind: ImageStreamTag
+          name: mongodb-42:4.2.25
+      source:
+        type: Git
+        git:
+          uri: ${GIT_REPO_URL}
+          ref: ${GIT_REF}
+        contextDir: openshift/templates/mongodb
+      strategy:
+        type: Docker
+        dockerStrategy:
+          dockerfilePath: Dockerfile
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+
+parameters:
+  - name: GIT_REPO_URL
+    displayName: Git Repository URL
+    description: The URL of the repository with the Dockerfile
+    required: true
+    value: https://github.com/bcgov/eagle-api.git
+
+  - name: GIT_REF
+    displayName: Git Reference
+    description: Set this to a branch name, tag or commit SHA
+    required: true
+    value: develop

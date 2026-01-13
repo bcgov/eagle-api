@@ -1,19 +1,19 @@
-# OpenShift-compatible MongoDB 4.4.30 Image
+# OpenShift-compatible MongoDB 4.2.25 Image
 # Based on official Docker Hub image (no auth required)
 # Provides sclorg-style environment variable compatibility for eagle-api
 
-FROM mongo:4.4.30
+FROM mongo:4.2.25
 
-LABEL io.k8s.description="MongoDB 4.4 NoSQL database server for OpenShift" \
-      io.k8s.display-name="MongoDB 4.4" \
+LABEL io.k8s.description="MongoDB 4.2 NoSQL database server for OpenShift" \
+      io.k8s.display-name="MongoDB 4.2" \
       io.openshift.expose-services="27017:mongodb" \
-      io.openshift.tags="database,mongodb,mongodb44" \
-      name="eagle/mongodb-44-openshift" \
-      version="4.4.30" \
+      io.openshift.tags="database,mongodb,mongodb42" \
+      name="eagle/mongodb-42-openshift" \
+      version="4.2.25" \
       maintainer="BC Gov EAO <EAO.EPICsupport@gov.bc.ca>"
 
 # Environment variables for sclorg compatibility (used by eagle-api)
-ENV MONGODB_VERSION=4.4 \
+ENV MONGODB_VERSION=4.2 \
     HOME=/data/db \
     CONTAINER_SCRIPTS_PATH=/usr/share/container-scripts/mongodb \
     MONGODB_DATADIR=/var/lib/mongodb/data
