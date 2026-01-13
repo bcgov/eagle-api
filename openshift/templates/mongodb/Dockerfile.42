@@ -22,7 +22,9 @@ ENV MONGODB_VERSION=4.2 \
 USER root
 
 # Install additional tools needed for backups and health checks
-RUN apt-get update && \
+# Remove MongoDB repo first (expired GPG key) - we don't need it since we're using the pre-installed MongoDB
+RUN rm -f /etc/apt/sources.list.d/mongodb-org.list && \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
         gettext \
         rsync \
