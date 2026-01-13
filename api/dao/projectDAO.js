@@ -212,7 +212,7 @@ exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywor
                       $setIsSubset:
                       [
                         [ '$$fieldTag' ],
-                        [ 'public' ]
+                        roles
                       ]
                     }
                   }

@@ -95,6 +95,7 @@ objects:
     test: false
     triggers:
     - imageChangeParams:
+        automatic: true
         containerNames:
         - ${NAME}
         from:
