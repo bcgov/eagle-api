@@ -532,6 +532,14 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
 
     _.assignIn(query, { '_schemaName': 'Organization' });
 
+    // Check if project data was returned (user has permission to see it)
+    if (!data || data.length === 0) {
+      // Project not found or user doesn't have permission to see it
+      return Actions.sendResponse(res, 200, [{
+        total_items: 0
+      }]);
+    }
+
     let thePins = [];
     if (!data[0].pins || ( data[0].pins && data[0].pins.length === 0 )) {
       // no pins, return empty result;
