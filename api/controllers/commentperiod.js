@@ -361,7 +361,7 @@ exports.protectedPut = async function (args, res) {
   defaultLog.info('Incoming updated object:', commentPeriod);
 
   try {
-    var cp = await CommentPeriod.update({ _id: objId }, { $set: commentPeriod });
+    var cp = await CommentPeriod.updateOne({ _id: objId }, { $set: commentPeriod });
     Utils.recordAction('Put', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Comment period updated:', cp);
     return Actions.sendResponse(res, 200, cp);

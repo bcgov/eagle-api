@@ -98,14 +98,13 @@ exports.protectedPostElement = async function (args, res) {
       .then(function (doc) {
         theDoc = doc;
         var Inspection = mongoose.model('Inspection');
-        return Inspection.update(
+        return Inspection.updateOne(
           { _id: mongoose.Types.ObjectId(inspId) },
           {
             $push: {
               elements: doc._id
             }
-          },
-          { new: true }
+          }
         );
       })
       .then(function () {
@@ -211,14 +210,13 @@ exports.protectedPostElementItem = async function (args, res) {
             }).then(function () {
               // Push this into the inspection elements' items' array for things.
               var InspectionElement = mongoose.model('InspectionElement');
-              return InspectionElement.update(
+              return InspectionElement.updateOne(
                 { _id: mongoose.Types.ObjectId(elementId) },
                 {
                   $push: {
                     items: doc
                   }
-                },
-                { new: true }
+                }
               );
             }).then(function (theInspection) {
               console.log('updated insp:', theInspection);
@@ -272,14 +270,13 @@ exports.protectedPostElementItem = async function (args, res) {
         }).then(function () {
           // Push this into the inspection elements' array for things.
           var InspectionElement = mongoose.model('InspectionElement');
-          return InspectionElement.update(
+          return InspectionElement.updateOne(
             { _id: mongoose.Types.ObjectId(elementId) },
             {
               $push: {
                 items: doc
               }
-            },
-            { new: true }
+            }
           );
         }).then(function (theInspection) {
           console.log('updated insp:', theInspection);

@@ -466,7 +466,7 @@ exports.protectedPut = async function (args, res) {
   defaultLog.info('Incoming updated object:', comment);
 
   try {
-    var c = await Comment.update({ _id: objId }, { $set: comment });
+    var c = await Comment.updateOne({ _id: objId }, { $set: comment });
     Utils.recordAction('Put', 'Comment', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Comment updated:', c);
     return Actions.sendResponse(res, 200, c);
@@ -493,7 +493,7 @@ exports.protectedStatus = async function (args, res) {
   comment = setPermissionsFromEaoStatus(status, comment);
 
   try {
-    var c = await Comment.update({ _id: objId }, { $set: comment });
+    var c = await Comment.updateOne({ _id: objId }, { $set: comment });
     Utils.recordAction('Status', 'Comment', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Comment updated:', c);
     return Actions.sendResponse(res, 200, c);

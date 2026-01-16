@@ -78,11 +78,10 @@ exports.addGroupMember = async function(user, group, members) {
   });
 
   // Add members to members existing
-  let updatedGroup = await groupModel.update(
+  let updatedGroup = await groupModel.updateOne(
     {
       _id: mongoose.Types.ObjectId(group._id) },
-    { $push: {  members: { $each: membersArray } } },
-    { new: true }
+    { $push: {  members: { $each: membersArray } } }
   );
 
   if (updatedGroup) {
@@ -174,10 +173,9 @@ exports.deleteGroupMember = async function(user, group, member) {
   var groupModel = mongoose.model('Group');
 
   try {
-    var data = await groupModel.update(
+    var data = await groupModel.updateOne(
       { _id: group._id },
-      { $pull: { members: { $in: [mongoose.Types.ObjectId(member._id)] } } },
-      { new: true }
+      { $pull: { members: { $in: [mongoose.Types.ObjectId(member._id)] } } }
     );
 
     Utils.recordAction('Delete', 'GroupMember', user, data._id);

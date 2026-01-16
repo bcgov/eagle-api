@@ -113,7 +113,7 @@ exports.protectedDelete = async function (args, res) {
     return Actions.sendResponse(res, 400, { });
   }
   var commentperiod = require('mongoose').model('Vc');
-  var data = await commentperiod.remove({ _id: objId }).exec();
+  var data = await commentperiod.deleteOne({ _id: objId });
   Utils.recordAction('Delete', 'Vc', args.swagger.params.auth_payload.preferred_username, objId);
   return Actions.sendResponse(res, 200, data);
 };

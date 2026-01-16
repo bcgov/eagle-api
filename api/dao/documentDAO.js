@@ -345,7 +345,7 @@ exports.unPublishDocument = async function(user, document) {
 };
 
 exports.featureDocument = async function (document, project) {
-  let featuredDocumentsCount = await mongoose.model('Document').count({ project: project._id, isFeatured: true });
+  let featuredDocumentsCount = await mongoose.model('Document').countDocuments({ project: project._id, isFeatured: true });
 
   if (featuredDocumentsCount < constants.MAX_FEATURE_DOCS) {
     document.isFeatured = true;

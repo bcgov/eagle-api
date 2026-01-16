@@ -176,7 +176,7 @@ exports.unProtectedPost = async function (args, res) {
                   defaultLog.info('Saved new document object:', d._id);
 
                   var Comment = mongoose.model('Comment');
-                  var c = await Comment.update({ _id: _comment }, { $addToSet: { documents: d._id } });
+                  var c = await Comment.updateOne({ _id: _comment }, { $addToSet: { documents: d._id } });
                   defaultLog.info('Comment updated:', c);
                   Utils.recordAction('Post', 'Document', 'public', d._id);
                   return Actions.sendResponse(res, 200, d);
@@ -803,7 +803,7 @@ exports.featureDocument = async function (args, res) {
       let project = await mongoose.model('Project').findById(mongoose.Types.ObjectId(document.project));
 
       if(project) {
-        let featuredDocumentsCount = await mongoose.model('Document').count({ project: project._id, isFeatured: true });
+        let featuredDocumentsCount = await mongoose.model('Document').countDocuments({ project: project._id, isFeatured: true });
 
         // Move the magic number into a config
         if(featuredDocumentsCount < constants.MAX_FEATURE_DOCS) {
