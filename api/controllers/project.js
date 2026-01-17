@@ -366,7 +366,7 @@ exports.protectedHead = function (args, res) {
     });
 };
 
-exports.protectedDelete = function (args, res) {
+exports.protectedDelete = async function (args, res) {
   var projId = args.swagger.params.projId.value;
   defaultLog.info('Delete Project:', projId);
 
@@ -1398,7 +1398,7 @@ exports.protectedPut = async function (args, res) {
 
 // Publish/Unpublish the project
 // We need to make this publish also update the current legislation year and the year list
-exports.protectedPublish = function (args, res) {
+exports.protectedPublish = async function (args, res) {
   var objId = args.swagger.params.projId.value;
   if (!mongoose.Types.ObjectId.isValid(objId)) {
     return Actions.sendResponse(res, 400, {});
@@ -1431,7 +1431,7 @@ exports.protectedPublish = function (args, res) {
     return Actions.sendResponse(res, 500, err);
   }
 };
-exports.protectedUnPublish = function (args, res) {
+exports.protectedUnPublish = async function (args, res) {
   var objId = args.swagger.params.projId.value;
   if (!mongoose.Types.ObjectId.isValid(objId)) {
     return Actions.sendResponse(res, 400, {});
