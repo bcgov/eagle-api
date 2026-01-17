@@ -104,7 +104,7 @@ exports.publicGet = async function (args, res) {
   }
 };
 
-exports.protectedDelete = function (args, res) {
+exports.protectedDelete = async function (args, res) {
   defaultLog.info('Deleting a RecentActivity(s)');
   defaultLog.info('args.swagger.params:', args.swagger.operation['x-security-scopes']);
 
