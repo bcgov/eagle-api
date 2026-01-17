@@ -512,13 +512,12 @@ exports.addExtension = async function(user, extension, project) {
   let extensionType = extension.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
 
   try {
-    let data = await mongoose.model('Project').update(
+    let data = await mongoose.model('Project').updateOne(
       { _id: project._id },
-      { $push: { [extensionType]: extension } },
-      { new: true }
+      { $push: { [extensionType]: extension } }
     );
 
-    if (data.nModified === 0) {
+    if (data.modifiedCount === 0) {
       throw Error('Project extensions could not be modified');
     }
 
@@ -540,23 +539,21 @@ exports.updateExtension = async function(user, extension, project) {
   let projectModel = mongoose.model('Project');
 
   try {
-    let dataRemoved = await projectModel.update(
+    let dataRemoved = await projectModel.updateOne(
       { _id: project._id },
-      { $pull: { [extensionOldType]: extensionOld } },
-      { new: true }
+      { $pull: { [extensionOldType]: extensionOld } }
     );
 
-    if (dataRemoved.nModified === 0) {
+    if (dataRemoved.modifiedCount === 0) {
       throw Error('Project extensions could not be modified');
     }
 
-    let dataAdded = await projectModel.update(
+    let dataAdded = await projectModel.updateOne(
       { _id: project._id },
-      { $push: { [extensionNewType]: extensionNew } },
-      { new: true }
+      { $push: { [extensionNewType]: extensionNew } }
     );
 
-    if (dataAdded.nModified === 0) {
+    if (dataAdded.modifiedCount === 0) {
       throw Error('Project extensions could not be modified');
     }
 
@@ -574,13 +571,12 @@ exports.deleteExtension = async function(user, extension, project) {
 
     let projectModel = mongoose.model('Project');
 
-    let data = await projectModel.update(
+    let data = await projectModel.updateOne(
       { _id: project._id },
-      { $pull: { [extensionType]: extension } },
-      { new: true }
+      { $pull: { [extensionType]: extension } }
     );
 
-    if (data.nModified === 0) {
+    if (data.modifiedCount === 0) {
       throw Error('Project extensions could not be modified');
     }
 

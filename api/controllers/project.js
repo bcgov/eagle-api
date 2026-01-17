@@ -375,25 +375,28 @@ exports.protectedDelete = function (args, res) {
   }
 
   var Project = mongoose.model('Project');
-  Project.findOne({ _id: projId }, function (err, o) {
+  try {
+    const o = await Project.findOne({ _id: projId });
     if (o) {
       defaultLog.info('o:', o);
 
       // Set the deleted flag.
-      Actions.delete(o)
-        .then(function (deleted) {
-          Utils.recordAction('Delete', 'Project', args.swagger.params.auth_payload.preferred_username, projId);
-          // Deleted successfully
-          return Actions.sendResponse(res, 200, deleted);
-        }, function (err) {
-          // Error
-          return Actions.sendResponse(res, 400, err);
-        });
+      try {
+        const deleted = await Actions.delete(o);
+        Utils.recordAction('Delete', 'Project', args.swagger.params.auth_payload.preferred_username, projId);
+        // Deleted successfully
+        return Actions.sendResponse(res, 200, deleted);
+      } catch (err) {
+        // Error
+        return Actions.sendResponse(res, 400, err);
+      }
     } else {
       defaultLog.info('Couldn\'t find that object!');
       return Actions.sendResponse(res, 404, {});
     }
-  });
+  } catch (err) {
+    return Actions.sendResponse(res, 500, err);
+  }
 };
 
 
@@ -491,10 +494,9 @@ exports.protectedPinDelete = async function (args, res) {
 
   var Project = mongoose.model('Project');
   try {
-    var data = await Project.update(
+    var data = await Project.updateOne(
       { _id: projId },
-      { $pull: { pins: { $in: [mongoose.Types.ObjectId(pinId)] } } },
-      { new: true }
+      { $pull: { pins: { $in: [mongoose.Types.ObjectId(pinId)] } } }
     );
     Utils.recordAction('Delete', 'Pin', args.swagger.params.auth_payload.preferred_username, pinId);
     return Actions.sendResponse(res, 200, data);
@@ -612,12 +614,11 @@ exports.protectedExtensionAdd = async function (args, res) {
 
   var Project = mongoose.model('Project');
   try {
-    var data = await Project.update(
+    var data = await Project.updateOne(
       { _id: projId },
-      { $push: { [extensionType]: extensionObj } },
-      { new: true }
+      { $push: { [extensionType]: extensionObj } }
     );
-    if (data.nModified === 0) {
+    if (data.modifiedCount === 0) {
       return Actions.sendResponse(res, 404, {});
     }
     // Fall through if successful
@@ -640,12 +641,11 @@ exports.protectedExtensionDelete = async function (args, res) {
     var extensionType = extensionObj.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
 
     var Project = mongoose.model('Project');
-    var data = await Project.update(
+    var data = await Project.updateOne(
       { _id: projId },
-      { $pull: { [extensionType]: extensionObj } },
-      { new: true }
+      { $pull: { [extensionType]: extensionObj } }
     );
-    if (data.nModified === 0) {
+    if (data.modifiedCount === 0) {
       return Actions.sendResponse(res, 404, {});
     }
     // Fall through if successful
@@ -672,21 +672,19 @@ exports.protectedExtensionUpdate = async function (args, res) {
 
   var Project = mongoose.model('Project');
   try {
-    let dataRemoved = await Project.update(
+    let dataRemoved = await Project.updateOne(
       { _id: projId },
-      { $pull: { [extensionOldType]: extensionOld } },
-      { new: true }
+      { $pull: { [extensionOldType]: extensionOld } }
     );
-    if (dataRemoved.nModified === 0) {
+    if (dataRemoved.modifiedCount === 0) {
       return Actions.sendResponse(res, 404, {});
     }
     // Fall through if successful
-    var dataAdded = await Project.update(
+    var dataAdded = await Project.updateOne(
       { _id: projId },
-      { $push: { [extensionNewType]: extensionNew } },
-      { new: true }
+      { $push: { [extensionNewType]: extensionNew } }
     );
-    if (dataAdded.nModified === 0) {
+    if (dataAdded.modifiedCount === 0) {
       return Actions.sendResponse(res, 404, {});
     }
     Utils.recordAction('Put', 'Extension', args.swagger.params.auth_payload.preferred_username, projId);
@@ -734,7 +732,7 @@ exports.protectedAddPins = async function (args, res) {
   });
 
   // Add pins to pins existing
-  var doc = await Project.update(
+  var doc = await Project.updateOne(
     { _id: mongoose.Types.ObjectId(objId) },
     {
       $push: {
@@ -742,8 +740,7 @@ exports.protectedAddPins = async function (args, res) {
           $each: pinsArr
         }
       }
-    },
-    { new: true }
+    }
   );
   if (doc) {
     Utils.recordAction('Add', 'Pin', args.swagger.params.auth_payload.preferred_username, objId);
@@ -765,13 +762,13 @@ exports.protectedPublishPin = async function (args, res) {
     var project = await Project.findOne({ _id: projId });
     if (project && project.pins) {
       defaultLog.info('Project:', projId);
-      var published = await Project.update(
+      var published = await Project.updateOne(
         { _id: mongoose.Types.ObjectId(projId) },
         {
           $addToSet: {
             'pinsRead': 'public'
           }
-        },
+        }
       );
       Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username);
       return Actions.sendResponse(res, 200, published);
@@ -794,13 +791,13 @@ exports.protectedUnPublishPin = async function (args, res) {
     var project = await Project.findOne({ _id: projId });
     if (project && project.pins) {
       defaultLog.info('Project:', projId);
-      var published = await Project.update(
+      var published = await Project.updateOne(
         { _id: mongoose.Types.ObjectId(projId) },
         {
           $pull: {
             'pinsRead': 'public'
           }
-        },
+        }
       );
       Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, projId);
       return Actions.sendResponse(res, 200, published);
@@ -823,13 +820,13 @@ exports.protectedPublishCAC = async function (args, res) {
     var project = await Project.findOne({ _id: projId });
     if (project) {
       defaultLog.info('Project:', projId);
-      var published = await Project.update(
+      var published = await Project.updateOne(
         { _id: mongoose.Types.ObjectId(projId) },
         {
           $set: {
             'projectCACPublished': true
           }
-        },
+        }
       );
       Utils.recordAction('Publish', 'CAC', args.swagger.params.auth_payload.preferred_username);
       return Actions.sendResponse(res, 200, published);
@@ -852,13 +849,13 @@ exports.protectedUnPublishCAC = async function (args, res) {
     var project = await Project.findOne({ _id: projId });
     if (project) {
       defaultLog.info('Project:', projId);
-      var published = await Project.update(
+      var published = await Project.updateOne(
         { _id: mongoose.Types.ObjectId(projId) },
         {
           $set: {
             'projectCACPublished': false
           }
-        },
+        }
       );
       Utils.recordAction('Publish', 'CAC', args.swagger.params.auth_payload.preferred_username, projId);
       return Actions.sendResponse(res, 200, published);
@@ -986,12 +983,12 @@ exports.protectedCACRemoveMember = async function (args, res) {
   const CACUser = mongoose.model('CACUser');
   try {
     // Remove it from the project
-    var projectData = await Project.update(
+    var projectData = await Project.updateOne(
       { _id: mongoose.Types.ObjectId(projId) },
       { $pull: { cacMembers: { $in: [mongoose.Types.ObjectId(member._id)] } } }
     );
     // Remove it from the CACUser collection
-    await CACUser.remove({_id: mongoose.Types.ObjectId(member._id)});
+    await CACUser.deleteOne({_id: mongoose.Types.ObjectId(member._id)});
 
     Utils.recordAction('Delete', 'CACMemberFromProject', args.swagger.params.auth_payload.preferred_username, member._id);
     return Actions.sendResponse(res, 200, projectData);
@@ -1011,11 +1008,11 @@ exports.protectedCreateCAC = async function (args, res) {
   const Project = mongoose.model('Project');
 
   try {
-    let data = await Project.update(
+    let data = await Project.updateOne(
       { _id: mongoose.Types.ObjectId(projId) },
       { projectCAC: true, cacEmail: cacData.cacEmail, projectCACPublished: false }
     );
-    if (data.nModified === 0) {
+    if (data.modifiedCount === 0) {
       return Actions.sendResponse(res, 400, {});
     }
     // Fall through if successful
@@ -1038,14 +1035,14 @@ exports.protectedCACDelete = async function (args, res) {
   try {
     // First remove the members of this project from the CACUser list
     const proj = await Project.findOne({_id: mongoose.Types.ObjectId(projId)});
-    await CACUser.remove({ _id: { $in: [proj.cacMembers] } });
+    await CACUser.deleteMany({ _id: { $in: proj.cacMembers } });
 
     // Then purge the array in the project.
-    const data = await Project.update(
+    const data = await Project.updateOne(
       { _id: mongoose.Types.ObjectId(projId) },
       { projectCAC: false, cacMembers: [] }
     );
-    if (data.nModified === 0) {
+    if (data.modifiedCount === 0) {
       return Actions.sendResponse(res, 400, {});
     }
     // Fall through if successful
@@ -1410,7 +1407,8 @@ exports.protectedPublish = function (args, res) {
   defaultLog.info('Publish Project:', objId);
 
   var Project = require('mongoose').model('Project');
-  Project.findOne({ _id: objId }, function (err, o) {
+  try {
+    const o = await Project.findOne({ _id: objId });
     if (o) {
       defaultLog.info('o:', o);
 
@@ -1418,19 +1416,20 @@ exports.protectedPublish = function (args, res) {
         o.currentLegislationYear = 'legislation_' + ProjObject.legislationYear;
       }
 
-      return Actions.publish(o, true)
-        .then(function (published) {
-          Utils.recordAction('Publish', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
-          return Actions.sendResponse(res, 200, published);
-        })
-        .catch(function (err) {
-          return Actions.sendResponse(res, 500, err);
-        });
+      try {
+        const published = await Actions.publish(o, true);
+        Utils.recordAction('Publish', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
+        return Actions.sendResponse(res, 200, published);
+      } catch (err) {
+        return Actions.sendResponse(res, 500, err);
+      }
     } else {
       defaultLog.info('Couldn\'t find that object!');
       return Actions.sendResponse(res, 404, {});
     }
-  });
+  } catch (err) {
+    return Actions.sendResponse(res, 500, err);
+  }
 };
 exports.protectedUnPublish = function (args, res) {
   var objId = args.swagger.params.projId.value;
@@ -1440,22 +1439,24 @@ exports.protectedUnPublish = function (args, res) {
   defaultLog.info('UnPublish Project:', objId);
 
   var Project = require('mongoose').model('Project');
-  Project.findOne({ _id: objId }, function (err, o) {
+  try {
+    const o = await Project.findOne({ _id: objId });
     if (o) {
       defaultLog.info('o:', o);
-      return Actions.unPublish(o)
-        .then(function (unpublished) {
-          Utils.recordAction('Put', 'Unpublish', args.swagger.params.auth_payload.preferred_username, objId);
-          return Actions.sendResponse(res, 200, unpublished);
-        })
-        .catch(function (err) {
-          return Actions.sendResponse(res, err.code, err);
-        });
+      try {
+        const unpublished = await Actions.unPublish(o);
+        Utils.recordAction('Put', 'Unpublish', args.swagger.params.auth_payload.preferred_username, objId);
+        return Actions.sendResponse(res, 200, unpublished);
+      } catch (err) {
+        return Actions.sendResponse(res, err.code, err);
+      }
     } else {
       defaultLog.info('Couldn\'t find that object!');
       return Actions.sendResponse(res, 404, {});
     }
-  });
+  } catch (err) {
+    return Actions.sendResponse(res, 500, err);
+  }
 };
 
 var handleCommentPeriodForBannerQueryParameters = function (args, projectId) {
@@ -1648,11 +1649,13 @@ exports.getFeaturedDocuments = async function (args, res) {
   try {
     if (args.swagger.params.projId && args.swagger.params.projId.value && mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
       let projectModel = mongoose.model('Project');
-      projectModel.findOne({ _id: args.swagger.params.projId.value }, async function (err, project) {
+      const project = await projectModel.findOne({ _id: args.swagger.params.projId.value });
+      if (project) {
         let featuredDocs = await fetchFeaturedDocuments(project);
-
         return Actions.sendResponse(res, 200, featuredDocs);
-      });
+      } else {
+        return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found' });
+      }
     } else {
       return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found' });
     }

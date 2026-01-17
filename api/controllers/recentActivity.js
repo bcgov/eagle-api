@@ -121,14 +121,13 @@ exports.protectedDelete = function (args, res) {
   }
 
   // Straight delete, don't isDelete=true them.
-  RecentActivity.remove(query, function (err, data) {
-    if (data) {
-      Utils.recordAction('Delete', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, data._id);
-      return Actions.sendResponse(res, 200, data);
-    } else {
-      return Actions.sendResponse(res, 400, err);
-    }
-  });
+  try {
+    const data = await RecentActivity.deleteMany(query);
+    Utils.recordAction('Delete', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, args.swagger.params.recentActivityId ? args.swagger.params.recentActivityId.value : null);
+    return Actions.sendResponse(res, 200, data);
+  } catch (err) {
+    return Actions.sendResponse(res, 400, err);
+  }
 };
 
 //  Create a new RecentActivity

@@ -109,7 +109,7 @@ exports.protectedDelete = async function (args, res) {
   // Change this to use guid instead of idir/user
   topic._deletedBy = args.swagger.params.auth_payload.preferred_username;
 
-  var data = await topic.remove({ _id: objId }).exec();
+  var data = await topic.deleteOne({ _id: objId });
   Utils.recordAction('Delete', 'Topic', args.swagger.params.auth_payload.preferred_username, objId);
   return Actions.sendResponse(res, 200, data);
 };
