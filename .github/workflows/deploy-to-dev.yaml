@@ -1,0 +1,110 @@
+# =============================================================================
+# Deploy to Dev
+# =============================================================================
+# Triggered on push to develop branch.
+# Builds Docker image using S2I, pushes to OpenShift registry, tags for dev.
+# =============================================================================
+
+name: Deploy to Dev
+
+on:
+  push:
+    branches:
+      - develop
+
+permissions: write-all
+
+env:
+  OPENSHIFT_NAMESPACE: 6cdc9e-tools
+  OPENSHIFT_DEV_NAMESPACE: 6cdc9e-dev
+  IMAGE_NAME: eagle-api
+
+jobs:
+  build:
+    name: Build and Tag for Dev
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get Short SHA
+        id: short-sha
+        run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Login to OpenShift registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.OPENSHIFT_REPOSITORY }}
+          username: ${{ secrets.OPENSHIFT_REPOSITORY_USERNAME }}
+          password: ${{ secrets.OPENSHIFT_REPOSITORY_PASSWORD }}
+
+      - name: Build with S2I
+        id: build_image
+        uses: redhat-actions/s2i-build@v2
+        with:
+          path_context: '.'
+          builder_image: ${{ secrets.OPENSHIFT_REPOSITORY }}/openshift/nodejs:16-ubi9
+          image: ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}
+          tags: ${{ steps.short-sha.outputs.SHA }}
+
+      - name: Push and Tag Image
+        run: |
+          # Push the commit SHA tagged image
+          docker push ${{ steps.build_image.outputs.image }}:${{ steps.short-sha.outputs.SHA }}
+          
+          # Tag as ci-latest (watched by dev DeploymentConfig) and latest
+          docker tag ${{ steps.build_image.outputs.image }}:${{ steps.short-sha.outputs.SHA }} \
+            ${{ steps.build_image.outputs.image }}:ci-latest
+          docker tag ${{ steps.build_image.outputs.image }}:${{ steps.short-sha.outputs.SHA }} \
+            ${{ steps.build_image.outputs.image }}:dev
+          docker tag ${{ steps.build_image.outputs.image }}:${{ steps.short-sha.outputs.SHA }} \
+            ${{ steps.build_image.outputs.image }}:latest
+          
+          # Push tags
+          docker push ${{ steps.build_image.outputs.image }}:ci-latest
+          docker push ${{ steps.build_image.outputs.image }}:dev
+          docker push ${{ steps.build_image.outputs.image }}:latest
+
+      - name: Install OpenShift CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: "4.14"
+          skip_cache: true
+
+      - name: Log into OpenShift
+        uses: redhat-actions/oc-login@v1.3
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_URL }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          namespace: ${{ env.OPENSHIFT_DEV_NAMESPACE }}
+
+      - name: Tag image in OpenShift for Dev
+        run: |
+          # Tag for dev promotion (manual workflow can use this)
+          oc tag ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ steps.short-sha.outputs.SHA }} \
+                 ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:dev
+          
+          # Tag as ci-latest (triggers automatic dev deployment)
+          oc tag ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ steps.short-sha.outputs.SHA }} \
+                 ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:ci-latest
+
+      - name: Verify Deployment
+        run: |
+          echo "Checking deployment status..."
+          oc rollout status dc/eagle-api -n ${{ env.OPENSHIFT_DEV_NAMESPACE }} --timeout=300s || true
+          
+          echo "Current deployment:"
+          oc get dc/eagle-api -n ${{ env.OPENSHIFT_DEV_NAMESPACE }} -o jsonpath='{.spec.template.spec.containers[0].image}'
+
+      - name: Summary
+        run: |
+          echo "## 🚀 Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | ${{ steps.short-sha.outputs.SHA }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Environment** | dev |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image Tag** | ${{ steps.short-sha.outputs.SHA }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "To deploy to Test, manually trigger the **Deploy to Test** workflow with image tag: \`${{ steps.short-sha.outputs.SHA }}\`" >> $GITHUB_STEP_SUMMARY
