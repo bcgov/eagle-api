@@ -6,34 +6,15 @@ API for acting as a central authenticated data service for all EPIC front-ends
 
 ## Documentation
 
-Comprehensive architecture and deployment documentation is available in the [docs](./docs) directory:
+All documentation has been consolidated in the [Eagle Documentation Wiki](https://github.com/bcgov/eagle-dev-guides/wiki):
 
-* **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - Platform architecture overview
-  * Service map and request routing
-  * Why `/api` bypasses rproxy (direct route architecture)
-  * nginx configuration and caching strategy
-  * Security and authentication flows
-  * Monitoring and health checks
-  
-* **[ANALYTICS_ARCHITECTURE.md](./docs/ANALYTICS_ARCHITECTURE.md)** - Analytics integration
-  * Penguin Analytics service architecture
-  * Why `/analytics` is separate from `/api` path
-  * Event schema and TimescaleDB storage
-  * Frontend integration (AnalyticsService pattern)
-  * Performance considerations and troubleshooting
-  
-* **[CONFIGURATION.md](./docs/CONFIGURATION.md)** - Configuration management
-  * ConfigService pattern with runtime config fetching
-  * Environment variables reference (dev/test/prod)
-  * Build-time vs runtime configuration
-  * Secrets management in OpenShift
-  
-* **[DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - Deployment workflows
-  * OpenShift namespace structure (6cdc9e-tools/dev/test/prod)
-  * GitHub Actions CI/CD pipeline
-  * Helm chart deployment
-  * Environment promotion workflow (dev → test → prod)
-  * Rollback procedures and troubleshooting
+* **[API Architecture](https://github.com/bcgov/eagle-dev-guides/wiki/API-Architecture)** - Service map, routing patterns, and request flow
+* **[Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management)** - ConfigService pattern and environment variables
+* **[Analytics Architecture](https://github.com/bcgov/eagle-dev-guides/wiki/Analytics-Architecture)** - Penguin Analytics integration
+* **[API Deployment](https://github.com/bcgov/eagle-dev-guides/wiki/API-Deployment)** - Deployment workflows and procedures
+* **[Deployment Pipeline](https://github.com/bcgov/eagle-dev-guides/wiki/Deployment-Pipeline)** - CI/CD workflows and image tagging
+* **[Rollback Procedures](https://github.com/bcgov/eagle-dev-guides/wiki/Rollback-Procedures)** - How to rollback deployments
+* **[Troubleshooting](https://github.com/bcgov/eagle-dev-guides/wiki/Troubleshooting)** - Common issues and solutions
 
 ## Related projects
 
