@@ -134,7 +134,9 @@ const executeQuery = async function (args, res) {
   const pageNum = args.swagger.params.pageNum.value || 0;
   const pageSize = args.swagger.params.pageSize.value || 25;
   const projectLegislation = args.swagger.params.projectLegislation.value || '';
-  const sortBy = args.swagger.params.sortBy.value ? args.swagger.params.sortBy.value : keywords ? ['-score'] : [];
+  // Normalize sortBy to always be an array; swagger may pass a single string when only one sort field is provided.
+  const sortByRaw = args.swagger.params.sortBy.value ? args.swagger.params.sortBy.value : keywords ? ['-score'] : [];
+  const sortBy = Array.isArray(sortByRaw) ? sortByRaw : [sortByRaw];
   const caseSensitive = args.swagger.params.caseSensitive ? args.swagger.params.caseSensitive.value : false;
   const and = args.swagger.params.and ? args.swagger.params.and.value : '';
   const or = args.swagger.params.or ? args.swagger.params.or.value : '';

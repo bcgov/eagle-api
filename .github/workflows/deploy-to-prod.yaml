@@ -1,53 +1,92 @@
+# =============================================================================
+# Deploy to Production
+# =============================================================================
+# Manually triggered workflow to deploy to production environment.
+# Uses workflow_dispatch with optional image_tag input.
+# Defaults to promoting the 'test' tagged image.
+# =============================================================================
+
 name: Deploy to Prod
 
 on:
-  repository_dispatch:
-    # Trigger from repository dispatch workflow in promotion/prod branch
-    types: [trigger-prod-deploy]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (commit SHA or "test")'
+        required: false
+        default: 'test'
+        type: string
+
+permissions: write-all
 
 env:
   OPENSHIFT_NAMESPACE: 6cdc9e-tools
+  OPENSHIFT_PROD_NAMESPACE: 6cdc9e-prod
   IMAGE_NAME: eagle-api
 
 jobs:
   deploy:
-    name: Deploy to Prod
+    name: Deploy to Production
     runs-on: ubuntu-24.04
-    outputs:
-      COMMIT_SHA: ${{ steps.read-hash.outputs.SHA }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
-          ref: "promotion/prod"
-      - name: Retrieve previous commit hash
-        id: read-hash
-        run: echo "SHA=`jq -r '.commit' state.json`" >> $GITHUB_OUTPUT
-      - name: Install oc CLI
+          ref: develop
+
+      - name: Set image tag
+        id: image-tag
+        run: |
+          TAG="${{ github.event.inputs.image_tag }}"
+          if [ -z "$TAG" ] || [ "$TAG" = "test" ]; then
+            echo "Using 'test' tag"
+            echo "TAG=test" >> $GITHUB_OUTPUT
+          else
+            echo "Using provided tag: $TAG"
+            echo "TAG=$TAG" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install OpenShift CLI
         uses: redhat-actions/openshift-tools-installer@v1
         with:
           oc: "4.14"
           skip_cache: true
+
       - name: Log into OpenShift
-        uses: redhat-actions/oc-login@v1
+        uses: redhat-actions/oc-login@v1.3
         with:
           openshift_server_url: ${{ secrets.OPENSHIFT_URL }}
           openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
           namespace: ${{ env.OPENSHIFT_NAMESPACE }}
-      - name: Tag image
+
+      - name: Backup and Tag image for Prod
         run: |
-          oc -n ${{ env.OPENSHIFT_NAMESPACE }} tag --reference-policy='local' ${{ env.IMAGE_NAME }}:prod ${{ env.IMAGE_NAME }}:prod-backup
-          oc -n ${{ env.OPENSHIFT_NAMESPACE }} tag --reference-policy='local' ${{ env.IMAGE_NAME }}:test ${{ env.IMAGE_NAME }}:prod
-  sync-main-branch:
-    name: Rebase Prod
-    needs: deploy
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-        with:
-          ref: "main"
-      - run: |
-          git fetch origin test
-          git rebase ${{needs.deploy.outputs.COMMIT_SHA}} main
-          git push origin main
+          # Backup current prod image
+          echo "Backing up current prod image..."
+          oc tag ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:prod \
+                 ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:prod-backup || true
+          
+          # Tag new image for prod
+          echo "Tagging image ${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.TAG }} as 'prod'"
+          oc tag ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.TAG }} \
+                 ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:prod
+
+      - name: Verify Deployment
+        run: |
+          echo "Checking deployment status..."
+          oc rollout status dc/eagle-api -n ${{ env.OPENSHIFT_PROD_NAMESPACE }} --timeout=300s || true
+          
+          echo "Current deployment:"
+          oc get dc/eagle-api -n ${{ env.OPENSHIFT_PROD_NAMESPACE }} -o jsonpath='{.spec.template.spec.containers[0].image}'
+
+      - name: Summary
+        run: |
+          echo "## 🚀 Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Environment** | production |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image Tag** | ${{ steps.image-tag.outputs.TAG }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Triggered By** | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Deployment Complete**" >> $GITHUB_STEP_SUMMARY

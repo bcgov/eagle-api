@@ -4,6 +4,37 @@
 
 API for acting as a central authenticated data service for all EPIC front-ends
 
+## Documentation
+
+Comprehensive architecture and deployment documentation is available in the [docs](./docs) directory:
+
+* **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - Platform architecture overview
+  * Service map and request routing
+  * Why `/api` bypasses rproxy (direct route architecture)
+  * nginx configuration and caching strategy
+  * Security and authentication flows
+  * Monitoring and health checks
+  
+* **[ANALYTICS_ARCHITECTURE.md](./docs/ANALYTICS_ARCHITECTURE.md)** - Analytics integration
+  * Penguin Analytics service architecture
+  * Why `/analytics` is separate from `/api` path
+  * Event schema and TimescaleDB storage
+  * Frontend integration (AnalyticsService pattern)
+  * Performance considerations and troubleshooting
+  
+* **[CONFIGURATION.md](./docs/CONFIGURATION.md)** - Configuration management
+  * ConfigService pattern with runtime config fetching
+  * Environment variables reference (dev/test/prod)
+  * Build-time vs runtime configuration
+  * Secrets management in OpenShift
+  
+* **[DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - Deployment workflows
+  * OpenShift namespace structure (6cdc9e-tools/dev/test/prod)
+  * GitHub Actions CI/CD pipeline
+  * Helm chart deployment
+  * Environment promotion workflow (dev → test → prod)
+  * Rollback procedures and troubleshooting
+
 ## Related projects
 
 Eagle is a revision name of the EAO EPIC application suite.
@@ -17,6 +48,8 @@ These projects comprise EAO EPIC:
 * <https://github.com/bcgov/eagle-reports>
 * <https://github.com/bcgov/eagle-helper-pods>
 * <https://github.com/bcgov/eagle-dev-guides>
+* <https://github.com/bcgov/eao-nginx> (rproxy reverse proxy)
+* <https://github.com/bcgov/penguin-analytics> (analytics service)
 
 ## Pre-requisites
 
@@ -56,11 +89,67 @@ Check the swagger-ui on `http://localhost:3000/api/docs/`
  1. GET `http://localhost:3000/api/application` again with the following header
  ``Authorization: Bearer _TOKEN_``, replacing `_TOKEN_` with the value you got from that request
 
-## CI/CD Pipeline
+## Deployment
 
-The EPIC project has moved away from PR based pipeline due to complexity and reliability concerns of the PR based pipeline implementation. The current CI/CD pipeline utilizes Github Actions to build Docker images and push them back into the BC Gov OpenShift Docker registry.
+### Automated Deployments
 
-A full description and guide to the EPIC pipeline and branching strategy is available in the [eagle-dev-guides](https://github.com/bcgov/eagle-dev-guides/blob/master/dev_guides/github_action_pipeline.md) repository.
+The application uses GitHub Actions for CI/CD with S2I builds and OpenShift image tagging:
+
+**Development (6cdc9e-dev)**
+- **Trigger**: Automatic on push to `develop` branch
+- **Workflow**: `.github/workflows/build_and_promote.yaml`
+- **Process**: S2I build → Tags as `dev` and `<commit-sha>` → Tags in OpenShift
+- **URL**: https://eagle-dev.apps.silver.devops.gov.bc.ca/api
+
+**Test (6cdc9e-test)**
+- **Trigger**: Manual via GitHub Actions UI
+- **Workflow**: `.github/workflows/deploy-to-test.yaml`
+- **Process**: 
+  1. Go to Actions → "Deploy to Test" → "Run workflow"
+  2. Enter image tag (default: `dev`) or specific commit SHA
+  3. Workflow tags image as `test` in OpenShift
+- **URL**: https://eagle-test.apps.silver.devops.gov.bc.ca/api
+
+**Production (6cdc9e-prod)**
+- **Trigger**: Manual via GitHub Actions UI
+- **Workflow**: `.github/workflows/deploy-to-prod.yaml`
+- **Process**:
+  1. Go to Actions → "Deploy to Prod" → "Run workflow"
+  2. Enter image tag (default: `test`) or specific commit SHA
+  3. Workflow tags image as `prod` in OpenShift
+- **URL**: https://eagle.gov.bc.ca/api
+
+### Deployment Flow Example
+
+```bash
+# 1. Push to develop → auto-builds and tags as dev with SHA abc1234
+git push origin develop
+
+# 2. Manually promote to test (via GitHub UI)
+#    - Select "Deploy to Test" workflow
+#    - Input: abc1234 (or leave default "dev")
+#    - Click "Run workflow"
+
+# 3. Manually promote to production (via GitHub UI)
+#    - Select "Deploy to Prod" workflow
+#    - Input: abc1234 (or leave default "test")
+#    - Click "Run workflow"
+```
+
+### Image Tagging in OpenShift
+
+The eagle-api uses OpenShift image tagging for deployments:
+
+```bash
+# Dev build creates image in tools namespace
+# Tag for test deployment
+oc tag 6cdc9e-tools/eagle-api:dev 6cdc9e-tools/eagle-api:test
+
+# Tag for prod deployment
+oc tag 6cdc9e-tools/eagle-api:test 6cdc9e-tools/eagle-api:prod
+```
+
+The DeploymentConfigs in dev/test/prod namespaces reference images in the tools namespace.
 
 ### Database
 
