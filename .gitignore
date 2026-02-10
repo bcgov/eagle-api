@@ -28,7 +28,6 @@ npm-debug.log
 testem.log
 /typings
 yarn-error.log
-yarn.lock
 debug.log
 output.txt
 
