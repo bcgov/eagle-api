@@ -28,6 +28,16 @@ keycloak:
   realm: eagle
   clientId: eagle-api-console
 
+secrets:
+  mongodb:
+    name: eagle-api-mongodb
+    usernameKey: MONGODB_USERNAME
+    passwordKey: MONGODB_PASSWORD
+  ches:
+    name: getok-secret
+    clientIdKey: CLIENTID
+    clientSecretKey: CLIENT_SECRET
+
 persistence:
   size: 5Gi
 
