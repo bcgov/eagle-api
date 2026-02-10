@@ -54,12 +54,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
-      - run: npm ci
+          cache: "yarn"
+      - run: yarn install --immutable
       - name: Lint (stubbed)
         run: |
           echo "Linting skipped - not configured for eagle-api"
@@ -76,13 +79,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
-      - run: npm ci
-      - run: npm test
+          cache: "yarn"
+      - run: yarn install --immutable
+      - run: yarn test
 
   build:
     name: Build

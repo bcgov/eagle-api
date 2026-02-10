@@ -14,11 +14,14 @@ FROM node:16-alpine AS base
 
 WORKDIR /app
 
+# Enable Corepack for Yarn
+RUN corepack enable
+
 # Copy package files
-COPY package*.json ./
+COPY package.json yarn.lock .yarnrc.yml ./
 
 # Install production dependencies only
-RUN npm ci --only=production
+RUN yarn install --immutable --immutable-cache
 
 # -----------------------------------------------------------------------------
 # Stage 2: Production Runtime
