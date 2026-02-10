@@ -4358,7 +4358,6 @@ __metadata:
     minio: "npm:~7.0.8"
     mocha: "npm:^10.2.0"
     moment: "npm:^2.30.1"
-    mongodb: "npm:~4.17.2"
     mongoose: "npm:~6.13.3"
     nconf: "npm:^0.12.1"
     passport: "npm:~0.4.0"
@@ -6886,7 +6885,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mongodb@npm:4.17.2, mongodb@npm:~4.17.2":
+"mongodb@npm:4.17.2":
   version: 4.17.2
   resolution: "mongodb@npm:4.17.2"
   dependencies:
