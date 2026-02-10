@@ -1,0 +1,38 @@
+# Production environment values for eagle-api
+
+replicaCount: 3
+
+image:
+  tag: prod
+
+route:
+  host: projects.eao.gov.bc.ca
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 4Gi
+  requests:
+    cpu: 1000m
+    memory: 2Gi
+
+env:
+  API_HOSTNAME: projects.eao.gov.bc.ca
+  API_LOCATION: "https://projects.eao.gov.bc.ca"
+  ENVIRONMENT: prod
+  CHES_ENDPOINT: "https://ches.api.gov.bc.ca/api/v1"
+  GETOK_ENDPOINT: "https://sso.pathfinder.gov.bc.ca"
+
+keycloak:
+  url: "https://loginproxy.gov.bc.ca/auth"
+  realm: eagle
+  clientId: eagle-api-console
+
+persistence:
+  size: 50Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70

@@ -1,0 +1,15 @@
+apiVersion: v2
+name: eagle-api
+description: EPIC API - Environmental Assessment Office backend API service
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - nodejs
+  - api
+  - epic
+  - eao
+  - mongodb
+maintainers:
+  - name: BC Gov EPIC Team
+    url: https://github.com/bcgov/eagle-api

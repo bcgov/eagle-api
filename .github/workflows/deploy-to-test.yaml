@@ -1,9 +1,9 @@
 # =============================================================================
 # Deploy to Test
 # =============================================================================
-# Manually triggered workflow to deploy to test environment.
-# Uses workflow_dispatch with optional image_tag input.
-# Defaults to promoting the 'dev' tagged image.
+# Manually triggered workflow to deploy a version to test environment.
+# Requires semantic version tag (v1.2.3).
+# Creates Git tag and GitHub Release if this is a new version.
 # =============================================================================
 
 name: Deploy to Test
@@ -11,83 +11,120 @@ name: Deploy to Test
 on:
   workflow_dispatch:
     inputs:
-      image_tag:
-        description: 'Image tag to deploy (commit SHA or "dev")'
-        required: false
-        default: 'dev'
+      version:
+        description: 'Version tag (e.g., v1.2.3)'
+        required: true
         type: string
 
 permissions: write-all
 
 env:
-  OPENSHIFT_NAMESPACE: 6cdc9e-tools
-  OPENSHIFT_TEST_NAMESPACE: 6cdc9e-test
+  OPENSHIFT_NAMESPACE_TOOLS: 6cdc9e-tools
+  OPENSHIFT_NAMESPACE_TEST: 6cdc9e-test
   IMAGE_NAME: eagle-api
+  APP_NAME: eagle-api
 
 jobs:
-  deploy:
-    name: Deploy to Test
-    runs-on: ubuntu-24.04
+  validate:
+    name: Validate Version
+    runs-on: ubuntu-latest
+    outputs:
+      tag_exists: ${{ steps.check-tag.outputs.exists }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: develop
+          fetch-depth: 0
 
-      - name: Set image tag
-        id: image-tag
+      - name: Validate version format
         run: |
-          TAG="${{ github.event.inputs.image_tag }}"
-          if [ -z "$TAG" ] || [ "$TAG" = "dev" ]; then
-            echo "Using 'dev' tag"
-            echo "TAG=dev" >> $GITHUB_OUTPUT
-          else
-            echo "Using provided tag: $TAG"
-            echo "TAG=$TAG" >> $GITHUB_OUTPUT
+          if [[ ! "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version must be in format v1.2.3"
+            exit 1
           fi
 
+      - name: Check if tag exists
+        id: check-tag
+        run: |
+          if git rev-parse "${{ inputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag ${{ inputs.version }} already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag ${{ inputs.version }} does not exist - will create"
+          fi
+
+  release:
+    name: Create Release
+    needs: validate
+    if: needs.validate.outputs.tag_exists == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ inputs.version }}" -m "Release ${{ inputs.version }}"
+          git push origin "${{ inputs.version }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ inputs.version }}" \
+            --title "Release ${{ inputs.version }}" \
+            --generate-notes
+
+  deploy:
+    name: Deploying ${{ inputs.version }} to Test
+    needs: [validate, release]
+    if: always() && needs.validate.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
       - name: Install OpenShift CLI
         uses: redhat-actions/openshift-tools-installer@v1
         with:
           oc: "4.14"
-          skip_cache: true
 
       - name: Log into OpenShift
-        uses: redhat-actions/oc-login@v1.3
+        uses: redhat-actions/oc-login@v1
         with:
           openshift_server_url: ${{ secrets.OPENSHIFT_URL }}
           openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
-          namespace: ${{ env.OPENSHIFT_NAMESPACE }}
+          namespace: ${{ env.OPENSHIFT_NAMESPACE_TOOLS }}
 
-      - name: Backup and Tag image for Test
+      - name: Tag ci-latest as version (if new deployment)
+        if: needs.validate.outputs.tag_exists == 'false'
         run: |
-          # Backup current test image
-          echo "Backing up current test image..."
-          oc tag ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:test \
-                 ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:test-backup || true
+          echo "Tagging ci-latest as ${{ inputs.version }}..."
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
+            ${{ env.IMAGE_NAME }}:ci-latest ${{ env.IMAGE_NAME }}:${{ inputs.version }}
+
+      - name: Verify image tag exists (if rollback)
+        if: needs.validate.outputs.tag_exists == 'true'
+        run: |
+          echo "Verifying image tag ${{ inputs.version }} exists..."
+          if ! oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} get imagestreamtag ${{ env.IMAGE_NAME }}:${{ inputs.version }} &>/dev/null; then
+            echo "Error: Image tag ${{ inputs.version }} does not exist"
+            exit 1
+          fi
+          echo "Image tag ${{ inputs.version }} found - proceeding with rollback"
+
+      - name: Tag version as test
+        run: |
+          echo "Tagging ${{ inputs.version }} as test..."
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
+            ${{ env.IMAGE_NAME }}:${{ inputs.version }} ${{ env.IMAGE_NAME }}:test
+
+      - name: Deploy to test
+        run: |
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_TEST }} rollout restart deployment/${{ env.APP_NAME }}
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_TEST }} rollout status deployment/${{ env.APP_NAME }} --timeout=5m
           
-          # Tag new image for test
-          echo "Tagging image ${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.TAG }} as 'test'"
-          oc tag ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.TAG }} \
-                 ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:test
-
-      - name: Verify Deployment
-        run: |
-          echo "Checking deployment status..."
-          oc rollout status dc/eagle-api -n ${{ env.OPENSHIFT_TEST_NAMESPACE }} --timeout=300s || true
-          
-          echo "Current deployment:"
-          oc get dc/eagle-api -n ${{ env.OPENSHIFT_TEST_NAMESPACE }} -o jsonpath='{.spec.template.spec.containers[0].image}'
-
-      - name: Summary
-        run: |
-          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Environment** | test |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Image Tag** | ${{ steps.image-tag.outputs.TAG }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Triggered By** | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-          echo "To deploy to Production, manually trigger the **Deploy to Prod** workflow with image tag: \`${{ steps.image-tag.outputs.TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "Deployment successful!"
+          oc get pods -n ${{ env.OPENSHIFT_NAMESPACE_TEST }} -l app.kubernetes.io/name=${{ env.APP_NAME }}

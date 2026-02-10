@@ -2,7 +2,8 @@
 # Deploy to Dev
 # =============================================================================
 # Triggered on push to develop branch.
-# Builds Docker image using S2I, pushes to OpenShift registry, tags for dev.
+# Builds Docker image, scans for vulnerabilities, pushes to OpenShift registry,
+# and deploys with Helm.
 # =============================================================================
 
 name: Deploy to Dev
@@ -11,25 +12,138 @@ on:
   push:
     branches:
       - develop
+    paths-ignore:
+      - ".github/**"
+      - "helm/eagle-api/README.md"
+  workflow_dispatch:
 
 permissions: write-all
 
 env:
-  OPENSHIFT_NAMESPACE: 6cdc9e-tools
-  OPENSHIFT_DEV_NAMESPACE: 6cdc9e-dev
+  OPENSHIFT_NAMESPACE_TOOLS: 6cdc9e-tools
+  OPENSHIFT_NAMESPACE_DEV: 6cdc9e-dev
   IMAGE_NAME: eagle-api
+  APP_NAME: eagle-api
 
 jobs:
+  install:
+    name: Install Dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - run: npm ci
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: install
+    strategy:
+      matrix:
+        node-version: [16.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - run: npm ci
+      - name: Lint (stubbed)
+        run: |
+          echo "Linting skipped - not configured for eagle-api"
+          exit 0
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: install
+    strategy:
+      matrix:
+        node-version: [16.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - run: npm ci
+      - run: npm test
+
   build:
-    name: Build and Tag for Dev
-    runs-on: ubuntu-24.04
+    name: Build
+    runs-on: ubuntu-latest
+    needs: install
+    strategy:
+      matrix:
+        node-version: [16.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - run: npm ci
+
+  scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [lint, test, build]
+    outputs:
+      SHORT_SHA: ${{ steps.short-sha.outputs.SHA }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get Short SHA
+      - name: Get short SHA
         id: short-sha
         run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image for scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:${{ steps.short-sha.outputs.SHA }}
+          load: true
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ steps.short-sha.outputs.SHA }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  push:
+    name: Push Image
+    runs-on: ubuntu-latest
+    needs: scan
+    outputs:
+      IMAGE_TAG: ${{ steps.push.outputs.digest }}
+      SHORT_SHA: ${{ needs.scan.outputs.SHORT_SHA }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Login to OpenShift registry
         uses: docker/login-action@v3
@@ -38,73 +152,68 @@ jobs:
           username: ${{ secrets.OPENSHIFT_REPOSITORY_USERNAME }}
           password: ${{ secrets.OPENSHIFT_REPOSITORY_PASSWORD }}
 
-      - name: Build with S2I
-        id: build_image
-        uses: redhat-actions/s2i-build@v2
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v6
         with:
-          path_context: '.'
-          builder_image: ${{ secrets.OPENSHIFT_REPOSITORY }}/openshift/nodejs:16-ubi9
-          image: ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}
-          tags: ${{ steps.short-sha.outputs.SHA }}
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:dev
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:ci-latest
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:${{ needs.scan.outputs.SHORT_SHA }}
 
-      - name: Push and Tag Image
-        run: |
-          # Push the commit SHA tagged image
-          docker push ${{ steps.build_image.outputs.image }}:${{ steps.short-sha.outputs.SHA }}
-          
-          # Tag as ci-latest (watched by dev DeploymentConfig) and latest
-          docker tag ${{ steps.build_image.outputs.image }}:${{ steps.short-sha.outputs.SHA }} \
-            ${{ steps.build_image.outputs.image }}:ci-latest
-          docker tag ${{ steps.build_image.outputs.image }}:${{ steps.short-sha.outputs.SHA }} \
-            ${{ steps.build_image.outputs.image }}:dev
-          docker tag ${{ steps.build_image.outputs.image }}:${{ steps.short-sha.outputs.SHA }} \
-            ${{ steps.build_image.outputs.image }}:latest
-          
-          # Push tags
-          docker push ${{ steps.build_image.outputs.image }}:ci-latest
-          docker push ${{ steps.build_image.outputs.image }}:dev
-          docker push ${{ steps.build_image.outputs.image }}:latest
+  deploy:
+    name: Deploy to Dev
+    needs: push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Install OpenShift CLI
-        uses: redhat-actions/openshift-tools-installer@v1
-        with:
-          oc: "4.14"
-          skip_cache: true
+        run: |
+          curl -LO "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz"
+          tar -xvzf openshift-client-linux.tar.gz
+          sudo mv oc /usr/local/bin/
+          rm -f openshift-client-linux.tar.gz
+
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
 
       - name: Log into OpenShift
-        uses: redhat-actions/oc-login@v1.3
+        uses: redhat-actions/oc-login@v1
         with:
           openshift_server_url: ${{ secrets.OPENSHIFT_URL }}
           openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
-          namespace: ${{ env.OPENSHIFT_DEV_NAMESPACE }}
+          namespace: ${{ env.OPENSHIFT_NAMESPACE_DEV }}
 
-      - name: Tag image in OpenShift for Dev
+      - name: Tag images in OpenShift ImageStream
         run: |
-          # Tag for dev promotion (manual workflow can use this)
-          oc tag ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ steps.short-sha.outputs.SHA }} \
-                 ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:dev
+          echo "Tagging images in OpenShift ImageStream..."
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
+            ${{ env.IMAGE_NAME }}:${{ needs.push.outputs.SHORT_SHA }} ${{ env.IMAGE_NAME }}:dev
           
-          # Tag as ci-latest (triggers automatic dev deployment)
-          oc tag ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ steps.short-sha.outputs.SHA }} \
-                 ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:ci-latest
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
+            ${{ env.IMAGE_NAME }}:${{ needs.push.outputs.SHORT_SHA }} ${{ env.IMAGE_NAME }}:ci-latest
 
-      - name: Verify Deployment
+      - name: Deploy with Helm
         run: |
-          echo "Checking deployment status..."
-          oc rollout status dc/eagle-api -n ${{ env.OPENSHIFT_DEV_NAMESPACE }} --timeout=300s || true
+          helm upgrade --install ${{ env.APP_NAME }} ./helm/${{ env.APP_NAME }} \
+            --namespace ${{ env.OPENSHIFT_NAMESPACE_DEV }} \
+            --values ./helm/${{ env.APP_NAME }}/values-dev.yaml \
+            --set image.tag=dev \
+            --wait --timeout=5m
           
-          echo "Current deployment:"
-          oc get dc/eagle-api -n ${{ env.OPENSHIFT_DEV_NAMESPACE }} -o jsonpath='{.spec.template.spec.containers[0].image}'
+          echo "Restarting deployment to pull updated image..."
+          oc rollout restart deployment/${{ env.APP_NAME }} -n ${{ env.OPENSHIFT_NAMESPACE_DEV }}
 
-      - name: Summary
+      - name: Verify deployment
         run: |
-          echo "## 🚀 Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Commit** | ${{ steps.short-sha.outputs.SHA }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Environment** | dev |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Image Tag** | ${{ steps.short-sha.outputs.SHA }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-          echo "To deploy to Test, manually trigger the **Deploy to Test** workflow with image tag: \`${{ steps.short-sha.outputs.SHA }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "Waiting for rollout to complete..."
+          oc rollout status deployment/${{ env.APP_NAME }} -n ${{ env.OPENSHIFT_NAMESPACE_DEV }} --timeout=5m
+          
+          echo "Deployment successful!"
+          oc get pods -n ${{ env.OPENSHIFT_NAMESPACE_DEV }} -l app.kubernetes.io/name=${{ env.APP_NAME }}

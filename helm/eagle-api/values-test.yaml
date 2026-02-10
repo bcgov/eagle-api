@@ -1,0 +1,35 @@
+# Test environment values for eagle-api
+
+replicaCount: 1
+
+image:
+  tag: test
+
+route:
+  host: eagle-test.apps.silver.devops.gov.bc.ca
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 4Gi
+  requests:
+    cpu: 1000m
+    memory: 1Gi
+
+env:
+  API_HOSTNAME: eagle-test.apps.silver.devops.gov.bc.ca
+  API_LOCATION: "https://eagle-test.apps.silver.devops.gov.bc.ca"
+  ENVIRONMENT: test
+  CHES_ENDPOINT: "https://ches-test.api.gov.bc.ca/api/v1"
+  GETOK_ENDPOINT: "https://sso-test.pathfinder.gov.bc.ca"
+
+keycloak:
+  url: "https://test.loginproxy.gov.bc.ca/auth"
+  realm: eagle
+  clientId: eagle-api-console
+
+persistence:
+  size: 10Gi
+
+autoscaling:
+  enabled: false

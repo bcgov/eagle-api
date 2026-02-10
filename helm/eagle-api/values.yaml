@@ -1,0 +1,134 @@
+# Default values for eagle-api
+# Override in values-{env}.yaml for environment-specific settings
+
+replicaCount: 1
+
+image:
+  repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/eagle-api
+  pullPolicy: Always
+  tag: "latest"
+  # For OpenShift ImageStreamTag trigger
+  name: eagle-api
+  namespace: 6cdc9e-tools
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 3000
+
+route:
+  enabled: true
+  host: ""  # Set in values-{env}.yaml
+  targetPort: "3000-tcp"
+  serviceName: "rproxy"  # API is proxied through rproxy
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 4Gi
+  requests:
+    cpu: 1000m
+    memory: 1Gi
+
+# Liveness and readiness probes
+probes:
+  liveness:
+    path: /api/docs
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 10
+  readiness:
+    path: /api/docs
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 10
+
+# Persistent Volume Claim for document uploads
+persistence:
+  enabled: true
+  size: 1Gi
+  mountPath: /opt/app-root/src/uploads
+  storageClass: netapp-file-standard
+
+# Environment variables
+env:
+  # MongoDB Configuration
+  MONGODB_SERVICE_HOST: eagle-api-mongodb
+  MONGODB_DATABASE: epic
+  MONGODB_AUTHSOURCE: admin
+  
+  # API Configuration
+  API_LOCATION: ""  # Set in values-{env}.yaml
+  API_PATH: /api
+  API_PUBLIC_PATH: /api/public
+  
+  # Feature Flags
+  ENABLE_VIRUS_SCANNING: "true"
+  
+  # External Services
+  CHES_ENDPOINT: ""  # Set in values-{env}.yaml
+  GETOK_ENDPOINT: ""  # Set in values-{env}.yaml
+
+# Secret references (existing OpenShift secrets)
+secrets:
+  mongodb:
+    name: eagle-api-mongodb
+    usernameKey: database-user
+    passwordKey: database-password
+  
+  minio:
+    name: eagle-api-minio-keys
+    hostKey: MINIO_HOST
+    accessKeyKey: MINIO_ACCESS_KEY
+    secretKeyKey: MINIO_SECRET_KEY
+    bucketKey: MINIO_BUCKET_NAME
+  
+  ches:
+    name: getok-secret
+    clientIdKey: _GETOK_CLIENTID
+    clientSecretKey: _GETOK_CLIENT_SECRET
+
+# Keycloak SSO Configuration
+keycloak:
+  enabled: true
+  url: ""  # Set in values-{env}.yaml
+  realm: eagle
+  clientId: eagle-api-console
+
+# Pod annotations
+podAnnotations: {}
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity: {}
+
+# Autoscaling (disabled by default)
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+# Database migrations job
+migrations:
+  enabled: true
+  image:
+    repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/eagle-api
+    tag: "latest"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi

@@ -1,0 +1,58 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Development
+.vscode
+.idea
+*.log
+
+# Testing
+test
+coverage
+.nyc_output
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+docs/
+*.md
+
+# OpenShift Templates (not needed in image)
+openshift/
+
+# GitHub Actions
+.github/
+
+# Build outputs
+dist
+build
+
+# Uploads directory (should be mounted volume)
+uploads/
+
+# Database migrations (run separately)
+migrations/
+migrations_data/
+one_off_migrations/
+
+# Scripts
+*.sh
+developer_install_*
+install_prerequisites.sh
+setup_project.sh
+
+# Configuration files
+database.json
+.tool-versions
+COMPLIANCE.yaml
+LICENSE

@@ -1,9 +1,9 @@
 # =============================================================================
 # Deploy to Production
 # =============================================================================
-# Manually triggered workflow to deploy to production environment.
-# Uses workflow_dispatch with optional image_tag input.
-# Defaults to promoting the 'test' tagged image.
+# Manually triggered workflow to deploy a tested version to production.
+# Requires semantic version tag (v1.2.3).
+# Validates that version was deployed to test first.
 # =============================================================================
 
 name: Deploy to Prod
@@ -11,82 +11,81 @@ name: Deploy to Prod
 on:
   workflow_dispatch:
     inputs:
-      image_tag:
-        description: 'Image tag to deploy (commit SHA or "test")'
-        required: false
-        default: 'test'
+      version:
+        description: 'Version tag to promote (e.g., v1.2.3)'
+        required: true
         type: string
 
 permissions: write-all
 
 env:
-  OPENSHIFT_NAMESPACE: 6cdc9e-tools
-  OPENSHIFT_PROD_NAMESPACE: 6cdc9e-prod
+  OPENSHIFT_NAMESPACE_TOOLS: 6cdc9e-tools
+  OPENSHIFT_NAMESPACE_PROD: 6cdc9e-prod
   IMAGE_NAME: eagle-api
+  APP_NAME: eagle-api
 
 jobs:
-  deploy:
-    name: Deploy to Production
-    runs-on: ubuntu-24.04
+  validate:
+    name: Validate Version
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: develop
+          fetch-depth: 0
 
-      - name: Set image tag
-        id: image-tag
+      - name: Validate version format
         run: |
-          TAG="${{ github.event.inputs.image_tag }}"
-          if [ -z "$TAG" ] || [ "$TAG" = "test" ]; then
-            echo "Using 'test' tag"
-            echo "TAG=test" >> $GITHUB_OUTPUT
-          else
-            echo "Using provided tag: $TAG"
-            echo "TAG=$TAG" >> $GITHUB_OUTPUT
+          if [[ ! "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version must be in format v1.2.3"
+            exit 1
           fi
 
+      - name: Verify Git tag exists
+        run: |
+          if ! git rev-parse "${{ inputs.version }}" >/dev/null 2>&1; then
+            echo "Error: Git tag ${{ inputs.version }} does not exist"
+            echo "Please deploy to test first to create the version"
+            exit 1
+          fi
+          echo "Git tag ${{ inputs.version }} verified"
+
+  deploy:
+    name: Deploying ${{ inputs.version }} to Prod
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
       - name: Install OpenShift CLI
         uses: redhat-actions/openshift-tools-installer@v1
         with:
           oc: "4.14"
-          skip_cache: true
 
       - name: Log into OpenShift
-        uses: redhat-actions/oc-login@v1.3
+        uses: redhat-actions/oc-login@v1
         with:
           openshift_server_url: ${{ secrets.OPENSHIFT_URL }}
           openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
-          namespace: ${{ env.OPENSHIFT_NAMESPACE }}
+          namespace: ${{ env.OPENSHIFT_NAMESPACE_TOOLS }}
 
-      - name: Backup and Tag image for Prod
+      - name: Verify image tag exists
         run: |
-          # Backup current prod image
-          echo "Backing up current prod image..."
-          oc tag ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:prod \
-                 ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:prod-backup || true
+          echo "Verifying image tag ${{ inputs.version }} exists..."
+          if ! oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} get imagestreamtag ${{ env.IMAGE_NAME }}:${{ inputs.version }} &>/dev/null; then
+            echo "Error: Image tag ${{ inputs.version }} does not exist"
+            exit 1
+          fi
+          echo "Image tag verified"
+
+      - name: Tag version as prod
+        run: |
+          echo "Tagging ${{ inputs.version }} as prod..."
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
+            ${{ env.IMAGE_NAME }}:${{ inputs.version }} ${{ env.IMAGE_NAME }}:prod
+
+      - name: Deploy to prod
+        run: |
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} rollout restart deployment/${{ env.APP_NAME }}
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} rollout status deployment/${{ env.APP_NAME }} --timeout=5m
           
-          # Tag new image for prod
-          echo "Tagging image ${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.TAG }} as 'prod'"
-          oc tag ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.TAG }} \
-                 ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.IMAGE_NAME }}:prod
-
-      - name: Verify Deployment
-        run: |
-          echo "Checking deployment status..."
-          oc rollout status dc/eagle-api -n ${{ env.OPENSHIFT_PROD_NAMESPACE }} --timeout=300s || true
-          
-          echo "Current deployment:"
-          oc get dc/eagle-api -n ${{ env.OPENSHIFT_PROD_NAMESPACE }} -o jsonpath='{.spec.template.spec.containers[0].image}'
-
-      - name: Summary
-        run: |
-          echo "## 🚀 Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Environment** | production |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Image Tag** | ${{ steps.image-tag.outputs.TAG }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Triggered By** | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Deployment Complete**" >> $GITHUB_STEP_SUMMARY
+          echo "Deployment successful!"
+          oc get pods -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} -l app.kubernetes.io/name=${{ env.APP_NAME }}

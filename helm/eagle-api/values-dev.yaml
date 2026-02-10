@@ -1,0 +1,35 @@
+# Development environment values for eagle-api
+
+replicaCount: 1
+
+image:
+  tag: dev
+
+route:
+  host: eagle-dev.apps.silver.devops.gov.bc.ca
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+env:
+  API_HOSTNAME: eagle-dev.apps.silver.devops.gov.bc.ca
+  API_LOCATION: "https://eagle-dev.apps.silver.devops.gov.bc.ca"
+  ENVIRONMENT: dev
+  CHES_ENDPOINT: "https://ches-dev.api.gov.bc.ca/api/v1"
+  GETOK_ENDPOINT: "https://sso-dev.pathfinder.gov.bc.ca"
+
+keycloak:
+  url: "https://dev.loginproxy.gov.bc.ca/auth"
+  realm: eagle
+  clientId: eagle-api-console
+
+persistence:
+  size: 5Gi
+
+autoscaling:
+  enabled: false

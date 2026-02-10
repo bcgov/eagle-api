@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eagle-api.fullname" . }}
+  labels:
+    {{- include "eagle-api.labels" . | nindent 4 }}
+  annotations:
+    # Trigger automatic rollout when ImageStreamTag is updated
+    image.openshift.io/triggers: |
+      [{"from":{"kind":"ImageStreamTag","name":"{{ .Values.image.name | default "eagle-api" }}:{{ .Values.image.tag }}","namespace":"{{ .Values.image.namespace | default "6cdc9e-tools" }}"},"fieldPath":"spec.template.spec.containers[?(@.name==\"{{ .Chart.Name }}\")].image"}]
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "eagle-api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "eagle-api.selectorLabels" . | nindent 8 }}
+        role: api-eagle-epic
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            # MongoDB Configuration from Secret
+            - name: MONGODB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.mongodb.name }}
+                  key: {{ .Values.secrets.mongodb.usernameKey }}
+            - name: MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.mongodb.name }}
+                  key: {{ .Values.secrets.mongodb.passwordKey }}
+            # Minio Configuration from Secret
+            - name: MINIO_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.minio.name }}
+                  key: {{ .Values.secrets.minio.hostKey }}
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.minio.name }}
+                  key: {{ .Values.secrets.minio.accessKeyKey }}
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.minio.name }}
+                  key: {{ .Values.secrets.minio.secretKeyKey }}
+            - name: MINIO_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.minio.name }}
+                  key: {{ .Values.secrets.minio.bucketKey }}
+            # CHES/GETOK Configuration from Secret
+            - name: _GETOK_CLIENTID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.ches.name }}
+                  key: {{ .Values.secrets.ches.clientIdKey }}
+            - name: _GETOK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.ches.name }}
+                  key: {{ .Values.secrets.ches.clientSecretKey }}
+            {{- if .Values.keycloak.enabled }}
+            # Keycloak SSO Configuration
+            - name: SSO_ISSUER
+              value: "{{ .Values.keycloak.url }}/realms/{{ .Values.keycloak.realm }}"
+            - name: SSO_JWKSURI
+              value: "{{ .Values.keycloak.url }}/realms/{{ .Values.keycloak.realm }}/protocol/openid-connect/certs"
+            - name: KEYCLOAK_CLIENT_ID
+              value: {{ .Values.keycloak.clientId }}
+            - name: KEYCLOAK_URL
+              value: {{ .Values.keycloak.url }}
+            - name: KEYCLOAK_REALM
+              value: {{ .Values.keycloak.realm }}
+            - name: KEYCLOAK_ENABLED
+              value: "true"
+            {{- end }}
+          envFrom:
+            # Mount ConfigMap with all other environment variables
+            - configMapRef:
+                name: {{ include "eagle-api.fullname" . }}
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            - name: uploads
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+      volumes:
+        {{- if .Values.persistence.enabled }}
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: {{ include "eagle-api.fullname" . }}-uploads
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

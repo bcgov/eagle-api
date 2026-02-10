@@ -1,0 +1,22 @@
+{{- if .Values.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "eagle-api.fullname" . }}
+  labels:
+    {{- include "eagle-api.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.route.host }}
+  host: {{ .Values.route.host }}
+  {{- end }}
+  port:
+    targetPort: {{ .Values.route.targetPort | default "3000-tcp" }}
+  tls:
+    termination: {{ .Values.route.tls.termination }}
+    insecureEdgeTerminationPolicy: {{ .Values.route.tls.insecureEdgeTerminationPolicy }}
+  to:
+    kind: Service
+    name: {{ .Values.route.serviceName | default "rproxy" }}
+    weight: 100
+  wildcardPolicy: None
+{{- end }}
