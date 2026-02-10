@@ -38,14 +38,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
+
+      - name: Install Yarn
+        run: npm install -g yarn@4.12.0
+
       - run: yarn install --immutable
       - run: echo "Linting step - configure linter when ready"
 
@@ -60,14 +61,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
+
+      - name: Install Yarn
+        run: npm install -g yarn@4.12.0
+
       - run: yarn install --immutable
       - run: yarn test
 
@@ -82,13 +84,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
+
+      - name: Install Yarn
+        run: npm install -g yarn@4.12.0
+
       - run: yarn install --immutable
       - run: echo "Build step - API doesn't require compilation, dependencies installed successfully"

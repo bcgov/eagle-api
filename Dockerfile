@@ -14,8 +14,8 @@ FROM node:16-alpine AS base
 
 WORKDIR /app
 
-# Enable Corepack for Yarn
-RUN corepack enable
+# Install Yarn 4.12.0 globally (Node 16 doesn't support corepack's URL.canParse)
+RUN npm install -g yarn@4.12.0
 
 # Copy package files
 COPY package.json yarn.lock .yarnrc.yml ./
