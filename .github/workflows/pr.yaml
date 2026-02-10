@@ -17,14 +17,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "yarn"
+
+      - name: Install Yarn
+        run: npm install -g yarn@4.12.0
+
       - run: yarn install --immutable
 
   lint:
@@ -42,7 +42,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "yarn"
 
       - name: Install Yarn
         run: npm install -g yarn@4.12.0
@@ -65,7 +64,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "yarn"
 
       - name: Install Yarn
         run: npm install -g yarn@4.12.0
@@ -88,7 +86,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "yarn"
 
       - name: Install Yarn
         run: npm install -g yarn@4.12.0
