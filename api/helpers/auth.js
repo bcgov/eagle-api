@@ -150,14 +150,14 @@ exports.issueToken = function(user,
 var hashPassword = function (user, password) {
   if (user.salt && password) {
     var crypto = require('crypto');
-    return crypto.pbkdf2Sync(password, new Buffer(user.salt, 'base64'), 10000, 64, 'sha1').toString('base64');
+    return crypto.pbkdf2Sync(password, Buffer.from(user.salt, 'base64'), 10000, 64, 'sha1').toString('base64');
   } else {
     return password;
   }
 };
 
 exports.setPassword = function (user) {
-  var bcrypt = require('bcrypt-nodejs');
+  var bcrypt = require('bcryptjs');
   user.salt = bcrypt.genSaltSync(16);
   user.password = hashPassword(user, user.password);
   return user;

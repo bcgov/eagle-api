@@ -22,7 +22,7 @@
     "@turf/turf": "~5.1.6",
     "@types/node-cron": "~2.0.3",
     "axios": "^0.28.0",
-    "bcrypt-nodejs": "~0.0.3",
+    "bcryptjs": "^2.4.3",
     "biguint-format": "~1.0.0",
     "body-parser": "^1.20.3",
     "clamav.js": "~0.12.0",

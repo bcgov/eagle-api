@@ -7,8 +7,6 @@
 const { expect } = require('chai');
 const sinon = require('sinon');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt-nodejs');
-const mongoose = require('mongoose');
 
 describe('Auth Helper Functions', () => {
   let auth;

@@ -12,18 +12,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [18.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: Install Yarn
-        run: npm install -g yarn@4.12.0
+          cache: "yarn"
 
       - run: yarn install --immutable
 
@@ -33,18 +34,19 @@ jobs:
     needs: install
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [18.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: Install Yarn
-        run: npm install -g yarn@4.12.0
+          cache: "yarn"
 
       - run: yarn install --immutable
       - run: echo "Linting step - configure linter when ready"
@@ -55,18 +57,19 @@ jobs:
     needs: install
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [18.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: Install Yarn
-        run: npm install -g yarn@4.12.0
+          cache: "yarn"
 
       - run: yarn install --immutable
       - run: yarn test
@@ -77,18 +80,19 @@ jobs:
     needs: install
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [18.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: Install Yarn
-        run: npm install -g yarn@4.12.0
+          cache: "yarn"
 
       - run: yarn install --immutable
       - run: echo "Build step - API doesn't require compilation, dependencies installed successfully"

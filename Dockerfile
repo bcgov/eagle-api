@@ -1,7 +1,7 @@
 # =============================================================================
 # Eagle-API Multi-Stage Dockerfile
 # =============================================================================
-# Node.js 16 API server for EPIC (Environmental Assessment Office)
+# Node.js 18 API server for EPIC (Environmental Assessment Office)
 #
 # Build: docker build -t eagle-api .
 # Run:   docker run -p 3000:3000 eagle-api
@@ -10,23 +10,23 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Dependencies
 # -----------------------------------------------------------------------------
-FROM node:16-alpine AS base
+FROM node:18-alpine AS base
 
 WORKDIR /app
 
-# Install Yarn 4.12.0 globally (Node 16 doesn't support corepack's URL.canParse)
-RUN npm install -g yarn@4.12.0
+# Enable Corepack for Yarn
+RUN corepack enable
 
 # Copy package files
 COPY package.json yarn.lock .yarnrc.yml ./
 
 # Install production dependencies only
-RUN yarn install --immutable --immutable-cache
+RUN yarn install --immutable
 
 # -----------------------------------------------------------------------------
 # Stage 2: Production Runtime
 # -----------------------------------------------------------------------------
-FROM node:16-alpine
+FROM node:18-alpine
 
 # Build arguments for labels
 ARG COMMIT_SHA
