@@ -6,7 +6,7 @@ var Utils = require('../helpers/utils');
 var mime = require('mime-types');
 var uploadDir = process.env.UPLOAD_DIRECTORY || './uploads/';
 var MinioController = require('../helpers/minio');
-var rp = require('request-promise-native');
+var axios = require('axios');
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
@@ -358,9 +358,9 @@ exports.protectedElementItemGet = function (args, res) {
 
             if (!self.thumbnail) {
               console.log('Getting full');
-              return rp(docURL).pipe(res);
+              return axios({ method: 'get', url: docURL, responseType: 'stream' })
+                .then(response => response.data.pipe(res));
             } else {
-              var axios = require('axios');
               // Setup a downloader function.
               const download = url => axios({
                 method: 'get',

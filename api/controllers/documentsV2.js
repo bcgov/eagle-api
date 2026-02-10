@@ -1,5 +1,5 @@
 const defaultLog     = require('winston').loggers.get('default');
-const requestPromise = require('request-promise-native');
+const axios          = require('axios');
 const Actions        = require('../helpers/actions');
 const projectDAO     = require('../dao/projectDAO');
 const documentDAO    = require('../dao/documentDAO');
@@ -326,7 +326,8 @@ exports.downloadDocumentSecure = async function(args, res) {
         res.setHeader('Content-Type', documentMeta.metaData['content-type']);
         res.setHeader('Content-Disposition', 'attachment;filename="' + documentMeta.fileName + '"');
 
-        return requestPromise(documentMeta.url).pipe(res);
+        return axios({ method: 'get', url: documentMeta.url, responseType: 'stream' })
+          .then(response => response.data.pipe(res));
       } else {
         throw Error('Document does not have a project reference');
       }
@@ -432,7 +433,8 @@ exports.downloadDocument = async function(args, res) {
         res.setHeader('Content-Type', documentMeta.metaData['content-type']);
         res.setHeader('Content-Disposition', 'attachment;filename="' + documentMeta.fileName + '"');
 
-        return requestPromise(documentMeta.url).pipe(res);
+        return axios({ method: 'get', url: documentMeta.url, responseType: 'stream' })
+          .then(response => response.data.pipe(res));
       } else {
         throw Error('Document does not have a project reference');
       }

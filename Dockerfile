@@ -1,7 +1,7 @@
 # =============================================================================
 # Eagle-API Multi-Stage Dockerfile
 # =============================================================================
-# Node.js 18 API server for EPIC (Environmental Assessment Office)
+# Node.js 22 API server for EPIC (Environmental Assessment Office)
 #
 # Build: docker build -t eagle-api .
 # Run:   docker run -p 3000:3000 eagle-api
@@ -10,7 +10,7 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Dependencies
 # -----------------------------------------------------------------------------
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 
 WORKDIR /app
 
@@ -23,10 +23,13 @@ COPY package.json yarn.lock .yarnrc.yml ./
 # Install production dependencies only
 RUN yarn install --immutable
 
+# Remove nested test lockfiles that may contain vulnerable dependencies
+RUN find ./node_modules -name "package-lock.json" -path "*/test/*" -delete 2>/dev/null || true
+
 # -----------------------------------------------------------------------------
 # Stage 2: Production Runtime
 # -----------------------------------------------------------------------------
-FROM node:18-alpine
+FROM node:22-alpine
 
 # Build arguments for labels
 ARG COMMIT_SHA
@@ -48,6 +51,9 @@ LABEL commit.id="${COMMIT_SHA}" \
 
 # Update Alpine packages to latest security patches
 RUN apk upgrade --no-cache
+
+# Remove npm to eliminate bundled vulnerabilities (we use Yarn via corepack)
+RUN rm -rf /usr/local/lib/node_modules/npm
 
 # Create non-root user for security (OpenShift compatible)
 RUN addgroup -g 1001 -S nodejs && \
