@@ -10,11 +10,11 @@ route:
 
 resources:
   limits:
-    cpu: 1000m
-    memory: 2Gi
-  requests:
     cpu: 500m
     memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi
 
 env:
   API_HOSTNAME: eagle-dev.apps.silver.devops.gov.bc.ca
