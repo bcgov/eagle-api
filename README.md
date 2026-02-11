@@ -72,67 +72,9 @@ Check the swagger-ui on `http://localhost:3000/api/docs/`
 
 ## Deployment
 
-### Automated Deployments
+For deployment procedures, Helm charts, and CI/CD workflows, see the [Deployment Guide](https://github.com/bcgov/eagle-dev-guides/wiki/Deployment-Pipeline) in the Eagle documentation wiki.
 
-The application uses GitHub Actions for CI/CD with S2I builds and OpenShift image tagging:
-
-**Development (6cdc9e-dev)**
-- **Trigger**: Automatic on push to `develop` branch
-- **Workflow**: `.github/workflows/build_and_promote.yaml`
-- **Process**: S2I build → Tags as `dev` and `<commit-sha>` → Tags in OpenShift
-- **URL**: https://eagle-dev.apps.silver.devops.gov.bc.ca/api
-
-**Test (6cdc9e-test)**
-- **Trigger**: Manual via GitHub Actions UI
-- **Workflow**: `.github/workflows/deploy-to-test.yaml`
-- **Process**: 
-  1. Go to Actions → "Deploy to Test" → "Run workflow"
-  2. Enter image tag (default: `dev`) or specific commit SHA
-  3. Workflow tags image as `test` in OpenShift
-- **URL**: https://eagle-test.apps.silver.devops.gov.bc.ca/api
-
-**Production (6cdc9e-prod)**
-- **Trigger**: Manual via GitHub Actions UI
-- **Workflow**: `.github/workflows/deploy-to-prod.yaml`
-- **Process**:
-  1. Go to Actions → "Deploy to Prod" → "Run workflow"
-  2. Enter image tag (default: `test`) or specific commit SHA
-  3. Workflow tags image as `prod` in OpenShift
-- **URL**: https://eagle.gov.bc.ca/api
-
-### Deployment Flow Example
-
-```bash
-# 1. Push to develop → auto-builds and tags as dev with SHA abc1234
-git push origin develop
-
-# 2. Manually promote to test (via GitHub UI)
-#    - Select "Deploy to Test" workflow
-#    - Input: abc1234 (or leave default "dev")
-#    - Click "Run workflow"
-
-# 3. Manually promote to production (via GitHub UI)
-#    - Select "Deploy to Prod" workflow
-#    - Input: abc1234 (or leave default "test")
-#    - Click "Run workflow"
-```
-
-### Image Tagging in OpenShift
-
-The eagle-api uses OpenShift image tagging for deployments:
-
-```bash
-# Dev build creates image in tools namespace
-# Tag for test deployment
-oc tag 6cdc9e-tools/eagle-api:dev 6cdc9e-tools/eagle-api:test
-
-# Tag for prod deployment
-oc tag 6cdc9e-tools/eagle-api:test 6cdc9e-tools/eagle-api:prod
-```
-
-The DeploymentConfigs in dev/test/prod namespaces reference images in the tools namespace.
-
-### Database
+## Database
 
 One can run the EPIC applications on two kinds of data; generated and backed-up-from-live.
 
@@ -193,35 +135,23 @@ In the root folder, there are files named migrateDocuments*.js.  These are large
 
 See [Code Reuse Strategy](https://github.com/bcgov/eagle-dev-guides/dev_guides/code_reuse_strategy.md)
 
-## Configuring Environment Variables
+## Environment Variables
 
-To get all your settings for this project automatically set up, run the file
+Run the automated setup script:
 
 ```bash
-#!/bin/bash
 ./install_prerequisites.sh
 ```
 
-...or follow the following manual process if you require custom settings:
+For manual configuration or custom settings, key environment variables include:
+- `KEYCLOAK_ENABLED=true`
+- `MONGODB_DATABASE='epic'`
 
-Recall the environment variables we need for local dev:
+Additional configuration details are available in the [Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management) wiki page.
 
-1. KEYCLOAK_ENABLED=true
-1. MONGODB_DATABASE='epic'
+## Database Operations
 
-To get actual values for the above fields in the deployed environments, examine the openshift environment you wish to target:
-
-```bash
-#!/bin/bash
-oc project [projectname]
-oc get routes
-oc get secrets
-```
-
-You will not be able to see the above value of the secret if you try examine it.  You will only see the encrypted values.  Approach your team member with admin access in the openshift project in order to get the access key and secret key values for the secret name you got from the above command.  Make sure to ask for the correct environment (dev, test, prod) for the appropriate values.
-
-
-## Enable MET Comment Periods for Project
+### Enable MET Comment Periods for Project
 1. Connect to Open Shift by copying login command
 2. Choose project and get Pods
 	`oc get pods`
