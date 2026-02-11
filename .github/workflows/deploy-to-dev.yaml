@@ -31,17 +31,21 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [22.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
-      - run: npm ci
+          cache: "yarn"
+
+      - run: yarn install --immutable
 
   lint:
     name: Lint
@@ -49,17 +53,21 @@ jobs:
     needs: install
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [22.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
-      - run: npm ci
+          cache: "yarn"
+
+      - run: yarn install --immutable
       - name: Lint (stubbed)
         run: |
           echo "Linting skipped - not configured for eagle-api"
@@ -71,18 +79,22 @@ jobs:
     needs: install
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [22.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
-      - run: npm ci
-      - run: npm test
+          cache: "yarn"
+
+      - run: yarn install --immutable
+      - run: yarn test
 
   build:
     name: Build
@@ -90,17 +102,21 @@ jobs:
     needs: install
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [22.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
-      - run: npm ci
+          cache: "yarn"
+
+      - run: yarn install --immutable
 
   scan:
     name: Security Scan

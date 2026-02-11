@@ -10,11 +10,11 @@ route:
 
 resources:
   limits:
-    cpu: 1000m
-    memory: 2Gi
-  requests:
     cpu: 500m
     memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi
 
 env:
   API_HOSTNAME: eagle-dev.apps.silver.devops.gov.bc.ca
@@ -27,6 +27,22 @@ keycloak:
   url: "https://dev.loginproxy.gov.bc.ca/auth"
   realm: eagle
   clientId: eagle-api-console
+
+secrets:
+  mongodb:
+    name: eagle-api-mongodb
+    usernameKey: MONGODB_USERNAME
+    passwordKey: MONGODB_PASSWORD
+  minio:
+    name: nr-object-store-credential
+    hostKey: endpoint_url
+    accessKeyKey: user_account
+    secretKeyKey: password
+    bucketKey: bucket_name
+  ches:
+    name: getok-secret
+    clientIdKey: CLIENTID
+    clientSecretKey: CLIENT_SECRET
 
 persistence:
   size: 5Gi

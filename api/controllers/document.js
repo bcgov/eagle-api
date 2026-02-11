@@ -1,4 +1,4 @@
-const rp              = require('request-promise-native');
+const axios           = require('axios');
 const _               = require('lodash');
 const defaultLog      = require('winston').loggers.get('default');
 const mongoose        = require('mongoose');
@@ -351,7 +351,8 @@ exports.publicDownload = function (args, res) {
             res.setHeader('Content-Length', fileMeta.size);
             res.setHeader('Content-Type', fileMeta.metaData['content-type']);
             res.setHeader('Content-Disposition', 'inline;filename="' + fileName + '"');
-            return rp(docURL).pipe(res);
+            return axios({ method: 'get', url: docURL, responseType: 'stream' })
+              .then(response => response.data.pipe(res));
           });
       } else {
         return Actions.sendResponse(res, 404, {});
@@ -418,7 +419,8 @@ exports.protectedDownload = function (args, res) {
             res.setHeader('Content-Length', fileMeta.size);
             res.setHeader('Content-Type', fileMeta.metaData['content-type']);
             res.setHeader('Content-Disposition', 'attachment;filename="' + encodeURIComponent(fileName) + '"');
-            return rp(docURL).pipe(res);
+            return axios({ method: 'get', url: docURL, responseType: 'stream' })
+              .then(response => response.data.pipe(res));
           });
       } else {
         return Actions.sendResponse(res, 404, {});
@@ -495,7 +497,8 @@ exports.protectedOpen = function (args, res) {
               res.setHeader('Content-Type', fileMeta.metaData['content-type']);
               res.setHeader('Content-Disposition', 'inline;filename="' + fileName + '"');
 
-              return rp(docURL).pipe(res);
+              return axios({ method: 'get', url: docURL, responseType: 'stream' })
+                .then(response => response.data.pipe(res));
             }
           });
       } else {
