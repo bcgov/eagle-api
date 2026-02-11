@@ -1,0 +1,77 @@
+{{- if .Values.migrations.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "eagle-api.fullname" . }}-migration-{{ .Release.Revision }}
+  labels:
+    {{- include "eagle-api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+  annotations:
+    # Helm hook configuration - runs before upgrade
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        {{- include "eagle-api.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migration
+          image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag | default .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting database migration..."
+              
+              # Create migration config
+              cat > database_migration.json << EOF
+              {
+                "defaultEnv": "local",
+                "local": {
+                  "driver": "mongodb",
+                  "database": "${MONGODB_DATABASE}",
+                  "user": "${MONGODB_USERNAME}",
+                  "password": "${MONGODB_PASSWORD}",
+                  "host": "${MONGODB_SERVICE_HOST}",
+                  "authSource": "${MONGODB_AUTHSOURCE}",
+                  "port": "27017"
+                }
+              }
+              EOF
+              
+              echo "Migration config created"
+              
+              # Run migrations
+              node ./node_modules/db-migrate/bin/db-migrate up --config database_migration.json --env local
+              
+              echo "Migration completed successfully"
+          env:
+            # MongoDB Configuration from Secret
+            - name: MONGODB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.mongodb.name }}
+                  key: {{ .Values.secrets.mongodb.usernameKey }}
+            - name: MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.mongodb.name }}
+                  key: {{ .Values.secrets.mongodb.passwordKey }}
+            # MongoDB Configuration from ConfigMap
+            - name: MONGODB_SERVICE_HOST
+              value: {{ .Values.env.MONGODB_SERVICE_HOST | quote }}
+            - name: MONGODB_DATABASE
+              value: {{ .Values.env.MONGODB_DATABASE | quote }}
+            - name: MONGODB_AUTHSOURCE
+              value: {{ .Values.env.MONGODB_AUTHSOURCE | quote }}
+          resources:
+            {{- toYaml .Values.migrations.resources | nindent 12 }}
+{{- end }}

@@ -128,3 +128,4 @@ jobs:
           
           echo "Deployment successful!"
           oc get pods -n ${{ env.OPENSHIFT_NAMESPACE_TEST }} -l app.kubernetes.io/name=${{ env.APP_NAME }}
+

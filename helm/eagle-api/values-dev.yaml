@@ -33,6 +33,12 @@ secrets:
     name: eagle-api-mongodb
     usernameKey: MONGODB_USERNAME
     passwordKey: MONGODB_PASSWORD
+  minio:
+    name: nr-object-store-credential
+    hostKey: endpoint_url
+    accessKeyKey: user_account
+    secretKeyKey: password
+    bucketKey: bucket_name
   ches:
     name: getok-secret
     clientIdKey: CLIENTID
