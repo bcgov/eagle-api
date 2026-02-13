@@ -25,7 +25,7 @@ env:
 
 keycloak:
   url: "https://dev.loginproxy.gov.bc.ca/auth"
-  realm: eagle
+  realm: eao-epic
   clientId: eagle-api-console
 
 secrets:

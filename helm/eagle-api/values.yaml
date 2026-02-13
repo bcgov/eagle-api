@@ -97,7 +97,7 @@ secrets:
 keycloak:
   enabled: true
   url: ""  # Set in values-{env}.yaml
-  realm: eagle
+  realm: eao-epic
   clientId: eagle-api-console
 
 # Pod annotations
