@@ -53,7 +53,6 @@ Thumbs.db
 epic/*
 
 migrations_temp
-claude.md
 
 # Internal AI assistant notes
 .github/copilot-instructions.md
