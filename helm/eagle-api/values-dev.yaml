@@ -22,6 +22,7 @@ env:
   ENVIRONMENT: dev
   CHES_ENDPOINT: "https://ches-dev.api.gov.bc.ca/api/v1"
   GETOK_ENDPOINT: "https://sso-dev.pathfinder.gov.bc.ca"
+  ANALYTICS_ENHANCED_TRACKING: "true"
 
 keycloak:
   url: "https://dev.loginproxy.gov.bc.ca/auth"

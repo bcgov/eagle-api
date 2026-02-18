@@ -22,6 +22,7 @@ env:
   ENVIRONMENT: test
   CHES_ENDPOINT: "https://ches-test.api.gov.bc.ca/api/v1"
   GETOK_ENDPOINT: "https://sso-test.pathfinder.gov.bc.ca"
+  ANALYTICS_ENHANCED_TRACKING: "true"
 
 keycloak:
   url: "https://test.loginproxy.gov.bc.ca/auth"
