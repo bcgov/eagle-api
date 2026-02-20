@@ -20,6 +20,7 @@ exports.publicGetConfig = async function (args, res) {
     ANALYTICS_API_URL: process.env.ANALYTICS_API_URL || '/analytics',
     ANALYTICS_DEBUG: process.env.ANALYTICS_DEBUG === 'true' || process.env.ENVIRONMENT !== 'prod',
     ANALYTICS_ENHANCED_TRACKING: process.env.ANALYTICS_ENHANCED_TRACKING === 'true',
+    ANALYTICS_TRAFFIC_TRACKING: process.env.ANALYTICS_TRAFFIC_TRACKING === 'true',
     // Survey configuration  
     SURVEY_URL: process.env.SURVEY_URL || null,
     SHOW_SURVEY_BANNER: process.env.SHOW_SURVEY_BANNER === 'true'
