@@ -18,6 +18,7 @@ spec:
     metadata:
       labels:
         {{- include "eagle-api.mongodb.selectorLabels" . | nindent 8 }}
+        role: database-eagle-epic  # Legacy label required by NetworkPolicy
     spec:
       containers:
       - name: mongodb
