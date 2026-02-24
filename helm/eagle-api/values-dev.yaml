@@ -34,7 +34,7 @@ keycloak:
 secrets:
   mongodb:
     name: eagle-api-mongodb
-    usernameKey: MONGODB_USERNAME
+    usernameKey: MONGODB_USER
     passwordKey: MONGODB_PASSWORD
   minio:
     name: nr-object-store-credential
@@ -52,3 +52,15 @@ persistence:
 
 autoscaling:
   enabled: false
+
+# MongoDB enabled for dev environment
+mongodb:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1Gi
+    limits:
+      cpu: 250m
+      memory: 2Gi
+

@@ -52,3 +52,15 @@ persistence:
 
 autoscaling:
   enabled: false
+
+# MongoDB enabled for test environment
+mongodb:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1Gi
+    limits:
+      cpu: 500m
+      memory: 2Gi
+

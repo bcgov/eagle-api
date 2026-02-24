@@ -1,0 +1,74 @@
+{{- if .Values.mongodb.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eagle-api.mongodb.fullname" . }}
+  labels:
+    {{- include "eagle-api.mongodb.labels" . | nindent 4 }}
+  annotations:
+    description: "MongoDB database for eagle-api"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # Critical: MongoDB is stateful with single replica
+  selector:
+    matchLabels:
+      {{- include "eagle-api.mongodb.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "eagle-api.mongodb.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: mongodb
+        image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+        imagePullPolicy: {{ .Values.mongodb.image.pullPolicy }}
+        ports:
+        - containerPort: 27017
+          protocol: TCP
+          name: mongodb
+        env:
+        - name: MONGODB_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mongodb.existingSecret }}
+              key: {{ .Values.mongodb.secretKeys.user }}
+        - name: MONGODB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mongodb.existingSecret }}
+              key: {{ .Values.mongodb.secretKeys.password }}
+        - name: MONGODB_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mongodb.existingSecret }}
+              key: {{ .Values.mongodb.secretKeys.database }}
+        - name: MONGODB_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mongodb.existingSecret }}
+              key: {{ .Values.mongodb.secretKeys.adminPassword }}
+        volumeMounts:
+        - name: mongodb-data
+          mountPath: /var/lib/mongodb/data
+        resources:
+          {{- toYaml .Values.mongodb.resources | nindent 10 }}
+        livenessProbe:
+          tcpSocket:
+            port: 27017
+          initialDelaySeconds: {{ .Values.mongodb.probes.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.mongodb.probes.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.mongodb.probes.liveness.timeoutSeconds }}
+          failureThreshold: {{ .Values.mongodb.probes.liveness.failureThreshold }}
+        readinessProbe:
+          tcpSocket:
+            port: 27017
+          initialDelaySeconds: {{ .Values.mongodb.probes.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.mongodb.probes.readiness.periodSeconds }}
+          timeoutSeconds: {{ .Values.mongodb.probes.readiness.timeoutSeconds }}
+          failureThreshold: {{ .Values.mongodb.probes.readiness.failureThreshold }}
+      volumes:
+      - name: mongodb-data
+        persistentVolumeClaim:
+          claimName: {{ .Values.mongodb.persistence.existingClaim }}
+{{- end }}

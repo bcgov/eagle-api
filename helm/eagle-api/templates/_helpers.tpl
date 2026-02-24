@@ -48,3 +48,32 @@ Selector labels
 app.kubernetes.io/name: {{ include "eagle-api.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+MongoDB fullname - must be "eagle-api-mongodb" for backward compatibility
+*/}}
+{{- define "eagle-api.mongodb.fullname" -}}
+eagle-api-mongodb
+{{- end }}
+
+{{/*
+MongoDB labels
+*/}}
+{{- define "eagle-api.mongodb.labels" -}}
+helm.sh/chart: {{ include "eagle-api.chart" . }}
+{{ include "eagle-api.mongodb.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app: eagle-epic
+role: database-eagle-epic
+{{- end }}
+
+{{/*
+MongoDB selector labels
+*/}}
+{{- define "eagle-api.mongodb.selectorLabels" -}}
+app.kubernetes.io/name: eagle-api-mongodb
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

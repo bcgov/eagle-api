@@ -78,8 +78,8 @@ env:
 secrets:
   mongodb:
     name: eagle-api-mongodb
-    usernameKey: database-user
-    passwordKey: database-password
+    usernameKey: MONGODB_USER
+    passwordKey: MONGODB_PASSWORD
   
   minio:
     name: eagle-api-minio-keys
@@ -135,3 +135,47 @@ migrations:
     requests:
       cpu: 100m
       memory: 256Mi
+
+# MongoDB Configuration
+# Disabled by default for local development (use external MongoDB)
+# Enable in environment values files (values-dev.yaml, values-test.yaml, values-prod.yaml)
+mongodb:
+  enabled: false
+  
+  image:
+    repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/mongodb-44
+    tag: "4.4.30"
+    pullPolicy: IfNotPresent
+  
+  # Use existing secret created by legacy DeploymentConfig
+  existingSecret: eagle-api-mongodb
+  secretKeys:
+    user: MONGODB_USER
+    password: MONGODB_PASSWORD
+    database: MONGODB_DATABASE
+    adminPassword: MONGODB_ADMIN_PASSWORD
+  
+  # Use existing PVC to preserve data during migration
+  persistence:
+    existingClaim: eagle-api-mongodb-data
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1Gi
+    limits:
+      cpu: 250m
+      memory: 2Gi
+  
+  probes:
+    liveness:
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 1
+      failureThreshold: 3
+    readiness:
+      initialDelaySeconds: 3
+      periodSeconds: 10
+      timeoutSeconds: 1
+      failureThreshold: 3
+

@@ -1,0 +1,17 @@
+{{- if .Values.mongodb.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eagle-api.mongodb.fullname" . }}
+  labels:
+    {{- include "eagle-api.mongodb.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+  - port: 27017
+    targetPort: mongodb
+    protocol: TCP
+    name: mongodb
+  selector:
+    {{- include "eagle-api.mongodb.selectorLabels" . | nindent 4 }}
+{{- end }}
