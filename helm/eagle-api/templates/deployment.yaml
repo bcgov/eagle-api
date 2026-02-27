@@ -12,6 +12,11 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0    # Never terminate pods until new ones are ready
+      maxSurge: 1          # Create one new pod at a time
   selector:
     matchLabels:
       {{- include "eagle-api.selectorLabels" . | nindent 6 }}
@@ -47,6 +52,18 @@ spec:
             initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+          {{- if .Values.probes.startup }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.probes.startup.path }}
+              port: http
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+          {{- end }}
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 10"]  # Grace period for load balancer to drain
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           env:

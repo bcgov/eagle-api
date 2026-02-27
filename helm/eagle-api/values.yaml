@@ -47,6 +47,15 @@ probes:
     initialDelaySeconds: 10
     periodSeconds: 10
     timeoutSeconds: 10
+  # Startup probe for slow-starting containers (optional, enable in prod)
+  startup:
+    path: /api/docs
+    failureThreshold: 30
+    periodSeconds: 5
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  minAvailable: 1  # Minimum pods available during disruptions
 
 # Persistent Volume Claim for document uploads
 persistence:

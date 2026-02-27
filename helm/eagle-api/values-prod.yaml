@@ -34,6 +34,10 @@ keycloak:
 persistence:
   size: 50Gi
 
+# Pod Disruption Budget - ensure at least 2 pods during disruptions
+podDisruptionBudget:
+  minAvailable: 2
+
 autoscaling:
   enabled: true
   minReplicas: 3

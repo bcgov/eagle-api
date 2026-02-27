@@ -1,0 +1,14 @@
+{{- if gt (int .Values.replicaCount) 1 }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "eagle-api.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "eagle-api.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable | default 2 }}
+  selector:
+    matchLabels:
+      {{- include "eagle-api.selectorLabels" . | nindent 6 }}
+{{- end }}
