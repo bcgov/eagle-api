@@ -32,8 +32,22 @@ keycloak:
   realm: eao-epic
   clientId: eagle-api-console
 
+# Production uses nr-object-store-credential (different from dev/test)
+secrets:
+  minio:
+    name: nr-object-store-credential
+    hostKey: endpoint_url
+    accessKeyKey: user_account
+    secretKeyKey: password
+    bucketKey: bucket_name
+  ches:
+    name: getok-secret
+    clientIdKey: CLIENTID
+    clientSecretKey: CLIENT_SECRET
+
+# Disable persistence - current production doesn't use uploads PVC
 persistence:
-  size: 50Gi
+  enabled: false
 
 # Pod Disruption Budget - ensure at least 2 pods during disruptions
 podDisruptionBudget:
