@@ -6,6 +6,7 @@ image:
   tag: prod
 
 route:
+  enabled: false  # Production uses prod-external route through rproxy
   host: projects.eao.gov.bc.ca
 
 resources:

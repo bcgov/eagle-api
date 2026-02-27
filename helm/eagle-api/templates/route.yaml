@@ -9,6 +9,9 @@ spec:
   {{- if .Values.route.host }}
   host: {{ .Values.route.host }}
   {{- end }}
+  {{- if .Values.route.path }}
+  path: {{ .Values.route.path }}
+  {{- end }}
   port:
     targetPort: {{ .Values.route.targetPort | default "3000-tcp" }}
   tls:
@@ -16,7 +19,7 @@ spec:
     insecureEdgeTerminationPolicy: {{ .Values.route.tls.insecureEdgeTerminationPolicy }}
   to:
     kind: Service
-    name: {{ .Values.route.serviceName | default "rproxy" }}
+    name: {{ .Values.route.serviceName | default (include "eagle-api.fullname" .) }}
     weight: 100
   wildcardPolicy: None
 {{- end }}
