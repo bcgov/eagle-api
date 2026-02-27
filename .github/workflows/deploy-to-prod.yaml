@@ -84,8 +84,8 @@ jobs:
 
       - name: Deploy to prod
         run: |
-          oc -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} rollout restart deployment/${{ env.APP_NAME }}
-          oc -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} rollout status deployment/${{ env.APP_NAME }} --timeout=5m
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} rollout latest dc/${{ env.APP_NAME }}
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} rollout status dc/${{ env.APP_NAME }} --timeout=5m
           
           echo "Deployment successful!"
           oc get pods -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} -l app.kubernetes.io/name=${{ env.APP_NAME }}
