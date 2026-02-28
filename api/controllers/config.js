@@ -7,6 +7,8 @@ exports.publicGetConfig = async function (args, res) {
     debugMode: process.env.DEBUG_MODE === 'true',
     ENVIRONMENT: process.env.ENVIRONMENT,
     BANNER_COLOUR: process.env.BANNER_COLOUR,
+    // Logging: 0=All, 1=Debug, 2=Info, 3=Warn, 4=Error (default to Error in prod)
+    LOG_LEVEL: parseInt(process.env.LOG_LEVEL, 10) || (process.env.ENVIRONMENT === 'prod' ? 4 : 0),
     API_LOCATION: process.env.API_LOCATION,
     API_PATH: process.env.API_PATH,
     API_PUBLIC_PATH: process.env.API_PUBLIC_PATH,
