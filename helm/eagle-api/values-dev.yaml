@@ -5,6 +5,11 @@ replicaCount: 1
 image:
   tag: dev
 
+# Use Recreate strategy for single replica with ReadWriteOnce PVC
+# (Rolling update doesn't work with RWO volumes)
+updateStrategy:
+  type: Recreate
+
 route:
   host: eagle-dev.apps.silver.devops.gov.bc.ca
 

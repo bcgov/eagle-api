@@ -12,11 +12,16 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  {{- if .Values.updateStrategy }}
+  strategy:
+    {{- toYaml .Values.updateStrategy | nindent 4 }}
+  {{- else }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 0    # Never terminate pods until new ones are ready
       maxSurge: 1          # Create one new pod at a time
+  {{- end }}
   selector:
     matchLabels:
       {{- include "eagle-api.selectorLabels" . | nindent 6 }}
