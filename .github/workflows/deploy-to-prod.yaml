@@ -55,6 +55,11 @@ jobs:
     needs: validate
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository at version tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version }}
+
       - name: Install OpenShift CLI
         uses: redhat-actions/openshift-tools-installer@v1
         with:
@@ -82,10 +87,20 @@ jobs:
           oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
             ${{ env.IMAGE_NAME }}:${{ inputs.version }} ${{ env.IMAGE_NAME }}:prod
 
-      - name: Deploy to prod
+      - name: Install Helm
         run: |
-          oc -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} rollout restart deployment/${{ env.APP_NAME }}
-          oc -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} rollout status deployment/${{ env.APP_NAME }} --timeout=5m
-          
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install ${{ env.APP_NAME }} ./helm/${{ env.APP_NAME }} \
+            --namespace ${{ env.OPENSHIFT_NAMESPACE_PROD }} \
+            --values ./helm/${{ env.APP_NAME }}/values-prod.yaml \
+            --set image.tag=prod \
+            --wait --timeout=5m
+
+      - name: Verify deployment
+        run: |
           echo "Deployment successful!"
           oc get pods -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} -l app.kubernetes.io/name=${{ env.APP_NAME }}
