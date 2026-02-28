@@ -5,11 +5,6 @@ replicaCount: 1
 image:
   tag: test
 
-# Use Recreate strategy for single replica with ReadWriteOnce PVC
-# (Rolling update doesn't work with RWO volumes)
-updateStrategy:
-  type: Recreate
-
 route:
   host: eagle-test.apps.silver.devops.gov.bc.ca
 
@@ -52,8 +47,9 @@ secrets:
     clientIdKey: CLIENTID
     clientSecretKey: CLIENT_SECRET
 
+# Disable persistence to avoid PVC attachment issues
 persistence:
-  size: 10Gi
+  enabled: false
 
 autoscaling:
   enabled: false
