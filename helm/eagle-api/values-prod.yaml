@@ -27,6 +27,12 @@ env:
   ANALYTICS_DEBUG: "false"
   ANALYTICS_ENHANCED_TRACKING: "true"
   ANALYTICS_TRAFFIC_TRACKING: "true"
+  # ClamAV virus scanning - service runs in separate pod
+  CLAMAV_SERVICE_HOST: "clamav"
+  CLAMAV_SERVICE_PORT: "3310"
+  ENABLE_VIRUS_SCANNING: "true"
+  # Temp directory for uploads (no PVC mounted)
+  UPLOAD_DIRECTORY: "/tmp/"
 
 keycloak:
   url: "https://loginproxy.gov.bc.ca/auth"

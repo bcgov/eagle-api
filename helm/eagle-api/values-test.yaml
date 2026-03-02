@@ -26,6 +26,7 @@ env:
   ANALYTICS_ENHANCED_TRACKING: "true"
   ANALYTICS_TRAFFIC_TRACKING: "true"
   ENABLE_VIRUS_SCANNING: "false"
+  UPLOAD_DIRECTORY: "/tmp/"
 
 keycloak:
   url: "https://test.loginproxy.gov.bc.ca/auth"
