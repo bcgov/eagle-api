@@ -3606,10 +3606,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"clamav.js@npm:~0.12.0":
-  version: 0.12.0
-  resolution: "clamav.js@npm:0.12.0"
-  checksum: 10c0/22a52b5dfc769b7fdbf684c189db474a93c342dd6cb99cb11a68185845212253b7dfd2ed82cb6ff81ba618b079cf41606c5b52540b6c465bad6bcf25d7f1bf0b
+"clamscan@npm:^2.4.0":
+  version: 2.4.0
+  resolution: "clamscan@npm:2.4.0"
+  checksum: 10c0/ac15ddc9debf597cf13d98362b62f722a8af087b210991dbabe5849a9fee53902968fc2ea254404296a31ac9dc0dd4c25174289b2b68d26cb4bba85ccfe8e441
   languageName: node
   linkType: hard
 
@@ -4246,7 +4246,7 @@ __metadata:
     biguint-format: "npm:~1.0.0"
     body-parser: "npm:^1.20.3"
     chai: "npm:^4.3.10"
-    clamav.js: "npm:~0.12.0"
+    clamscan: "npm:^2.4.0"
     crypto: "npm:~1.0.1"
     csv: "npm:~5.1.1"
     db-migrate: "npm:~0.11.4"

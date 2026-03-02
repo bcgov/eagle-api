@@ -2,12 +2,48 @@
 
 var _               = require('lodash');
 var mongoose        = require('mongoose');
-var clamav          = require('clamav.js');
-var _serviceHost    = process.env.CLAMAV_SERVICE_HOST || '127.0.0.1';
-var _servicePort    = process.env.CLAMAV_SERVICE_PORT || '3310';
+var NodeClam        = require('clamscan');
 var MAX_LIMIT       = 1000;
 const defaultLog      = require('winston').loggers.get('default');
 var DEFAULT_PAGESIZE  = 100;
+
+// ClamAV scanner instance (initialized on first use)
+let clamScanner = null;
+
+/**
+ * Get or initialize the ClamAV scanner instance.
+ * Uses TCP connection to remote ClamAV daemon.
+ */
+async function getClamScanner() {
+  if (clamScanner) {
+    return clamScanner;
+  }
+
+  const serviceHost = process.env.CLAMAV_SERVICE_HOST || '127.0.0.1';
+  const servicePort = parseInt(process.env.CLAMAV_SERVICE_PORT, 10) || 3310;
+
+  try {
+    clamScanner = await new NodeClam().init({
+      debugMode: false,
+      clamdscan: {
+        host: serviceHost,
+        port: servicePort,
+        timeout: 60000,
+        localFallback: false,
+        active: true,
+      },
+      clamscan: {
+        active: false,  // Don't use local binary
+      },
+      preference: 'clamdscan',
+    });
+    defaultLog.info(`ClamAV scanner initialized: ${serviceHost}:${servicePort}`);
+    return clamScanner;
+  } catch (err) {
+    defaultLog.error(`Failed to initialize ClamAV scanner: ${err.message}`);
+    throw err;
+  }
+}
 
 exports.buildQuery = function (property, values, query) {
   var oids = [];
@@ -32,34 +68,38 @@ exports.getBasePath = function (protocol, host) {
   return protocol + '://' + host;
 };
 
-// MBL: TODO Make this event driven instead of synchronous?
-exports.avScan = function (buffer) {
-  return new Promise(function (resolve) {
-    var stream = require('stream');
-    // Initiate the source
-    var bufferStream = new stream.PassThrough();
-    // Write your buffer
+/**
+ * Scan a buffer for viruses using ClamAV.
+ * @param {Buffer} buffer - The file buffer to scan
+ * @returns {Promise<boolean>} - true if file is clean, false if infected or error
+ */
+exports.avScan = async function (buffer) {
+  const stream = require('stream');
+  const serviceHost = process.env.CLAMAV_SERVICE_HOST || '127.0.0.1';
+  const servicePort = process.env.CLAMAV_SERVICE_PORT || '3310';
+
+  try {
+    const clam = await getClamScanner();
+
+    // Create a readable stream from the buffer
+    const bufferStream = new stream.PassThrough();
     bufferStream.end(buffer);
 
-    clamav.ping(_servicePort, _serviceHost, 1000, function (err) {
-      if (err) {
-        defaultLog.warn('ClamAV service: ' + _serviceHost + ':' + _servicePort + ' is not available[' + err + ']');
-        resolve(false);
-      } else {
-        clamav.createScanner(_servicePort, _serviceHost)
-          .scan(bufferStream, function (err, object, malicious) {
-            if (err) {
-              defaultLog.info('Error:', err);
-              resolve(false);
-            } else if (malicious) {
-              resolve(false);
-            } else {
-              resolve(true);
-            }
-          });
-      }
-    });
-  });
+    const { isInfected, viruses } = await clam.scanStream(bufferStream);
+
+    if (isInfected) {
+      defaultLog.warn(`File is infected with: ${viruses.join(', ')}`);
+      return false;
+    }
+
+    defaultLog.info('File passed virus scan');
+    return true;
+  } catch (err) {
+    defaultLog.warn(`ClamAV service: ${serviceHost}:${servicePort} scan failed: ${err.message}`);
+    // Reset scanner instance on error so it can be re-initialized
+    clamScanner = null;
+    return false;
+  }
 };
 
 exports.getSkipLimitParameters = function (pageSize, pageNum) {
