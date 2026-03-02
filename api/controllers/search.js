@@ -164,6 +164,17 @@ const executeQuery = async function (args, res) {
     return Actions.sendResponse(res, 400, { });
   }
 
+  // Validate dataset parameter
+  if (!dataset) {
+    defaultLog.error('Missing required parameter: dataset');
+    return Actions.sendResponse(res, 400, { error: 'Missing required parameter: dataset' });
+  }
+  const validDatasets = Object.values(constants);
+  if (!validDatasets.includes(dataset)) {
+    defaultLog.error('Invalid dataset:', dataset);
+    return Actions.sendResponse(res, 400, { error: `Invalid dataset: ${dataset}. Must be one of: ${validDatasets.join(', ')}` });
+  }
+
   await Utils.recordAction('Search', keywords, args.swagger.params.auth_payload ? args.swagger.params.auth_payload.preferred_username : 'public');
 
   let sortDirection = undefined;
