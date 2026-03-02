@@ -4263,10 +4263,8 @@ __metadata:
     mocha: "npm:^10.2.0"
     moment: "npm:^2.30.1"
     mongodb: "npm:~4.17.2"
-    mongoose: "npm:~6.13.3"
+    mongoose: "npm:~6.13.6"
     nconf: "npm:^0.12.1"
-    passport: "npm:~0.4.0"
-    passport-local: "npm:~1.0.0"
     path: "npm:~0.12.7"
     proj4: "npm:~2.5.0"
     qs: "npm:^6.14.1"
@@ -6612,7 +6610,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mongoose@npm:~6.13.3":
+"mongoose@npm:~6.13.6":
   version: 6.13.9
   resolution: "mongoose@npm:6.13.9"
   dependencies:
@@ -6949,32 +6947,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"passport-local@npm:~1.0.0":
-  version: 1.0.0
-  resolution: "passport-local@npm:1.0.0"
-  dependencies:
-    passport-strategy: "npm:1.x.x"
-  checksum: 10c0/59becb988014921a5d6056470d9373c41db452fcf113323064f39d53baa6f184e72151bf269ca6770511f7f0260e13632dacc7b6afdbf60ebf63e90327e186d4
-  languageName: node
-  linkType: hard
-
-"passport-strategy@npm:1.x.x":
-  version: 1.0.0
-  resolution: "passport-strategy@npm:1.0.0"
-  checksum: 10c0/cf4cd32e1bf2538a239651581292fbb91ccc83973cde47089f00d2014c24bed63d3e65af21da8ddef649a8896e089eb9c3ac9ca639f36c797654ae9ee4ed65e1
-  languageName: node
-  linkType: hard
-
-"passport@npm:~0.4.0":
-  version: 0.4.1
-  resolution: "passport@npm:0.4.1"
-  dependencies:
-    passport-strategy: "npm:1.x.x"
-    pause: "npm:0.0.1"
-  checksum: 10c0/aa1a8eb2e991368734ae1e33d354c94a02c5fcd27c4ef25c3c303b4f3df1e05512ac0159e608cedbfc8c544c166735a153124cfa3bd8d48fb01f5ded500f0c5f
-  languageName: node
-  linkType: hard
-
 "path-exists@npm:^4.0.0":
   version: 4.0.0
   resolution: "path-exists@npm:4.0.0"
@@ -7060,13 +7032,6 @@ __metadata:
   dependencies:
     through: "npm:~2.3"
   checksum: 10c0/86f12c64cdaaa8e45ebaca4e39a478e1442db8b4beabc280b545bfaf79c0e2f33c51efb554aace5c069cc441c7b924ba484837b345eaa4ba6fc940d62f826802
-  languageName: node
-  linkType: hard
-
-"pause@npm:0.0.1":
-  version: 0.0.1
-  resolution: "pause@npm:0.0.1"
-  checksum: 10c0/f362655dfa7f44b946302c5a033148852ed5d05f744bd848b1c7eae6a543f743e79c7751ee896ba519fd802affdf239a358bb2ea5ca1b1c1e4e916279f83ab75
   languageName: node
   linkType: hard
 
@@ -7603,12 +7568,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"serialize-javascript@npm:^6.0.2":
-  version: 6.0.2
-  resolution: "serialize-javascript@npm:6.0.2"
-  dependencies:
-    randombytes: "npm:^2.1.0"
-  checksum: 10c0/2dd09ef4b65a1289ba24a788b1423a035581bef60817bea1f01eda8e3bda623f86357665fe7ac1b50f6d4f583f97db9615b3f07b2a2e8cbcb75033965f771dd2
+"serialize-javascript@npm:^7.0.3":
+  version: 7.0.3
+  resolution: "serialize-javascript@npm:7.0.3"
+  checksum: 10c0/2c8883b360767dd96c720f2ec8938b2623dbdd4e46d68c540260125e2fa040fef538303411de245d62a1391b8b913c4f566f0bae74b23a58e467553ff1402b76
   languageName: node
   linkType: hard
 
