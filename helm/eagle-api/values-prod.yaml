@@ -19,14 +19,8 @@ resources:
 
 env:
   API_HOSTNAME: projects.eao.gov.bc.ca
-  API_LOCATION: "https://projects.eao.gov.bc.ca"
-  ENVIRONMENT: prod
-  BANNER_COLOUR: ""
   CHES_ENDPOINT: "https://ches.api.gov.bc.ca/api/v1"
   GETOK_ENDPOINT: "https://sso.pathfinder.gov.bc.ca"
-  ANALYTICS_DEBUG: "false"
-  ANALYTICS_ENHANCED_TRACKING: "true"
-  ANALYTICS_TRAFFIC_TRACKING: "true"
   # ClamAV virus scanning - service runs in separate pod
   CLAMAV_SERVICE_HOST: "clamav"
   CLAMAV_SERVICE_PORT: "3310"

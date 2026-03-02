@@ -71,11 +71,6 @@ env:
   MONGODB_DATABASE: epic
   MONGODB_AUTHSOURCE: admin
   
-  # API Configuration
-  API_LOCATION: ""  # Set in values-{env}.yaml
-  API_PATH: /api
-  API_PUBLIC_PATH: /api/public
-  
   # Feature Flags
   ENABLE_VIRUS_SCANNING: "true"
   

@@ -18,13 +18,8 @@ resources:
 
 env:
   API_HOSTNAME: eagle-dev.apps.silver.devops.gov.bc.ca
-  API_LOCATION: "https://eagle-dev.apps.silver.devops.gov.bc.ca"
-  ENVIRONMENT: dev
   CHES_ENDPOINT: "https://ches-dev.api.gov.bc.ca/api/v1"
   GETOK_ENDPOINT: "https://sso-dev.pathfinder.gov.bc.ca"
-  ANALYTICS_DEBUG: "true"
-  ANALYTICS_ENHANCED_TRACKING: "true"
-  ANALYTICS_TRAFFIC_TRACKING: "true"
   ENABLE_VIRUS_SCANNING: "false"
   UPLOAD_DIRECTORY: "/tmp/"
 
