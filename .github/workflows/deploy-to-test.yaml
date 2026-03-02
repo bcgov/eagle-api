@@ -103,22 +103,15 @@ jobs:
           openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
           namespace: ${{ env.OPENSHIFT_NAMESPACE_TOOLS }}
 
-      - name: Tag ci-latest as version (if new deployment)
-        if: needs.validate.outputs.tag_exists == 'false'
+      - name: Check if image exists and tag if needed
         run: |
-          echo "Tagging ci-latest as ${{ inputs.version }}..."
-          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
-            ${{ env.IMAGE_NAME }}:ci-latest ${{ env.IMAGE_NAME }}:${{ inputs.version }}
-
-      - name: Verify image tag exists (if rollback)
-        if: needs.validate.outputs.tag_exists == 'true'
-        run: |
-          echo "Verifying image tag ${{ inputs.version }} exists..."
-          if ! oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} get imagestreamtag ${{ env.IMAGE_NAME }}:${{ inputs.version }} &>/dev/null; then
-            echo "Error: Image tag ${{ inputs.version }} does not exist"
-            exit 1
+          if oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} get imagestreamtag ${{ env.IMAGE_NAME }}:${{ inputs.version }} &>/dev/null; then
+            echo "Image tag ${{ inputs.version }} already exists - using existing image"
+          else
+            echo "Image tag ${{ inputs.version }} does not exist - tagging from ci-latest"
+            oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
+              ${{ env.IMAGE_NAME }}:ci-latest ${{ env.IMAGE_NAME }}:${{ inputs.version }}
           fi
-          echo "Image tag ${{ inputs.version }} found - proceeding with rollback"
 
       - name: Tag version as test
         run: |
