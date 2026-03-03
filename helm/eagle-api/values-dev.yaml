@@ -6,6 +6,7 @@ image:
   tag: dev
 
 route:
+  enabled: false  # All traffic goes through eagle-public route -> nginx -> /api paths
   host: eagle-dev.apps.silver.devops.gov.bc.ca
 
 resources:
