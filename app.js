@@ -11,7 +11,6 @@ var auth          = require('./api/helpers/auth');
 var swaggerConfig = YAML.load('./api/swagger/swagger.yaml');
 var bodyParser    = require('body-parser');
 var app_helper    = require('./app_helper');
-var scheduler     = require('./api/helpers/scheduler');
 
 var api_default_port = 3000;
 
@@ -85,9 +84,6 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
   // Tests handle their own database connection to in-memory MongoDB
   if (process.env.NODE_ENV !== 'test') {
     app_helper.loadMongoose().then(() => {
-      // Start the materialized views scheduler
-      scheduler.startScheduler(defaultLog);
-      
       express_server = app.listen(api_default_port, '0.0.0.0', function() {
         defaultLog.info('Started server on port ' + api_default_port);
       });
@@ -105,9 +101,6 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
 });
 
 function shutdown() {
-  // Stop the scheduler first
-  scheduler.stopScheduler(defaultLog);
-  
   if (express_server) {
     console.log('Shutting down gracefully');
     express_server.close(() => {

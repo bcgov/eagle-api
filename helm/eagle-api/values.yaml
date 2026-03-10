@@ -74,11 +74,6 @@ env:
   # Feature Flags
   ENABLE_VIRUS_SCANNING: "true"
   
-  # Scheduler Configuration
-  # Cron schedule for materialized views updates (standard cron syntax)
-  # Default: every 30 minutes. Set to 'disabled' to turn off.
-  MATERIALIZED_VIEWS_CRON_SCHEDULE: "*/30 * * * *"
-  
   # External Services
   CHES_ENDPOINT: ""  # Set in values-{env}.yaml
   GETOK_ENDPOINT: ""  # Set in values-{env}.yaml

@@ -4265,7 +4265,6 @@ __metadata:
     mongodb: "npm:~4.17.2"
     mongoose: "npm:~6.13.6"
     nconf: "npm:^0.12.1"
-    node-cron: "npm:^4.2.1"
     path: "npm:~0.12.7"
     proj4: "npm:~2.5.0"
     qs: "npm:^6.14.1"
@@ -6727,13 +6726,6 @@ __metadata:
     just-extend: "npm:^6.2.0"
     path-to-regexp: "npm:^6.2.1"
   checksum: 10c0/a44318e6de738b34a1f51b4b478f97f5b40a5a27175be4bf13f6e5b8e67aa70d0b3f51c77a966d6617fccdc3b436c675a89be57424833e6d8a290367faa66b28
-  languageName: node
-  linkType: hard
-
-"node-cron@npm:^4.2.1":
-  version: 4.2.1
-  resolution: "node-cron@npm:4.2.1"
-  checksum: 10c0/804df01df230e96fd2f8ffcde004f4d5af953bccdf3ccf993dc450526dd65f553a2f2ad4bc0faf55c90c38cbc99c9ddbb88ee16cba3fc6bc74e606da6efb249e
   languageName: node
   linkType: hard
 
