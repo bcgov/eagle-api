@@ -217,30 +217,6 @@ jobs:
           oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
             ${{ env.IMAGE_NAME }}:${{ needs.push.outputs.SHORT_SHA }} ${{ env.IMAGE_NAME }}:ci-latest
 
-      - name: Migrate MongoDB from DeploymentConfig to Deployment
-        run: |
-          echo "Checking MongoDB deployment status..."
-          
-          # Check if new Helm-managed MongoDB Deployment exists
-          if oc get deployment eagle-api-mongodb -n ${{ env.OPENSHIFT_NAMESPACE_DEV }} &>/dev/null; then
-            echo "✓ MongoDB Deployment already exists (Helm-managed)"
-          else
-            echo "MongoDB Deployment not found - migrating from DeploymentConfig..."
-            
-            # Check if legacy DeploymentConfig exists
-            if oc get dc eagle-api-mongodb -n ${{ env.OPENSHIFT_NAMESPACE_DEV }} &>/dev/null; then
-              echo "Scaling down legacy MongoDB DeploymentConfig to 0 replicas..."
-              oc scale dc/eagle-api-mongodb --replicas=0 -n ${{ env.OPENSHIFT_NAMESPACE_DEV }}
-              
-              echo "Waiting for MongoDB pod to terminate..."
-              oc wait --for=delete pod -l name=eagle-api-mongodb -n ${{ env.OPENSHIFT_NAMESPACE_DEV }} --timeout=120s || true
-              
-              echo "✓ Legacy DeploymentConfig scaled down - Helm will create new Deployment"
-            else
-              echo "No legacy DeploymentConfig found - proceeding with fresh Helm install"
-            fi
-          fi
-
       - name: Deploy with Helm
         run: |
           helm upgrade --install ${{ env.APP_NAME }} ./helm/${{ env.APP_NAME }} \

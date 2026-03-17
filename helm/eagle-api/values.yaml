@@ -151,7 +151,7 @@ mongodb:
     tag: "4.4.30"
     pullPolicy: IfNotPresent
   
-  # Use existing secret created by legacy DeploymentConfig
+  # Existing secret with MongoDB credentials
   existingSecret: eagle-api-mongodb
   secretKeys:
     user: MONGODB_USER
@@ -159,7 +159,7 @@ mongodb:
     database: MONGODB_DATABASE
     adminPassword: MONGODB_ADMIN_PASSWORD
   
-  # Use existing PVC to preserve data during migration
+  # Existing PVC for MongoDB data persistence
   persistence:
     existingClaim: eagle-api-mongodb-data
   
