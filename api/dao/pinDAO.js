@@ -17,7 +17,7 @@ exports.getProjectPins = async function (user, roles, project, pageNumber, pageS
   let fields = ['_id', 'pins', 'name', 'website', 'province', 'pinsRead'];
 
   // Getting a single project
-  _.assignIn(query, { _id: mongoose.Types.ObjectId(project._id) });
+  _.assignIn(query, { _id: new mongoose.Types.ObjectId(project._id) });
 
   var data = await Utils.runDataQuery('Project',
     roles,
@@ -45,7 +45,7 @@ exports.getProjectPins = async function (user, roles, project, pageNumber, pageS
       return [{ total_items: 0 }];
     }
 
-    thePins = data[0].pins.map(pin => mongoose.Types.ObjectId(pin));
+    thePins = data[0].pins.map(pin => new mongoose.Types.ObjectId(pin));
 
     query = { _id: { $in: thePins } };
     const read = data[0].pinsRead;
@@ -96,13 +96,13 @@ exports.createPin = async function (user, project, pins) {
   let pinsArr = [];
 
   pins.value.map(item => {
-    pinsArr.push(mongoose.Types.ObjectId(item));
+    pinsArr.push(new mongoose.Types.ObjectId(item));
   });
 
   // Add pins to pins existing
   var doc = await projectModel.updateOne(
     {
-      _id: mongoose.Types.ObjectId(project._id)
+      _id: new mongoose.Types.ObjectId(project._id)
     },
     {
       $push: { pins: { $each: pinsArr } }
@@ -122,7 +122,7 @@ exports.publishPins = async function (user, project) {
   try {
     if (project && project.pins) {
       let published = await projectModel.updateOne(
-        { _id: mongoose.Types.ObjectId(project._id) },
+        { _id: new mongoose.Types.ObjectId(project._id) },
         {
           $addToSet: { 'pinsRead': 'public' }
         });
@@ -145,7 +145,7 @@ exports.unPublishPins = async function (user, project) {
       defaultLog.info('Project:', project._id);
 
       var published = await projectModel.updateOne(
-        { _id: mongoose.Types.ObjectId(project._id) },
+        { _id: new mongoose.Types.ObjectId(project._id) },
         { $pull: { 'pinsRead': 'public' } });
 
       Utils.recordAction('UnPublish', 'PIN', user, project._id);
@@ -166,7 +166,7 @@ exports.deletePin = async function (user, pinId, project) {
   try {
     let updatedProject = await projectModel.updateOne(
       { _id: project._id },
-      { $pull: { pins: { $in: [mongoose.Types.ObjectId(pinId)] } } }
+      { $pull: { pins: { $in: [new mongoose.Types.ObjectId(pinId)] } } }
     );
 
     Utils.recordAction('Delete', 'Pin', user, pinId);

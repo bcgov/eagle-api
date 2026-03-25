@@ -50,12 +50,12 @@ exports.buildQuery = function (property, values, query) {
   if (_.isArray(values)) {
     _.each(values, function (i) {
       if (mongoose.Types.ObjectId.isValid(i)) {
-        oids.push(mongoose.Types.ObjectId(i));
+        oids.push(new mongoose.Types.ObjectId(i));
       }
     });
   } else {
     if (mongoose.Types.ObjectId.isValid(values)) {
-      oids.push(mongoose.Types.ObjectId(values));
+      oids.push(new mongoose.Types.ObjectId(values));
     }
   }
   return _.assignIn(query, { [property]: {

@@ -215,12 +215,12 @@ exports.protectedGet = async function (args, res) {
 
   // Build match query if on commentId route.
   if (args.swagger.params.commentId && args.swagger.params.commentId.value) {
-    _.assignIn(query, { _id: mongoose.Types.ObjectId(args.swagger.params.commentId.value) });
+    _.assignIn(query, { _id: new mongoose.Types.ObjectId(args.swagger.params.commentId.value) });
   }
 
   // Build match query if on comment period's id
   if (args.swagger.params.period && args.swagger.params.period.value) {
-    _.assignIn(query, { period: mongoose.Types.ObjectId(args.swagger.params.period.value) });
+    _.assignIn(query, { period: new mongoose.Types.ObjectId(args.swagger.params.period.value) });
   }
 
   // Sort
@@ -315,7 +315,7 @@ exports.protectedPost = async function (args, res) {
     if (!mongoose.Types.ObjectId.isValid(vc)) {
       return Actions.sendResponse(res, 400, { });
     }
-    vcs.push(mongoose.Types.ObjectId(vc));
+    vcs.push(new mongoose.Types.ObjectId(vc));
   });
 
   var docs = [];
@@ -323,11 +323,11 @@ exports.protectedPost = async function (args, res) {
     if (!mongoose.Types.ObjectId.isValid(doc)) {
       return Actions.sendResponse(res, 400, { });
     }
-    docs.push(mongoose.Types.ObjectId(doc));
+    docs.push(new mongoose.Types.ObjectId(doc));
   });
 
   // get the next commentID for this period
-  var commentIdCount = await getNextCommentIdCount(mongoose.Types.ObjectId(obj.period));
+  var commentIdCount = await getNextCommentIdCount(new mongoose.Types.ObjectId(obj.period));
 
   var comment = new Comment();
   comment._schemaName = 'Comment';
@@ -340,7 +340,7 @@ exports.protectedPost = async function (args, res) {
   comment.eaoStatus = obj.eaoStatus;
   comment.isAnonymous = obj.isAnonymous;
   comment.location = obj.location;
-  comment.period = mongoose.Types.ObjectId(obj.period);
+  comment.period = new mongoose.Types.ObjectId(obj.period);
   comment.proponentNotes = obj.proponentNotes;
   comment.proponentStatus = obj.proponentStatus;
   comment.publishedNotes = obj.publishedNotes;
@@ -383,7 +383,7 @@ exports.unProtectedPost = async function (args, res) {
 
     // Ensure the comment is received before the end date of the period.
     const commentPeriodModel = mongoose.model('CommentPeriod');
-    const period = await commentPeriodModel.findOne({ _id: mongoose.Types.ObjectId(obj.period) });
+    const period = await commentPeriodModel.findOne({ _id: new mongoose.Types.ObjectId(obj.period) });
 
     defaultLog.info('Period:', period);
 
@@ -400,7 +400,7 @@ exports.unProtectedPost = async function (args, res) {
     }
 
     // get the next commentID for this period
-    const commentIdCount = await getNextCommentIdCount(mongoose.Types.ObjectId(obj.period));
+    const commentIdCount = await getNextCommentIdCount(new mongoose.Types.ObjectId(obj.period));
 
     console.log('Next comment id:', commentIdCount);
 
@@ -413,7 +413,7 @@ exports.unProtectedPost = async function (args, res) {
     cmt.dateUpdated = new Date();
     cmt.isAnonymous = obj.isAnonymous;
     cmt.location = obj.location;
-    cmt.period = mongoose.Types.ObjectId(obj.period);
+    cmt.period = new mongoose.Types.ObjectId(obj.period);
     cmt.commentId = commentIdCount;
     cmt.documents = [];
     cmt.datePosted = undefined;
@@ -547,7 +547,7 @@ exports.protectedExport = async function (args, res) {
 
   var match = {
     _schemaName: 'Comment',
-    period: mongoose.Types.ObjectId(period)
+    period: new mongoose.Types.ObjectId(period)
   };
 
   var aggregation = [

@@ -110,7 +110,7 @@ exports.protectedPost = async function (args, res) {
     address1: obj.address1,
     address2: obj.address2,
     companyType: obj.companyType,
-    parentCompany: mongoose.Types.ObjectId.isValid(obj.parentCompany) ? mongoose.Types.ObjectId(obj.parentCompany) : null,
+    parentCompany: mongoose.Types.ObjectId.isValid(obj.parentCompany) ? new mongoose.Types.ObjectId(obj.parentCompany) : null,
     companyLegal: obj.companyLegal,
     company: obj.company,
     read: ['public', 'staff', 'sysadmin'],
@@ -154,7 +154,7 @@ exports.protectedPut = async function (args, res) {
     address1: obj.address1 ? obj.address1 : '',
     address2: obj.address2 ? obj.address2 : '',
     companyType: obj.companyType ? obj.companyType : '',
-    parentCompany: mongoose.Types.ObjectId.isValid(obj.parentCompany) ? mongoose.Types.ObjectId(obj.parentCompany) : null,
+    parentCompany: mongoose.Types.ObjectId.isValid(obj.parentCompany) ? new mongoose.Types.ObjectId(obj.parentCompany) : null,
     companyLegal: obj.companyLegal ? obj.companyLegal : '',
     company: obj.company ? obj.company : ''
   };
@@ -164,7 +164,7 @@ exports.protectedPut = async function (args, res) {
   try {
     var org = await Organization.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).exec();
     // Update the name for all users associated with the organization.
-    await User.updateMany({ _schemaName: 'User', org: mongoose.Types.ObjectId(objId) }, { $set: { orgName: obj.name } });
+    await User.updateMany({ _schemaName: 'User', org: new mongoose.Types.ObjectId(objId) }, { $set: { orgName: obj.name } });
 
     Utils.recordAction('Put', 'Organization', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Organization updated:', org);

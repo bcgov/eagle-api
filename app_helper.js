@@ -81,7 +81,6 @@ async function loadMongoose() {
     options.user = credentials.db_username;
     options.pass = credentials.db_password;
   }
-  mongoose.Promise  = global.Promise;
   await loadModels(dbConnection, options, defaultLog);
 }
 

@@ -15,7 +15,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
     aggregation.push({
       $match: {
         _schemaName: 'Project',
-        _id: mongoose.Types.ObjectId(projectId)
+        _id: new mongoose.Types.ObjectId(projectId)
       },
     },
     {

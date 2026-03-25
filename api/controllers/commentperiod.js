@@ -165,7 +165,7 @@ exports.protectedSummary = async function (args, res) {
   // Build match query if on CommentPeriodId route
   var query = {};
   if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value) {
-    _.assignIn(query, { period: mongoose.Types.ObjectId(args.swagger.params.commentPeriodId.value) });
+    _.assignIn(query, { period: new mongoose.Types.ObjectId(args.swagger.params.commentPeriodId.value) });
   }
   // Unless they specifically ask for it, hide deleted results.
   if (args.swagger.params.isDeleted && args.swagger.params.isDeleted.value != undefined) {
@@ -187,7 +187,7 @@ exports.protectedSummary = async function (args, res) {
     };
     await Promise.all(options.map(async (item) => {
       var optionQuery = {};
-      _.assignIn(optionQuery, { 'eaoStatus': item, period: mongoose.Types.ObjectId(args.swagger.params.commentPeriodId.value) });
+      _.assignIn(optionQuery, { 'eaoStatus': item, period: new mongoose.Types.ObjectId(args.swagger.params.commentPeriodId.value) });
       console.log('optionQuery:', optionQuery);
       var res = await Utils.runDataQuery('CommentPeriod',
         args.swagger.params.auth_payload.realm_access.roles,
@@ -231,7 +231,7 @@ exports.protectedGet = async function (args, res) {
     if (!mongoose.Types.ObjectId.isValid(args.swagger.params.project.value)) {
       return Actions.sendResponse(res, 400, { });
     }
-    _.assignIn(query, { project: mongoose.Types.ObjectId(args.swagger.params.project.value) });
+    _.assignIn(query, { project: new mongoose.Types.ObjectId(args.swagger.params.project.value) });
   }
 
   // sort
@@ -300,10 +300,10 @@ exports.protectedPost = async function (args, res) {
     dateStarted: obj.dateStarted,
     instructions: obj.instructions,
     commentTip: obj.commentTip,
-    milestone: mongoose.Types.ObjectId(obj.milestone),
+    milestone: new mongoose.Types.ObjectId(obj.milestone),
     openHouses: obj.openHouses,
     relatedDocuments: obj.relatedDocuments,
-    project: mongoose.Types.ObjectId(obj.project),
+    project: new mongoose.Types.ObjectId(obj.project),
     read: ['staff', 'sysadmin'],
     write: ['staff', 'sysadmin'],
     delete: ['staff', 'sysadmin']
@@ -345,7 +345,7 @@ exports.protectedPut = async function (args, res) {
     isMet: obj.isMet,
     instructions: obj.instructions,
     metURL: obj.metURL,
-    milestone: mongoose.Types.ObjectId(obj.milestone),
+    milestone: new mongoose.Types.ObjectId(obj.milestone),
     openHouses: obj.openHouses,
     relatedDocuments: obj.relatedDocuments,
     updatedBy: args.swagger.params.auth_payload.preferred_username,
@@ -380,7 +380,7 @@ exports.protectedDelete = async function (args, res) {
   }
   var CommentPeriod = mongoose.model('CommentPeriod');
   try {
-    await CommentPeriod.findOneAndRemove({ _id: objId });
+    await CommentPeriod.findOneAndDelete({ _id: objId });
     Utils.recordAction('Delete', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId);
     return Actions.sendResponse(res, 200, {});
   } catch (e) {

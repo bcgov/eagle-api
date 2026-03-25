@@ -359,7 +359,7 @@ const getConvertedValue = (item, entry) => {
   if (isNaN(entry)) {
     if (isValidObjectId(entry)) {
       // ObjectID
-      return { [item]: mongoose.Types.ObjectId(entry) };
+      return { [item]: new mongoose.Types.ObjectId(entry) };
     } else if (entry.toLowerCase() === 'true') {
       const tempObj = {};
       tempObj[item] = true;

@@ -58,7 +58,7 @@ async function queryMongoDB(collection, internalDocName, newDocDate) {
 async function correctDates() {
     const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
     const outputFilePath = `outputDateCorrection_${timestamp}.csv`;
-    const client = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
+    const client = new MongoClient(mongoURI);
 
     try {
         await client.connect();

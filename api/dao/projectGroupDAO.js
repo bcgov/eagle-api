@@ -19,7 +19,7 @@ exports.groupHateoas = function(group, roles) {
 
 exports.createGroup = async function(user, groupName, project) {
   let groupModel = mongoose.model('Group');
-  let newGroup = new groupModel({ project: mongoose.Types.ObjectId(project._id), name: groupName });
+  let newGroup = new groupModel({ project: new mongoose.Types.ObjectId(project._id), name: groupName });
 
   ['project-system-admin', 'sysadmin', 'staff'].forEach(item => {
     newGroup.read.push(item),
@@ -38,14 +38,14 @@ exports.createGroup = async function(user, groupName, project) {
 };
 
 exports.getGroup = async function(groupId) {
-  return await mongoose.model('Group').findById(mongoose.Types.ObjectId(groupId));
+  return await mongoose.model('Group').findById(new mongoose.Types.ObjectId(groupId));
 };
 
 exports.deleteGroup = async function(user, group, project) {
   let groupModel = mongoose.model('Group');
 
   try {
-    var foundGroup = await groupModel.findOneAndRemove({ _id: group._id });
+    var foundGroup = await groupModel.findOneAndDelete({ _id: group._id });
 
     Utils.recordAction('Delete', 'Group', user, project._id);
 
@@ -74,13 +74,13 @@ exports.addGroupMember = async function(user, group, members) {
   let membersArray = [];
 
   members.value.map(item => {
-    membersArray.push(mongoose.Types.ObjectId(item));
+    membersArray.push(new mongoose.Types.ObjectId(item));
   });
 
   // Add members to members existing
   let updatedGroup = await groupModel.updateOne(
     {
-      _id: mongoose.Types.ObjectId(group._id) },
+      _id: new mongoose.Types.ObjectId(group._id) },
     { $push: {  members: { $each: membersArray } } }
   );
 
@@ -105,7 +105,7 @@ exports.getGroupMembers = async function(roles, user, group, sortBy, pageSize, p
   let fields = ['_id', 'members', 'name', 'project'];
 
   // Getting a single group
-  _.assignIn(query, { _id: mongoose.Types.ObjectId(group._id) });
+  _.assignIn(query, { _id: new mongoose.Types.ObjectId(group._id) });
 
   let resultData = await Utils.runDataQuery('Group',
     roles,
@@ -123,7 +123,7 @@ exports.getGroupMembers = async function(roles, user, group, sortBy, pageSize, p
   if (resultData.length === 0) {
     return [{ total_items: 0 }];
   } else {
-    const theUsers = resultData[0].members.map(user => mongoose.Types.ObjectId(user));
+    const theUsers = resultData[0].members.map(user => new mongoose.Types.ObjectId(user));
 
     query = { _id: { $in: theUsers } };
     _.assignIn(query, { '_schemaName': 'User' });
@@ -166,7 +166,7 @@ exports.getGroupMembers = async function(roles, user, group, sortBy, pageSize, p
 };
 
 exports.getGroupMember = async function(memberId) {
-  return await mongoose.model('User').findById(mongoose.Types.ObjectId(memberId)); // hateoas from User DAO
+  return await mongoose.model('User').findById(new mongoose.Types.ObjectId(memberId)); // hateoas from User DAO
 };
 
 exports.deleteGroupMember = async function(user, group, member) {
@@ -175,7 +175,7 @@ exports.deleteGroupMember = async function(user, group, member) {
   try {
     var data = await groupModel.updateOne(
       { _id: group._id },
-      { $pull: { members: { $in: [mongoose.Types.ObjectId(member._id)] } } }
+      { $pull: { members: { $in: [new mongoose.Types.ObjectId(member._id)] } } }
     );
 
     Utils.recordAction('Delete', 'GroupMember', user, data._id);

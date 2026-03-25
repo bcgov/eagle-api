@@ -23,7 +23,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   let hasTextSearch = false;
 
   if (projectId) {
-    projectModifier = { project: mongoose.Types.ObjectId(projectId) };
+    projectModifier = { project: new mongoose.Types.ObjectId(projectId) };
   }
 
   if (keywords) {

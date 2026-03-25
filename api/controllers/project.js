@@ -249,7 +249,7 @@ exports.protectedGet = async function (args, res) {
       return Actions.sendResponse(res, 400, {});
     }
     // Getting a single project
-    _.assignIn(query, { _id: mongoose.Types.ObjectId(args.swagger.params.projId.value) });
+    _.assignIn(query, { _id: new mongoose.Types.ObjectId(args.swagger.params.projId.value) });
     commentPeriodPipeline = handleCommentPeriodForBannerQueryParameters(args, args.swagger.params.projId.value);
     console.log(JSON.stringify(commentPeriodPipeline));
   } else {
@@ -443,9 +443,9 @@ exports.protectedPost = function (args, res) {
     return Actions.sendResponse(res, 400, {});
   }
 
-  projectData.proponent = mongoose.Types.ObjectId(obj.proponent);
-  projectData.responsibleEPDId = mongoose.Types.ObjectId(obj.responsibleEPDId);
-  projectData.projectLeadId = mongoose.Types.ObjectId(obj.projectLeadId);
+  projectData.proponent = new mongoose.Types.ObjectId(obj.proponent);
+  projectData.responsibleEPDId = new mongoose.Types.ObjectId(obj.responsibleEPDId);
+  projectData.projectLeadId = new mongoose.Types.ObjectId(obj.projectLeadId);
 
   // Also need to make sure that the eacDecision and CEAAInvolvement fields are in the project. Hard requirement for public
   projectData.CEAAInvolvement = obj.CEAAInvolvement ? obj.CEAAInvolvement : null;
@@ -496,7 +496,7 @@ exports.protectedPinDelete = async function (args, res) {
   try {
     var data = await Project.updateOne(
       { _id: projId },
-      { $pull: { pins: { $in: [mongoose.Types.ObjectId(pinId)] } } }
+      { $pull: { pins: { $in: [new mongoose.Types.ObjectId(pinId)] } } }
     );
     Utils.recordAction('Delete', 'Pin', args.swagger.params.auth_payload.preferred_username, pinId);
     return Actions.sendResponse(res, 200, data);
@@ -517,7 +517,7 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
   // First get the project
   if (projectId && projectId.value && mongoose.Types.ObjectId.isValid(projectId.value)) {
     // Getting a single project
-    _.assignIn(query, { _id: mongoose.Types.ObjectId(projectId.value) });
+    _.assignIn(query, { _id: new mongoose.Types.ObjectId(projectId.value) });
     var data = await Utils.runDataQuery('Project',
       roles,
       query,
@@ -556,7 +556,7 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
         }]);
       }
       data[0].pins.map(pin => {
-        thePins.push(mongoose.Types.ObjectId(pin));
+        thePins.push(new mongoose.Types.ObjectId(pin));
       });
 
       query = { _id: { $in: thePins } };
@@ -728,12 +728,12 @@ exports.protectedAddPins = async function (args, res) {
   var Project = mongoose.model('Project');
   var pinsArr = [];
   args.swagger.params.pins.value.map(item => {
-    pinsArr.push(mongoose.Types.ObjectId(item));
+    pinsArr.push(new mongoose.Types.ObjectId(item));
   });
 
   // Add pins to pins existing
   var doc = await Project.updateOne(
-    { _id: mongoose.Types.ObjectId(objId) },
+    { _id: new mongoose.Types.ObjectId(objId) },
     {
       $push: {
         pins: {
@@ -763,7 +763,7 @@ exports.protectedPublishPin = async function (args, res) {
     if (project && project.pins) {
       defaultLog.info('Project:', projId);
       var published = await Project.updateOne(
-        { _id: mongoose.Types.ObjectId(projId) },
+        { _id: new mongoose.Types.ObjectId(projId) },
         {
           $addToSet: {
             'pinsRead': 'public'
@@ -792,7 +792,7 @@ exports.protectedUnPublishPin = async function (args, res) {
     if (project && project.pins) {
       defaultLog.info('Project:', projId);
       var published = await Project.updateOne(
-        { _id: mongoose.Types.ObjectId(projId) },
+        { _id: new mongoose.Types.ObjectId(projId) },
         {
           $pull: {
             'pinsRead': 'public'
@@ -821,7 +821,7 @@ exports.protectedPublishCAC = async function (args, res) {
     if (project) {
       defaultLog.info('Project:', projId);
       var published = await Project.updateOne(
-        { _id: mongoose.Types.ObjectId(projId) },
+        { _id: new mongoose.Types.ObjectId(projId) },
         {
           $set: {
             'projectCACPublished': true
@@ -850,7 +850,7 @@ exports.protectedUnPublishCAC = async function (args, res) {
     if (project) {
       defaultLog.info('Project:', projId);
       var published = await Project.updateOne(
-        { _id: mongoose.Types.ObjectId(projId) },
+        { _id: new mongoose.Types.ObjectId(projId) },
         {
           $set: {
             'projectCACPublished': false
@@ -892,7 +892,7 @@ exports.publicCACSignUp = async function ( args, res) {
   let cacUser = await CACUser.findOne({
     _schemaName: 'CACUser',
     email: cacUserToAdd.email,
-    project: mongoose.Types.ObjectId(projectId)
+    project: new mongoose.Types.ObjectId(projectId)
   });
 
   if (!cacUser) {
@@ -905,9 +905,9 @@ exports.publicCACSignUp = async function ( args, res) {
   // AddToSet this if it isn't already in the cac data.
   try {
     const projectData = await Project.findOneAndUpdate(
-      { _id: mongoose.Types.ObjectId(projectId) },
+      { _id: new mongoose.Types.ObjectId(projectId) },
       {
-        $addToSet: { "cacMembers": mongoose.Types.ObjectId(cacUser._id) }
+        $addToSet: { "cacMembers": new mongoose.Types.ObjectId(cacUser._id) }
       },
       { new: true }
     );
@@ -946,13 +946,13 @@ exports.publicCACRemoveMember = async function (args, res) {
     const member = await CACUser.findOne({
       _schemaName: 'CACUser',
       email: cac.email,
-      project: mongoose.Types.ObjectId(projId)
+      project: new mongoose.Types.ObjectId(projId)
     });
 
     if (member) {
       // Remove it from the project
       await Project.updateOne(
-        { _id: mongoose.Types.ObjectId(projId) },
+        { _id: new mongoose.Types.ObjectId(projId) },
         { $pull: { cacMembers: { $in: [member._id] } } }
       );
 
@@ -984,11 +984,11 @@ exports.protectedCACRemoveMember = async function (args, res) {
   try {
     // Remove it from the project
     var projectData = await Project.updateOne(
-      { _id: mongoose.Types.ObjectId(projId) },
-      { $pull: { cacMembers: { $in: [mongoose.Types.ObjectId(member._id)] } } }
+      { _id: new mongoose.Types.ObjectId(projId) },
+      { $pull: { cacMembers: { $in: [new mongoose.Types.ObjectId(member._id)] } } }
     );
     // Remove it from the CACUser collection
-    await CACUser.deleteOne({_id: mongoose.Types.ObjectId(member._id)});
+    await CACUser.deleteOne({_id: new mongoose.Types.ObjectId(member._id)});
 
     Utils.recordAction('Delete', 'CACMemberFromProject', args.swagger.params.auth_payload.preferred_username, member._id);
     return Actions.sendResponse(res, 200, projectData);
@@ -1009,7 +1009,7 @@ exports.protectedCreateCAC = async function (args, res) {
 
   try {
     let data = await Project.updateOne(
-      { _id: mongoose.Types.ObjectId(projId) },
+      { _id: new mongoose.Types.ObjectId(projId) },
       { projectCAC: true, cacEmail: cacData.cacEmail, projectCACPublished: false }
     );
     if (data.modifiedCount === 0) {
@@ -1034,12 +1034,12 @@ exports.protectedCACDelete = async function (args, res) {
   const CACUser = mongoose.model('CACUser');
   try {
     // First remove the members of this project from the CACUser list
-    const proj = await Project.findOne({_id: mongoose.Types.ObjectId(projId)});
+    const proj = await Project.findOne({_id: new mongoose.Types.ObjectId(projId)});
     await CACUser.deleteMany({ _id: { $in: proj.cacMembers } });
 
     // Then purge the array in the project.
     const data = await Project.updateOne(
-      { _id: mongoose.Types.ObjectId(projId) },
+      { _id: new mongoose.Types.ObjectId(projId) },
       { projectCAC: false, cacMembers: [] }
     );
     if (data.modifiedCount === 0) {
@@ -1065,10 +1065,9 @@ exports.protectedDeleteGroupMembers = async function (args, res) {
   }
   var Project = mongoose.model('Group');
   try {
-    var data = await Project.update(
+    var data = await Project.updateOne(
       { _id: groupId },
-      { $pull: { members: { $in: [mongoose.Types.ObjectId(memberId)] } } },
-      { new: true }
+      { $pull: { members: { $in: [new mongoose.Types.ObjectId(memberId)] } } }
     );
     Utils.recordAction('Delete', 'GroupMember', args.swagger.params.auth_payload.preferred_username, data._id);
     return Actions.sendResponse(res, 200, data);
@@ -1090,20 +1089,19 @@ exports.protectedAddGroupMembers = async function (args, res) {
   var Project = mongoose.model('Group');
   var membersArr = [];
   args.swagger.params.members.value.map(item => {
-    membersArr.push(mongoose.Types.ObjectId(item));
+    membersArr.push(new mongoose.Types.ObjectId(item));
   });
 
   // Add members to members existing
-  var doc = await Project.update(
-    { _id: mongoose.Types.ObjectId(groupId) },
+  var doc = await Project.updateOne(
+    { _id: new mongoose.Types.ObjectId(groupId) },
     {
       $push: {
         members: {
           $each: membersArr
         }
       }
-    },
-    { new: true }
+    }
   );
   if (doc) {
     Utils.recordAction('Add', 'GroupMember', args.swagger.params.auth_payload.preferred_username, doc._id);
@@ -1136,7 +1134,7 @@ const handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, 
   // First get the group
   if (groupId && groupId.value && mongoose.Types.ObjectId.isValid(groupId.value)) {
     // Getting a single group
-    _.assignIn(query, { _id: mongoose.Types.ObjectId(groupId.value) });
+    _.assignIn(query, { _id: new mongoose.Types.ObjectId(groupId.value) });
 
     var data = await Utils.runDataQuery('Group',
       roles,
@@ -1159,7 +1157,7 @@ const handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, 
         total_items: 0
       }]);
     } else {
-      const theUsers = data[0].members.map(user => mongoose.Types.ObjectId(user));
+      const theUsers = data[0].members.map(user => new mongoose.Types.ObjectId(user));
       query = { _id: { $in: theUsers } };
       _.assignIn(query, { '_schemaName': 'User' });
 
@@ -1209,7 +1207,7 @@ exports.protectedAddGroup = async function (args, res) {
   defaultLog.info('Incoming new group:', groupName);
 
   var Group = mongoose.model('Group');
-  var doc = new Group({ project: mongoose.Types.ObjectId(objId), name: groupName.group });
+  var doc = new Group({ project: new mongoose.Types.ObjectId(objId), name: groupName.group });
   ['project-system-admin', 'sysadmin', 'staff'].forEach(item => {
     doc.read.push(item), doc.write.push(item), doc.delete.push(item);
   });
@@ -1253,7 +1251,7 @@ exports.protectedGroupDelete = async function (args, res) {
 
   var Group = require('mongoose').model('Group');
   try {
-    var doc = await Group.findOneAndRemove({ _id: groupId });
+    var doc = await Group.findOneAndDelete({ _id: groupId });
     console.log('deleting group', doc);
     Utils.recordAction('Delete', 'Group', args.swagger.params.auth_payload.preferred_username, objId);
     return Actions.sendResponse(res, 200, {});
@@ -1275,7 +1273,7 @@ exports.protectedPut = async function (args, res) {
   var projectObj = args.swagger.params.ProjObject.value;
 
   // get full project object to retain existing data
-  var fullProjectObject = await Project.findById(mongoose.Types.ObjectId(objId));
+  var fullProjectObject = await Project.findById(new mongoose.Types.ObjectId(objId));
 
   var projectLegislationYear;
   var filteredData;
@@ -1340,8 +1338,8 @@ exports.protectedPut = async function (args, res) {
   filteredData.centroid = projectObj.centroid;
 
   // Contacts
-  filteredData.projectLeadId = mongoose.Types.ObjectId(projectObj.projectLeadId);
-  filteredData.responsibleEPDId = mongoose.Types.ObjectId(projectObj.responsibleEPDId);
+  filteredData.projectLeadId = new mongoose.Types.ObjectId(projectObj.projectLeadId);
+  filteredData.responsibleEPDId = new mongoose.Types.ObjectId(projectObj.responsibleEPDId);
 
   filteredData.CEAAInvolvement = projectObj.CEAAInvolvement;
   filteredData.CEAALink = projectObj.CEAALink;
@@ -1385,8 +1383,8 @@ exports.protectedPut = async function (args, res) {
     fullProjectObject.legislation_1996 = filteredData;
   }
 
-  var doc = await Project.findOneAndUpdate({ _id: mongoose.Types.ObjectId(objId) }, fullProjectObject, { upsert: false, new: true });
-  // Project.update({ _id: mongoose.Types.ObjectId(objId) }, { $set: updateObj }, function (err, o) {
+  var doc = await Project.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(objId) }, fullProjectObject, { upsert: false, new: true });
+  // Project.update({ _id: new mongoose.Types.ObjectId(objId) }, { $set: updateObj }, function (err, o) {
   if (doc) {
     Utils.recordAction('Put', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
     return Actions.sendResponse(res, 200, doc);
@@ -1478,7 +1476,7 @@ var handleCommentPeriodForBannerQueryParameters = function (args, projectId) {
 
     var match = {
       _schemaName: 'CommentPeriod',
-      project: mongoose.Types.ObjectId(projectId),
+      project: new mongoose.Types.ObjectId(projectId),
       $or: [dateStartedRange, dateCompletedRange, currentDateInBetween]
     };
 
@@ -1667,7 +1665,7 @@ exports.getFeaturedDocuments = async function (args, res) {
 exports.getFeaturedDocumentsSecure = async function (args, res) {
   try {
     if (args.swagger.params.projId && args.swagger.params.projId.value && mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
-      let project = await mongoose.model('Project').findById(mongoose.Types.ObjectId(args.swagger.params.projId.value));
+      let project = await mongoose.model('Project').findById(new mongoose.Types.ObjectId(args.swagger.params.projId.value));
 
       let featuredDocs = await fetchFeaturedDocuments(project);
 

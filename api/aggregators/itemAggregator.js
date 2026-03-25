@@ -19,7 +19,7 @@ exports.createItemAggr = (itemId, schemaName, roles) => {
 
   aggregation.push(
     {
-      '$match': { _id: mongoose.Types.ObjectId(itemId) }
+      '$match': { _id: new mongoose.Types.ObjectId(itemId) }
     },
     {
       $redact: {

@@ -294,7 +294,7 @@ exports.getProjects = async function(roles, pageNumber, pageSize, sortBy, keywor
 };
 
 exports.getProject = async function(roles, projectId) {
-  let result = await mongoose.model('Project').findById(mongoose.Types.ObjectId(projectId));
+  let result = await mongoose.model('Project').findById(new mongoose.Types.ObjectId(projectId));
 
   // sanitize based on roles. Return the first result
   // as we will only ever have one.
@@ -333,9 +333,9 @@ exports.createProject = async function (user, project) {
   newProject.currentLegislationYear = 'legislation_' + projectLegislationYear;
   newProject.legislationYearList.push(projectLegislationYear);
 
-  projectData.proponent = mongoose.Types.ObjectId(project.proponent);
-  projectData.responsibleEPDId = mongoose.Types.ObjectId(project.responsibleEPDId);
-  projectData.projectLeadId = mongoose.Types.ObjectId(project.projectLeadId);
+  projectData.proponent = new mongoose.Types.ObjectId(project.proponent);
+  projectData.responsibleEPDId = new mongoose.Types.ObjectId(project.responsibleEPDId);
+  projectData.projectLeadId = new mongoose.Types.ObjectId(project.projectLeadId);
 
   // Also need to make sure that the eacDecision and CEAAInvolvement fields are in the project. Hard requirement for public
   projectData.CEAAInvolvement = project.CEAAInvolvement ? project.CEAAInvolvement : null;
@@ -427,8 +427,8 @@ exports.updateProject = async function(user, sourceProject, updatedProject) {
   filteredData.disputeDate       = updatedProject.disputeDate;
   filteredData.centroid          = updatedProject.centroid;
   // Contacts
-  filteredData.projectLeadId     = mongoose.Types.ObjectId(updatedProject.projectLeadId);
-  filteredData.responsibleEPDId  = mongoose.Types.ObjectId(updatedProject.responsibleEPDId);
+  filteredData.projectLeadId     = new mongoose.Types.ObjectId(updatedProject.projectLeadId);
+  filteredData.responsibleEPDId  = new mongoose.Types.ObjectId(updatedProject.responsibleEPDId);
   // CEAA
   filteredData.CEAAInvolvement   = updatedProject.CEAAInvolvement;
   filteredData.CEAALink          = updatedProject.CEAALink;
@@ -458,8 +458,8 @@ exports.updateProject = async function(user, sourceProject, updatedProject) {
     sourceProject.legislation_1996 = filteredData;
   }
 
-  var doc = await mongoose.model('Project').findOneAndUpdate({ _id: mongoose.Types.ObjectId(sourceProject._id) }, sourceProject, { upsert: false, new: true });
-  // Project.update({ _id: mongoose.Types.ObjectId(objId) }, { $set: updateObj }, function (err, o) {
+  var doc = await mongoose.model('Project').findOneAndUpdate({ _id: new mongoose.Types.ObjectId(sourceProject._id) }, sourceProject, { upsert: false, new: true });
+  // Project.update({ _id: new mongoose.Types.ObjectId(objId) }, { $set: updateObj }, function (err, o) {
   if (doc) {
     Utils.recordAction('Put', 'Project', user, doc._id);
   } else {

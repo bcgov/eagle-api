@@ -196,7 +196,7 @@ async function exportData() {
         const backupDirectory = getBackUpDir()
 
         // Connect to MongoDB
-        client = new MongoClient(URI, { useNewUrlParser: true, useUnifiedTopology: true });
+        client = new MongoClient(URI);
         await client.connect();
         console.log("Connection opened.")
         const db = client.db(DATABASE_NAME);

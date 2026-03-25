@@ -58,14 +58,14 @@ exports.createDocumentSecure = async function (args, res) {
               documentSource     : args.swagger.params.documentSource ? args.swagger.params.documentSource.value : null,
               eaoStatus          : args.swagger.params.eaoStatus ? args.swagger.params.eaoStatus.value : null,
               publish            : args.swagger.params.publish ? args.swagger.params.publish.value : false,
-              milestone          : args.swagger.params.projectPhase ? mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null,
-              type               : args.swagger.params.projectPhase ? mongoose.Types.ObjectId(args.swagger.params.type.value) : null,
+              milestone          : args.swagger.params.projectPhase ? new mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null,
+              type               : args.swagger.params.projectPhase ? new mongoose.Types.ObjectId(args.swagger.params.type.value) : null,
               documentAuthor     : args.swagger.params.projectPhase ? args.swagger.params.documentAuthor.value : null,
-              documentAuthorType : args.swagger.params.projectPhase ? mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null,
+              documentAuthorType : args.swagger.params.projectPhase ? new mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null,
               dateUploaded       : args.swagger.params.dateUploaded.value ? args.swagger.params.dateUploaded.value : null,
               datePosted         : args.swagger.params.datePosted.value ? args.swagger.params.datePosted.value : null,
               description        : args.swagger.params.description ? args.swagger.params.datePosted.value : null,
-              projectPhase       : args.swagger.params.projectPhase ? mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null
+              projectPhase       : args.swagger.params.projectPhase ? new mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null
             };
 
       let ext = mime.extension(uploadedFile.mimetype);
@@ -136,12 +136,12 @@ exports.updateDocument = async function (args, res) {
 
       let documentDetails =
             {
-              type               : args.swagger.params.projectPhase ? mongoose.Types.ObjectId(args.swagger.params.type.value) : null,
+              type               : args.swagger.params.projectPhase ? new mongoose.Types.ObjectId(args.swagger.params.type.value) : null,
               documentSource     : args.swagger.params.documentSource ? args.swagger.params.documentSource.value : null,
               documentAuthor     : args.swagger.params.projectPhase ? args.swagger.params.documentAuthor.value : null,
-              documentAuthorType : args.swagger.params.projectPhase ? mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null,
-              milestone          : args.swagger.params.projectPhase ? mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null,
-              projectPhase       : args.swagger.params.projectPhase ? mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null,
+              documentAuthorType : args.swagger.params.projectPhase ? new mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null,
+              milestone          : args.swagger.params.projectPhase ? new mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null,
+              projectPhase       : args.swagger.params.projectPhase ? new mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null,
               datePosted         : args.swagger.params.datePosted.value ? args.swagger.params.datePosted.value : null,
               dateUploaded       : args.swagger.params.dateUploaded.value ? args.swagger.params.dateUploaded.value : null,
               documentName       : args.swagger.params.documentName ? args.swagger.params.documentName.value : null,
@@ -355,7 +355,7 @@ exports.createDocument = async function (args, res) {
             {
               displayName        : args.swagger.params.displayName ? args.swagger.params.displayName.value : '-',
               documentAuthor     : args.body.documentAuthor,
-              documentAuthorType : mongoose.Types.ObjectId(args.body.documentAuthorType),
+              documentAuthorType : new mongoose.Types.ObjectId(args.body.documentAuthorType),
               originalName       : uploadedFile.originalname,
               documentSource     : 'COMMENT'
             };

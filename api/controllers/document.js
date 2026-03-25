@@ -128,7 +128,7 @@ exports.unProtectedPost = async function (args, res) {
           console.log('wrote file successfully.');
 
           console.log(MinioController.BUCKETS.DOCUMENTS_BUCKET,
-            mongoose.Types.ObjectId(project),
+            new mongoose.Types.ObjectId(project),
             upfile.originalname,
             tempFilePath);
 
@@ -147,8 +147,8 @@ exports.unProtectedPost = async function (args, res) {
               var Document = mongoose.model('Document');
               var doc = new Document();
               // Define security tag defaults
-              doc.project = mongoose.Types.ObjectId(project);
-              doc._comment = mongoose.Types.ObjectId(_comment);
+              doc.project = new mongoose.Types.ObjectId(project);
+              doc._comment = new mongoose.Types.ObjectId(_comment);
               doc._addedBy = 'public';
               doc._createdDate = new Date();
               doc.read = ['sysadmin', 'staff'];
@@ -169,7 +169,7 @@ exports.unProtectedPost = async function (args, res) {
               doc.dateUploaded = new Date();
               doc.datePosted = new Date();
               doc.documentAuthor = args.body.documentAuthor;
-              doc.documentAuthorType = mongoose.Types.ObjectId(args.body.documentAuthorType);
+              doc.documentAuthorType = new mongoose.Types.ObjectId(args.body.documentAuthorType);
 
               doc.save()
                 .then(async function (d) {
@@ -251,7 +251,7 @@ exports.protectedGet = async function (args, res) {
 
   // Build match query if on docId route
   if (args.swagger.params.docId && args.swagger.params.docId.value) {
-    _.assignIn(query, { _id: mongoose.Types.ObjectId(args.swagger.params.docId.value) });
+    _.assignIn(query, { _id: new mongoose.Types.ObjectId(args.swagger.params.docId.value) });
   } else if (args.swagger.params.docIds && args.swagger.params.docIds.value && args.swagger.params.docIds.value.length > 0) {
     query = Utils.buildQuery('_id', args.swagger.params.docIds.value);
   }
@@ -543,7 +543,7 @@ exports.protectedPost = async function (args, res) {
           console.log('wrote file successfully.');
 
           console.log(MinioController.BUCKETS.DOCUMENTS_BUCKET,
-            mongoose.Types.ObjectId(project),
+            new mongoose.Types.ObjectId(project),
             args.swagger.params.documentFileName.value,
             tempFilePath);
 
@@ -562,7 +562,7 @@ exports.protectedPost = async function (args, res) {
               var Document = mongoose.model('Document');
               var doc = new Document();
               // Define security tag defaults
-              doc.project = mongoose.Types.ObjectId(project);
+              doc.project = new mongoose.Types.ObjectId(project);
               doc._comment = _comment;
               doc._addedBy = args.swagger.params.auth_payload.preferred_username;
               doc._createdDate = new Date();
@@ -603,14 +603,14 @@ exports.protectedPost = async function (args, res) {
                 doc.read.push('public');
               }
 
-              doc.milestone = args.swagger.params.milestone.value && args.swagger.params.milestone.value !== "null" ? mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null;
-              doc.type = args.swagger.params.type.value && args.swagger.params.type.value !== "null" ? mongoose.Types.ObjectId(args.swagger.params.type.value) : null;
+              doc.milestone = args.swagger.params.milestone.value && args.swagger.params.milestone.value !== "null" ? new mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null;
+              doc.type = args.swagger.params.type.value && args.swagger.params.type.value !== "null" ? new mongoose.Types.ObjectId(args.swagger.params.type.value) : null;
               doc.documentAuthor = args.swagger.params.documentAuthor.value && args.swagger.params.documentAuthor.value !== "null" ? args.swagger.params.documentAuthor.value : null;
-              doc.documentAuthorType = args.swagger.params.documentAuthorType.value && args.swagger.params.documentAuthorType.value !== "null" ? mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null;
+              doc.documentAuthorType = args.swagger.params.documentAuthorType.value && args.swagger.params.documentAuthorType.value !== "null" ? new mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null;
               doc.dateUploaded = args.swagger.params.dateUploaded.value;
               doc.datePosted = args.swagger.params.datePosted.value;
               doc.description = args.swagger.params.description.value;
-              doc.projectPhase = args.swagger.params.projectPhase.value && args.swagger.params.projectPhase.value !== "null" ? mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null;
+              doc.projectPhase = args.swagger.params.projectPhase.value && args.swagger.params.projectPhase.value !== "null" ? new mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null;
               // Update who did this?
               console.log('unlink');
               doc.save()
@@ -712,16 +712,16 @@ exports.protectedPut = async function (args, res) {
     obj.displayName = args.swagger.params.displayName.value;
   }
   if ( args.swagger.params.milestone && args.swagger.params.milestone.value ) {
-    obj.milestone = mongoose.Types.ObjectId(args.swagger.params.milestone.value);
+    obj.milestone = new mongoose.Types.ObjectId(args.swagger.params.milestone.value);
   }
   if ( args.swagger.params.type && args.swagger.params.type.value ) {
-    obj.type = mongoose.Types.ObjectId(args.swagger.params.type.value);
+    obj.type = new mongoose.Types.ObjectId(args.swagger.params.type.value);
   }
   if ( args.swagger.params.documentAuthorType && args.swagger.params.documentAuthorType.value ) {
-    obj.documentAuthorType = mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value);
+    obj.documentAuthorType = new mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value);
   }
   if ( args.swagger.params.projectPhase && args.swagger.params.projectPhase.value ) {
-    obj.projectPhase = mongoose.Types.ObjectId(args.swagger.params.projectPhase.value);
+    obj.projectPhase = new mongoose.Types.ObjectId(args.swagger.params.projectPhase.value);
   }
   if ( args.swagger.params.dateUploaded && args.swagger.params.dateUploaded.value ) {
     obj.dateUploaded = args.swagger.params.dateUploaded.value;
@@ -785,7 +785,7 @@ exports.protectedDelete = async function (args, res) {
   }
   var Document = require('mongoose').model('Document');
   try {
-    var doc = await Document.findOneAndRemove({ _id: objId });
+    var doc = await Document.findOneAndDelete({ _id: objId });
     console.log('deleting document', doc);
     await MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
     Utils.recordAction('Delete', 'Document', args.swagger.params.auth_payload.preferred_username, objId);
@@ -802,8 +802,8 @@ exports.featureDocument = async function (args, res) {
       if (!mongoose.Types.ObjectId.isValid(args.swagger.params.docId.value)) {
         return Actions.sendResponse(res, 400, { });
       }
-      let document = await mongoose.model('Document').findById(mongoose.Types.ObjectId(args.swagger.params.docId.value));
-      let project = await mongoose.model('Project').findById(mongoose.Types.ObjectId(document.project));
+      let document = await mongoose.model('Document').findById(new mongoose.Types.ObjectId(args.swagger.params.docId.value));
+      let project = await mongoose.model('Project').findById(new mongoose.Types.ObjectId(document.project));
 
       if(project) {
         let featuredDocumentsCount = await mongoose.model('Document').countDocuments({ project: project._id, isFeatured: true });
@@ -832,7 +832,7 @@ exports.unfeatureDocument = async function (args, res) {
       if (!mongoose.Types.ObjectId.isValid(args.swagger.params.docId.value)) {
         return Actions.sendResponse(res, 400, { });
       }
-      let document = await mongoose.model('Document').findById(mongoose.Types.ObjectId(args.swagger.params.docId.value));
+      let document = await mongoose.model('Document').findById(new mongoose.Types.ObjectId(args.swagger.params.docId.value));
 
       document.isFeatured = false;
       let result = await document.save();

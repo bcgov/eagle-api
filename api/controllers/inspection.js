@@ -26,7 +26,7 @@ exports.protectedPostInspection = async function (args, res) {
   inspection.endDate = obj.endDate;
 
   if (obj.project) {
-    inspection.project = mongoose.Types.ObjectId(obj.project);
+    inspection.project = new mongoose.Types.ObjectId(obj.project);
   } else {
     inspection.customInspectionName = obj.customInspectionName;
   }
@@ -99,7 +99,7 @@ exports.protectedPostElement = async function (args, res) {
         theDoc = doc;
         var Inspection = mongoose.model('Inspection');
         return Inspection.updateOne(
-          { _id: mongoose.Types.ObjectId(inspId) },
+          { _id: new mongoose.Types.ObjectId(inspId) },
           {
             $push: {
               elements: doc._id
@@ -177,7 +177,7 @@ exports.protectedPostElementItem = async function (args, res) {
 
         // Define security tag defaults
         if (project) {
-          doc.project = mongoose.Types.ObjectId(project);
+          doc.project = new mongoose.Types.ObjectId(project);
         }
         doc._addedBy = args.swagger.params.auth_payload.preferred_username;
         doc._createdDate = new Date();
@@ -211,7 +211,7 @@ exports.protectedPostElementItem = async function (args, res) {
               // Push this into the inspection elements' items' array for things.
               var InspectionElement = mongoose.model('InspectionElement');
               return InspectionElement.updateOne(
-                { _id: mongoose.Types.ObjectId(elementId) },
+                { _id: new mongoose.Types.ObjectId(elementId) },
                 {
                   $push: {
                     items: doc
@@ -241,7 +241,7 @@ exports.protectedPostElementItem = async function (args, res) {
 
     // Define security tag defaults
     if (project) {
-      doc.project = mongoose.Types.ObjectId(project);
+      doc.project = new mongoose.Types.ObjectId(project);
     }
     doc._addedBy = args.swagger.params.auth_payload.preferred_username;
     doc._createdDate = new Date();
@@ -271,7 +271,7 @@ exports.protectedPostElementItem = async function (args, res) {
           // Push this into the inspection elements' array for things.
           var InspectionElement = mongoose.model('InspectionElement');
           return InspectionElement.updateOne(
-            { _id: mongoose.Types.ObjectId(elementId) },
+            { _id: new mongoose.Types.ObjectId(elementId) },
             {
               $push: {
                 items: doc

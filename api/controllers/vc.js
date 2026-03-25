@@ -58,7 +58,7 @@ exports.protectedGet = async function (args, res) {
     if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projectId.value)) {
       return Actions.sendResponse(res, 400, { });
     }
-    _.assignIn(query, { project: mongoose.Types.ObjectId(args.swagger.params.projectId.value) });
+    _.assignIn(query, { project: new mongoose.Types.ObjectId(args.swagger.params.projectId.value) });
   }
   if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
     args.swagger.params.sortBy.value.forEach(function (value) {

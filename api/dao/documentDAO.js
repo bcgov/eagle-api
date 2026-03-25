@@ -54,7 +54,7 @@ exports.createDocument = async function(userName, projectId, comment, uploadedFi
       fs.writeFileSync(tempFilePath, uploadedFile.buffer);
 
       defaultLog.debug('Completed writing file. Starting Minio');
-      defaultLog.debug(MinioController.BUCKETS.DOCUMENTS_BUCKET, mongoose.Types.ObjectId(projectId), documentDetails.fileName, tempFilePath);
+      defaultLog.debug(MinioController.BUCKETS.DOCUMENTS_BUCKET, new mongoose.Types.ObjectId(projectId), documentDetails.fileName, tempFilePath);
 
       let minioFile = await MinioController.putDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, projectId, documentDetails.fileName, tempFilePath);
 
@@ -68,7 +68,7 @@ exports.createDocument = async function(userName, projectId, comment, uploadedFi
       let documentModel = mongoose.model('Document');
       let document = new documentModel();
       // Metadata
-      document.project              = mongoose.Types.ObjectId(projectId);
+      document.project              = new mongoose.Types.ObjectId(projectId);
       document._comment             = comment;
       document._addedBy             = userName;
       document._createdDate         = new Date();
@@ -152,7 +152,7 @@ exports.fetchDocuments = async function(pageNumber, pageSize, sortBy, query, key
   if (projects && projects.length > 0) {
     let objectIds = [];
     _.each(projects, function (projectId) {
-      objectIds.push(mongoose.Types.ObjectId(projectId));
+      objectIds.push(new mongoose.Types.ObjectId(projectId));
     });
 
     queryAggregates.$match['documentSource'] = 'PROJECT';
@@ -261,7 +261,7 @@ exports.fetchDocuments = async function(pageNumber, pageSize, sortBy, query, key
 };
 
 exports.fetchDocument = async function(documentId, roles) {
-  let result = await mongoose.model('Document').findById(mongoose.Types.ObjectId(documentId));
+  let result = await mongoose.model('Document').findById(new mongoose.Types.ObjectId(documentId));
 
   // sanitize based on roles. Return the first result
   // as we will only ever have one.
