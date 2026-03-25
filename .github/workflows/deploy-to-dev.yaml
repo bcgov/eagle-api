@@ -202,11 +202,7 @@ jobs:
           helm version
 
       - name: Log into OpenShift
-        uses: redhat-actions/oc-login@v1
-        with:
-          openshift_server_url: ${{ secrets.OPENSHIFT_URL }}
-          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
-          namespace: ${{ env.OPENSHIFT_NAMESPACE_DEV }}
+        run: oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ secrets.OPENSHIFT_URL }}
 
       - name: Tag images in OpenShift ImageStream
         run: |
@@ -248,7 +244,8 @@ jobs:
     name: Smoke Test Dev
     needs: deploy
     runs-on: ubuntu-latest
-    environment: dev
+    environment:
+      name: dev
     strategy:
       matrix:
         node-version: [22.x]
