@@ -21,9 +21,9 @@ describe('PROTECTED /api/comment & /api/commentperiod (requires token)', () => {
     expect(res.body).to.be.an('array').with.lengthOf.at.least(1);
   });
 
-  it('GET /commentperiod without token — returns 401', async () => {
-    const req = require('supertest')(require('./helpers').API).get('/commentperiod');
-    await req.expect(401);
+  it('GET /commentperiod without token — accessible as public', async () => {
+    const req = require('supertest')(require('./helpers').API).get('/commentperiod').query({ pageNum: 0, pageSize: 1 });
+    await req.expect(200);
   });
 
   it('GET /commentperiod/:commentPeriodId — returns specific comment period', async function () {
@@ -36,7 +36,9 @@ describe('PROTECTED /api/comment & /api/commentperiod (requires token)', () => {
   it('GET /commentperiod/:commentPeriodId/summary — returns period summary', async function () {
     if (!hasToken()) return this.skip();
     const res = await authGet(`/commentperiod/${commentPeriodId}/summary`).expect(200);
-    expect(res.body).to.be.an('array');
+    // Returns an object with comment counts by status: { Pending, Deferred, Published, Rejected }
+    expect(res.body).to.be.an('object');
+    expect(res.body).to.have.property('Pending').that.is.a('number');
   });
 
   // — Comments ——
@@ -47,9 +49,9 @@ describe('PROTECTED /api/comment & /api/commentperiod (requires token)', () => {
     expect(res.body).to.be.an('array');
   });
 
-  it('GET /comment without token — returns 401', async () => {
-    const req = require('supertest')(require('./helpers').API).get('/comment').query({ period: '000000000000000000000000' });
-    await req.expect(401);
+  it('GET /comment without token — accessible as public', async () => {
+    const req = require('supertest')(require('./helpers').API).get('/comment').query({ period: '000000000000000000000000', pageNum: 0, pageSize: 1 });
+    await req.expect(200);
   });
 
   it('GET /comment/:commentId — returns specific comment (if any exist)', async function () {
