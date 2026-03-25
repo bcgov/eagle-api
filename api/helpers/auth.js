@@ -34,7 +34,7 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
         req.swagger.params.auth_payload = {
           iss: ISSUER,
           preferred_username: 'smoke-test',
-          realm_access: { roles: ['sysadmin'] }
+          realm_access: { roles: ['sysadmin', 'project-system-admin', 'project-admin-staff', 'project-proponent', 'project-team', 'public'] }
         };
         return callback(null);
       }
