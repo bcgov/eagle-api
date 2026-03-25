@@ -367,13 +367,53 @@ exports.deleteProjectExtension = async function (args, res) {
   }
 };
 
+// GET (Public, fetchDocuments for a specific project)
+exports.fetchDocuments = async function (args, res) {
+  defaultLog.debug('>>> {GET}/Public/Projects/{projId}/Documents');
+
+  try {
+    if (!Object.prototype.hasOwnProperty.call(args.swagger.params, 'projId') || !args.swagger.params.projId.value) {
+      return Actions.sendResponseV2(res, 404, { code: 404, message: 'Project ID required' });
+    }
+
+    let projId      = args.swagger.params.projId.value;
+    let pageNumber  = Object.prototype.hasOwnProperty.call(args.swagger.params, 'pageNumber') && args.swagger.params.pageNumber.value ? args.swagger.params.pageNumber.value : 1;
+    let pageSize    = Object.prototype.hasOwnProperty.call(args.swagger.params, 'pageSize')   && args.swagger.params.pageSize.value   ? args.swagger.params.pageSize.value   : 10;
+    let sortBy      = Object.prototype.hasOwnProperty.call(args.swagger.params, 'sortBy')     && args.swagger.params.sortBy.value     ? args.swagger.params.sortBy.value     : '-datePosted';
+
+    const skip      = (pageNumber - 1) * pageSize;
+    const objectId  = new mongoose.Types.ObjectId(projId);
+    const sortDir   = sortBy.startsWith('-') ? -1 : 1;
+    const sortField = sortBy.replace(/^-/, '');
+
+    const matchStage = {
+      _schemaName: 'Document',
+      project: objectId,
+      read: { $in: constants.PUBLIC_ROLES },
+      $or: [{ isDeleted: { $exists: false } }, { isDeleted: false }]
+    };
+
+    const [searchResults, totalCount] = await Promise.all([
+      mongoose.model('Document').find(matchStage).sort({ [sortField]: sortDir }).skip(skip).limit(pageSize).lean(),
+      mongoose.model('Document').countDocuments(matchStage)
+    ]);
+
+    return Actions.sendResponseV2(res, 200, [{ searchResults, meta: [{ searchResultsTotal: totalCount }] }]);
+  } catch (e) {
+    defaultLog.error('### Error in {GET}/Public/Projects/{projId}/Documents :', e);
+    return Actions.sendResponseV2(res, 500, { code: '500', message: 'Internal Server Error', self: 'Api/Public/Projects/{projId}/Documents' });
+  } finally {
+    defaultLog.debug('<<< {GET}/Public/Projects/{projId}/Documents');
+  }
+};
+
 exports.fetchFeaturedDocuments = async function (args, res) {
   defaultLog.debug('>>> {GET}/Public/Projects/{id}/FeaturedDocuments');
 
   try {
     if (args.swagger.params.projId && args.swagger.params.projId.value) {
 
-      let project = await projectDAO.getProject(constants.PUBLIC_ROLES, args.swagger.params.projId);
+      let project = await projectDAO.getProject(constants.PUBLIC_ROLES, args.swagger.params.projId.value);
       let featuredDocs = await getFeaturedDocuments(project);
 
       return Actions.sendResponseV2(res, 200, featuredDocs);
