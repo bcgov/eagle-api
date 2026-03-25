@@ -20,6 +20,27 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
     return req.res.status(403).json({ message: 'Error: Access Denied' });
   }
 
+  // API key check — only active when SMOKE_API_KEY env var is set (dev/test envs only).
+  // Allows smoke tests to authenticate without a Keycloak token.
+  const SMOKE_API_KEY = process.env.SMOKE_API_KEY;
+  if (SMOKE_API_KEY) {
+    const apiKey = req.headers['x-api-key'];
+    if (apiKey) {
+      const crypto = require('crypto');
+      const keyBuf = Buffer.from(apiKey);
+      const expectedBuf = Buffer.from(SMOKE_API_KEY);
+      if (keyBuf.length === expectedBuf.length &&
+          crypto.timingSafeEqual(keyBuf, expectedBuf)) {
+        req.swagger.params.auth_payload = {
+          iss: ISSUER,
+          preferred_username: 'smoke-test',
+          realm_access: { roles: ['sysadmin'] }
+        };
+        return callback(null);
+      }
+    }
+  }
+
   // validate the 'Authorization' header. it should have the following format:
   //'Bearer tokenString'
   if (token && token.indexOf('Bearer ') == 0) {

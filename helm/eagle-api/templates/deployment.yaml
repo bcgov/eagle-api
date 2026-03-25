@@ -115,6 +115,14 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secrets.ches.name }}
                   key: {{ .Values.secrets.ches.clientSecretKey }}
+            {{- if .Values.secrets.smokeApiKey }}
+            # Smoke test API key — dev/test only, never set in prod
+            - name: SMOKE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.smokeApiKey.name }}
+                  key: {{ .Values.secrets.smokeApiKey.key }}
+            {{- end }}
             {{- if .Values.keycloak.enabled }}
             # Keycloak SSO Configuration
             - name: SSO_ISSUER

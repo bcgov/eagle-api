@@ -145,4 +145,48 @@ jobs:
             echo "✓ MongoDB deployment verified"
           fi
 
+  smoke-test:
+    name: Smoke Test Test
+    needs: deploy
+    runs-on: ubuntu-latest
+    environment: test
+    strategy:
+      matrix:
+        node-version: [22.x]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.version }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "yarn"
+
+      - run: yarn install --immutable
+
+      - name: Wait for API to be ready
+        run: |
+          echo "Waiting 30s for pod to stabilise after rollout..."
+          sleep 30
+          for i in $(seq 1 10); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://eagle-test.apps.silver.devops.gov.bc.ca/api/health || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "API is ready (attempt $i)"
+              break
+            fi
+            echo "Attempt $i: API returned $STATUS, retrying in 15s..."
+            sleep 15
+          done
+
+      - name: Run smoke tests
+        run: yarn test:smoke
+        env:
+          SMOKE_TEST_URL: https://eagle-test.apps.silver.devops.gov.bc.ca
+          SMOKE_API_KEY: ${{ secrets.SMOKE_API_KEY }}
 

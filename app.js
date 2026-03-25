@@ -44,6 +44,12 @@ app.use(function (req, res, next) {
 // Dynamically set the hostname based on what environment we're in.
 swaggerConfig.host = hostname;
 
+// Health check — responds immediately without DB dependency.
+// Used by CI smoke-test wait loop and OpenShift readiness probes.
+app.get('/api/health', function (req, res) {
+  res.status(200).json({ status: 'ok' });
+});
+
 // Swagger UI needs to be told that we only serve https in Openshift
 if (hostname !== 'localhost:3000') {
   swaggerConfig.schemes = ['https'];

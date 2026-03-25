@@ -17,6 +17,7 @@
  * Environment variables:
  *   SMOKE_TEST_URL    Base URL of the API (default: https://eagle-dev.apps.silver.devops.gov.bc.ca)
  *   SMOKE_TEST_TOKEN  Bearer token for protected endpoints (optional)
+ *   SMOKE_API_KEY     API key for smoke test auth — alternative to SMOKE_TEST_TOKEN
  */
 
 const request = require('supertest');
@@ -24,10 +25,11 @@ const { expect } = require('chai');
 
 const BASE_URL = process.env.SMOKE_TEST_URL || 'https://eagle-dev.apps.silver.devops.gov.bc.ca';
 const TOKEN = process.env.SMOKE_TEST_TOKEN || null;
+const API_KEY = process.env.SMOKE_API_KEY || null;
 const API = `${BASE_URL}/api`;
 
-/** Whether a token is available for protected endpoint tests */
-const hasToken = () => Boolean(TOKEN);
+/** Whether authentication credentials are available for protected endpoint tests */
+const hasToken = () => Boolean(TOKEN || API_KEY);
 
 /**
  * Returns a supertest agent pointed at the base URL.
@@ -52,6 +54,7 @@ const get = (path) => agent().get(path);
 const authGet = (path) => {
   const req = agent().get(path);
   if (TOKEN) req.set('Authorization', `Bearer ${TOKEN}`);
+  else if (API_KEY) req.set('X-API-Key', API_KEY);
   return req;
 };
 
@@ -66,6 +69,7 @@ const authGet = (path) => {
 const authWrite = (method, path, body = {}) => {
   const req = agent()[method.toLowerCase()](path).set('Content-Type', 'application/json');
   if (TOKEN) req.set('Authorization', `Bearer ${TOKEN}`);
+  else if (API_KEY) req.set('X-API-Key', API_KEY);
   return req.send(body);
 };
 
@@ -143,6 +147,7 @@ module.exports = {
   BASE_URL,
   API,
   TOKEN,
+  API_KEY,
   hasToken,
   get,
   authGet,

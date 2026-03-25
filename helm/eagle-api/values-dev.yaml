@@ -44,6 +44,9 @@ secrets:
     name: getok-secret
     clientIdKey: CLIENTID
     clientSecretKey: CLIENT_SECRET
+  smokeApiKey:
+    name: eagle-api-smoke-key
+    key: SMOKE_API_KEY
 
 # Disable persistence to avoid PVC attachment issues
 persistence:
