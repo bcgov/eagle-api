@@ -19,8 +19,8 @@
   "scripts": {
     "start": "node app",
     "start-watch": "node --watch app.js",
-    "test": "mocha 'test/**/*.test.js' --recursive --exit",
-    "test:watch": "mocha 'test/**/*.test.js' --recursive --watch",
+    "test": "mocha 'test/aggregators/**/*.test.js' 'test/controllers/**/*.test.js' 'test/helpers/**/*.test.js' 'test/models/**/*.test.js' --recursive --exit",
+    "test:watch": "mocha 'test/aggregators/**/*.test.js' 'test/controllers/**/*.test.js' 'test/helpers/**/*.test.js' 'test/models/**/*.test.js' --recursive --watch",
     "test:smoke": "mocha 'test/smoke/**/*.test.js' --recursive --exit --timeout 30000",
     "test:smoke:public": "mocha 'test/smoke/public-*.test.js' --recursive --exit --timeout 30000"
   },
