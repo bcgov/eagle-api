@@ -58,6 +58,8 @@ autoscaling:
 # MongoDB enabled for dev environment
 mongodb:
   enabled: true
+  persistence:
+    existingClaim: ""
   resources:
     requests:
       cpu: 100m

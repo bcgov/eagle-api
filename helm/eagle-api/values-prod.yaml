@@ -63,6 +63,8 @@ autoscaling:
 # MongoDB Configuration
 mongodb:
   enabled: true
+  persistence:
+    existingClaim: ""
   resources:
     requests:
       cpu: 100m

@@ -57,6 +57,8 @@ autoscaling:
 # MongoDB enabled for test environment
 mongodb:
   enabled: true
+  persistence:
+    existingClaim: ""
   resources:
     requests:
       cpu: 100m

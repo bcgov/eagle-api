@@ -1,0 +1,17 @@
+{{- if and .Values.mongodb.enabled (not .Values.mongodb.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "eagle-api.mongodb.fullname" . }}-data-v8
+  labels:
+    {{- include "eagle-api.mongodb.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.mongodb.persistence.size | default "5Gi" }}
+  {{- if .Values.mongodb.persistence.storageClass }}
+  storageClassName: {{ .Values.mongodb.persistence.storageClass }}
+  {{- end }}
+{{- end }}

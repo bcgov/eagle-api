@@ -26,18 +26,25 @@ app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
 app.disable('x-powered-by');
 
 // Enable CORS
+// Reflect the requesting origin instead of '*' so that credentialed requests
+// (those carrying an Authorization header) are accepted by all browsers.
 app.use(function (req, res, next) {
   defaultLog.info(req.method, req.url);
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  var origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE, HEAD');
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,Content-Type,Authorization,responseType');
   res.setHeader('Access-Control-Expose-Headers', 'x-total-count,x-pending-comment-count,x-next-comment-id');
   res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Cache-Control', 'max-age=4');
   // headers for zap scan issues
   res.setHeader('X-XSS-Protection', '1');
   res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
   next();
 });
 
@@ -48,6 +55,30 @@ swaggerConfig.host = hostname;
 // Used by CI smoke-test wait loop and OpenShift readiness probes.
 app.get('/api/health', function (req, res) {
   res.status(200).json({ status: 'ok' });
+});
+
+// Analytics proxy — forwards /analytics/* to penguin-analytics service.
+// In production, nginx routes /analytics directly. This route serves local dev
+// where proxy.conf.js sends /analytics to eagle-api.
+var axios = require('axios');
+var analyticsTarget = process.env.ANALYTICS_SERVICE_URL || 'http://localhost:3001';
+app.use('/analytics', function (req, res) {
+  var targetUrl = analyticsTarget + '/analytics' + req.url;
+  axios({
+    method: req.method,
+    url: targetUrl,
+    data: req.body,
+    headers: { 'Content-Type': 'application/json' },
+    timeout: 5000
+  }).then(function (response) {
+    res.status(response.status).json(response.data);
+  }).catch(function (err) {
+    if (err.response) {
+      res.status(err.response.status).json(err.response.data);
+    } else {
+      res.status(502).json({ error: 'Analytics service unavailable' });
+    }
+  });
 });
 
 // Swagger UI needs to be told that we only serve https in Openshift

@@ -147,21 +147,25 @@ mongodb:
   enabled: false
   
   image:
-    repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/mongodb-44
-    tag: "4.4.30"
-    pullPolicy: IfNotPresent
+    repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/mongodb-80
+    tag: "8.0"
+    pullPolicy: Always
   
   # Existing secret with MongoDB credentials
+  # Secret keys are mapped to official mongo:8.0 env vars in the deployment template
   existingSecret: eagle-api-mongodb
   secretKeys:
     user: MONGODB_USER
     password: MONGODB_PASSWORD
     database: MONGODB_DATABASE
-    adminPassword: MONGODB_ADMIN_PASSWORD
   
-  # Existing PVC for MongoDB data persistence
+  # PVC for MongoDB data persistence
+  # Set existingClaim to use a pre-existing PVC, or leave empty to auto-create
   persistence:
-    existingClaim: eagle-api-mongodb-data
+    existingClaim: ""
+    mountPath: /data/db
+    size: 5Gi
+    storageClass: netapp-file-standard
   
   resources:
     requests:

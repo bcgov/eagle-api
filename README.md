@@ -32,43 +32,30 @@ These projects comprise EAO EPIC:
 * <https://github.com/bcgov/eao-nginx> (rproxy reverse proxy)
 * <https://github.com/bcgov/penguin-analytics> (analytics service)
 
-## Pre-requisites
+## Quick Start
 
-Note: The following commands work in MacOS bash (not zsh which now default in Catalina). The scripts are currently not fully working in Windows and Linux, so you may need to look at the source of the scripts and manually apply the commands in a right order.
-
-Run the following two scripts to create your environment
+**Requirements**: Node 22.x, Docker
 
 ```bash
-#!/bin/bash
-.\install_prerequisites.sh
+# 1. Install dependencies
+yarn install
+
+# 2. Configure environment
+cp .env.example .env
+
+# 3. Start MongoDB
+yarn db:up
+
+# 4. Start the API
+yarn start
 ```
 
-```bash
-#!/bin/bash
-.\setup_project.sh
-```
+API available at `http://localhost:3000`
+Swagger UI at `http://localhost:3000/api/docs/`
 
-## Fork, Build and Run
+For watch mode (auto-restart on changes): `yarn start-watch`
 
-Start the server by running `npm start`
-
-For development you can use `npm run start-watch` to restart the server on code changes.
-
-Check the swagger-ui on `http://localhost:3000/api/docs/`
-
-1. POST `http://localhost:3000/api/login/token` with the following body
-
-```json
-{
-"username": #{username},
-"password": #{password}
-}
-```
-
- and take the token that you get in the response
-
- 1. GET `http://localhost:3000/api/application` again with the following header
- ``Authorization: Bearer _TOKEN_``, replacing `_TOKEN_` with the value you got from that request
+To stop MongoDB: `yarn db:down`
 
 ## Deployment
 
@@ -88,27 +75,34 @@ Described in [generate README](generate.md)
 
 Acquire a dump of the database from one of the live environments.
 
-To make sure you don't have an existing old copy (careful, this is destructive):
+To restore a dump into your local MongoDB:
 
 ```bash
-#!/bin/bash
-mongo
-```
+# Drop the existing database (destructive!)
+mongosh --eval 'use epic; db.dropDatabase()'
 
-```mongo
-use epic
-db.dropDatabase()
-```
-
-##### Load database dump
-
-1. Download and unzip archived dump file.
-2. Restore the dump into your local mongo:
-
-```bash
-#!/bin/bash
+# Restore from a dump directory
 mongorestore -d epic epic/
+
+# Or restore from a gzipped archive
+mongorestore --gzip --archive=epic-dump.tar.gz
 ```
+
+#### Restore into the docker compose container (recommended)
+
+With `yarn db:up` running, pipe a mongodump archive directly into the container:
+
+```bash
+# From a mongodump --archive file
+yarn db:restore < epic-prod-dump.archive
+
+# Or stream directly from a live environment
+mongodump --uri="<source-uri>" --archive | yarn db:restore
+```
+
+The `db:restore` script runs `mongorestore --drop` inside the container, so it
+replaces any existing data. The volume (`eagle-api_mongodb-data`) persists across
+`yarn db:down` / `yarn db:up` restarts.
 
 
 ### Database Conversions
@@ -137,17 +131,14 @@ See [Code Reuse Strategy](https://github.com/bcgov/eagle-dev-guides/dev_guides/c
 
 ## Environment Variables
 
-Run the automated setup script:
+See `.env.example` for all available environment variables with descriptions and local defaults.
 
-```bash
-./install_prerequisites.sh
-```
+Key variables for local development:
+- `KEYCLOAK_ENABLED=false` — disables Keycloak, uses local JWT with `SECRET`
+- `MONGODB_SERVICE_HOST=localhost` — MongoDB host (default: localhost)
+- `MONGODB_DATABASE=epic` — database name
 
-For manual configuration or custom settings, key environment variables include:
-- `KEYCLOAK_ENABLED=true`
-- `MONGODB_DATABASE='epic'`
-
-Additional configuration details are available in the [Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management) wiki page.
+Full reference: [Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management) wiki.
 
 ## Database Operations
 

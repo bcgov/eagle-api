@@ -19,6 +19,10 @@
   "scripts": {
     "start": "node app",
     "start-watch": "node --watch app.js",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f mongodb",
+    "db:restore": "docker compose exec -T mongodb mongorestore --archive --drop --db=epic",
     "test": "mocha 'test/aggregators/**/*.test.js' 'test/controllers/**/*.test.js' 'test/helpers/**/*.test.js' 'test/models/**/*.test.js' --recursive --exit",
     "test:watch": "mocha 'test/aggregators/**/*.test.js' 'test/controllers/**/*.test.js' 'test/helpers/**/*.test.js' 'test/models/**/*.test.js' --recursive --watch",
     "test:smoke": "mocha 'test/smoke/**/*.test.js' --recursive --exit --timeout 30000",

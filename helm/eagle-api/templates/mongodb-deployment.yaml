@@ -29,29 +29,24 @@ spec:
           protocol: TCP
           name: mongodb
         env:
-        - name: MONGODB_USER
+        - name: MONGO_INITDB_ROOT_USERNAME
           valueFrom:
             secretKeyRef:
               name: {{ .Values.mongodb.existingSecret }}
               key: {{ .Values.mongodb.secretKeys.user }}
-        - name: MONGODB_PASSWORD
+        - name: MONGO_INITDB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
               name: {{ .Values.mongodb.existingSecret }}
               key: {{ .Values.mongodb.secretKeys.password }}
-        - name: MONGODB_DATABASE
+        - name: MONGO_INITDB_DATABASE
           valueFrom:
             secretKeyRef:
               name: {{ .Values.mongodb.existingSecret }}
               key: {{ .Values.mongodb.secretKeys.database }}
-        - name: MONGODB_ADMIN_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.mongodb.existingSecret }}
-              key: {{ .Values.mongodb.secretKeys.adminPassword }}
         volumeMounts:
         - name: mongodb-data
-          mountPath: /var/lib/mongodb/data
+          mountPath: {{ .Values.mongodb.persistence.mountPath | default "/data/db" }}
         resources:
           {{- toYaml .Values.mongodb.resources | nindent 10 }}
         livenessProbe:
@@ -71,5 +66,5 @@ spec:
       volumes:
       - name: mongodb-data
         persistentVolumeClaim:
-          claimName: {{ .Values.mongodb.persistence.existingClaim }}
+          claimName: {{ .Values.mongodb.persistence.existingClaim | default (printf "%s-data-v8" (include "eagle-api.mongodb.fullname" .)) }}
 {{- end }}

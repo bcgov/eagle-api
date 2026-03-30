@@ -1,0 +1,13 @@
+services:
+  mongodb:
+    image: mongo:8.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    environment:
+      # No auth — matches local dev defaults (MONGODB_USERNAME/PASSWORD empty in .env)
+      MONGO_INITDB_DATABASE: epic
+
+volumes:
+  mongodb-data:
