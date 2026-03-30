@@ -12,6 +12,9 @@ FROM node:22-alpine
 # Update Alpine packages to latest security patches
 RUN apk upgrade --no-cache
 
+# Remove npm (we use yarn) — eliminates Trivy findings from npm's bundled deps
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 LABEL io.openshift.expose-services="3000:http" \
       io.openshift.tags="nodejs,express,eagle-api"
 
