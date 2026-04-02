@@ -187,3 +187,24 @@ mongodb:
       timeoutSeconds: 1
       failureThreshold: 3
 
+  # Automated backup CronJob
+  # Dumps the epic database to an archive on a PVC
+  backup:
+    enabled: false
+    schedule: "0 8 * * *"  # Daily at 8 AM UTC
+    retention: 5  # Number of backup archives to keep
+    # PVC for backup storage
+    pvc:
+      existingClaim: ""  # Set to use a pre-existing PVC
+      size: 10Gi
+      storageClass: netapp-file-backup
+    # Minimum archive size (bytes) to consider backup healthy
+    minArchiveSize: 1048576  # 1 MB
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 2Gi
+

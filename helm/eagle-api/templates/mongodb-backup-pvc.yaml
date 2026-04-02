@@ -1,0 +1,16 @@
+{{- if and .Values.mongodb.enabled .Values.mongodb.backup.enabled (not .Values.mongodb.backup.pvc.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "eagle-api.mongodb.fullname" . }}-backup
+  labels:
+    {{- include "eagle-api.mongodb.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.mongodb.backup.pvc.size }}
+  storageClassName: {{ .Values.mongodb.backup.pvc.storageClass }}
+{{- end }}

@@ -1,0 +1,106 @@
+{{- if and .Values.mongodb.enabled .Values.mongodb.backup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "eagle-api.mongodb.fullname" . }}-backup
+  labels:
+    {{- include "eagle-api.mongodb.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+spec:
+  schedule: {{ .Values.mongodb.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "eagle-api.mongodb.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: backup
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: mongodb-backup
+            image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+            imagePullPolicy: {{ .Values.mongodb.image.pullPolicy }}
+            command:
+            - bash
+            - -c
+            - |
+              set -euo pipefail
+
+              BACKUP_DIR=/backups
+              RETENTION={{ .Values.mongodb.backup.retention | int }}
+              MIN_SIZE={{ .Values.mongodb.backup.minArchiveSize | int }}
+              TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+              ARCHIVE="$BACKUP_DIR/epic-$TIMESTAMP.archive"
+
+              echo "=== MongoDB Backup ==="
+              echo "Time: $(date -u)"
+              echo "Target: $ARCHIVE"
+              echo "Retention: keep last $RETENTION"
+              echo ""
+
+              # Dump the epic database
+              echo "Starting mongodump..."
+              mongodump \
+                --db=epic \
+                --archive="$ARCHIVE" \
+                --authenticationDatabase=admin \
+                -u "$MONGODB_USER" \
+                -p "$MONGODB_PASSWORD"
+              echo "mongodump completed."
+
+              # Verify archive size
+              ARCHIVE_SIZE=$(stat -c%s "$ARCHIVE")
+              echo "Archive size: $ARCHIVE_SIZE bytes"
+
+              if [ "$ARCHIVE_SIZE" -lt "$MIN_SIZE" ]; then
+                echo "ERROR: Archive is smaller than minimum ($MIN_SIZE bytes). Marking as unhealthy."
+                mv "$ARCHIVE" "$ARCHIVE.UNHEALTHY"
+                exit 1
+              fi
+
+              echo "Archive is healthy."
+
+              # Trim old backups (keep last N healthy archives)
+              echo ""
+              echo "Trimming old backups..."
+              ls -t "$BACKUP_DIR"/epic-*.archive 2>/dev/null | tail -n +$((RETENTION + 1)) | while read OLD; do
+                echo "Deleting old backup: $OLD"
+                rm -f "$OLD"
+              done
+
+              # Also clean up any unhealthy archives older than 1 day
+              find "$BACKUP_DIR" -name "*.UNHEALTHY" -mtime +1 -delete 2>/dev/null || true
+
+              echo ""
+              echo "Current backups:"
+              ls -lh "$BACKUP_DIR"/epic-*.archive 2>/dev/null || echo "  (none)"
+              echo ""
+              echo "Disk usage:"
+              df -h "$BACKUP_DIR"
+              echo ""
+              echo "=== Backup SUCCESS ==="
+            env:
+            - name: MONGODB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.existingSecret }}
+                  key: {{ .Values.mongodb.secretKeys.user }}
+            - name: MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.existingSecret }}
+                  key: {{ .Values.mongodb.secretKeys.password }}
+            resources:
+              {{- toYaml .Values.mongodb.backup.resources | nindent 14 }}
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backups
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: {{ .Values.mongodb.backup.pvc.existingClaim | default (printf "%s-backup" (include "eagle-api.mongodb.fullname" .)) }}
+{{- end }}

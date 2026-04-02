@@ -72,3 +72,9 @@ mongodb:
     limits:
       cpu: 250m
       memory: 2Gi
+  backup:
+    enabled: true
+    schedule: "0 8 * * *"
+    retention: 5
+    pvc:
+      existingClaim: eagle-api-mongodb-backup
