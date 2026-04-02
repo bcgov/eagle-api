@@ -45,6 +45,7 @@ spec:
               # Dump the epic database
               echo "Starting mongodump..."
               mongodump \
+                --host={{ include "eagle-api.mongodb.fullname" . }} \
                 --db=epic \
                 --archive="$ARCHIVE" \
                 --authenticationDatabase=admin \
