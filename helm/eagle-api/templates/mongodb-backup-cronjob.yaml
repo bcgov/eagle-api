@@ -18,6 +18,7 @@ spec:
           labels:
             {{- include "eagle-api.mongodb.selectorLabels" . | nindent 12 }}
             app.kubernetes.io/component: backup
+            role: backup
         spec:
           restartPolicy: Never
           containers:
