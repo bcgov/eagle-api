@@ -68,6 +68,15 @@ exports.publicGet = async function (args, res) {
     // Fill up to 4 items: pinned first, then unpinned as needed.
     const data = [...pinned, ...unpinned.slice(0, Math.max(0, 4 - pinned.length))];
 
+    // Nullify empty project objects — occurs when the recentActivity references an
+    // orphaned project ID; the lookup finds nothing, but the aggregation pipeline
+    // still produces {} instead of null.
+    data.forEach(item => {
+      if (item.project && typeof item.project === 'object' && !Array.isArray(item.project) && !item.project._id) {
+        item.project = null;
+      }
+    });
+
     Utils.recordAction('Get', 'RecentActivity', 'public');
     return Actions.sendResponse(res, 200, data);
 
