@@ -7,7 +7,7 @@
 # Run:   docker run -p 3000:3000 eagle-api
 # ==============================================================================
 
-FROM node:22-alpine
+FROM node:24-alpine
 
 # Update Alpine packages to latest security patches
 RUN apk upgrade --no-cache
@@ -24,8 +24,8 @@ WORKDIR /opt/app-root/src
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn ./.yarn
 
-# Install production dependencies
-RUN corepack enable && yarn install --immutable
+# Install production dependencies only (devDependencies are not needed at runtime)
+RUN corepack enable && yarn workspaces focus --production
 
 # Copy application source
 COPY . .
