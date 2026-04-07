@@ -342,12 +342,14 @@ exports.publicDownload = function (args, res) {
             return Actions.sendResponse(res, 404, {});
           })
           .then(function (docURL) {
-            Utils.recordAction('Download', 'Document', 'public', args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
-            // stream file from Minio to client
-            // Size is undefined on related documents on pcps
+            // Rejection handler already sent 404 (real MinIO, file not found) — bail out.
+            if (res.headersSent) return;
+            // Mock MinIO: statObject resolved with undefined instead of rejecting.
             if (!fileMeta) {
               return Actions.sendResponse(res, 404, {});
             }
+            Utils.recordAction('Download', 'Document', 'public', args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
+            // stream file from Minio to client
             res.setHeader('Content-Length', fileMeta.size);
             res.setHeader('Content-Type', fileMeta.metaData['content-type']);
             res.setHeader('Content-Disposition', 'inline;filename="' + fileName + '"');
@@ -411,11 +413,14 @@ exports.protectedDownload = function (args, res) {
             return Actions.sendResponse(res, 404, {});
           })
           .then(function (docURL) {
-            Utils.recordAction('Download', 'Document', args.swagger.params.auth_payload.preferred_username, args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
-            // stream file from Minio to client
+            // Rejection handler already sent 404 (real MinIO, file not found) — bail out.
+            if (res.headersSent) return;
+            // Mock MinIO: statObject resolved with undefined instead of rejecting.
             if (!fileMeta) {
               return Actions.sendResponse(res, 404, {});
             }
+            Utils.recordAction('Download', 'Document', args.swagger.params.auth_payload.preferred_username, args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
+            // stream file from Minio to client
             res.setHeader('Content-Length', fileMeta.size);
             res.setHeader('Content-Type', fileMeta.metaData['content-type']);
             res.setHeader('Content-Disposition', 'attachment;filename="' + encodeURIComponent(fileName) + '"');
