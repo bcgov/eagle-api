@@ -44,7 +44,7 @@ exports.createCommentPeriodAggr = (populate) => {
         '$addFields': {
           'project': {
             '$cond': {
-              if: '$project',
+              if: '$project._id',
               then: { '$mergeObjects': ['$project', { '$ifNull': ['$project.default', {}] }] },
               else: null
             }

@@ -233,7 +233,7 @@ exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDire
         '$addFields': {
           'project': {
             '$cond': {
-              if: '$project',
+              if: '$project._id',
               then: { '$mergeObjects': ['$project', { '$ifNull': ['$project.default', {}] }] },
               else: null
             }
