@@ -1,6 +1,7 @@
 'use strict';
 
-const { mongo } = require("mongoose");
+const { ObjectId } = require('mongodb');
+
 
 // list all collections that require this migration
 const collections = ['epic']
@@ -22,143 +23,129 @@ function addH4TagAll(instruction) {
   return '<h4>' + instruction + '</h4>';
 }
 
+module.exports = {
+  async up(db, client) {
+    console.log('**** Updating PCP font sizes for specific records ****');
 
-/**
-  * We receive the dbmigrate dependency from dbmigrate initially.
-  * This enables us to not have to rely on NODE_PATH.
-  */
-exports.setup = function (options, seedLink) {
-};
 
-exports.up = async function (db) {
-  console.log('**** Updating PCP font sizes for specific records ****');
+    for (let collection of collections) {
 
-  const mClient = await db.connection.connect(db.connectionString, {
-    native_parser: true
-  });
+      try {
+        let currentCollection = await db.collection(collection);
 
-  for (let collection of collections) {
+        console.log(`Collection: ${collection}`);
 
-    try {
-      let currentCollection = await mClient.collection(collection);
+        // We have to get the current value of the 'instructions' field and edit the html of the first sentence to change the font size.
 
-      console.log(`Collection: ${collection}`);
+        // Parkland Burnaby Refinery
 
-      // We have to get the current value of the 'instructions' field and edit the html of the first sentence to change the font size.
+        // Get the PCP ObjectId
+        var documentID = new mongo.ObjectId("5f037b1f3a147c00223c6dee");
 
-      // Parkland Burnaby Refinery
+        // Get the text from instructions field and edit it
+        var instructionsText = await currentCollection.find(documentID).next();
+        instructionsText = addH4Tag(instructionsText.instructions);
 
-      // Get the PCP ObjectId
-      var documentID = new mongo.ObjectId("5f037b1f3a147c00223c6dee");
+        // Update the instructions field
+        await currentCollection.updateOne(
+          { _id: documentID },
+          { $set: { instructions: instructionsText } }
+        );
 
-      // Get the text from instructions field and edit it
-      var instructionsText = await currentCollection.find(documentID).next();
-      instructionsText = addH4Tag(instructionsText.instructions);
+        // North Town Gas Plant Expansion
 
-      // Update the instructions field
-      await currentCollection.updateOne(
-        { _id: documentID },
-        { $set: { instructions: instructionsText } }
-      );
+        var documentID = new mongo.ObjectId("5fab14f19da64e002097384b");
 
-      // North Town Gas Plant Expansion
+        var instructionsText = await currentCollection.find(documentID).next();
+        instructionsText = addH4Tag(instructionsText.instructions);
 
-      var documentID = new mongo.ObjectId("5fab14f19da64e002097384b");
+        await currentCollection.updateOne(
+          { _id: documentID },
+          { $set: { instructions: instructionsText } }
+        );
 
-      var instructionsText = await currentCollection.find(documentID).next();
-      instructionsText = addH4Tag(instructionsText.instructions);
+        // Church Road Wellfield Site
 
-      await currentCollection.updateOne(
-        { _id: documentID },
-        { $set: { instructions: instructionsText } }
-      );
+        var documentID = new mongo.ObjectId("5f04b5d93a147c00223ce295");
 
-      // Church Road Wellfield Site
+        var instructionsText = await currentCollection.find(documentID).next();
+        instructionsText = addH4Tag(instructionsText.instructions);
 
-      var documentID = new mongo.ObjectId("5f04b5d93a147c00223ce295");
+        await currentCollection.updateOne(
+          { _id: documentID },
+          { $set: { instructions: instructionsText } }
+        );
 
-      var instructionsText = await currentCollection.find(documentID).next();
-      instructionsText = addH4Tag(instructionsText.instructions);
+        // Vopak Pacific Canada (1)
 
-      await currentCollection.updateOne(
-        { _id: documentID },
-        { $set: { instructions: instructionsText } }
-      );
+        var documentID = new mongo.ObjectId("60f098268b104600228ea660");
 
-      // Vopak Pacific Canada (1)
+        var instructionsText = await currentCollection.find(documentID).next();
+        instructionsText = addH4Tag(instructionsText.instructions);
 
-      var documentID = new mongo.ObjectId("60f098268b104600228ea660");
+        await currentCollection.updateOne(
+          { _id: documentID },
+          { $set: { instructions: instructionsText } }
+        );
 
-      var instructionsText = await currentCollection.find(documentID).next();
-      instructionsText = addH4Tag(instructionsText.instructions);
+        // Vopak Pacific Canada (2)
 
-      await currentCollection.updateOne(
-        { _id: documentID },
-        { $set: { instructions: instructionsText } }
-      );
+        var documentID = new mongo.ObjectId("5fa04c9a97cae80021c5e633");
 
-      // Vopak Pacific Canada (2)
+        var instructionsText = await currentCollection.find(documentID).next();
+        instructionsText = addH4Tag(instructionsText.instructions);
 
-      var documentID = new mongo.ObjectId("5fa04c9a97cae80021c5e633");
+        await currentCollection.updateOne(
+          { _id: documentID },
+          { $set: { instructions: instructionsText } }
+        );
 
-      var instructionsText = await currentCollection.find(documentID).next();
-      instructionsText = addH4Tag(instructionsText.instructions);
+        // Vopak Pacific Canada (3)
 
-      await currentCollection.updateOne(
-        { _id: documentID },
-        { $set: { instructions: instructionsText } }
-      );
+        var documentID = new mongo.ObjectId("5b8869403f64cb00249e7a85");
 
-      // Vopak Pacific Canada (3)
+        var instructionsText = await currentCollection.find(documentID).next();
+        instructionsText = addH4TagAll(instructionsText.instructions);
 
-      var documentID = new mongo.ObjectId("5b8869403f64cb00249e7a85");
+        await currentCollection.updateOne(
+          { _id: documentID },
+          { $set: { instructions: instructionsText } }
+        );
 
-      var instructionsText = await currentCollection.find(documentID).next();
-      instructionsText = addH4TagAll(instructionsText.instructions);
+        // Tilbury Marine Jetty (1)
 
-      await currentCollection.updateOne(
-        { _id: documentID },
-        { $set: { instructions: instructionsText } }
-      );
+        var documentID = new mongo.ObjectId("5c8aea58d69ab9002440610e");
 
-      // Tilbury Marine Jetty (1)
+        var instructionsText = await currentCollection.find(documentID).next();
+        instructionsText = addH4TagAll(instructionsText.instructions);
 
-      var documentID = new mongo.ObjectId("5c8aea58d69ab9002440610e");
+        await currentCollection.updateOne(
+          { _id: documentID },
+          { $set: { instructions: instructionsText } }
+        );
 
-      var instructionsText = await currentCollection.find(documentID).next();
-      instructionsText = addH4TagAll(instructionsText.instructions);
+        // Tilbury Marine Jetty (2)
 
-      await currentCollection.updateOne(
-        { _id: documentID },
-        { $set: { instructions: instructionsText } }
-      );
+        var documentID = new mongo.ObjectId("61033d326039490022dd761f");
 
-      // Tilbury Marine Jetty (2)
+        var instructionsText = await currentCollection.find(documentID).next();
+        instructionsText = addH4TagAll(instructionsText.instructions);
 
-      var documentID = new mongo.ObjectId("61033d326039490022dd761f");
+        await currentCollection.updateOne(
+          { _id: documentID },
+          { $set: { instructions: instructionsText } }
+        );
 
-      var instructionsText = await currentCollection.find(documentID).next();
-      instructionsText = addH4TagAll(instructionsText.instructions);
-
-      await currentCollection.updateOne(
-        { _id: documentID },
-        { $set: { instructions: instructionsText } }
-      );
-
-    } catch (err) {
-      console.log(`Error updating project commenting period (${collection}): ${err}`);
+      } catch (err) {
+        console.log(`Error updating project commenting period (${collection}): ${err}`);
+      }
     }
+    console.log(`**** Finished updating PCP font sizes for specific records`);
+
+    return null;
+  },
+
+  async down(db, client) {
+    return null;
   }
-  console.log(`**** Finished updating PCP font sizes for specific records`);
-  mClient.close();
-
-  return null;
-};
-
-exports.down = function (db) {
-  return null;
-};
-
-exports._meta = {
-  "version": 1
 };

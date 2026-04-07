@@ -1,16 +1,17 @@
 'use strict';
 
 require('dotenv').config();
-var app           = require('express')();
-var fs            = require('fs');
-var uploadDir     = process.env.UPLOAD_DIRECTORY || './uploads/';
-var hostname      = process.env.API_HOSTNAME || 'localhost:3000';
-var swaggerTools  = require('swagger-tools');
-var YAML          = require('yamljs');
-var auth          = require('./api/helpers/auth');
-var swaggerConfig = YAML.load('./api/swagger/swagger.yaml');
-var bodyParser    = require('body-parser');
-var app_helper    = require('./app_helper');
+var app              = require('express')();
+var fs               = require('fs');
+var path             = require('path');
+var uploadDir        = process.env.UPLOAD_DIRECTORY || './uploads/';
+var hostname         = process.env.API_HOSTNAME || 'localhost:3000';
+var YAML             = require('js-yaml');
+var swaggerUi        = require('swagger-ui-express');
+var createRouter     = require('./api/middleware/swagger-router');
+var swaggerSpec      = YAML.load(fs.readFileSync('./api/swagger/swagger.yaml', 'utf8'));
+var bodyParser       = require('body-parser');
+var app_helper       = require('./app_helper');
 
 var api_default_port = 3000;
 
@@ -48,9 +49,6 @@ app.use(function (req, res, next) {
   next();
 });
 
-// Dynamically set the hostname based on what environment we're in.
-swaggerConfig.host = hostname;
-
 // Health check — responds immediately without DB dependency.
 // Used by CI smoke-test wait loop and OpenShift readiness probes.
 app.get('/api/health', function (req, res) {
@@ -81,60 +79,48 @@ app.use('/analytics', function (req, res) {
   });
 });
 
-// Swagger UI needs to be told that we only serve https in Openshift
+// Swagger UI — serve the API docs at /api/docs
 if (hostname !== 'localhost:3000') {
-  swaggerConfig.schemes = ['https'];
+  swaggerSpec.schemes = ['https'];
+}
+swaggerSpec.host = hostname;
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Auto-wired API router — reads swagger.yaml and registers one Express route per
+// operation, populates req.swagger.params, enforces Bearer auth, and calls the
+// matching controller function.
+var controllerDirs = [
+  path.join(__dirname, 'api/controllers'),
+  path.join(__dirname, 'api/tasks')
+];
+app.use('/api', createRouter(swaggerSpec, controllerDirs));
+
+// Make sure uploads directory exists
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+  }
+} catch (e) {
+  defaultLog.info('Couldn\'t create upload folder:', e);
 }
 
-swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
-  app.use(middleware.swaggerMetadata());
-
-  // TODO: Fix this
-  // app.use(middleware.swaggerValidator({ validateResponse: false}));
-
-  app.use(
-    middleware.swaggerSecurity({
-      Bearer: auth.verifyToken
-    })
-  );
-
-  var routerConfig = {
-    controllers: ['./api/controllers', './api/tasks'],
-    useStubs: false
-  };
-
-  app.use(middleware.swaggerRouter(routerConfig));
-
-  app.use(middleware.swaggerUi({apiDocs: '/api/docs', swaggerUi: '/api/docs'}));
-
-  // Make sure uploads directory exists
-  try {
-    if (!fs.existsSync(uploadDir)){
-      fs.mkdirSync(uploadDir);
-    }
-  } catch (e) {
-    // Fall through - uploads will continue to fail until this is resolved locally.
-    defaultLog.info('Couldn\'t create upload folder:', e);
-  }
-
-  // Skip MongoDB connection and server startup in test mode
-  // Tests handle their own database connection to in-memory MongoDB
-  if (process.env.NODE_ENV !== 'test') {
-    app_helper.loadMongoose().then(() => {
-      express_server = app.listen(api_default_port, '0.0.0.0', function() {
-        defaultLog.info('Started server on port ' + api_default_port);
-      });
-    }).catch(function (err) {
-      defaultLog.info('err:', err);
+// Skip MongoDB connection and server startup in test mode
+// Tests handle their own database connection to in-memory MongoDB
+if (process.env.NODE_ENV !== 'test') {
+  app_helper.loadMongoose().then(() => {
+    express_server = app.listen(api_default_port, '0.0.0.0', function() {
+      defaultLog.info('Started server on port ' + api_default_port);
     });
-  }
-
-  // Counterintuitively, we crash because we don't want the pod hanging around.  Let's just spin up
-  // a new pod incase the mongo topology was destroyed, among other things.
-  process.on('unhandledRejection', function(reason) {
-    console.log("Unhandled Rejection:", reason);
-    process.exit(1);
+  }).catch(function (err) {
+    defaultLog.info('err:', err);
   });
+}
+
+// Counterintuitively, we crash because we don't want the pod hanging around. Let's just spin up
+// a new pod incase the mongo topology was destroyed, among other things.
+process.on('unhandledRejection', function(reason) {
+  console.log("Unhandled Rejection:", reason);
+  process.exit(1);
 });
 
 function shutdown() {
@@ -151,3 +137,4 @@ module.exports = app;
 exports.shutdown = shutdown;
 exports.api_default_port = api_default_port;
 exports.dbConnection = app_helper.dbConnection;
+

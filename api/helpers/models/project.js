@@ -1,5 +1,4 @@
 var mongoose = require('mongoose');
-var _ = require('underscore');
 var Mixed = mongoose.Schema.Types.Mixed;
 
 // legislation specific data schema

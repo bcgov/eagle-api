@@ -1,41 +1,29 @@
 'use strict';
 
-/**
-  * We receive the dbmigrate dependency from dbmigrate initially.
-  * This enables us to not have to rely on NODE_PATH.
-  */
+module.exports = {
+  async up(db, client) {
+    console.log(`**** Changing 'Draft EAC Application' milestone tag to 'EAC Application' ****`);
 
-exports.up = async function (db) {
 
-  console.log(`**** Changing 'Draft EAC Application' milestone tag to 'EAC Application' ****`);
+    const epic = await db.collection('epic');
 
-  const mClient = await db.connection.connect(db.connectionString, {
-    native_parser: true
-  });
+    try {
 
-  const epic = await mClient.collection('epic');
+      await epic.updateOne(
+        { name: 'Draft EAC Application' },
+        { $set: { name: 'EAC Application' } }
+      );
 
-  try {
+    } catch (err) {
+      console.log(`ERROR: ${err}`);
+    }
 
-    await epic.updateOne(
-      { name: 'Draft EAC Application' },
-      { $set: { name: 'EAC Application' } }
-    );
+    console.log(`**** Finished changing 'Draft EAC Application' milestone tag to 'EAC Application' ****`);
 
-  } catch (err) {
-    console.log(`ERROR: ${err}`);
+    return null;
+  },
+
+  async down(db, client) {
+    return null;
   }
-
-  console.log(`**** Finished changing 'Draft EAC Application' milestone tag to 'EAC Application' ****`);
-  mClient.close();
-
-  return null;
-};
-
-exports.down = function (db) {
-  return null;
-};
-
-exports._meta = {
-  "version": 1
 };

@@ -3,7 +3,7 @@ var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
-const moment = require('moment');
+const { DateTime } = require('luxon');
 
 var getSanitizedFields = function (fields) {
   return _.remove(fields, function (f) {
@@ -387,9 +387,9 @@ exports.unProtectedPost = async function (args, res) {
 
     defaultLog.info('Period:', period);
 
-    if (moment().diff(moment(period.dateCompleted)) > 0) {
+    if (DateTime.now() > DateTime.fromJSDate(new Date(period.dateCompleted))) {
       // Past the specified time
-      const endDate = moment(period.dateCompleted).format('MMM DD, YYYY h:mm A');
+      const endDate = DateTime.fromJSDate(new Date(period.dateCompleted)).toFormat('MMM dd, yyyy h:mm a');
       defaultLog.info('Comment was not received before completed date:', endDate);
       return Actions.sendResponse(res,
         400, {

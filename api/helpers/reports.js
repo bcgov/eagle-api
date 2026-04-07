@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const ObjectId = require('mongoose').Types.ObjectId;
 const transform = require('stream-transform');
-const moment = require('moment');
+const { DateTime } = require('luxon');
 const csv = require('csv');
 const fs = require('fs');
 
@@ -76,7 +76,7 @@ const createBcgwReport = async () => {
                 return JSON.stringify(object);
             },
             date: (date) => {
-              return moment(date).format('MM-DD-YYYY');
+              return DateTime.fromJSDate(new Date(date)).toFormat('MM-dd-yyyy');
             }
           }
         }))

@@ -62,8 +62,8 @@ describe('PUBLIC /api/public/comment & /api/public/commentperiod', () => {
 
   it('GET /public/comment — page 0 and page 1 return non-overlapping results', async () => {
     const [res0, res1] = await Promise.all([
-      get('/public/comment').query({ period: commentPeriodId, pageNum: 0, pageSize: 5 }).expect(200),
-      get('/public/comment').query({ period: commentPeriodId, pageNum: 1, pageSize: 5 }).expect(200)
+      get('/public/comment').query({ period: commentPeriodId, pageNum: 0, pageSize: 5, count: true }).expect(200),
+      get('/public/comment').query({ period: commentPeriodId, pageNum: 1, pageSize: 5, count: true }).expect(200)
     ]);
     const ids0 = res0.body.map(c => c._id);
     const ids1 = res1.body.map(c => c._id);

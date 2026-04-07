@@ -231,7 +231,13 @@ exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDire
     aggregation.push(
       {
         '$addFields': {
-          'project': { '$mergeObjects': ['$project', '$project.default'] },
+          'project': {
+            '$cond': {
+              if: '$project',
+              then: { '$mergeObjects': ['$project', { '$ifNull': ['$project.default', {}] }] },
+              else: null
+            }
+          }
         }
       },
       {

@@ -1,57 +1,38 @@
 'use strict';
 
-let dbm;
-let type;
-let seed;
-
-/**
-  * We receive the dbmigrate dependency from dbmigrate initially.
-  * This enables us to not have to rely on NODE_PATH.
-  */
-exports.setup = function(options, seedLink) {
-  dbm = options.dbmigrate;
-  type = dbm.dataType;
-  seed = seedLink;
-};
-
 const listItems = require(process.cwd() + '/migrations_data/lists/20200106221500-new-ceaaInvolvments_eaDecisions.js');
 
-exports.up = function(db) {
-  let mClient;
-  return db.connection.connect(db.connectionString, { native_parser: true })
-    .then((client) => {
-      mClient = client;
-      
-      const collection = mClient.collection('epic');
-      // Insert new list items
-      collection.insertMany(
-        listItems
-        )
-        .then(function (arr) {
-          console.log("arr:", arr)
-          for(let item of arr.ops) {
-            collection.update(
-            {
-              _id: item._id
-            },
-            {
-              $set: { read: ['public', 'staff', 'sysadmin'], write: ['staff', 'sysadmin'] }
-            });
-          }
-          mClient.close();
+module.exports = {
+  async up(db, client) {
+    let mClient;
+    return db.connection.connect(db.connectionString, { native_parser: true })
+      .then((client) => {
+        mClient = client;
+
+        const collection = db.collection('epic');
+        // Insert new list items
+        collection.insertMany(
+          listItems
+          )
+          .then(function (arr) {
+            console.log("arr:", arr)
+            for(let item of arr.ops) {
+              collection.update(
+              {
+                _id: item._id
+              },
+              {
+                $set: { read: ['public', 'staff', 'sysadmin'], write: ['staff', 'sysadmin'] }
+              });
+            }
+        });
+      })
+      .catch((e) => {
+        console.log("e:", e);
       });
-    })
-    .catch((e) => {
-      console.log("e:", e);
-      mClient.close()
-    });
-};
-  
+  },
 
-exports.down = function(db) {
-  return null;
-};
-
-exports._meta = {
-  "version": 1
+  async down(db, client) {
+    return null;
+  }
 };

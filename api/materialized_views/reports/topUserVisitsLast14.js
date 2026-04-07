@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
-const moment = require('moment');
+const { DateTime } = require('luxon');
 
 async function update(defaultLog) {
   // Set the limit for number of days to pull for the report.
-  const dateLimit = moment().subtract(14, 'days').format('YYYY-MM-DD');
+  const dateLimit = DateTime.now().minus({ days: 14 }).toFormat('yyyy-MM-dd');
 
   const queryAggregates = [
     {

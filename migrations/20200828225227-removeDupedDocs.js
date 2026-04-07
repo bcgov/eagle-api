@@ -1,50 +1,29 @@
 'use strict';
 
-let dbm;
-let type;
-let seed;
+module.exports = {
+  async up(db, client) {
+    try {
+      const epic = db.collection('epic');
 
-/**
-  * We receive the dbmigrate dependency from dbmigrate initially.
-  * This enables us to not have to rely on NODE_PATH.
-  */
-exports.setup = function (options, seedLink) {
-  dbm = options.dbmigrate;
-  type = dbm.dataType;
-  seed = seedLink;
-};
+      // remove duplicate invalid docs from Canada Line Rapid Transit project
+      console.log('#######################################');
+      console.log('##    Removing invalid empty docs    ##');
+      console.log('#######################################');
 
-exports.up = async function (db) {
-  let mClient;
+      const result = await epic.deleteMany({ _schemaName: 'Document', internalName: 'executeETL.js' });
 
-  try {
-    mClient = await db.connection.connect(db.connectionString, { native_parser: true });
-    const epic = mClient.collection('epic');
+      console.log(`Process completed ${result.result.ok === 1 ? 'Successfully' : 'with errors'}. ${result.deletedCount} record(s) deleted.`);
 
-    // remove duplicate invalid docs from Canada Line Rapid Transit project
-    console.log('#######################################');
-    console.log('##    Removing invalid empty docs    ##');
-    console.log('#######################################');
+      if (result.result.ok !== 1) {
+        throw new Error(result);
+      }
 
-    const result = await epic.deleteMany({ _schemaName: 'Document', internalName: 'executeETL.js' });
-    
-    console.log(`Process completed ${result.result.ok === 1 ? 'Successfully' : 'with errors'}. ${result.deletedCount} record(s) deleted.`);
-
-    if (result.result.ok !== 1) {
-      throw new Error(result);
+    } catch(err) {
+      console.error(` ### Error clearing duplicate documents: ${err}`);
     }
+  },
 
-  } catch(err) {
-    console.error(` ### Error clearing duplicate documents: ${err}`);
+  async down(db, client) {
+    return null;
   }
-
-  mClient.close();
-};
-
-exports.down = function (db) {
-  return null;
-};
-
-exports._meta = {
-  "version": 1
 };
