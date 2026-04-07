@@ -367,23 +367,21 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
       sort ? { $project: projection } : null, // Reset the projection just in case the sortWarmUp changed it.
 
       // Do this only if they ask for it.
+      // $facet runs count and pagination in parallel without materializing the
+      // full result set into memory (replaces the old $group+$push+$slice pattern).
       count && {
-        $group: {
-          _id: null,
-          total_items : { $sum : 1 },
-          results: { $push: '$$ROOT' }
+        $facet: {
+          total_items: [{ $count: 'total_items' }],
+          results: _.compact([
+            skip != null ? { $skip: skip } : null,
+            { $limit: limit || MAX_LIMIT }
+          ])
         }
       },
+      // Unwrap the count array produced by $facet into a plain number.
       count && {
-        $project: {
-          'total_items': 1,
-          'results': {
-            $slice: [
-              '$results',
-              skip,
-              limit
-            ]
-          }
+        $addFields: {
+          total_items: { $ifNull: [{ $arrayElemAt: ['$total_items.total_items', 0] }, 0] }
         }
       },
       !count &&{ $skip: skip || 0 },

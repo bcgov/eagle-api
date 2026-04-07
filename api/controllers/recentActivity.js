@@ -45,58 +45,31 @@ exports.publicGet = async function (args, res) {
     'content',
     'headline',
     'complianceAndEnforcement'];
-  var query = {};
   var sort = {
     dateAdded: -1
   };
   var theFields = getSanitizedFields(fields);
 
-  _.assignIn(query, { '_schemaName': 'RecentActivity', active: true, pinned: true });
-
   try {
-    var data = await Utils.runDataQuery('RecentActivity',
-      ['public'],
-      query,
-      theFields, // Fields
-      null, // sort warmup
-      sort, // sort
-      null, // skip
-      4, // limit
-      false,
-      null,
-      false,
-      false,
-      true); // count
+    // Run pinned and unpinned queries in parallel — avoid sequential await latency.
+    const [pinned, unpinned] = await Promise.all([
+      Utils.runDataQuery('RecentActivity',
+        ['public'],
+        { '_schemaName': 'RecentActivity', active: true, pinned: true },
+        theFields,
+        null, sort, null, 4, false, null, false, false, true),
+      Utils.runDataQuery('RecentActivity',
+        ['public'],
+        { '_schemaName': 'RecentActivity', active: true, pinned: false },
+        theFields,
+        null, sort, null, 4, false, null, false, false, true)
+    ]);
+
+    // Fill up to 4 items: pinned first, then unpinned as needed.
+    const data = [...pinned, ...unpinned.slice(0, Math.max(0, 4 - pinned.length))];
 
     Utils.recordAction('Get', 'RecentActivity', 'public');
-
-    if (data.length > 3) {
-      // we're done getting enough for the front end. Top 4 only.
-      return Actions.sendResponse(res, 200, data);
-    } else {
-      // Get next sorted, unpinned
-      query = {};
-      _.assignIn(query, { '_schemaName': 'RecentActivity', active: true, pinned: false });
-
-      var dataNext = await Utils.runDataQuery('RecentActivity',
-        ['public'],
-        query,
-        theFields, // Fields
-        null, // sort warmup
-        sort, // sort
-        null, // skip
-        4, // limit
-        false,
-        null,
-        false,
-        false,
-        true); // count
-
-      dataNext.slice(0, 4 - data.length).map(item => {
-        data.push(item);
-      });
-      return Actions.sendResponse(res, 200, data);
-    }
+    return Actions.sendResponse(res, 200, data);
 
   } catch (e) {
     defaultLog.info('Error:', e);
