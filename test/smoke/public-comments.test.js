@@ -50,4 +50,25 @@ describe('PUBLIC /api/public/comment & /api/public/commentperiod', () => {
     expect(res.body).to.be.an('array').with.lengthOf.at.least(1);
     expect(res.body[0]).to.have.property('_id', commentId);
   });
+
+  it('GET /public/comment — comment has required fields when present', async function () {
+    if (!commentId) return this.skip();
+    const res = await get(`/public/comment/${commentId}`).expect(200);
+    const comment = res.body[0];
+    expect(comment).to.have.property('_id', commentId);
+    expect(comment).to.have.property('period');
+    expect(comment).to.have.property('dateAdded');
+  });
+
+  it('GET /public/comment — page 0 and page 1 return non-overlapping results', async () => {
+    const [res0, res1] = await Promise.all([
+      get('/public/comment').query({ period: commentPeriodId, pageNum: 0, pageSize: 5 }).expect(200),
+      get('/public/comment').query({ period: commentPeriodId, pageNum: 1, pageSize: 5 }).expect(200)
+    ]);
+    const ids0 = res0.body.map(c => c._id);
+    const ids1 = res1.body.map(c => c._id);
+    if (!ids0.length || !ids1.length) return; // fewer than 6 comments — cannot verify windowing
+    const overlap = ids0.filter(id => ids1.includes(id));
+    expect(overlap).to.have.lengthOf(0, 'page 0 and page 1 should not share comments');
+  });
 });
