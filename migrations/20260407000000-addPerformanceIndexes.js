@@ -13,7 +13,7 @@ module.exports = {
     const epic = db.collection('epic');
 
     await epic.createIndex(
-      { _schemaName: 1, active: 1, pinned: 1, dateAdded: -1 },
+      { _schemaName: 1, active: 1, pinned: -1, dateAdded: -1 },
       { name: 'idx_recentActivity_active_pinned_date', background: true }
     );
     console.log('Created index: idx_recentActivity_active_pinned_date');
