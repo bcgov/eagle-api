@@ -8,24 +8,24 @@ const WORDS_TO_ANALYZE = 3;
 exports.projectHateoas = function(project, roles) {
   project.links =
     [
-      { rel: 'self', title: 'public self', type: 'GET', href: '/api/v2/Public/Projects/' + project._id },
-      { rel: 'fetch', title: 'Public Project Pins List', type: 'GET', href: '/api/v2/Public/Projects/' + project._id + '/Pins' }
+      { rel: 'self', title: 'public self', type: 'GET', href: '/api/public/project/' + project._id },
+      { rel: 'fetch', title: 'Public Project Pins List', type: 'GET', href: '/api/public/project/' + project._id + '/pin' }
     ];
 
   if (roles && roles.length > 0 && (roles.includes('sysadmin') || roles.includes('staff'))) {
-    project.links.push({ rel: 'self', title: 'secure self', method: 'GET', href: '/api/v2/Projects/' + project._id });
-    project.links.push({ rel: 'update', title: 'Secure Project Update', method: 'PUT', href: '/api/v2/Projects/' + project._id });
-    project.links.push({ rel: 'delete', title: 'Secure Project Delete', method: 'DELETE', href: '/api/v2/Projects/' + project._id });
-    project.links.push({ rel: 'update', title: 'Secure Project Publish', method: 'PUT', href: '/api/v2/Projects/' + project._id + '/Publish' });
-    project.links.push({ rel: 'update', title: 'Secure Project Un-Publish', method: 'PUT', href: '/api/v2/Projects/' + project._id + '/Unpublish' });
-    project.links.push({ rel: 'fetch', title: 'Secure Project Pins List', method: 'GET', href: '/api/v2/Projects/' + project._id + '/Pins' });
-    project.links.push({ rel: 'create', title: 'Secure Project Pins Create', method: 'POST', href: '/api/v2/Projects/' + project._id + '/Pins' });
-    project.links.push({ rel: 'update', title: 'Secure Project Pins Publish', method: 'PUT', href: '/api/v2/Projects/' + project._id + '/Pins/Publish' });
-    project.links.push({ rel: 'update', title: 'Secure Project Pins Unpublish', method: 'PUT', href: '/api/v2/Projects/' + project._id + '/Pins/Unpublish' });
-    project.links.push({ rel: 'create', title: 'Secure Project Create Extensions', method: 'POST', href: '/api/v2/Projects/' + project._id + '/Extensions' });
-    project.links.push({ rel: 'update', title: 'Secure Project Update Extensions', method: 'PUT', href: '/api/v2/Projects/' + project._id + '/Extensions' });
-    project.links.push({ rel: 'delete', title: 'Secure Project Delete Extensions', method: 'DELETE', href: '/api/v2/Projects/' + project._id + '/Extensions' });
-    project.links.push({ rel: 'create', title: 'Secure Project Create Groups', method: 'POST', href: '/api/v2/Projects/' + project._id + '/Groups' });
+    project.links.push({ rel: 'self', title: 'secure self', method: 'GET', href: '/api/project/' + project._id });
+    project.links.push({ rel: 'update', title: 'Secure Project Update', method: 'PUT', href: '/api/project/' + project._id });
+    project.links.push({ rel: 'delete', title: 'Secure Project Delete', method: 'DELETE', href: '/api/project/' + project._id });
+    project.links.push({ rel: 'update', title: 'Secure Project Publish', method: 'PUT', href: '/api/project/' + project._id + '/publish' });
+    project.links.push({ rel: 'update', title: 'Secure Project Un-Publish', method: 'PUT', href: '/api/project/' + project._id + '/unpublish' });
+    project.links.push({ rel: 'fetch', title: 'Secure Project Pins List', method: 'GET', href: '/api/project/' + project._id + '/pin' });
+    project.links.push({ rel: 'create', title: 'Secure Project Pins Create', method: 'POST', href: '/api/project/' + project._id + '/pin' });
+    project.links.push({ rel: 'update', title: 'Secure Project Pins Publish', method: 'PUT', href: '/api/project/' + project._id + '/pin/publish' });
+    project.links.push({ rel: 'update', title: 'Secure Project Pins Unpublish', method: 'PUT', href: '/api/project/' + project._id + '/pin/unpublish' });
+    project.links.push({ rel: 'create', title: 'Secure Project Create Extensions', method: 'POST', href: '/api/project/' + project._id + '/extension' });
+    project.links.push({ rel: 'update', title: 'Secure Project Update Extensions', method: 'PUT', href: '/api/project/' + project._id + '/extension' });
+    project.links.push({ rel: 'delete', title: 'Secure Project Delete Extensions', method: 'DELETE', href: '/api/project/' + project._id + '/extension' });
+    project.links.push({ rel: 'create', title: 'Secure Project Create Groups', method: 'POST', href: '/api/project/' + project._id + '/group' });
   }
 
   return project;

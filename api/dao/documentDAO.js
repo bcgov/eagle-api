@@ -16,19 +16,19 @@ const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING ? process.env.EN
 exports.documentHateoas = function(document, roles) {
   document.links =
     [
-      { rel: 'self', title: 'public self', type: 'GET', href: '/api/v2/Public/Documents/' + document._id },
-      { rel: 'fetch', title: 'Public Document Download', method: 'GET', href: '/api/v2/Public/Documents/' + document._id + '/Download' }
+      { rel: 'self', title: 'public self', type: 'GET', href: '/api/document/' + document._id },
+      { rel: 'fetch', title: 'Public Document Download', method: 'GET', href: '/api/document/' + document._id + '/fetch' }
     ];
 
   if (roles && roles.length > 0 && (roles.includes('sysadmin') || roles.includes('staff'))) {
-    document.links.push({ rel: 'self', title: 'secure self', method: 'GET', href: '/api/v2/Documents/' + document._id });
-    document.links.push({ rel: 'update', title: 'secure Document Update', method: 'PUT', href: '/api/v2/Documents/' + document._id });
-    document.links.push({ rel: 'delete', title: 'secure Document Delete', method: 'DELETE', href: '/api/v2/Documents/' + document._id });
-    document.links.push({ rel: 'update', title: 'secure Document Publish', method: 'GET', href: '/api/v2/Documents/' + document._id + '/Publish' });
-    document.links.push({ rel: 'update', title: 'secure Document UnPublish', method: 'GET', href: '/api/v2/Documents/' + document._id + '/Unpublish' });
-    document.links.push({ rel: 'update', title: 'secure Document Feature', method: 'GET', href: '/api/v2/Documents/' + document._id + '/Feature'});
-    document.links.push({ rel: 'update', title: 'secure Document UnFeature', method: 'GET', href: '/api/v2/Documents/' + document._id + '/Unfeature' });
-    document.links.push({ rel: 'fetch', title: 'secure Document Download', method: 'GET', href: '/api/v2/Documents/' + document._id + '/Download' });
+    document.links.push({ rel: 'self', title: 'secure self', method: 'GET', href: '/api/document/' + document._id });
+    document.links.push({ rel: 'update', title: 'secure Document Update', method: 'PUT', href: '/api/document/' + document._id });
+    document.links.push({ rel: 'delete', title: 'secure Document Delete', method: 'DELETE', href: '/api/document/' + document._id });
+    document.links.push({ rel: 'update', title: 'secure Document Publish', method: 'PUT', href: '/api/document/' + document._id + '/publish' });
+    document.links.push({ rel: 'update', title: 'secure Document UnPublish', method: 'PUT', href: '/api/document/' + document._id + '/unpublish' });
+    document.links.push({ rel: 'update', title: 'secure Document Feature', method: 'PUT', href: '/api/document/' + document._id + '/feature'});
+    document.links.push({ rel: 'update', title: 'secure Document UnFeature', method: 'PUT', href: '/api/document/' + document._id + '/unfeature' });
+    document.links.push({ rel: 'fetch', title: 'secure Document Download', method: 'GET', href: '/api/document/' + document._id + '/download' });
   }
 
   return document;

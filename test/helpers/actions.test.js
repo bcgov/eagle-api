@@ -193,75 +193,38 @@ describe('Actions Helper Functions', () => {
   });
 
   describe('sendResponse', () => {
-    it('should write correct status code', () => {
-      const mockRes = {
-        writeHead: sinon.stub(),
-        end: sinon.stub()
-      };
-
-      actions.sendResponse(mockRes, 200, { data: 'test' });
-      
-      expect(mockRes.writeHead.calledWith(200, { 'Content-Type': 'application/json' })).to.be.true;
-    });
-
-    it('should send JSON stringified object', () => {
-      const mockRes = {
-        writeHead: sinon.stub(),
-        end: sinon.stub()
-      };
-      const testObject = { message: 'success', data: [1, 2, 3] };
-
-      actions.sendResponse(mockRes, 200, testObject);
-      
-      expect(mockRes.end.calledWith(JSON.stringify(testObject))).to.be.true;
-    });
-
-    it('should handle error status codes', () => {
-      const mockRes = {
-        writeHead: sinon.stub(),
-        end: sinon.stub()
-      };
-
-      actions.sendResponse(mockRes, 404, { error: 'Not Found' });
-      
-      expect(mockRes.writeHead.calledWith(404)).to.be.true;
-    });
-
-    it('should set Content-Type header', () => {
-      const mockRes = {
-        writeHead: sinon.stub(),
-        end: sinon.stub()
-      };
-
-      actions.sendResponse(mockRes, 201, {});
-      
-      const headersArg = mockRes.writeHead.getCall(0).args[1];
-      expect(headersArg['Content-Type']).to.equal('application/json');
-    });
-  });
-
-  describe('sendResponseV2', () => {
     it('should call status with correct code', () => {
       const mockRes = {
         status: sinon.stub().returnsThis(),
         json: sinon.stub()
       };
 
-      actions.sendResponseV2(mockRes, 200, { data: 'test' });
-      
+      actions.sendResponse(mockRes, 200, { data: 'test' });
+
       expect(mockRes.status.calledWith(200)).to.be.true;
     });
 
-    it('should call json with object', () => {
+    it('should call json with the response object', () => {
       const mockRes = {
         status: sinon.stub().returnsThis(),
         json: sinon.stub()
       };
-      const testObject = { message: 'created' };
+      const testObject = { message: 'success', data: [1, 2, 3] };
 
-      actions.sendResponseV2(mockRes, 201, testObject);
-      
+      actions.sendResponse(mockRes, 200, testObject);
+
       expect(mockRes.json.calledWith(testObject)).to.be.true;
+    });
+
+    it('should handle error status codes', () => {
+      const mockRes = {
+        status: sinon.stub().returnsThis(),
+        json: sinon.stub()
+      };
+
+      actions.sendResponse(mockRes, 404, { error: 'Not Found' });
+
+      expect(mockRes.status.calledWith(404)).to.be.true;
     });
 
     it('should chain status and json calls', () => {
@@ -270,8 +233,8 @@ describe('Actions Helper Functions', () => {
         json: sinon.stub()
       };
 
-      actions.sendResponseV2(mockRes, 404, { error: 'Not Found' });
-      
+      actions.sendResponse(mockRes, 201, {});
+
       expect(mockRes.status.calledBefore(mockRes.json)).to.be.true;
     });
 
@@ -281,10 +244,10 @@ describe('Actions Helper Functions', () => {
         json: sinon.stub()
       };
 
-      actions.sendResponseV2(mockRes, 500, { error: 'Server Error' });
+      actions.sendResponse(mockRes, 500, { error: 'Server Error' });
       expect(mockRes.status.calledWith(500)).to.be.true;
 
-      actions.sendResponseV2(mockRes, 204, {});
+      actions.sendResponse(mockRes, 204, {});
       expect(mockRes.status.calledWith(204)).to.be.true;
     });
   });

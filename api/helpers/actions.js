@@ -56,10 +56,5 @@ exports.delete = function (o) {
 };
 
 exports.sendResponse = function (res, code, object) {
-  res.writeHead(code, { 'Content-Type': 'application/json' });
-  return res.end(JSON.stringify(object));
-};
-
-exports.sendResponseV2 = function (res, code, object) {
   return res.status(code).json(object);
 };

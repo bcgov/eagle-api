@@ -6,12 +6,12 @@ exports.groupHateoas = function(group, roles) {
   group.links = [];
 
   if (roles && roles.length > 0 && (roles.includes('sysadmin') || roles.includes('staff'))) {
-    group.links.push({ rel: 'self', title: 'secure self', method: 'GET', href: '/api/v2/Projects/' + group.project + '/Groups/' + group._id });
-    group.links.push({ rel: 'parent', title: 'secure parent project', method: 'GET', href: '/api/v2/Projects/' + group.project });
-    group.links.push({ rel: 'update', title: 'Secure Project Update Group', method: 'PUT', href: '/api/v2//Projects/' + group.project + '/Groups/' + group._id });
-    group.links.push({ rel: 'delete', title: 'Secure Project Delete Group', method: 'DELETE', href: '/api/v2/Projects/' + group.project + '/Groups/' + group._id });
-    group.links.push({ rel: 'create', title: 'Secure Project Create Group Members', method: 'POST', href: '/api/v2/Projects/' + group.project + '/Groups/' + group._id + '/Members' });
-    group.links.push({ rel: 'fetch', title: 'Secure Project Get Group Members', method: 'GET', href: '/api/v2/Projects/' + group.project + '/Groups/' + group._id + '/Members' });
+    group.links.push({ rel: 'self', title: 'secure self', method: 'GET', href: '/api/project/' + group.project + '/group/' + group._id });
+    group.links.push({ rel: 'parent', title: 'secure parent project', method: 'GET', href: '/api/project/' + group.project });
+    group.links.push({ rel: 'update', title: 'Secure Project Update Group', method: 'PUT', href: '/api/project/' + group.project + '/group/' + group._id });
+    group.links.push({ rel: 'delete', title: 'Secure Project Delete Group', method: 'DELETE', href: '/api/project/' + group.project + '/group/' + group._id });
+    group.links.push({ rel: 'create', title: 'Secure Project Create Group Members', method: 'POST', href: '/api/project/' + group.project + '/group/' + group._id + '/members' });
+    group.links.push({ rel: 'fetch', title: 'Secure Project Get Group Members', method: 'GET', href: '/api/project/' + group.project + '/group/' + group._id + '/members' });
   }
 
   return group;
