@@ -19,6 +19,7 @@ spec:
       labels:
         {{- include "eagle-api.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: migration
+        role: database-mongo-migration
     spec:
       restartPolicy: Never
       containers:
