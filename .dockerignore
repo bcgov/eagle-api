@@ -44,9 +44,8 @@ uploads/
 one_off_migrations/
 migrations_data/
 
-# Scripts (keep run_migration.sh for oc exec)
+# Scripts
 *.sh
-!run_migration.sh
 developer_install_*
 install_prerequisites.sh
 setup_project.sh

@@ -25,9 +25,9 @@ spec:
         - name: migration
           image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag | default .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["sh", "run_migration.sh"]
+          command: ["node", "run_migration.js"]
           env:
-            # Same env vars as the API deployment (app_helper.js + migrate-mongo-config.js)
+            # Same env vars as the API deployment (app_helper.js + run_migration.js)
             - name: MONGODB_USERNAME
               valueFrom:
                 secretKeyRef:
