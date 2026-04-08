@@ -42,7 +42,7 @@ exports.createDocument = async function(userName, projectId, comment, uploadedFi
     let virusScanSuccessful = true;
 
     if (ENABLE_VIRUS_SCANNING) {
-      virusScanSuccessful = Utils.avScan(uploadedFile.buffer);
+      virusScanSuccessful = await Utils.avScan(uploadedFile.buffer);
     }
 
     if (!virusScanSuccessful) {

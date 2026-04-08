@@ -20,7 +20,10 @@ env:
   API_HOSTNAME: eagle-test.apps.silver.devops.gov.bc.ca
   CHES_ENDPOINT: "https://ches-test.api.gov.bc.ca/api/v1"
   GETOK_ENDPOINT: "https://sso-test.pathfinder.gov.bc.ca"
-  ENABLE_VIRUS_SCANNING: "false"
+  # ClamAV virus scanning - service runs in separate pod
+  CLAMAV_SERVICE_HOST: "clamav"
+  CLAMAV_SERVICE_PORT: "3310"
+  ENABLE_VIRUS_SCANNING: "true"
   UPLOAD_DIRECTORY: "/tmp/"
 
 keycloak:

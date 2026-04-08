@@ -93,7 +93,7 @@ exports.publicGet = async function (args, res,) {
 };
 
 exports.unProtectedPost = async function (args, res) {
-  console.log('Creating new object', args.swagger.params);
+  defaultLog.info('Creating new public document object');
   if (args.swagger.params._comment && args.swagger.params._comment.value && !mongoose.Types.ObjectId.isValid(args.swagger.params._comment.value)) {
     return Actions.sendResponse(res, 400, { });
   }
@@ -105,94 +105,66 @@ exports.unProtectedPost = async function (args, res) {
   var project = args.swagger.params.project.value;
   var upfile = args.swagger.params.upfile.value;
   var guid = intformat(generator.next(), 'dec');
-  var ext = mime.extension(args.swagger.params.upfile.value.mimetype);
+  var ext = mime.extension(upfile.mimetype);
   var tempFilePath = uploadDir + guid + '.' + ext;
+
   try {
-    console.log('Uploading');
-    Promise.resolve()
-      .then(async function () {
-        if (ENABLE_VIRUS_SCANNING) {
-          console.log('AVScan');
-          return Utils.avScan(args.swagger.params.upfile.value.buffer);
-        } else {
-          return true;
-        }
-      })
-      .then(async function (valid) {
-        if (!valid) {
-          defaultLog.warn('File failed virus check.');
-          return Actions.sendResponse(res, 400, { 'message': 'File failed virus check.' });
-        } else {
-          console.log('writing file.');
-          fs.writeFileSync(tempFilePath, args.swagger.params.upfile.value.buffer);
-          console.log('wrote file successfully.');
+    // Virus scan
+    if (ENABLE_VIRUS_SCANNING) {
+      var scanPassed = await Utils.avScan(upfile.buffer);
+      if (!scanPassed) {
+        defaultLog.warn('File failed virus check.');
+        return Actions.sendResponse(res, 400, { 'message': 'File failed virus check.' });
+      }
+    }
 
-          console.log(MinioController.BUCKETS.DOCUMENTS_BUCKET,
-            new mongoose.Types.ObjectId(project),
-            upfile.originalname,
-            tempFilePath);
+    // Write to temp file and upload to MinIO
+    fs.writeFileSync(tempFilePath, upfile.buffer);
+    var minioFile = await MinioController.putDocument(
+      MinioController.BUCKETS.DOCUMENTS_BUCKET, project, upfile.originalname, tempFilePath
+    );
+    fs.unlinkSync(tempFilePath);
 
-          MinioController.putDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET,
-            project,
-            upfile.originalname,
-            tempFilePath)
-            .then(async function (minioFile) {
-              console.log('putDocument:', minioFile);
+    // Save document to MongoDB
+    var Document = mongoose.model('Document');
+    var doc = new Document();
+    doc.project = new mongoose.Types.ObjectId(project);
+    doc._comment = new mongoose.Types.ObjectId(_comment);
+    doc._addedBy = 'public';
+    doc._createdDate = new Date();
+    doc.read = ['sysadmin', 'staff'];
+    doc.write = ['sysadmin', 'staff'];
+    doc.delete = ['sysadmin', 'staff'];
 
-              // remove file from temp folder
-              fs.unlinkSync(tempFilePath);
+    doc.internalOriginalName = upfile.originalname;
+    doc.internalURL = minioFile.path;
+    doc.internalExt = minioFile.extension;
+    doc.internalSize = upfile.size;
+    doc.passedAVCheck = true;
+    doc.internalMime = upfile.mimetype;
 
-              console.log('unlink');
+    doc.documentSource = 'COMMENT';
+    doc.displayName = upfile.originalname;
+    doc.documentFileName = upfile.originalname;
+    doc.dateUploaded = new Date();
+    doc.datePosted = new Date();
+    doc.documentAuthor = args.body.documentAuthor;
+    doc.documentAuthorType = new mongoose.Types.ObjectId(args.body.documentAuthorType);
 
-              var Document = mongoose.model('Document');
-              var doc = new Document();
-              // Define security tag defaults
-              doc.project = new mongoose.Types.ObjectId(project);
-              doc._comment = new mongoose.Types.ObjectId(_comment);
-              doc._addedBy = 'public';
-              doc._createdDate = new Date();
-              doc.read = ['sysadmin', 'staff'];
-              doc.write = ['sysadmin', 'staff'];
-              doc.delete = ['sysadmin', 'staff'];
-
-              doc.internalOriginalName = upfile.originalname;
-              doc.internalURL = minioFile.path;
-              doc.internalExt = minioFile.extension;
-              doc.internalSize = upfile.size;
-              doc.passedAVCheck = true;
-              doc.internalMime = upfile.mimetype;
-
-              doc.documentSource = 'COMMENT';
-
-              doc.displayName = upfile.originalname;
-              doc.documentFileName = upfile.originalname;
-              doc.dateUploaded = new Date();
-              doc.datePosted = new Date();
-              doc.documentAuthor = args.body.documentAuthor;
-              doc.documentAuthorType = new mongoose.Types.ObjectId(args.body.documentAuthorType);
-
-              doc.save()
-                .then(async function (d) {
-                  defaultLog.info('Saved new document object:', d._id);
-
-                  var Comment = mongoose.model('Comment');
-                  var c = await Comment.updateOne({ _id: _comment }, { $addToSet: { documents: d._id } });
-                  defaultLog.info('Comment updated:', c);
-                  Utils.recordAction('Post', 'Document', 'public', d._id);
-                  return Actions.sendResponse(res, 200, d);
-                })
-                .catch(async function (error) {
-                  console.log('error:', error);
-                  // the model failed to be created - delete the document from minio so the database and minio remain in sync.
-                  MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
-                  return Actions.sendResponse(res, 400, error);
-                });
-            });
-        }
-      });
+    try {
+      var d = await doc.save();
+      defaultLog.info('Saved new document object:', d._id);
+      var Comment = mongoose.model('Comment');
+      await Comment.updateOne({ _id: _comment }, { $addToSet: { documents: d._id } });
+      Utils.recordAction('Post', 'Document', 'public', d._id);
+      return Actions.sendResponse(res, 200, d);
+    } catch (saveError) {
+      defaultLog.error('Document save failed, rolling back MinIO:', saveError);
+      MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
+      return Actions.sendResponse(res, 400, saveError);
+    }
   } catch (e) {
-    defaultLog.info('Error:', e);
-    // Delete the path details before we return to the caller.
+    defaultLog.error('Error in unProtectedPost:', e);
     delete e['path'];
     return Actions.sendResponse(res, 400, e);
   }
@@ -514,7 +486,7 @@ exports.protectedOpen = function (args, res) {
 
 //  Create a new document
 exports.protectedPost = async function (args, res) {
-  console.log('Creating new protected document object');
+  defaultLog.info('Creating new protected document object');
   var project = args.swagger.params.project.value;
   var _comment = args.swagger.params._comment.value;
 
@@ -527,115 +499,89 @@ exports.protectedPost = async function (args, res) {
 
   var upfile = args.swagger.params.upfile.value;
   var guid = intformat(generator.next(), 'dec');
-  var ext = mime.extension(args.swagger.params.upfile.value.mimetype);
+  var ext = mime.extension(upfile.mimetype);
   var tempFilePath = uploadDir + guid + '.' + ext;
+
   try {
-    Promise.resolve()
-      .then(function () {
-        if (ENABLE_VIRUS_SCANNING) {
-          return Utils.avScan(args.swagger.params.upfile.value.buffer);
-        } else {
-          return true;
-        }
-      })
-      .then(function (valid) {
-        if (!valid) {
-          defaultLog.warn('File failed virus check.');
-          return Actions.sendResponse(res, 400, { 'message': 'File failed virus check.' });
-        } else {
-          console.log('writing file.');
-          fs.writeFileSync(tempFilePath, args.swagger.params.upfile.value.buffer);
-          console.log('wrote file successfully.');
+    // Virus scan
+    if (ENABLE_VIRUS_SCANNING) {
+      var scanPassed = await Utils.avScan(upfile.buffer);
+      if (!scanPassed) {
+        defaultLog.warn('File failed virus check.');
+        return Actions.sendResponse(res, 400, { 'message': 'File failed virus check.' });
+      }
+    }
 
-          console.log(MinioController.BUCKETS.DOCUMENTS_BUCKET,
-            new mongoose.Types.ObjectId(project),
-            args.swagger.params.documentFileName.value,
-            tempFilePath);
+    // Write to temp file and upload to MinIO
+    fs.writeFileSync(tempFilePath, upfile.buffer);
+    var minioFile = await MinioController.putDocument(
+      MinioController.BUCKETS.DOCUMENTS_BUCKET, project, args.swagger.params.documentFileName.value, tempFilePath
+    );
+    fs.unlinkSync(tempFilePath);
 
-          MinioController.putDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET,
-            project,
-            args.swagger.params.documentFileName.value,
-            tempFilePath)
-            .then(async function (minioFile) {
-              console.log('putDocument:', minioFile);
+    // Build document model
+    var Document = mongoose.model('Document');
+    var doc = new Document();
+    doc.project = new mongoose.Types.ObjectId(project);
+    doc._comment = _comment;
+    doc._addedBy = args.swagger.params.auth_payload.preferred_username;
+    doc._createdDate = new Date();
+    doc.read = ['sysadmin', 'staff'];
+    doc.write = ['sysadmin', 'staff'];
+    doc.delete = ['sysadmin', 'staff'];
 
-              // remove file from temp folder
-              fs.unlinkSync(tempFilePath);
+    doc.documentFileName = args.swagger.params.documentFileName.value;
+    doc.internalOriginalName = args.swagger.params.internalOriginalName.value;
+    doc.internalURL = minioFile.path;
+    doc.internalExt = minioFile.extension;
+    doc.internalSize = upfile.size;
+    doc.passedAVCheck = true;
+    doc.internalMime = upfile.mimetype;
 
-              console.log('unlink');
+    let formattedLeg = null;
+    if ((args.swagger.params.legislation && typeof args.swagger.params.legislation.value === 'string') ||
+        (args.swagger.params.legislation && typeof args.swagger.params.legislation.value === 'number')) {
+      formattedLeg = parseInt(args.swagger.params.legislation.value, 10);
+    }
+    doc.legislation = formattedLeg;
 
-              var Document = mongoose.model('Document');
-              var doc = new Document();
-              // Define security tag defaults
-              doc.project = new mongoose.Types.ObjectId(project);
-              doc._comment = _comment;
-              doc._addedBy = args.swagger.params.auth_payload.preferred_username;
-              doc._createdDate = new Date();
-              doc.read = ['sysadmin', 'staff'];
-              doc.write = ['sysadmin', 'staff'];
-              doc.delete = ['sysadmin', 'staff'];
+    doc.documentSource = args.swagger.params.documentSource.value;
 
-              doc.documentFileName = args.swagger.params.documentFileName.value;
-              doc.internalOriginalName = args.swagger.params.internalOriginalName.value;
-              doc.internalURL = minioFile.path;
-              doc.internalExt = minioFile.extension;
-              doc.internalSize = upfile.size;
-              doc.passedAVCheck = true;
-              doc.internalMime = upfile.mimetype;
+    doc.displayName = args.swagger.params.displayName.value;
+    if (args.swagger.params.eaoStatus && args.swagger.params.eaoStatus.value) {
+      doc.eaoStatus = args.swagger.params.eaoStatus.value;
+      if (args.swagger.params.eaoStatus.value == 'Published') {
+        doc.read.push('public');
+      }
+    } else {
+      doc.eaoStatus = null;
+    }
 
-              let formattedLeg = null;
-              if ((args.swagger.params.legislation && typeof args.swagger.params.legislation.value === 'string') ||
-                  (args.swagger.params.legislation && typeof args.swagger.params.legislation.value === 'number')) {
-                formattedLeg = parseInt(args.swagger.params.legislation.value, 10);
-              }
-              doc.legislation = formattedLeg;
+    if (args.swagger.params.publish && args.swagger.params.publish.value === true) {
+      doc.read.push('public');
+    }
 
-              doc.documentSource = args.swagger.params.documentSource.value;
-              // TODO Not Yet
-              // doc.labels = JSON.parse(args.swagger.params.labels.value);
+    doc.milestone = args.swagger.params.milestone.value && args.swagger.params.milestone.value !== "null" ? new mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null;
+    doc.type = args.swagger.params.type.value && args.swagger.params.type.value !== "null" ? new mongoose.Types.ObjectId(args.swagger.params.type.value) : null;
+    doc.documentAuthor = args.swagger.params.documentAuthor.value && args.swagger.params.documentAuthor.value !== "null" ? args.swagger.params.documentAuthor.value : null;
+    doc.documentAuthorType = args.swagger.params.documentAuthorType.value && args.swagger.params.documentAuthorType.value !== "null" ? new mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null;
+    doc.dateUploaded = args.swagger.params.dateUploaded.value;
+    doc.datePosted = args.swagger.params.datePosted.value;
+    doc.description = args.swagger.params.description.value;
+    doc.projectPhase = args.swagger.params.projectPhase.value && args.swagger.params.projectPhase.value !== "null" ? new mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null;
 
-              doc.displayName = args.swagger.params.displayName.value;
-              if (args.swagger.params.eaoStatus && args.swagger.params.eaoStatus.value) {
-                doc.eaoStatus = args.swagger.params.eaoStatus.value;
-                if (args.swagger.params.eaoStatus.value == 'Published') {
-                  doc.read.push('public');
-                }
-              } else {
-                doc.eaoStatus = null;
-              }
-
-              if (args.swagger.params.publish && args.swagger.params.publish.value === true) {
-                doc.read.push('public');
-              }
-
-              doc.milestone = args.swagger.params.milestone.value && args.swagger.params.milestone.value !== "null" ? new mongoose.Types.ObjectId(args.swagger.params.milestone.value) : null;
-              doc.type = args.swagger.params.type.value && args.swagger.params.type.value !== "null" ? new mongoose.Types.ObjectId(args.swagger.params.type.value) : null;
-              doc.documentAuthor = args.swagger.params.documentAuthor.value && args.swagger.params.documentAuthor.value !== "null" ? args.swagger.params.documentAuthor.value : null;
-              doc.documentAuthorType = args.swagger.params.documentAuthorType.value && args.swagger.params.documentAuthorType.value !== "null" ? new mongoose.Types.ObjectId(args.swagger.params.documentAuthorType.value) : null;
-              doc.dateUploaded = args.swagger.params.dateUploaded.value;
-              doc.datePosted = args.swagger.params.datePosted.value;
-              doc.description = args.swagger.params.description.value;
-              doc.projectPhase = args.swagger.params.projectPhase.value && args.swagger.params.projectPhase.value !== "null" ? new mongoose.Types.ObjectId(args.swagger.params.projectPhase.value) : null;
-              // Update who did this?
-              console.log('unlink');
-              doc.save()
-                .then(function (d) {
-                  defaultLog.info('Saved new document object:', d._id);
-                  Utils.recordAction('Post', 'Document', args.swagger.params.auth_payload.preferred_username, d._id);
-                  return Actions.sendResponse(res, 200, d);
-                })
-                .catch(function (error) {
-                  console.log('error:', error);
-                  // the model failed to be created - delete the document from minio so the database and minio remain in sync.
-                  MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
-                  return Actions.sendResponse(res, 400, error);
-                });
-            });
-        }
-      });
+    try {
+      var d = await doc.save();
+      defaultLog.info('Saved new document object:', d._id);
+      Utils.recordAction('Post', 'Document', args.swagger.params.auth_payload.preferred_username, d._id);
+      return Actions.sendResponse(res, 200, d);
+    } catch (saveError) {
+      defaultLog.error('Document save failed, rolling back MinIO:', saveError);
+      MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
+      return Actions.sendResponse(res, 400, saveError);
+    }
   } catch (e) {
-    defaultLog.info('Error:', e);
-    // Delete the path details before we return to the caller.
+    defaultLog.error('Error in protectedPost:', e);
     delete e['path'];
     return Actions.sendResponse(res, 400, e);
   }

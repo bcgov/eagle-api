@@ -182,7 +182,7 @@ function createSwaggerRouter(spec, controllerDirs) {
 
       // --- Multer for multipart/form-data with file fields ---
       if (fileParams.length > 0) {
-        const upload = multer({ dest: uploadDir });
+        const upload = multer({ storage: multer.memoryStorage() });
         middlewares.push(
           fileParams.length === 1
             ? upload.single(fileParams[0].name)
