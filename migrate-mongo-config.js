@@ -7,8 +7,9 @@ const buildMongoUri = () => {
   const host = process.env.MONGODB_SERVICE_HOST || 'localhost';
   const port = process.env.MONGODB_PORT || 27017;
   const db   = process.env.MONGODB_DATABASE || 'epic';
-  const user = process.env.MONGODB_ADMIN_USER;
-  const pass = process.env.MONGODB_ADMIN_PASSWORD;
+  // Use the same env vars as app_helper.js so migrations can run on the API pod.
+  const user = process.env.MONGODB_USERNAME || '';
+  const pass = process.env.MONGODB_PASSWORD || '';
   const auth = process.env.MONGODB_AUTHSOURCE || 'admin';
 
   if (user && pass) {

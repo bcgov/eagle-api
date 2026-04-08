@@ -10,34 +10,24 @@
 
 module.exports = {
   async up(db, client) {
-    try {
-      const epic = db.collection('epic');
+    const epic = db.collection('epic');
 
-      await epic.createIndex(
-        { _schemaName: 1, active: 1, pinned: 1, dateAdded: -1 },
-        { name: 'idx_recentActivity_active_pinned_date', background: true }
-      );
-      console.log('Created index: idx_recentActivity_active_pinned_date');
+    await epic.createIndex(
+      { _schemaName: 1, active: 1, pinned: 1, dateAdded: -1 },
+      { name: 'idx_recentActivity_active_pinned_date', background: true }
+    );
+    console.log('Created index: idx_recentActivity_active_pinned_date');
 
-      await epic.createIndex(
-        { _schemaName: 1, project: 1 },
-        { name: 'idx_document_by_project', background: true }
-      );
-      console.log('Created index: idx_document_by_project');
-    } finally {
-      if (mClient) mClient.close();
-    }
+    await epic.createIndex(
+      { _schemaName: 1, project: 1 },
+      { name: 'idx_document_by_project', background: true }
+    );
+    console.log('Created index: idx_document_by_project');
   },
 
   async down(db, client) {
-    let mClient;
-    try {
-      mClient = await db.connection.connect(db.connectionString, { native_parser: true });
-      const epic = db.collection('epic');
-      await epic.dropIndex('idx_recentActivity_active_pinned_date');
-      await epic.dropIndex('idx_document_by_project');
-    } finally {
-      if (mClient) mClient.close();
-    }
+    const epic = db.collection('epic');
+    await epic.dropIndex('idx_recentActivity_active_pinned_date');
+    await epic.dropIndex('idx_document_by_project');
   }
 };

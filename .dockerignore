@@ -40,13 +40,13 @@ build
 # Uploads directory (should be mounted volume)
 uploads/
 
-# Database migrations (run separately)
-migrations/
-migrations_data/
+# one_off_migrations are not needed in the image
 one_off_migrations/
+migrations_data/
 
-# Scripts
+# Scripts (keep run_migration.sh for oc exec)
 *.sh
+!run_migration.sh
 developer_install_*
 install_prerequisites.sh
 setup_project.sh
