@@ -19,7 +19,7 @@ spec:
       labels:
         {{- include "eagle-api.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: migration
-        role: database-mongo-migration
+        role: api-eagle-epic
     spec:
       restartPolicy: Never
       containers:
@@ -27,8 +27,10 @@ spec:
           image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag | default .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["node", "run_migration.js"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "eagle-api.fullname" . }}
           env:
-            # Same env vars as the API deployment (app_helper.js + run_migration.js)
             - name: MONGODB_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -39,10 +41,6 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secrets.mongodb.name }}
                   key: {{ .Values.secrets.mongodb.passwordKey }}
-            - name: MONGODB_SERVICE_HOST
-              value: {{ .Values.env.MONGODB_SERVICE_HOST | quote }}
-            - name: MONGODB_DATABASE
-              value: {{ .Values.env.MONGODB_DATABASE | quote }}
           resources:
             {{- toYaml .Values.migrations.resources | nindent 12 }}
 {{- end }}
