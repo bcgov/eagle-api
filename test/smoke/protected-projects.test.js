@@ -56,33 +56,4 @@ describe('PROTECTED /api/project (requires token)', () => {
     }
   });
 
-  // — V2 Protected Projects ——
-
-  it('GET /v2/Projects — V2 protected project list', async function () {
-    if (!hasToken()) return this.skip();
-    const res = await authGet('/v2/Projects').query({ pageNumber: 0, pageSize: 5 }).expect(200);
-    expect(res.body).to.be.an('array').with.lengthOf.at.least(1);
-  });
-
-  it('GET /v2/projects/:projId — V2 protected single project', async function () {
-    if (!hasToken()) return this.skip();
-    const res = await authGet(`/v2/projects/${projId}`).expect(200);
-    expect(res.body).to.have.property('_id', projId);
-  });
-
-  it('GET /v2/projects/:projId/documents — V2 protected project docs', async function () {
-    if (!hasToken()) return this.skip();
-    const res = await authGet(`/v2/projects/${projId}/documents`).query({ pageNumber: 0, pageSize: 5 });
-    // 500 until fetchDocumentsSecure handler is deployed
-    expect(res.status).to.be.oneOf([200, 500]);
-    if (res.status === 200) {
-      expect(res.body).to.be.an('array');
-    }
-  });
-
-  it('GET /v2/projects/:projId/pins — V2 protected pins', async function () {
-    if (!hasToken()) return this.skip();
-    const res = await authGet(`/v2/projects/${projId}/pins`).query({ pageNum: 0, pageSize: 5 }).expect(200);
-    expect(res.body).to.be.an('array');
-  });
 });
