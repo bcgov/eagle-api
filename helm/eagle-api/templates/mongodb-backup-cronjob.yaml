@@ -43,6 +43,17 @@ spec:
               echo "Retention: keep last $RETENTION"
               echo ""
 
+              # Trim old backups BEFORE dumping to free space
+              echo "Pre-dump cleanup..."
+              ls -t "$BACKUP_DIR"/epic-*.archive 2>/dev/null | tail -n +$((RETENTION)) | while read OLD; do
+                echo "Deleting old backup: $OLD"
+                rm -f "$OLD"
+              done
+              find "$BACKUP_DIR" -name "*.UNHEALTHY" -mtime +1 -delete 2>/dev/null || true
+              echo "Disk before dump:"
+              df -h "$BACKUP_DIR"
+              echo ""
+
               # Dump the epic database
               echo "Starting mongodump..."
               mongodump \
@@ -66,16 +77,13 @@ spec:
 
               echo "Archive is healthy."
 
-              # Trim old backups (keep last N healthy archives)
+              # Post-dump trim to enforce exact retention count
               echo ""
               echo "Trimming old backups..."
               ls -t "$BACKUP_DIR"/epic-*.archive 2>/dev/null | tail -n +$((RETENTION + 1)) | while read OLD; do
                 echo "Deleting old backup: $OLD"
                 rm -f "$OLD"
               done
-
-              # Also clean up any unhealthy archives older than 1 day
-              find "$BACKUP_DIR" -name "*.UNHEALTHY" -mtime +1 -delete 2>/dev/null || true
 
               echo ""
               echo "Current backups:"

@@ -6,11 +6,12 @@
  * 1. Seeds migrate-mongo's `changelog` from the legacy db-migrate `migrations`
  *    collection (idempotent — skips if changelog already has entries).
  * 2. Runs all pending migrations via migrate-mongo's programmatic API.
+ *
+ * Note: migrate-mongo v14 is ESM-only. Its CJS shim is a broken Proxy, so we
+ * must use dynamic import() to load it correctly.
  */
 
 'use strict';
-
-const { database, config, up } = require('migrate-mongo');
 
 const CHANGELOG_COLLECTION = 'changelog';
 
@@ -65,6 +66,7 @@ async function seedChangelog(db) {
 }
 
 async function run() {
+  const { database, config, up } = await import('migrate-mongo');
   config.set(migrateMongoConfig);
   const { db, client } = await database.connect();
 

@@ -96,7 +96,7 @@ jobs:
             --namespace ${{ env.OPENSHIFT_NAMESPACE_PROD }} \
             --values ./helm/${{ env.APP_NAME }}/values-prod.yaml \
             --set image.tag=prod \
-            --wait --timeout=5m
+            --wait --timeout=10m
 
       - name: Verify deployment
         run: |

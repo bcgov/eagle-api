@@ -116,11 +116,11 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
-// Counterintuitively, we crash because we don't want the pod hanging around. Let's just spin up
-// a new pod incase the mongo topology was destroyed, among other things.
+// Log unhandled rejections but let the process survive.
+// Mongoose auto-reconnects on transient MongoDB errors (timeouts, topology
+// changes).  Crashing here caused 90+ pod restarts per week in production.
 process.on('unhandledRejection', function(reason) {
-  console.log("Unhandled Rejection:", reason);
-  process.exit(1);
+  defaultLog.error('Unhandled Rejection:', reason);
 });
 
 function shutdown() {
