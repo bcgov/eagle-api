@@ -38,18 +38,18 @@ resources:
 # Liveness and readiness probes
 probes:
   liveness:
-    path: /api/docs
+    path: /api/health
     initialDelaySeconds: 30
     periodSeconds: 30
     timeoutSeconds: 10
   readiness:
-    path: /api/docs
+    path: /api/health
     initialDelaySeconds: 10
     periodSeconds: 10
     timeoutSeconds: 10
   # Startup probe for slow-starting containers (optional, enable in prod)
   startup:
-    path: /api/docs
+    path: /api/health
     failureThreshold: 30
     periodSeconds: 5
 
@@ -73,6 +73,11 @@ env:
   
   # Feature Flags
   ENABLE_VIRUS_SCANNING: "true"
+  TYPESENSE_ENABLED: "false"   # Set to "true" after Typesense chart is deployed and indexed
+
+  # Typesense Search Service (only used when TYPESENSE_ENABLED=true)
+  TYPESENSE_HOST: typesense-typesense   # Kubernetes service name: <helm-release>-typesense
+  TYPESENSE_PORT: "8108"
   
   # External Services
   CHES_ENDPOINT: ""  # Set in values-{env}.yaml
@@ -96,6 +101,10 @@ secrets:
     name: getok-secret
     clientIdKey: _GETOK_CLIENTID
     clientSecretKey: _GETOK_CLIENT_SECRET
+
+  typesense:
+    name: typesense-api-key     # Created by: oc create secret generic typesense-api-key --from-literal=TYPESENSE_API_KEY=$(openssl rand -hex 32)
+    apiKeyKey: TYPESENSE_API_KEY
 
 # Keycloak SSO Configuration
 keycloak:

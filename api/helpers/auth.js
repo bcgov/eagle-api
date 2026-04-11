@@ -11,6 +11,18 @@ var KEYCLOAK_ENABLED = process.env.KEYCLOAK_ENABLED || 'true';
 var winston         = require('winston');
 var defaultLog      = winston.loggers.get('default');
 
+// Module-level client so the signing-key cache persists across requests.
+// Without this, a new client (and empty cache) is created on every auth call,
+// causing a Keycloak JWKS fetch for every authenticated request.
+const jwksClientInstance = jwksClient({
+  strictSsl: true,
+  jwksUri: JWKSURI,
+  cache: true,
+  cacheMaxAge: 86400000,     // Cache signing keys for 24 hours
+  rateLimit: true,
+  jwksRequestsPerMinute: 5   // Throttle Keycloak JWKS fetches
+});
+
 exports.verifyToken = function(req, authOrSecDef, token, callback) {
   defaultLog.info('verifying token', token);
   // scopes/roles defined for the current endpoint
@@ -50,10 +62,7 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
     // use local environment JWT configuration.
     if (KEYCLOAK_ENABLED === 'true') {
       defaultLog.info('Keycloak Enabled, remote JWT verification.');
-      const client = jwksClient({
-        strictSsl: true, // Default value
-        jwksUri: JWKSURI
-      });
+      const client = jwksClientInstance;
 
       const kid = jwt.decode(tokenString, { complete: true }).header.kid;
 

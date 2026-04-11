@@ -39,7 +39,11 @@ app.use(function (req, res, next) {
   res.setHeader('Access-Control-Expose-Headers', 'x-total-count,x-pending-comment-count,x-next-comment-id');
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Vary', 'Origin');
-  res.setHeader('Cache-Control', 'max-age=4');
+  if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'max-age=60');
+  } else {
+    res.setHeader('Cache-Control', 'no-store');
+  }
   // headers for zap scan issues
   res.setHeader('X-XSS-Protection', '1');
   res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
