@@ -115,6 +115,14 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secrets.ches.name }}
                   key: {{ .Values.secrets.ches.clientSecretKey }}
+            {{- if .Values.secrets.typesense }}
+            # Typesense API Key from Secret (only mounted when secret exists)
+            - name: TYPESENSE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.typesense.name }}
+                  key: {{ .Values.secrets.typesense.apiKeyKey }}
+            {{- end }}
             {{- if .Values.secrets.smokeApiKey }}
             # Smoke test API key — dev/test only, never set in prod
             - name: SMOKE_API_KEY
