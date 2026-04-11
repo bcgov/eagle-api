@@ -1,0 +1,7 @@
+sync:
+  image:
+    tag: test
+
+reindex:
+  image:
+    tag: test

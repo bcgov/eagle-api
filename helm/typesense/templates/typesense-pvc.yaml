@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "typesense.fullname" . }}-data
+  labels:
+    {{- include "typesense.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.typesense.persistence.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.typesense.persistence.size }}

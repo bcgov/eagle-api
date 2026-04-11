@@ -1,0 +1,23 @@
+# Allow eagle-api pods and the sync service to query Typesense on port 8108.
+# Both use role: api-eagle-epic which is already permitted by MongoDB's NetworkPolicy.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: eagle-epic-allow-api-to-typesense
+  labels:
+    {{- include "typesense.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      role: search-typesense-eagle
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        # eagle-api pods (for search queries)
+        - podSelector:
+            matchLabels:
+              role: api-eagle-epic
+      ports:
+        - port: {{ .Values.typesense.port }}
+          protocol: TCP

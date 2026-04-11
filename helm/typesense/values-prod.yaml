@@ -1,0 +1,7 @@
+sync:
+  image:
+    tag: prod
+
+reindex:
+  image:
+    tag: prod

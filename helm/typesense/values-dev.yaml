@@ -1,0 +1,7 @@
+sync:
+  image:
+    tag: dev
+
+reindex:
+  image:
+    tag: dev

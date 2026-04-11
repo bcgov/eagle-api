@@ -1,0 +1,100 @@
+# Default values for the Typesense search engine + sync service.
+# Override in values-{env}.yaml for environment-specific settings.
+# Tear down everything: helm uninstall typesense -n <namespace>
+
+# ---------------------------------------------------------------------------
+# Typesense server
+# ---------------------------------------------------------------------------
+typesense:
+  image:
+    repository: typesense/typesense
+    tag: "30.1"
+    pullPolicy: IfNotPresent
+
+  port: 8108
+
+  # Existing secret containing TYPESENSE_API_KEY.
+  # Create before deploying:
+  #   oc create secret generic typesense-api-key \
+  #     --from-literal=TYPESENSE_API_KEY=<key> -n <namespace>
+  existingSecret: typesense-api-key
+
+  persistence:
+    size: 2Gi
+    storageClass: netapp-block-standard   # Block storage preferred for search indexes
+    mountPath: /data
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+  probes:
+    liveness:
+      initialDelaySeconds: 15
+      periodSeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readiness:
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+
+# ---------------------------------------------------------------------------
+# Sync service — Change Stream listener (long-running deployment)
+# ---------------------------------------------------------------------------
+sync:
+  enabled: true
+
+  image:
+    repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/typesense-sync
+    tag: "latest"
+    pullPolicy: Always
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# ---------------------------------------------------------------------------
+# Nightly re-index CronJob — full sync with zero-downtime alias swap
+# ---------------------------------------------------------------------------
+reindex:
+  enabled: true
+  schedule: "0 2 * * *"    # 2:00 AM daily
+
+  image:
+    repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/typesense-sync
+    tag: "latest"
+    pullPolicy: Always
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 3600
+
+# ---------------------------------------------------------------------------
+# MongoDB connection info (reads from existing eagle-api-mongodb secret)
+# ---------------------------------------------------------------------------
+mongodb:
+  existingSecret: eagle-api-mongodb
+  secretKeys:
+    user: MONGODB_USER
+    password: MONGODB_PASSWORD
+    database: MONGODB_DATABASE
+  host: eagle-api-mongodb
+  port: 27017
+  authSource: admin
