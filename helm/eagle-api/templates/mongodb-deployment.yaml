@@ -24,10 +24,50 @@ spec:
       - name: mongodb
         image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
         imagePullPolicy: {{ .Values.mongodb.image.pullPolicy }}
+        # Enable replica set mode so MongoDB maintains an oplog.
+        # Required for Change Streams (used by the Typesense sync service).
+        # This is a single-member replica set — no HA, same resource footprint.
+        # keyFile is required by MongoDB when --auth + --replSet are both active.
+        # The file is copied from a Secret by the initContainer below (chmod 400).
+        # Prerequisite: oc create secret generic eagle-api-mongodb-keyfile \
+        #   --from-literal=keyfile="$(openssl rand -base64 756 | tr -d '\n')" -n <namespace>
+        args:
+          - --replSet
+          - rs0
+          - --keyFile
+          - /etc/mongodb-keyfile/keyfile
         ports:
         - containerPort: 27017
           protocol: TCP
           name: mongodb
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - bash
+                - -c
+                - |
+                  # Wait for MongoDB to accept connections (up to 60s)
+                  for i in $(seq 1 30); do
+                    mongosh --quiet --eval "db.adminCommand('ping')" 2>/dev/null && break
+                    sleep 2
+                  done
+                  # Initialize replica set if not already done.
+                  # Uses the service hostname (eagle-api-mongodb:27017) which resolves
+                  # to the pod IP via the headless service — so MongoDB recognises itself.
+                  mongosh --quiet \
+                    -u "$MONGO_INITDB_ROOT_USERNAME" \
+                    -p "$MONGO_INITDB_ROOT_PASSWORD" \
+                    --authenticationDatabase admin \
+                    --eval "
+                      try {
+                        var s = rs.status();
+                        print('Replica set already initialized: ' + s.set + ' state:' + s.myState);
+                      } catch(e) {
+                        var r = rs.initiate({_id:'rs0', members:[{_id:0, host:'{{ include "eagle-api.mongodb.fullname" . }}:27017'}]});
+                        print('rs.initiate result: ' + JSON.stringify(r));
+                      }
+                    " || true
         env:
         - name: MONGO_INITDB_ROOT_USERNAME
           valueFrom:
@@ -47,6 +87,9 @@ spec:
         volumeMounts:
         - name: mongodb-data
           mountPath: {{ .Values.mongodb.persistence.mountPath | default "/data/db" }}
+        - name: mongodb-keyfile
+          mountPath: /etc/mongodb-keyfile
+          readOnly: true
         resources:
           {{- toYaml .Values.mongodb.resources | nindent 10 }}
         livenessProbe:
@@ -67,4 +110,27 @@ spec:
       - name: mongodb-data
         persistentVolumeClaim:
           claimName: {{ .Values.mongodb.persistence.existingClaim | default (printf "%s-data-v8" (include "eagle-api.mongodb.fullname" .)) }}
+      # The keyFile secret is mounted read-only into an initContainer which copies
+      # it and sets chmod 400. OpenShift mounts secrets as symlinks (0777) which
+      # MongoDB rejects. The emptyDir volume holds the correctly-permissioned copy.
+      - name: mongodb-keyfile-secret
+        secret:
+          secretName: eagle-api-mongodb-keyfile
+      - name: mongodb-keyfile
+        emptyDir: {}
+      initContainers:
+      - name: keyfile-init
+        image: busybox:1.36
+        command:
+          - sh
+          - -c
+          - |
+            cp /etc/mongodb-keyfile-secret/keyfile /etc/mongodb-keyfile/keyfile
+            chmod 400 /etc/mongodb-keyfile/keyfile
+        volumeMounts:
+        - name: mongodb-keyfile-secret
+          mountPath: /etc/mongodb-keyfile-secret
+          readOnly: true
+        - name: mongodb-keyfile
+          mountPath: /etc/mongodb-keyfile
 {{- end }}

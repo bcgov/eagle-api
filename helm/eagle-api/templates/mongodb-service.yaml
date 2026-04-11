@@ -6,7 +6,11 @@ metadata:
   labels:
     {{- include "eagle-api.mongodb.labels" . | nindent 4 }}
 spec:
-  type: ClusterIP
+  # Headless service: DNS resolves to pod IP instead of a VIP.
+  # Required for MongoDB replica set — with a ClusterIP, MongoDB resolves the
+  # service name to the VIP (which doesn't match any pod network interface), so
+  # it puts itself in REMOVED state and Change Streams fail.
+  clusterIP: None
   ports:
   - port: 27017
     targetPort: mongodb
