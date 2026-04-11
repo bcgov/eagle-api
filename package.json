@@ -30,7 +30,7 @@
     "migrate": "migrate-mongo up"
   },
   "dependencies": {
-    "axios": "^1.8.2",
+    "axios": "^1.15.0",
     "bcryptjs": "^2.4.3",
     "biguint-format": "~1.0.0",
     "body-parser": "^1.20.3",
