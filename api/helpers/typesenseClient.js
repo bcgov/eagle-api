@@ -86,7 +86,10 @@ function buildSortBy(sortBy) {
 
 /**
  * Search Typesense and return results in eagle-api's standard response shape:
- *   [{ searchResults: [...], meta: { searchResultsTotal: N, facets: [...] } }]
+ *   [{ searchResults: [...], meta: [{ searchResultsTotal: N }] }]
+ *
+ * The envelope mirrors MongoDB's $facet output so callers (and tests)
+ * see the same shape regardless of backend.
  *
  * @param {string} schemaName  - 'Document', 'Project', or 'Comment'
  * @param {string} keywords    - search query ('' or '*' for all)
@@ -133,10 +136,9 @@ async function search(schemaName, keywords, pageNum, pageSize, sortBy, and) {
 
   return [{
     searchResults,
-    meta: {
+    meta: [{
       searchResultsTotal: result.found,
-      facets: result.facet_counts || [],
-    },
+    }],
   }];
 }
 
