@@ -1,0 +1,113 @@
+# =============================================================================
+# Deploy Typesense
+# =============================================================================
+# Builds the typesense-sync Docker image and deploys the Typesense Helm chart
+# (Typesense server + Change Stream sync + nightly re-index CronJob).
+#
+# Triggered manually via workflow_dispatch. Select the target environment.
+# =============================================================================
+
+name: Deploy Typesense
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+
+permissions: write-all
+
+env:
+  OPENSHIFT_NAMESPACE_TOOLS: 6cdc9e-tools
+  IMAGE_NAME: typesense-sync
+  CHART_NAME: typesense
+
+jobs:
+  build-sync:
+    name: Build Sync Image
+    runs-on: ubuntu-latest
+    outputs:
+      SHORT_SHA: ${{ steps.short-sha.outputs.SHA }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Get short SHA
+        id: short-sha
+        run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Login to OpenShift registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.OPENSHIFT_REPOSITORY }}
+          username: ${{ secrets.OPENSHIFT_REPOSITORY_USERNAME }}
+          password: ${{ secrets.OPENSHIFT_REPOSITORY_PASSWORD }}
+
+      - name: Build and push sync image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./typesense-sync
+          push: true
+          tags: |
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:${{ inputs.environment }}
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:${{ steps.short-sha.outputs.SHA }}
+
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    needs: build-sync
+    runs-on: ubuntu-latest
+    env:
+      NAMESPACE: 6cdc9e-${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install OpenShift CLI
+        run: |
+          curl -LO "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz"
+          tar -xvzf openshift-client-linux.tar.gz
+          sudo mv oc /usr/local/bin/
+          rm -f openshift-client-linux.tar.gz
+
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
+
+      - name: Log into OpenShift
+        run: oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ secrets.OPENSHIFT_URL }}
+
+      - name: Tag image in OpenShift ImageStream
+        run: |
+          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
+            ${{ env.IMAGE_NAME }}:${{ needs.build-sync.outputs.SHORT_SHA }} \
+            ${{ env.IMAGE_NAME }}:${{ inputs.environment }}
+
+      - name: Deploy Typesense chart
+        run: |
+          helm upgrade --install ${{ env.CHART_NAME }} ./helm/${{ env.CHART_NAME }} \
+            --namespace ${{ env.NAMESPACE }} \
+            --values ./helm/${{ env.CHART_NAME }}/values-${{ inputs.environment }}.yaml \
+            --wait --timeout=5m
+
+      - name: Verify deployments
+        run: |
+          echo "Checking Typesense server..."
+          oc rollout status deployment/${{ env.CHART_NAME }}-${{ env.CHART_NAME }} \
+            -n ${{ env.NAMESPACE }} --timeout=3m
+
+          echo "Checking sync service..."
+          oc rollout status deployment/${{ env.CHART_NAME }}-${{ env.CHART_NAME }}-sync \
+            -n ${{ env.NAMESPACE }} --timeout=3m
+
+          echo "Checking CronJob..."
+          oc get cronjob -l app.kubernetes.io/name=${{ env.CHART_NAME }} \
+            -n ${{ env.NAMESPACE }}
+
+          echo "All Typesense components deployed successfully!"
