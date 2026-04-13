@@ -34,20 +34,57 @@ function parseCentroid(c) {
   return { centroid: [lng, lat] };
 }
 
-function transformProject(doc, listLookup) {
-  // Project data is nested under the current legislation year key
-  // (e.g., doc.legislation_2018 or doc.legislation_2002).
-  // currentLegislationYear holds the key; fall back to checking all three.
-  const legKey = doc.currentLegislationYear || 'legislation_2018';
-  const leg = doc[legKey] || doc.legislation_2018 || doc.legislation_2002 || doc.legislation_1996 || {};
+const OBJECT_ID_RE = /^[0-9a-f]{24}$/i;
 
-  // Resolve an ObjectId reference to its display name via the List lookup.
-  // Falls back to the raw string if the ID is not found (e.g. lookup not available).
-  function resolve(val) {
-    if (val == null || val === '') return undefined;
-    const s = val.toString();
-    return (listLookup && listLookup.has(s)) ? listLookup.get(s) : s;
-  }
+function resolveStrict(val, listLookup) {
+  if (val == null || val === '') return undefined;
+  const s = val.toString();
+  if (listLookup && listLookup.has(s)) return listLookup.get(s);
+  if (OBJECT_ID_RE.test(s)) return undefined;
+  return s;
+}
+
+function resolvePermissive(val, listLookup) {
+  if (val == null || val === '') return undefined;
+  const s = val.toString();
+  return (listLookup && listLookup.has(s)) ? listLookup.get(s) : s;
+}
+
+function getLegislationBlock(doc) {
+  const legKey = doc.currentLegislationYear || 'legislation_2018';
+  return doc[legKey] || doc.legislation_2018 || doc.legislation_2002 || doc.legislation_1996 || {};
+}
+
+function transformDocument(doc, listLookup, projectLookup) {
+  const projectId  = doc.project ? doc.project.toString() : undefined;
+  const projectName = (projectLookup && projectId && projectLookup.has(projectId))
+    ? projectLookup.get(projectId)
+    : undefined;
+
+  const leg = typeof doc.legislation === 'number' && doc.legislation > 0
+    ? doc.legislation
+    : undefined;
+
+  return {
+    id: doc._id.toString(),
+    ...(str(doc.displayName)       && { displayName:        str(doc.displayName) }),
+    ...(str(doc.documentFileName)  && { documentFileName:   str(doc.documentFileName) }),
+    ...(str(doc.description)       && { description:        str(doc.description) }),
+    ...(projectName                && { projectName }),
+    ...(projectId                  && { projectId }),
+    ...(resolveStrict(doc.type, listLookup)               && { type:               resolveStrict(doc.type, listLookup) }),
+    ...(resolveStrict(doc.milestone, listLookup)           && { milestone:          resolveStrict(doc.milestone, listLookup) }),
+    ...(resolveStrict(doc.documentAuthorType, listLookup)  && { documentAuthorType: resolveStrict(doc.documentAuthorType, listLookup) }),
+    ...(resolveStrict(doc.projectPhase, listLookup)        && { projectPhase:       resolveStrict(doc.projectPhase, listLookup) }),
+    ...(leg !== undefined          && { legislation: leg }),
+    ...(str(doc.internalExt)       && { internalExt:        str(doc.internalExt) }),
+    ...(toTimestamp(doc.datePosted)    !== undefined && { datePosted:    toTimestamp(doc.datePosted) }),
+    ...(toTimestamp(doc.dateUploaded)  !== undefined && { dateUploaded:  toTimestamp(doc.dateUploaded) }),
+  };
+}
+
+function transformProject(doc, listLookup) {
+  const leg = getLegislationBlock(doc);
 
   return {
     id:               doc._id.toString(),
@@ -55,12 +92,12 @@ function transformProject(doc, listLookup) {
     ...(str(leg.description)      && { description:      str(leg.description) }),
     ...(str(leg.region)           && { region:           str(leg.region) }),
     ...(str(leg.status)           && { status:           str(leg.status) }),
-    ...(resolve(leg.currentPhaseName) && { currentPhaseName: resolve(leg.currentPhaseName) }),
-    ...(resolve(leg.eacDecision)      && { eacDecision:      resolve(leg.eacDecision) }),
+    ...(resolvePermissive(leg.currentPhaseName, listLookup) && { currentPhaseName: resolvePermissive(leg.currentPhaseName, listLookup) }),
+    ...(resolvePermissive(leg.eacDecision, listLookup)      && { eacDecision:      resolvePermissive(leg.eacDecision, listLookup) }),
     ...(str(leg.type)             && { type:             str(leg.type) }),
     ...(str(leg.sector)           && { sector:           str(leg.sector) }),
     ...(str(leg.shortName)        && { displayName:      str(leg.shortName) }),
-    ...(resolve(leg.proponent)    && { proponent:        resolve(leg.proponent) }),
+    ...(resolvePermissive(leg.proponent, listLookup)    && { proponent:        resolvePermissive(leg.proponent, listLookup) }),
     ...(toTimestamp(leg.dateUpdated)    !== undefined && { updatedDate:   toTimestamp(leg.dateUpdated) }),
     ...(toTimestamp(leg.decisionDate)  !== undefined && { decisionDate:  toTimestamp(leg.decisionDate) }),
     ...parseCentroid(leg.centroid),
@@ -68,8 +105,27 @@ function transformProject(doc, listLookup) {
 }
 
 const TRANSFORMS = {
-  Project: transformProject,
+  Document: transformDocument,
+  Project:  transformProject,
 };
+
+/**
+ * Build a Map<projectIdString, projectName> for all public Project documents.
+ * Project names are nested under legislation sub-objects (e.g. legislation_2018.name).
+ */
+async function buildProjectLookup(db) {
+  const docs = await db.collection('epic')
+    .find({ _schemaName: 'Project' })
+    .project({ _id: 1, legislation_2018: 1, legislation_2002: 1, legislation_1996: 1, currentLegislationYear: 1 })
+    .toArray();
+  const map = new Map();
+  for (const item of docs) {
+    const leg = getLegislationBlock(item);
+    const name = leg.name || leg.shortName;
+    if (name) map.set(item._id.toString(), name);
+  }
+  return map;
+}
 
 /**
  * Build a Map<idString, name> for all List and Organization documents.
@@ -90,17 +146,18 @@ async function buildListLookup(db) {
 /**
  * Transform a MongoDB document into a Typesense document.
  * Returns null if the schemaName is not indexed.
- * @param {Map} [listLookup] - Optional id→name map built with buildListLookup()
+ * @param {Map} [listLookup]    - Optional id→name map built with buildListLookup()
+ * @param {Map} [projectLookup] - Optional id→name map built with buildProjectLookup()
  */
-function transformDoc(schemaName, doc, listLookup) {
+function transformDoc(schemaName, doc, listLookup, projectLookup) {
   const fn = TRANSFORMS[schemaName];
   if (!fn) return null;
   try {
-    return fn(doc, listLookup);
+    return fn(doc, listLookup, projectLookup);
   } catch (err) {
     console.warn(`Transform failed for ${schemaName} ${doc._id}:`, err.message);
     return null;
   }
 }
 
-module.exports = { transformDoc, buildListLookup };
+module.exports = { transformDoc, buildListLookup, buildProjectLookup };

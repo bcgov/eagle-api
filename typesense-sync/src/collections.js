@@ -13,6 +13,29 @@
  * creates a new collection with a timestamp suffix and swaps the alias.
  */
 
+const DOCUMENT_SCHEMA = {
+  name: 'documents',
+  fields: [
+    { name: 'id',                 type: 'string' },
+    // Search fields
+    { name: 'displayName',        type: 'string',  index: true,  optional: true },
+    { name: 'documentFileName',   type: 'string',  index: true,  optional: true },
+    { name: 'description',        type: 'string',  index: true,  optional: true },
+    { name: 'projectName',        type: 'string',  index: true,  optional: true },
+    // Facet / filter fields
+    { name: 'type',               type: 'string',  facet: true,  optional: true },
+    { name: 'milestone',          type: 'string',  facet: true,  optional: true },
+    { name: 'documentAuthorType', type: 'string',  facet: true,  optional: true },
+    { name: 'projectPhase',       type: 'string',  facet: true,  optional: true },
+    { name: 'legislation',        type: 'int32',   facet: true,  optional: true },
+    // Metadata
+    { name: 'projectId',          type: 'string',               optional: true },
+    { name: 'internalExt',        type: 'string',               optional: true },
+    { name: 'datePosted',         type: 'int64',   sort: true,   optional: true },
+    { name: 'dateUploaded',       type: 'int64',   sort: true,   optional: true },
+  ],
+};
+
 const PROJECT_SCHEMA = {
   name: 'projects',
   fields: [
@@ -39,7 +62,8 @@ const PROJECT_SCHEMA = {
 
 /** Map _schemaName → Typesense schema */
 const SCHEMAS = {
-  Project: PROJECT_SCHEMA,
+  Document: DOCUMENT_SCHEMA,
+  Project:  PROJECT_SCHEMA,
 };
 
 /**
@@ -47,6 +71,10 @@ const SCHEMAS = {
  * Weights mirror the MongoDB searchIndex_1 weights.
  */
 const QUERY_BY = {
+  Document: {
+    fields:  'displayName,documentFileName,description,projectName',
+    weights: '8500,5000,8000,3000',
+  },
   Project: {
     fields:  'name,displayName,description,epicProjectId,proponent',
     weights: '9000,8500,8000,3000,1000',
@@ -57,7 +85,8 @@ const QUERY_BY = {
  * Facet fields to include in every search response, keyed by schemaName.
  */
 const FACET_BY = {
-  Project: 'region,status,currentPhaseName,eacDecision,type,sector',
+  Document: 'type,milestone,documentAuthorType,projectPhase,legislation',
+  Project:  'region,status,currentPhaseName,eacDecision,type,sector',
 };
 
 module.exports = { SCHEMAS, QUERY_BY, FACET_BY };

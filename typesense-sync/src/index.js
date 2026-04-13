@@ -21,7 +21,7 @@
 
 const { MongoClient } = require('mongodb');
 const { getClient }   = require('./typesenseClient');
-const { transformDoc, buildListLookup } = require('./transform');
+const { transformDoc, buildListLookup, buildProjectLookup } = require('./transform');
 const { SCHEMAS }     = require('./collections');
 const { buildMongoUri } = require('./config');
 
@@ -56,14 +56,14 @@ async function resolveCollection(typesense, schemaName) {
   }
 }
 
-async function upsertDoc(typesense, schemaName, fullDoc, listLookup) {
+async function upsertDoc(typesense, schemaName, fullDoc, listLookup, projectLookup) {
   if (!isPublic(fullDoc) || isDeleted(fullDoc)) {
     // Doc is no longer public — remove from Typesense if it was there
     await deleteDoc(typesense, schemaName, fullDoc._id.toString());
     return;
   }
 
-  const transformed = transformDoc(schemaName, fullDoc, listLookup);
+  const transformed = transformDoc(schemaName, fullDoc, listLookup, projectLookup);
   if (!transformed) return;
 
   const collectionName = await resolveCollection(typesense, schemaName);
@@ -86,8 +86,21 @@ async function deleteDoc(typesense, schemaName, id) {
   }
 }
 
-async function processChange(typesense, mongoDB, event, listLookupRef) {
-  const { operationType, fullDocument, documentKey, fullDocumentBeforeChange } = event;
+async function refreshLookupsIfNeeded(schemaName, mongoDB, listLookupRef, projectLookupRef) {
+  if (schemaName === 'List' || schemaName === 'Organization') {
+    listLookupRef.map = await buildListLookup(mongoDB);
+    console.log(`List lookup refreshed: ${listLookupRef.map.size} entries`);
+    return true;
+  }
+  if (schemaName === 'Project') {
+    projectLookupRef.map = await buildProjectLookup(mongoDB);
+    console.log(`Project lookup refreshed: ${projectLookupRef.map.size} entries`);
+  }
+  return false;
+}
+
+async function processChange(typesense, mongoDB, event, listLookupRef, projectLookupRef) {
+  const { operationType, fullDocument, documentKey } = event;
   const docId = documentKey?._id?.toString();
 
   switch (operationType) {
@@ -96,14 +109,9 @@ async function processChange(typesense, mongoDB, event, listLookupRef) {
     case 'replace': {
       const schemaName = fullDocument?._schemaName;
       if (!schemaName) return;
-      // If a List or Organization doc changes, rebuild lookup so future transforms use fresh labels
-      if (schemaName === 'List' || schemaName === 'Organization') {
-        listLookupRef.map = await buildListLookup(mongoDB);
-        console.log(`List lookup refreshed: ${listLookupRef.map.size} entries`);
-        return;
-      }
+      if (await refreshLookupsIfNeeded(schemaName, mongoDB, listLookupRef, projectLookupRef)) return;
       if (!INDEXED_SCHEMAS.has(schemaName)) return;
-      await upsertDoc(typesense, schemaName, fullDocument, listLookupRef.map);
+      await upsertDoc(typesense, schemaName, fullDocument, listLookupRef.map, projectLookupRef.map);
       break;
     }
 
@@ -111,13 +119,9 @@ async function processChange(typesense, mongoDB, event, listLookupRef) {
       // fullDocument is available when the watch pipeline uses fullDocument: 'updateLookup'
       const schemaName = fullDocument?._schemaName;
       if (!schemaName) return;
-      if (schemaName === 'List' || schemaName === 'Organization') {
-        listLookupRef.map = await buildListLookup(mongoDB);
-        console.log(`List lookup refreshed: ${listLookupRef.map.size} entries`);
-        return;
-      }
+      if (await refreshLookupsIfNeeded(schemaName, mongoDB, listLookupRef, projectLookupRef)) return;
       if (!INDEXED_SCHEMAS.has(schemaName)) return;
-      await upsertDoc(typesense, schemaName, fullDocument, listLookupRef.map);
+      await upsertDoc(typesense, schemaName, fullDocument, listLookupRef.map, projectLookupRef.map);
       break;
     }
 
@@ -135,7 +139,7 @@ async function processChange(typesense, mongoDB, event, listLookupRef) {
   }
 }
 
-async function startWatcher(typesense, mongoDB, listLookupRef) {
+async function startWatcher(typesense, mongoDB, listLookupRef, projectLookupRef) {
   const collection = mongoDB.collection('epic');
 
   // Expand the pipeline to also watch List schema changes (to refresh lookup)
@@ -143,7 +147,7 @@ async function startWatcher(typesense, mongoDB, listLookupRef) {
     {
       $match: {
         $or: [
-          { 'fullDocument._schemaName': { $in: [...Array.from(INDEXED_SCHEMAS), 'List', 'Organization'] } },
+          { 'fullDocument._schemaName': { $in: [...Array.from(INDEXED_SCHEMAS), 'List', 'Organization', 'Project'] } },
           { operationType: 'delete' },
         ],
       },
@@ -152,7 +156,6 @@ async function startWatcher(typesense, mongoDB, listLookupRef) {
 
   const options = {
     fullDocument: 'updateLookup',    // Include full document on updates
-    fullDocumentBeforeChange: 'off',
   };
 
   const changeStream = collection.watch(pipeline, options);
@@ -161,7 +164,7 @@ async function startWatcher(typesense, mongoDB, listLookupRef) {
 
   changeStream.on('change', async (event) => {
     try {
-      await processChange(typesense, mongoDB, event, listLookupRef);
+      await processChange(typesense, mongoDB, event, listLookupRef, projectLookupRef);
     } catch (err) {
       console.error('Unhandled error processing change:', err);
     }
@@ -198,7 +201,10 @@ async function main() {
       const listLookupRef = { map: await buildListLookup(db) };
       console.log(`List lookup loaded: ${listLookupRef.map.size} entries`);
 
-      await startWatcher(typesense, db, listLookupRef);
+      const projectLookupRef = { map: await buildProjectLookup(db) };
+      console.log(`Project lookup loaded: ${projectLookupRef.map.size} entries`);
+
+      await startWatcher(typesense, db, listLookupRef, projectLookupRef);
 
       console.warn('Change Stream closed. Restarting in 5s...');
     } catch (err) {

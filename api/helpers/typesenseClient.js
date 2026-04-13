@@ -113,7 +113,7 @@ async function search(schemaName, keywords, pageNum, pageSize, sortBy, and) {
     facet_by:           facetBy,
     per_page:           pageSize || 25,
     page:               (pageNum || 0) + 1,   // Typesense is 1-indexed
-    highlight_fields:   'name,displayName,description',  // Fields that exist in PROJECT_SCHEMA
+    highlight_fields:   queryBy.fields,        // Highlight the same fields used for search
     highlight_start_tag: '<mark>',
     highlight_end_tag:  '</mark>',
     num_typos:          keywords ? 2 : 0,

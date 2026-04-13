@@ -217,8 +217,8 @@ const executeQuery = async function (args, res) {
   defaultLog.info('sortField:', sortField);
   defaultLog.info('sortDirection:', sortDirection);
 
-  // Typesense fast-path: Project search only (public requests, when feature flag is enabled).
-  const TYPESENSE_SCHEMAS = [constants.PROJECT];
+  // Typesense fast-path: Project and Document search (public requests, when feature flag is enabled).
+  const TYPESENSE_SCHEMAS = [constants.PROJECT, constants.DOCUMENT];
   if (
     process.env.TYPESENSE_ENABLED === 'true' &&
     TYPESENSE_SCHEMAS.includes(dataset) &&
