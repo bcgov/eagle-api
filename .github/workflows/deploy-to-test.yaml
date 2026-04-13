@@ -157,7 +157,7 @@ jobs:
           ref: ${{ inputs.version }}
 
       - name: Login to OpenShift registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ secrets.OPENSHIFT_REPOSITORY }}
           username: ${{ secrets.OPENSHIFT_REPOSITORY_USERNAME }}
