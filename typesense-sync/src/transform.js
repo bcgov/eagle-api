@@ -104,9 +104,40 @@ function transformProject(doc, listLookup) {
   };
 }
 
+function transformRecentActivity(doc, listLookup, projectLookup) {
+  const projectId   = doc.project ? doc.project.toString() : undefined;
+  const projectName = (projectLookup && projectId && projectLookup.has(projectId))
+    ? projectLookup.get(projectId)
+    : undefined;
+
+  // Strip HTML tags so indexed text doesn't contain markup; preserve original for display.
+  const contentHtml  = str(doc.content);
+  const contentPlain = contentHtml
+    ? contentHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() || undefined
+    : undefined;
+
+  return {
+    id: doc._id.toString(),
+    ...(str(doc.headline)              && { headline:                 str(doc.headline) }),
+    ...(contentPlain                   && { content:                  contentPlain }),
+    ...(contentHtml                    && { contentHtml }),
+    ...(str(doc.notificationName)      && { notificationName:         str(doc.notificationName) }),
+    ...(str(doc.type)                  && { type:                     str(doc.type) }),
+    ...(projectId                      && { projectId }),
+    ...(projectName                    && { projectName }),
+    active:                   doc.active  === true,
+    pinned:                   doc.pinned  === true,
+    complianceAndEnforcement: doc.complianceAndEnforcement === true,
+    ...(str(doc.documentUrl)           && { documentUrl:              str(doc.documentUrl) }),
+    ...(str(doc.contentUrl)            && { contentUrl:               str(doc.contentUrl) }),
+    ...(toTimestamp(doc.dateAdded) !== undefined && { dateAdded: toTimestamp(doc.dateAdded) }),
+  };
+}
+
 const TRANSFORMS = {
-  Document: transformDocument,
-  Project:  transformProject,
+  Document:       transformDocument,
+  Project:        transformProject,
+  RecentActivity: transformRecentActivity,
 };
 
 /**

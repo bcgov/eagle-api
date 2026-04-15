@@ -60,10 +60,35 @@ const PROJECT_SCHEMA = {
   ],
 };
 
+const RECENTACTIVITY_SCHEMA = {
+  name: 'activities',
+  fields: [
+    { name: 'id',                       type: 'string' },
+    // Search fields
+    { name: 'headline',                 type: 'string',  index: true,  optional: true },
+    { name: 'content',                  type: 'string',  index: true,  optional: true },
+    { name: 'notificationName',         type: 'string',  index: true,  optional: true },
+    // Facet
+    { name: 'type',                     type: 'string',  facet: true,  optional: true },
+    // Metadata
+    { name: 'projectId',                type: 'string',               optional: true },
+    { name: 'projectName',              type: 'string',               optional: true },
+    { name: 'active',                   type: 'bool',                 optional: true },
+    { name: 'pinned',                   type: 'bool',    sort: true,   optional: true },
+    { name: 'complianceAndEnforcement', type: 'bool',                 optional: true },
+    { name: 'documentUrl',              type: 'string',               optional: true },
+    { name: 'contentUrl',               type: 'string',               optional: true },
+    // Original HTML stored for display (not indexed — stripped version in content)
+    { name: 'contentHtml',              type: 'string',  index: false, optional: true },
+    { name: 'dateAdded',                type: 'int64',   sort: true,   optional: true },
+  ],
+};
+
 /** Map _schemaName → Typesense schema */
 const SCHEMAS = {
-  Document: DOCUMENT_SCHEMA,
-  Project:  PROJECT_SCHEMA,
+  Document:       DOCUMENT_SCHEMA,
+  Project:        PROJECT_SCHEMA,
+  RecentActivity: RECENTACTIVITY_SCHEMA,
 };
 
 /**
@@ -79,14 +104,19 @@ const QUERY_BY = {
     fields:  'name,displayName,description,epicProjectId,proponent',
     weights: '9000,8500,8000,3000,1000',
   },
+  RecentActivity: {
+    fields:  'headline,content,notificationName',
+    weights: '9000,8000,3000',
+  },
 };
 
 /**
  * Facet fields to include in every search response, keyed by schemaName.
  */
 const FACET_BY = {
-  Document: 'type,milestone,documentAuthorType,projectPhase,legislation',
-  Project:  'region,status,currentPhaseName,eacDecision,type,sector',
+  Document:       'type,milestone,documentAuthorType,projectPhase,legislation',
+  Project:        'region,status,currentPhaseName,eacDecision,type,sector',
+  RecentActivity: 'type',
 };
 
 module.exports = { SCHEMAS, QUERY_BY, FACET_BY };
