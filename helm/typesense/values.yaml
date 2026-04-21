@@ -87,6 +87,45 @@ reindex:
   ttlSecondsAfterFinished: 3600
 
 # ---------------------------------------------------------------------------
+# Popularity sync CronJob — patches click scores from penguin-analytics into
+# the Typesense popularity field.  Runs at 3 AM, 1 hour after the re-index.
+#
+# Requires a pre-created secret containing penguin-analytics DB credentials:
+#   oc create secret generic penguin-analytics-db \
+#     --from-literal=PENGUIN_DB_HOST=penguin-analytics-database \
+#     --from-literal=PENGUIN_DB_PORT=5432 \
+#     --from-literal=PENGUIN_DB_NAME=analytics \
+#     --from-literal=PENGUIN_DB_USER=analytics_user \
+#     --from-literal=PENGUIN_DB_PASSWORD=<password> \
+#     -n <namespace>
+# ---------------------------------------------------------------------------
+popularity:
+  enabled: false          # Enable once penguin-analytics is deployed in this namespace
+  schedule: "0 3 * * *"  # 3:00 AM daily — after re-index completes at 2 AM
+
+  image:
+    repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/typesense-sync
+    tag: "latest"
+    pullPolicy: Always
+
+  # Name of the secret containing penguin-analytics DB connection details
+  penguinSecret: penguin-analytics-db
+
+  # Rolling window for click score aggregation (days)
+  windowDays: 30
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 3600
+
+# ---------------------------------------------------------------------------
 # MongoDB connection info (reads from existing eagle-api-mongodb secret)
 # ---------------------------------------------------------------------------
 mongodb:

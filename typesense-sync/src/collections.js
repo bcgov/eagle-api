@@ -33,6 +33,8 @@ const DOCUMENT_SCHEMA = {
     { name: 'internalExt',        type: 'string',               optional: true },
     { name: 'datePosted',         type: 'int64',   sort: true,   optional: true },
     { name: 'dateUploaded',       type: 'int64',   sort: true,   optional: true },
+    // 30-day click/download score — updated nightly by popularity-sync.js
+    { name: 'popularity',         type: 'int32',   sort: true,   optional: true },
   ],
 };
 
@@ -57,6 +59,8 @@ const PROJECT_SCHEMA = {
     { name: 'decisionDate',     type: 'int64',   sort: true,   optional: true },
     // [lng, lat] centroid for map thumbnail in search results
     { name: 'centroid',         type: 'float[]',               optional: true },
+    // 30-day click score — updated nightly by popularity-sync.js
+    { name: 'popularity',       type: 'int32',   sort: true,   optional: true },
   ],
 };
 
@@ -84,11 +88,40 @@ const RECENTACTIVITY_SCHEMA = {
   ],
 };
 
+const PROJECTNOTIFICATION_SCHEMA = {
+  name: 'notifications',
+  fields: [
+    { name: 'id',                          type: 'string' },
+    // Search fields
+    { name: 'name',                        type: 'string',  index: true,  optional: true },
+    { name: 'description',                 type: 'string',  index: true,  optional: true },
+    { name: 'proponent',                   type: 'string',  index: true,  optional: true },
+    { name: 'associatedProjectName',       type: 'string',  index: true,  optional: true },
+    { name: 'region',                      type: 'string',  facet: true,  index: true,  optional: true },
+    { name: 'location',                    type: 'string',  index: true,  optional: true },
+    // Facet / filter fields
+    { name: 'type',                        type: 'string',  facet: true,  optional: true },
+    { name: 'subType',                     type: 'string',  facet: true,  optional: true },
+    { name: 'trigger',                     type: 'string',  facet: true,  optional: true },
+    { name: 'decision',                    type: 'string',  facet: true,  optional: true },
+    { name: 'pcp',                         type: 'string',  facet: true,  optional: true },
+    // Dates
+    { name: 'notificationReceivedDate',    type: 'int64',   sort: true,   optional: true },
+    { name: 'decisionDate',                type: 'int64',   sort: true,   optional: true },
+    // Metadata
+    { name: 'associatedProjectId',         type: 'string',               optional: true },
+    { name: 'centroid',                    type: 'float[]',               optional: true },
+    // Original HTML for display (not indexed)
+    { name: 'descriptionHtml',             type: 'string',  index: false, optional: true },
+  ],
+};
+
 /** Map _schemaName → Typesense schema */
 const SCHEMAS = {
-  Document:       DOCUMENT_SCHEMA,
-  Project:        PROJECT_SCHEMA,
-  RecentActivity: RECENTACTIVITY_SCHEMA,
+  Document:            DOCUMENT_SCHEMA,
+  Project:             PROJECT_SCHEMA,
+  RecentActivity:      RECENTACTIVITY_SCHEMA,
+  ProjectNotification: PROJECTNOTIFICATION_SCHEMA,
 };
 
 /**
@@ -108,15 +141,20 @@ const QUERY_BY = {
     fields:  'headline,content,notificationName',
     weights: '9000,8000,3000',
   },
+  ProjectNotification: {
+    fields:  'name,description,proponent,associatedProjectName,region,location',
+    weights: '9000,8000,3000,2000,1500,1000',
+  },
 };
 
 /**
  * Facet fields to include in every search response, keyed by schemaName.
  */
 const FACET_BY = {
-  Document:       'type,milestone,documentAuthorType,projectPhase,legislation',
-  Project:        'region,status,currentPhaseName,eacDecision,type,sector',
-  RecentActivity: 'type',
+  Document:            'type,milestone,documentAuthorType,projectPhase,legislation',
+  Project:             'region,status,currentPhaseName,eacDecision,type,sector',
+  RecentActivity:      'type',
+  ProjectNotification: 'type,region,decision,pcp',
 };
 
 module.exports = { SCHEMAS, QUERY_BY, FACET_BY };

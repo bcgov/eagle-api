@@ -134,10 +134,41 @@ function transformRecentActivity(doc, listLookup, projectLookup) {
   };
 }
 
+function transformProjectNotification(doc, listLookup) {
+  const descriptionHtml  = str(doc.description);
+  const description      = descriptionHtml
+    ? descriptionHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() || undefined
+    : undefined;
+
+  // pcp is stored as a plain string: 'none' | 'pending' | 'open' | 'closed'
+  const pcp = str(doc.pcp) && doc.pcp !== 'none' ? str(doc.pcp) : undefined;
+
+  return {
+    id: doc._id.toString(),
+    ...(str(doc.name)                    && { name:                    str(doc.name) }),
+    ...(description                      && { description }),
+    ...(descriptionHtml                  && { descriptionHtml }),
+    ...(str(doc.proponent)               && { proponent:               str(doc.proponent) }),
+    ...(str(doc.location)                && { location:                str(doc.location) }),
+    ...(resolvePermissive(doc.type, listLookup)   && { type:   resolvePermissive(doc.type, listLookup) }),
+    ...(str(doc.subType)                 && { subType:               str(doc.subType) }),
+    ...(str(doc.trigger)                 && { trigger:               str(doc.trigger) }),
+    ...(resolvePermissive(doc.region, listLookup) && { region: resolvePermissive(doc.region, listLookup) }),
+    ...(str(doc.decision)                && { decision:                str(doc.decision) }),
+    ...(pcp                              && { pcp }),
+    ...(toTimestamp(doc.notificationReceivedDate) !== undefined && { notificationReceivedDate: toTimestamp(doc.notificationReceivedDate) }),
+    ...(toTimestamp(doc.decisionDate)    !== undefined && { decisionDate: toTimestamp(doc.decisionDate) }),
+    ...(doc.associatedProjectId          && { associatedProjectId:     doc.associatedProjectId.toString() }),
+    ...(str(doc.associatedProjectName)   && { associatedProjectName:   str(doc.associatedProjectName) }),
+    ...parseCentroid(doc.centroid),
+  };
+}
+
 const TRANSFORMS = {
-  Document:       transformDocument,
-  Project:        transformProject,
-  RecentActivity: transformRecentActivity,
+  Document:            transformDocument,
+  Project:             transformProject,
+  RecentActivity:      transformRecentActivity,
+  ProjectNotification: transformProjectNotification,
 };
 
 /**
