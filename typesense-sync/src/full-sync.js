@@ -21,7 +21,7 @@
 const { MongoClient } = require('mongodb');
 const { getClient }   = require('./typesenseClient');
 const { SCHEMAS }     = require('./collections');
-const { transformDoc, buildListLookup, buildProjectLookup } = require('./transform');
+const { transformDoc, buildListLookup, buildProjectLookup, buildPcpLookup } = require('./transform');
 const { buildMongoUri } = require('./config');
 
 const BATCH_SIZE = 500;
@@ -58,7 +58,7 @@ async function importBatch(typesense, collectionName, docs) {
   }
 }
 
-async function syncSchema(typesense, mongoDB, listLookup, projectLookup, schemaName, schema) {
+async function syncSchema(typesense, mongoDB, listLookup, projectLookup, pcpLookup, schemaName, schema) {
   const timestamp     = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
   const newCollection = `${schema.name}_${timestamp}`;
   const alias         = schema.name;
@@ -83,7 +83,7 @@ async function syncSchema(typesense, mongoDB, listLookup, projectLookup, schemaN
   let total = 0;
 
   for await (const doc of cursor) {
-    const transformed = transformDoc(schemaName, doc, listLookup, projectLookup);
+    const transformed = transformDoc(schemaName, doc, listLookup, projectLookup, pcpLookup);
     if (transformed) {
       batch.push(transformed);
       if (batch.length >= BATCH_SIZE) {
@@ -167,8 +167,11 @@ async function main() {
     const projectLookup = await buildProjectLookup(db);
     console.log(`Project lookup loaded: ${projectLookup.size} entries`);
 
+    const pcpLookup = await buildPcpLookup(db);
+    console.log(`PCP lookup loaded: ${pcpLookup.size} entries`);
+
     for (const [schemaName, schema] of Object.entries(SCHEMAS)) {
-      await syncSchema(typesense, db, listLookup, projectLookup, schemaName, schema);
+      await syncSchema(typesense, db, listLookup, projectLookup, pcpLookup, schemaName, schema);
     }
 
     console.log('\nFull sync complete:', new Date().toISOString());

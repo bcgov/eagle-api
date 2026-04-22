@@ -21,7 +21,7 @@
 
 const { MongoClient } = require('mongodb');
 const { getClient }   = require('./typesenseClient');
-const { transformDoc, buildListLookup, buildProjectLookup } = require('./transform');
+const { transformDoc, buildListLookup, buildProjectLookup, buildPcpLookup } = require('./transform');
 const { SCHEMAS }     = require('./collections');
 const { buildMongoUri } = require('./config');
 
@@ -56,14 +56,14 @@ async function resolveCollection(typesense, schemaName) {
   }
 }
 
-async function upsertDoc(typesense, schemaName, fullDoc, listLookup, projectLookup) {
+async function upsertDoc(typesense, schemaName, fullDoc, listLookup, projectLookup, pcpLookup) {
   if (!isPublic(fullDoc) || isDeleted(fullDoc)) {
     // Doc is no longer public — remove from Typesense if it was there
     await deleteDoc(typesense, schemaName, fullDoc._id.toString());
     return;
   }
 
-  const transformed = transformDoc(schemaName, fullDoc, listLookup, projectLookup);
+  const transformed = transformDoc(schemaName, fullDoc, listLookup, projectLookup, pcpLookup);
   if (!transformed) return;
 
   const collectionName = await resolveCollection(typesense, schemaName);
@@ -86,7 +86,7 @@ async function deleteDoc(typesense, schemaName, id) {
   }
 }
 
-async function refreshLookupsIfNeeded(schemaName, mongoDB, listLookupRef, projectLookupRef) {
+async function refreshLookupsIfNeeded(schemaName, mongoDB, listLookupRef, projectLookupRef, pcpLookupRef) {
   if (schemaName === 'List' || schemaName === 'Organization') {
     listLookupRef.map = await buildListLookup(mongoDB);
     console.log(`List lookup refreshed: ${listLookupRef.map.size} entries`);
@@ -96,10 +96,15 @@ async function refreshLookupsIfNeeded(schemaName, mongoDB, listLookupRef, projec
     projectLookupRef.map = await buildProjectLookup(mongoDB);
     console.log(`Project lookup refreshed: ${projectLookupRef.map.size} entries`);
   }
+  if (schemaName === 'CommentPeriod') {
+    pcpLookupRef.map = await buildPcpLookup(mongoDB);
+    console.log(`PCP lookup refreshed: ${pcpLookupRef.map.size} entries`);
+    return true;  // CommentPeriod itself is not indexed in Typesense
+  }
   return false;
 }
 
-async function processChange(typesense, mongoDB, event, listLookupRef, projectLookupRef) {
+async function processChange(typesense, mongoDB, event, listLookupRef, projectLookupRef, pcpLookupRef) {
   const { operationType, fullDocument, documentKey } = event;
   const docId = documentKey?._id?.toString();
 
@@ -109,9 +114,9 @@ async function processChange(typesense, mongoDB, event, listLookupRef, projectLo
     case 'replace': {
       const schemaName = fullDocument?._schemaName;
       if (!schemaName) return;
-      if (await refreshLookupsIfNeeded(schemaName, mongoDB, listLookupRef, projectLookupRef)) return;
+      if (await refreshLookupsIfNeeded(schemaName, mongoDB, listLookupRef, projectLookupRef, pcpLookupRef)) return;
       if (!INDEXED_SCHEMAS.has(schemaName)) return;
-      await upsertDoc(typesense, schemaName, fullDocument, listLookupRef.map, projectLookupRef.map);
+      await upsertDoc(typesense, schemaName, fullDocument, listLookupRef.map, projectLookupRef.map, pcpLookupRef.map);
       break;
     }
 
@@ -119,9 +124,9 @@ async function processChange(typesense, mongoDB, event, listLookupRef, projectLo
       // fullDocument is available when the watch pipeline uses fullDocument: 'updateLookup'
       const schemaName = fullDocument?._schemaName;
       if (!schemaName) return;
-      if (await refreshLookupsIfNeeded(schemaName, mongoDB, listLookupRef, projectLookupRef)) return;
+      if (await refreshLookupsIfNeeded(schemaName, mongoDB, listLookupRef, projectLookupRef, pcpLookupRef)) return;
       if (!INDEXED_SCHEMAS.has(schemaName)) return;
-      await upsertDoc(typesense, schemaName, fullDocument, listLookupRef.map, projectLookupRef.map);
+      await upsertDoc(typesense, schemaName, fullDocument, listLookupRef.map, projectLookupRef.map, pcpLookupRef.map);
       break;
     }
 
@@ -139,7 +144,7 @@ async function processChange(typesense, mongoDB, event, listLookupRef, projectLo
   }
 }
 
-async function startWatcher(typesense, mongoDB, listLookupRef, projectLookupRef) {
+async function startWatcher(typesense, mongoDB, listLookupRef, projectLookupRef, pcpLookupRef) {
   const collection = mongoDB.collection('epic');
 
   // Expand the pipeline to also watch List schema changes (to refresh lookup)
@@ -147,7 +152,7 @@ async function startWatcher(typesense, mongoDB, listLookupRef, projectLookupRef)
     {
       $match: {
         $or: [
-          { 'fullDocument._schemaName': { $in: [...Array.from(INDEXED_SCHEMAS), 'List', 'Organization', 'Project'] } },
+          { 'fullDocument._schemaName': { $in: [...Array.from(INDEXED_SCHEMAS), 'List', 'Organization', 'Project', 'CommentPeriod'] } },
           { operationType: 'delete' },
         ],
       },
@@ -164,7 +169,7 @@ async function startWatcher(typesense, mongoDB, listLookupRef, projectLookupRef)
 
   changeStream.on('change', async (event) => {
     try {
-      await processChange(typesense, mongoDB, event, listLookupRef, projectLookupRef);
+      await processChange(typesense, mongoDB, event, listLookupRef, projectLookupRef, pcpLookupRef);
     } catch (err) {
       console.error('Unhandled error processing change:', err);
     }
@@ -204,7 +209,10 @@ async function main() {
       const projectLookupRef = { map: await buildProjectLookup(db) };
       console.log(`Project lookup loaded: ${projectLookupRef.map.size} entries`);
 
-      await startWatcher(typesense, db, listLookupRef, projectLookupRef);
+      const pcpLookupRef = { map: await buildPcpLookup(db) };
+      console.log(`PCP lookup loaded: ${pcpLookupRef.map.size} entries`);
+
+      await startWatcher(typesense, db, listLookupRef, projectLookupRef, pcpLookupRef);
 
       console.warn('Change Stream closed. Restarting in 5s...');
     } catch (err) {

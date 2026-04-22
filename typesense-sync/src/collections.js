@@ -33,6 +33,8 @@ const DOCUMENT_SCHEMA = {
     { name: 'internalExt',        type: 'string',               optional: true },
     { name: 'datePosted',         type: 'int64',   sort: true,   optional: true },
     { name: 'dateUploaded',       type: 'int64',   sort: true,   optional: true },
+    // Featured flag — shown on project's Featured Documents tab
+    { name: 'isFeatured',         type: 'bool',                  optional: true },
     // 30-day click/download score — updated nightly by popularity-sync.js
     { name: 'popularity',         type: 'int32',   sort: true,   optional: true },
   ],
@@ -53,6 +55,7 @@ const PROJECT_SCHEMA = {
     { name: 'eacDecision',      type: 'string',  facet: true,  optional: true },
     { name: 'type',             type: 'string',  facet: true,  optional: true },
     { name: 'sector',           type: 'string',  facet: true,  optional: true },
+    { name: 'location',         type: 'string',               optional: true },
     // Proponent name stored for display / search
     { name: 'proponent',        type: 'string',  index: true,  optional: true },
     { name: 'updatedDate',      type: 'int64',   sort: true,   optional: true },
@@ -85,6 +88,10 @@ const RECENTACTIVITY_SCHEMA = {
     // Original HTML stored for display (not indexed — stripped version in content)
     { name: 'contentHtml',              type: 'string',  index: false, optional: true },
     { name: 'dateAdded',                type: 'int64',   sort: true,   optional: true },
+    // PCP (Comment Period) fields — needed for "View Engagement" button routing
+    { name: 'pcpId',                    type: 'string',               optional: true },
+    { name: 'pcpIsMet',                 type: 'bool',                 optional: true },
+    { name: 'pcpMetURL',                type: 'string',               optional: true },
   ],
 };
 

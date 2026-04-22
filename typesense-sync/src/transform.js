@@ -80,6 +80,7 @@ function transformDocument(doc, listLookup, projectLookup) {
     ...(str(doc.internalExt)       && { internalExt:        str(doc.internalExt) }),
     ...(toTimestamp(doc.datePosted)    !== undefined && { datePosted:    toTimestamp(doc.datePosted) }),
     ...(toTimestamp(doc.dateUploaded)  !== undefined && { dateUploaded:  toTimestamp(doc.dateUploaded) }),
+    isFeatured: doc.isFeatured === true,
   };
 }
 
@@ -96,6 +97,7 @@ function transformProject(doc, listLookup) {
     ...(resolvePermissive(leg.eacDecision, listLookup)      && { eacDecision:      resolvePermissive(leg.eacDecision, listLookup) }),
     ...(str(leg.type)             && { type:             str(leg.type) }),
     ...(str(leg.sector)           && { sector:           str(leg.sector) }),
+    ...(str(leg.location)         && { location:         str(leg.location) }),
     ...(str(leg.shortName)        && { displayName:      str(leg.shortName) }),
     ...(resolvePermissive(leg.proponent, listLookup)    && { proponent:        resolvePermissive(leg.proponent, listLookup) }),
     ...(toTimestamp(leg.dateUpdated)    !== undefined && { updatedDate:   toTimestamp(leg.dateUpdated) }),
@@ -104,7 +106,7 @@ function transformProject(doc, listLookup) {
   };
 }
 
-function transformRecentActivity(doc, listLookup, projectLookup) {
+function transformRecentActivity(doc, listLookup, projectLookup, pcpLookup) {
   const projectId   = doc.project ? doc.project.toString() : undefined;
   const projectName = (projectLookup && projectId && projectLookup.has(projectId))
     ? projectLookup.get(projectId)
@@ -115,6 +117,11 @@ function transformRecentActivity(doc, listLookup, projectLookup) {
   const contentPlain = contentHtml
     ? contentHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() || undefined
     : undefined;
+
+  // PCP (Comment Period) — stored as an ObjectId ref on the RecentActivity doc.
+  // Look up isMet and metURL so the frontend can route "View Engagement" correctly.
+  const pcpId  = doc.pcp ? doc.pcp.toString() : undefined;
+  const pcpMeta = (pcpLookup && pcpId && pcpLookup.has(pcpId)) ? pcpLookup.get(pcpId) : null;
 
   return {
     id: doc._id.toString(),
@@ -131,6 +138,10 @@ function transformRecentActivity(doc, listLookup, projectLookup) {
     ...(str(doc.documentUrl)           && { documentUrl:              str(doc.documentUrl) }),
     ...(str(doc.contentUrl)            && { contentUrl:               str(doc.contentUrl) }),
     ...(toTimestamp(doc.dateAdded) !== undefined && { dateAdded: toTimestamp(doc.dateAdded) }),
+    // PCP routing fields
+    ...(pcpId                          && { pcpId }),
+    ...(pcpMeta?.isMet === true        && { pcpIsMet: true }),
+    ...(pcpMeta?.metURL                && { pcpMetURL: str(pcpMeta.metURL) }),
   };
 }
 
@@ -190,6 +201,25 @@ async function buildProjectLookup(db) {
 }
 
 /**
+ * Build a Map<idString, { isMet, metURL }> for all public CommentPeriod documents.
+ * Used to populate pcpId/pcpIsMet/pcpMetURL on RecentActivity records at sync time.
+ */
+async function buildPcpLookup(db) {
+  const docs = await db.collection('epic')
+    .find({ _schemaName: 'CommentPeriod', read: { $in: ['public'] } })
+    .project({ _id: 1, isMet: 1, metURL: 1 })
+    .toArray();
+  const map = new Map();
+  for (const item of docs) {
+    map.set(item._id.toString(), {
+      isMet:  item.isMet  === true,
+      metURL: item.metURL || null,
+    });
+  }
+  return map;
+}
+
+/**
  * Build a Map<idString, name> for all List and Organization documents.
  * Pass the result into transformDoc so ObjectId references are resolved to labels.
  */
@@ -210,16 +240,17 @@ async function buildListLookup(db) {
  * Returns null if the schemaName is not indexed.
  * @param {Map} [listLookup]    - Optional id→name map built with buildListLookup()
  * @param {Map} [projectLookup] - Optional id→name map built with buildProjectLookup()
+ * @param {Map} [pcpLookup]     - Optional id→{ isMet, metURL } map built with buildPcpLookup()
  */
-function transformDoc(schemaName, doc, listLookup, projectLookup) {
+function transformDoc(schemaName, doc, listLookup, projectLookup, pcpLookup) {
   const fn = TRANSFORMS[schemaName];
   if (!fn) return null;
   try {
-    return fn(doc, listLookup, projectLookup);
+    return fn(doc, listLookup, projectLookup, pcpLookup);
   } catch (err) {
     console.warn(`Transform failed for ${schemaName} ${doc._id}:`, err.message);
     return null;
   }
 }
 
-module.exports = { transformDoc, buildListLookup, buildProjectLookup };
+module.exports = { transformDoc, buildListLookup, buildProjectLookup, buildPcpLookup };
