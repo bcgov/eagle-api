@@ -46,10 +46,10 @@ spec:
             - |
               echo "Waiting for MongoDB RS primary at eagle-api-mongodb:27017..."
               for i in $(seq 1 60); do
-                result=$(mongosh "mongodb://eagle-api-mongodb:27017/?directConnection=true" \
+                result=$(HOME=/tmp mongosh "mongodb://eagle-api-mongodb:27017/?directConnection=true" \
                   -u "$MONGO_USER" -p "$MONGO_PASS" \
                   --authenticationDatabase admin --quiet \
-                  --eval "db.adminCommand('isMaster').ismaster" 2>/dev/null | tail -1)
+                  --eval "db.adminCommand('hello').isWritablePrimary" 2>/dev/null)
                 if [ "$result" = "true" ]; then
                   echo "MongoDB RS primary ready."
                   exit 0
