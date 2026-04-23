@@ -81,6 +81,7 @@ function transformDocument(doc, listLookup, projectLookup) {
     ...(toTimestamp(doc.datePosted)    !== undefined && { datePosted:    toTimestamp(doc.datePosted) }),
     ...(toTimestamp(doc.dateUploaded)  !== undefined && { dateUploaded:  toTimestamp(doc.dateUploaded) }),
     isFeatured: doc.isFeatured === true,
+    ...(str(doc.documentSource)    && { documentSource: str(doc.documentSource) }),
   };
 }
 

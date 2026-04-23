@@ -35,6 +35,8 @@ const DOCUMENT_SCHEMA = {
     { name: 'dateUploaded',       type: 'int64',   sort: true,   optional: true },
     // Featured flag — shown on project's Featured Documents tab
     { name: 'isFeatured',         type: 'bool',                  optional: true },
+    // Source of the document (e.g. 'COMMENT', 'DOCUMENT') — used as a filter
+    { name: 'documentSource',     type: 'string',  facet: true,  optional: true },
     // 30-day click/download score — updated nightly by popularity-sync.js
     { name: 'popularity',         type: 'int32',   sort: true,   optional: true },
   ],
@@ -158,7 +160,7 @@ const QUERY_BY = {
  * Facet fields to include in every search response, keyed by schemaName.
  */
 const FACET_BY = {
-  Document:            'type,milestone,documentAuthorType,projectPhase,legislation',
+  Document:            'type,milestone,documentAuthorType,projectPhase,legislation,documentSource',
   Project:             'region,status,currentPhaseName,eacDecision,type,sector',
   RecentActivity:      'type',
   ProjectNotification: 'type,region,decision,pcp',
