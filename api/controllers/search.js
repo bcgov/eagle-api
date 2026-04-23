@@ -34,8 +34,8 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     strength: 2
   };
 
-  defaultLog.info('collation:', aggregateCollation);
-  defaultLog.info('populate:', populate);
+  defaultLog.debug('collation:', aggregateCollation);
+  defaultLog.debug('populate:', populate);
 
   // Decode any parameters here that may arrive encoded.
   const decodedKeywords = keywords ? decodeURIComponent(keywords) : undefined;
@@ -153,19 +153,19 @@ const executeQuery = async function (args, res) {
   const categorized = args.swagger.params.categorized ? args.swagger.params.categorized.value : null;
   const fuzzy = args.swagger.params.fuzzy.value ? args.swagger.params.fuzzy.value : false;
 
-  defaultLog.info('Searching keywords:', keywords);
-  defaultLog.info('Fuzzy text search:', fuzzy);
-  defaultLog.info('Searching datasets:', dataset);
-  defaultLog.info('Searching project:', project);
-  defaultLog.info('pageNum:', pageNum);
-  defaultLog.info('pageSize:', pageSize);
-  defaultLog.info('sortBy:', sortBy);
-  defaultLog.info('caseSensitive:', caseSensitive);
-  defaultLog.info('and:', and);
-  defaultLog.info('or:', or);
-  defaultLog.info('_id:', _id);
-  defaultLog.info('populate:', populate);
-  defaultLog.info('roles:', roles);
+  defaultLog.debug('Searching keywords:', keywords);
+  defaultLog.debug('Fuzzy text search:', fuzzy);
+  defaultLog.debug('Searching datasets:', dataset);
+  defaultLog.debug('Searching project:', project);
+  defaultLog.debug('pageNum:', pageNum);
+  defaultLog.debug('pageSize:', pageSize);
+  defaultLog.debug('sortBy:', sortBy);
+  defaultLog.debug('caseSensitive:', caseSensitive);
+  defaultLog.debug('and:', and);
+  defaultLog.debug('or:', or);
+  defaultLog.debug('_id:', _id);
+  defaultLog.debug('populate:', populate);
+  defaultLog.debug('roles:', roles);
 
   if (args.swagger.params.project && args.swagger.params.project.value && !mongoose.Types.ObjectId.isValid(project)) {
     return Actions.sendResponse(res, 400, { });

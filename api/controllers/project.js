@@ -148,7 +148,7 @@ exports.publicHead = async function (args, res) {
       return Actions.sendResponse(res, 404, data);
     }
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -220,7 +220,7 @@ exports.publicGet = async function (args, res) {
     console.log('DA:', JSON.stringify(sanitizedData));
     return Actions.sendResponse(res, 200, sanitizedData);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -308,7 +308,7 @@ exports.protectedGet = async function (args, res) {
     defaultLog.info('Got comment project(s):', data);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };

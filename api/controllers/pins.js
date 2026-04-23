@@ -79,7 +79,7 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
     defaultLog.info('Got pins for project:', projectId.value);
     return Actions.sendResponse(res, 200, orgData);
   } catch (e) {
-    defaultLog.error('Error getting pins for project:', projectId.value, e);
+    defaultLog.error(`Error getting pins for project: ${projectId.value}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -135,7 +135,7 @@ exports.protectedAddPins = async function (args, res) {
       return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {
-    defaultLog.error('Error adding pins to project:', objId, e);
+    defaultLog.error(`Error adding pins to project: ${objId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -163,7 +163,7 @@ exports.protectedPublishPin = async function (args, res) {
       return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {
-    defaultLog.error('Error publishing pins for project:', projId, e);
+    defaultLog.error(`Error publishing pins for project: ${projId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -190,7 +190,7 @@ exports.protectedUnPublishPin = async function (args, res) {
       return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {
-    defaultLog.error('Error unpublishing pins for project:', projId, e);
+    defaultLog.error(`Error unpublishing pins for project: ${projId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -214,7 +214,7 @@ exports.protectedPinDelete = async function (args, res) {
     defaultLog.info('Deleted pin:', pinId, 'from project:', projId);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
-    defaultLog.error('Error deleting pin:', pinId, 'from project:', projId, e);
+    defaultLog.error(`Error deleting pin: ${pinId} from project: ${projId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };

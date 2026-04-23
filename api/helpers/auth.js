@@ -24,10 +24,8 @@ const jwksClientInstance = jwksClient({
 });
 
 exports.verifyToken = function(req, authOrSecDef, token, callback) {
-  defaultLog.info('verifying token', token);
   // scopes/roles defined for the current endpoint
   var currentScopes = req.swagger.operation['x-security-scopes'];
-  console.log('current:', currentScopes);
   function sendError() {
     return req.res.status(403).json({ message: 'Error: Access Denied' });
   }
@@ -68,7 +66,7 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
 
       client.getSigningKey(kid, (err, key) => {
         if (err) {
-          defaultLog.error('Signing Key Error:', err);
+          defaultLog.error(`Signing Key Error:: ${err.message}`);
           callback(sendError());
         } else {
           const signingKey = key.publicKey || key.rsaPublicKey;
@@ -77,7 +75,7 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
         }
       });
     } else {
-      defaultLog.info('proceeding with local JWT verification:', tokenString);
+      defaultLog.debug('Local JWT verification.');
       _verifySecret(currentScopes, tokenString, SECRET, req, callback, sendError);
     }
   } else {
@@ -85,7 +83,6 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
     console.log('current:', currentScopes);
     if (!req.swagger.apiPath.startsWith('/public')
         && (req.swagger.operationPath[2] !== 'get' && req.swagger.operationPath[2] !== 'option' && req.swagger.operationPath[2] !== 'head')) {
-      console.log('Mismatch');
       return callback(sendError());
     }
 
@@ -114,33 +111,22 @@ function _verifySecret (currentScopes, tokenString, secret, req, callback, sendE
         decodedToken.realm_access &&
         decodedToken.realm_access.roles
     ) {
-      defaultLog.info('JWT decoded:', decodedToken);
-
-      // check if the role is valid for this endpoint
-      // var roleMatch = currentScopes.some(r=> decodedToken.realm_access.roles.indexOf(r) >= 0)
-      // defaultLog.info("currentScopes", currentScopes);
-      defaultLog.info('decodedToken.realm_access.roles', decodedToken.realm_access.roles);
-      // defaultLog.info("role match", roleMatch);
-
       // check if the dissuer matches
       var issuerMatch = decodedToken.iss == ISSUER;
-      defaultLog.info('decodedToken.iss', decodedToken.iss);
-      defaultLog.info('ISSUER', ISSUER);
-      defaultLog.info('issuerMatch', issuerMatch);
 
       // if (roleMatch && issuerMatch) {
       if (issuerMatch) {
         // add the token to the request so that we can access it in the endpoint code if necessary
         req.swagger.params.auth_payload = decodedToken;
-        defaultLog.info('JWT Verified.');
+        defaultLog.debug('JWT verified for user: %s', decodedToken.preferred_username);
         return callback(null);
       } else {
-        defaultLog.info('JWT Role/Issuer mismatch.');
+        defaultLog.warn('JWT issuer mismatch for user: %s', decodedToken.preferred_username);
         return callback(sendError());
       }
     } else {
       // return the error in the callback if the JWT was not verified
-      defaultLog.info('JWT Verification Err:', verificationError);
+      defaultLog.warn('JWT verification failed: %s', verificationError && verificationError.message);
       return callback(sendError());
     }
   });
@@ -149,13 +135,9 @@ function _verifySecret (currentScopes, tokenString, secret, req, callback, sendE
 exports.issueToken = function(user,
   deviceId,
   scopes) {
-  defaultLog.info('user:',user);
-  defaultLog.info('deviceId:',deviceId);
-  defaultLog.info('scopes:',scopes);
   var crypto = require('crypto');
   var randomString = crypto.randomBytes(32).toString('hex');
   var jti = crypto.createHash('sha256').update(user.username + deviceId + randomString).digest('hex');
-  defaultLog.info('JTI:', jti);
 
   var payload = {
     name: user.username,
@@ -172,7 +154,7 @@ exports.issueToken = function(user,
   var token = jwt.sign(payload,
     SECRET,
     {expiresIn: JWT_SIGN_EXPIRY + 'm'});
-  defaultLog.info('ISSUING NEW TOKEN:expiresIn:', JWT_SIGN_EXPIRY + 'm');
+  defaultLog.debug('Issuing token, expiresIn: %sm', JWT_SIGN_EXPIRY);
 
   return token;
 };
@@ -196,13 +178,10 @@ exports.setPassword = function (user) {
  * Create instance method for authenticating user
  */
 var authenticate = function (user, password) {
-  defaultLog.info('HASH:', hashPassword(user, password));
-  defaultLog.info('user.password:', user.password);
   return user.password === hashPassword(user, password);
 };
 
 exports.checkAuthentication = function (username, password, cb) {
-  defaultLog.info('authStrategy loading');
   var User = require('mongoose').model('User');
 
   // Look this user up in the db and hash their password to see if it's correct.
@@ -210,17 +189,15 @@ exports.checkAuthentication = function (username, password, cb) {
     username: username.toLowerCase()
   }, function (err, user) {
     if (err) {
-      defaultLog.info('ERR:', err);
+      defaultLog.error('checkAuthentication error: %s', err.message);
       return cb(err);
     }
-    defaultLog.info('continuing');
     if (!user || !authenticate(user, password)) {
-      defaultLog.info('bad username or password!');
+      defaultLog.debug('Invalid username or password for: %s', username);
       return cb(null, false, {
         message: 'Invalid username or password'
       });
     }
-    defaultLog.info('YAY');
     return cb(null, user);
   });
 };

@@ -30,7 +30,7 @@ exports.protectedPublishCAC = async function (args, res) {
       return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {
-    defaultLog.error('Error publishing CAC for project:', projId, e);
+    defaultLog.error(`Error publishing CAC for project: ${projId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -57,7 +57,7 @@ exports.protectedUnPublishCAC = async function (args, res) {
       return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {
-    defaultLog.error('Error unpublishing CAC for project:', projId, e);
+    defaultLog.error(`Error unpublishing CAC for project: ${projId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -108,7 +108,7 @@ exports.publicCACSignUp = async function (args, res) {
     defaultLog.info('Signed up CAC member for project:', projectId);
     return Actions.sendResponse(res, 200, {});
   } catch (e) {
-    defaultLog.error('Error signing up CAC member for project:', projectId, e);
+    defaultLog.error(`Error signing up CAC member for project: ${projectId}: ${e.message}`);
     return Actions.sendResponse(res, 500, {});
   }
 };
@@ -146,7 +146,7 @@ exports.publicCACRemoveMember = async function (args, res) {
       return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {
-    defaultLog.error('Error removing CAC member from project:', projId, e);
+    defaultLog.error(`Error removing CAC member from project: ${projId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -172,7 +172,7 @@ exports.protectedCACRemoveMember = async function (args, res) {
     defaultLog.info('Removed CAC member:', member._id, 'from project:', projId);
     return Actions.sendResponse(res, 200, projectData);
   } catch (e) {
-    defaultLog.error('Error removing CAC member:', member._id, 'from project:', projId, e);
+    defaultLog.error(`Error removing CAC member: ${member._id} from project: ${projId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -199,7 +199,7 @@ exports.protectedCreateCAC = async function (args, res) {
     defaultLog.info('Created CAC for project:', projId);
     return Actions.sendResponse(res, 201, data);
   } catch (e) {
-    defaultLog.error('Error creating CAC for project:', projId, e);
+    defaultLog.error(`Error creating CAC for project: ${projId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -232,7 +232,7 @@ exports.protectedCACDelete = async function (args, res) {
     defaultLog.info('Deleted CAC for project:', projId);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
-    defaultLog.error('Error deleting CAC for project:', projId, e);
+    defaultLog.error(`Error deleting CAC for project: ${projId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };

@@ -298,7 +298,7 @@ exports.protectedGet = async function (args, res) {
     }
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -360,7 +360,7 @@ exports.protectedPost = async function (args, res) {
     defaultLog.info('Saved new comment object:', c);
     return Actions.sendResponse(res, 200, c);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -430,7 +430,7 @@ exports.unProtectedPost = async function (args, res) {
     console.log('Saved new comment object:', c);
     return Actions.sendResponse(res, 200, c);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -471,7 +471,7 @@ exports.protectedPut = async function (args, res) {
     defaultLog.info('Comment updated:', c);
     return Actions.sendResponse(res, 200, c);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -498,7 +498,7 @@ exports.protectedStatus = async function (args, res) {
     defaultLog.info('Comment updated:', c);
     return Actions.sendResponse(res, 200, c);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };

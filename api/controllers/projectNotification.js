@@ -43,7 +43,7 @@ exports.protectedGet = async function (args, res) {
 
     return Actions.sendResponse(res, 200, data);
   } catch (error) {
-    defaultLog.info('Error:', error);
+    defaultLog.error(`Error:: ${error.message}`);
     return Actions.sendResponse(res, 400, {error: error.message });
   }
 };
@@ -72,7 +72,7 @@ exports.protectedPost = async function (args, res) {
     defaultLog.info('Saved new project notification object:', saveProjectNotification);
     return Actions.sendResponse(res, 201, saveProjectNotification);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error:: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -123,7 +123,7 @@ exports.protectedPut = async function (args, res) {
     defaultLog.info('Project Notification updated:', updatedRecord);
     return Actions.sendResponse(res, 200, updatedRecord);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error:: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };

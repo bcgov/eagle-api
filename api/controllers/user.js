@@ -49,7 +49,7 @@ exports.protectedPost = async function (args, res) {
     defaultLog.info('Saved new user object:', u);
     return Actions.sendResponse(res, 200, u);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -98,7 +98,7 @@ exports.protectedPut = async function (args, res) {
     defaultLog.info('Organization updated:', u);
     return Actions.sendResponse(res, 200, u);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };

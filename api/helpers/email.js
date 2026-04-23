@@ -78,7 +78,7 @@ exports.sendCACWelcomeEmail = async function (projectId, projectName, email) {
       defaultLog.error("Couldn't get a proper token", getOKRes);
     }
   } catch (err) {
-    defaultLog.error("Error:", err);
+    defaultLog.error(`Error:: ${err.message}`);
     // fall through, don't block execution on this.
   }
 

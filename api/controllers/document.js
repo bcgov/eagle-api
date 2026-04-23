@@ -87,7 +87,7 @@ exports.publicGet = async function (args, res,) {
     Utils.recordAction('Get', 'Document', 'public', args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -164,14 +164,14 @@ exports.unProtectedPost = async function (args, res) {
       return Actions.sendResponse(res, 400, saveError);
     }
   } catch (e) {
-    defaultLog.error('Error in unProtectedPost:', e);
+    defaultLog.error(`Error in unProtectedPost: ${e.message}`);
     delete e['path'];
     return Actions.sendResponse(res, 400, e);
   }
 };
 
 exports.protectedHead = function (args, res) {
-  defaultLog.info('args.swagger.params:', args.swagger.params.auth_payload.realm_access.roles);
+  defaultLog.debug('Roles:', args.swagger.params.auth_payload.realm_access.roles);
 
   // Build match query if on docId route
   var query = {};
@@ -249,7 +249,7 @@ exports.protectedGet = async function (args, res) {
     defaultLog.info('Got document(s):', data);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -338,7 +338,7 @@ exports.protectedDownload = function (args, res) {
   var self = this;
   self.scopes = args.swagger.params.auth_payload.realm_access.roles;
 
-  defaultLog.info('args.swagger.params:', args.swagger.params.auth_payload.realm_access.roles);
+  defaultLog.debug('Roles:', args.swagger.params.auth_payload.realm_access.roles);
 
   // Build match query if on docId route
   var query = {};
@@ -409,7 +409,7 @@ exports.protectedOpen = function (args, res) {
   var self = this;
   self.scopes = args.swagger.params.auth_payload.realm_access.roles;
 
-  defaultLog.info('args.swagger.params:', args.swagger.params.auth_payload.realm_access.roles);
+  defaultLog.debug('Roles:', args.swagger.params.auth_payload.realm_access.roles);
 
   // Build match query if on docId route
   var query = {};
@@ -581,7 +581,7 @@ exports.protectedPost = async function (args, res) {
       return Actions.sendResponse(res, 400, saveError);
     }
   } catch (e) {
-    defaultLog.error('Error in protectedPost:', e);
+    defaultLog.error(`Error in protectedPost: ${e.message}`);
     delete e['path'];
     return Actions.sendResponse(res, 400, e);
   }
@@ -722,7 +722,7 @@ exports.protectedPut = async function (args, res) {
       return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };

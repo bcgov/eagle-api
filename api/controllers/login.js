@@ -10,7 +10,7 @@ exports.loginPost = function(args, res) {
 
   auth.checkAuthentication(username, password, function (err, user) {
     if (err || !user) {
-      defaultLog.info('err:', err);
+      defaultLog.error(`err:: ${err.message}`);
       defaultLog.info('user:', user);
       res.status(400).send(err);
     } else {

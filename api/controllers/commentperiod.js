@@ -106,7 +106,7 @@ exports.publicGet = async function (args, res) {
     Utils.recordAction('Get', 'CommentPeriod', 'public', args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value ? args.swagger.params.commentPeriodId.value : null);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -151,7 +151,7 @@ exports.protectedHead = async function (args, res) {
       return Actions.sendResponse(res, 404, data);
     }
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -209,7 +209,7 @@ exports.protectedSummary = async function (args, res) {
     console.log('sending summary:', summary);
     return Actions.sendResponse(res, 200, summary);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -271,7 +271,7 @@ exports.protectedGet = async function (args, res) {
     defaultLog.info('Got comment period(s):', data);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -321,7 +321,7 @@ exports.protectedPost = async function (args, res) {
     defaultLog.info('Saved new comment period object:', cp);
     return Actions.sendResponse(res, 200, cp);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -366,7 +366,7 @@ exports.protectedPut = async function (args, res) {
     defaultLog.info('Comment period updated:', cp);
     return Actions.sendResponse(res, 200, cp);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -384,7 +384,7 @@ exports.protectedDelete = async function (args, res) {
     Utils.recordAction('Delete', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId);
     return Actions.sendResponse(res, 200, {});
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -426,7 +426,7 @@ exports.protectedUnPublish = async function (args, res) {
     Utils.recordAction('Unpublish', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId);
     return Actions.sendResponse(res, 200, unpublished);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };

@@ -124,7 +124,7 @@ exports.protectedPost = async function (args, res) {
     defaultLog.info('Saved new organization object:', org);
     return Actions.sendResponse(res, 200, org);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -170,7 +170,7 @@ exports.protectedPut = async function (args, res) {
     defaultLog.info('Organization updated:', org);
     return Actions.sendResponse(res, 200, org);
   } catch (e) {
-    defaultLog.info('Error:', e);
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };

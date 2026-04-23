@@ -29,7 +29,7 @@ exports.protectedAddGroup = async function (args, res) {
     defaultLog.info('Saved new group object:', d);
     return Actions.sendResponse(res, 200, d);
   } catch (e) {
-    defaultLog.error('Error adding group to project:', objId, e);
+    defaultLog.error(`Error adding group to project: ${objId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -50,7 +50,7 @@ exports.protectedGroupPut = async function (args, res) {
     defaultLog.info('Updated group:', groupId);
     return Actions.sendResponse(res, 200, group);
   } catch (e) {
-    defaultLog.error('Error updating group:', groupId, e);
+    defaultLog.error(`Error updating group: ${groupId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -71,7 +71,7 @@ exports.protectedGroupDelete = async function (args, res) {
     defaultLog.info('Deleted group:', groupId, 'from project:', objId);
     return Actions.sendResponse(res, 200, {});
   } catch (e) {
-    defaultLog.error('Error deleting group:', groupId, e);
+    defaultLog.error(`Error deleting group: ${groupId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -101,7 +101,7 @@ exports.protectedAddGroupMembers = async function (args, res) {
       return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {
-    defaultLog.error('Error adding members to group:', groupId, e);
+    defaultLog.error(`Error adding members to group: ${groupId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -170,7 +170,7 @@ const handleGetGroupMembers = async function (groupId, roles, sortBy, pageSize, 
     defaultLog.info('Got members for group:', groupId.value);
     return Actions.sendResponse(res, 200, groupData);
   } catch (e) {
-    defaultLog.error('Error getting group members for group:', groupId.value, e);
+    defaultLog.error(`Error getting group members for group: ${groupId.value}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -194,7 +194,7 @@ exports.protectedDeleteGroupMembers = async function (args, res) {
     defaultLog.info('Deleted group member:', memberId, 'from group:', groupId);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
-    defaultLog.error('Error deleting group member:', memberId, 'from group:', groupId, e);
+    defaultLog.error(`Error deleting group member: ${memberId} from group: ${groupId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };

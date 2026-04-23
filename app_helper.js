@@ -4,24 +4,35 @@ const winston       = require('winston');
 const options       = require('./config/mongoose_options').mongooseOptions;
 
 // Logging middleware
+const { format, transports } = winston;
 winston.loggers.add('default', {
-  file: {
-    level: 'info',
-    filename: `/tmp/epic-app.log`,
-    handleExceptions: true,
-    json: true,
-    maxsize: 5242880, // 5MB
-    maxFiles: 5,
-    colorize: false,
-    label: 'default',
-  },
-  console: {
-    colorize: 'true',
-    handleExceptions: true,
-    json: false,
-    level: 'info',
-    label: 'default',
-  }
+  transports: [
+    new transports.File({
+      level: 'info',
+      filename: '/tmp/epic-app.log',
+      handleExceptions: true,
+      maxsize: 5242880, // 5MB
+      maxFiles: 5,
+      format: format.combine(
+        format.errors({ stack: true }),
+        format.splat(),
+        format.label({ label: 'default' }),
+        format.timestamp(),
+        format.json()
+      )
+    }),
+    new transports.Console({
+      level: 'info',
+      handleExceptions: true,
+      format: format.combine(
+        format.errors({ stack: true }),
+        format.splat(),
+        format.label({ label: 'default' }),
+        format.colorize(),
+        format.simple()
+      )
+    })
+  ]
 });
 var defaultLog = winston.loggers.get('default');
 
