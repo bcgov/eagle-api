@@ -18,6 +18,9 @@
  *   TYPESENSE_HOST, TYPESENSE_PORT, TYPESENSE_API_KEY
  */
 
+// Load .env when running locally (no-op in production where env vars are injected)
+require('dotenv').config();
+
 const { MongoClient } = require('mongodb');
 const { getClient }   = require('./typesenseClient');
 const { SCHEMAS }     = require('./collections');
@@ -27,11 +30,23 @@ const { buildMongoUri } = require('./config');
 const BATCH_SIZE = 500;
 
 // MongoDB query: only public, non-deleted documents
+// Match eagle-api's $redact logic: include docs where read contains 'public',
+// OR where read does not exist (eagle-api $$DESCEND behaviour — e.g. project-linked
+// RecentActivity docs that predate the read-tagging convention).
 const PUBLIC_QUERY = {
-  read:      { $in: ['public'] },
-  $or: [
-    { isDeleted: { $exists: false } },
-    { isDeleted: false },
+  $and: [
+    {
+      $or: [
+        { read: { $in: ['public'] } },
+        { read: { $exists: false } },
+      ],
+    },
+    {
+      $or: [
+        { isDeleted: { $exists: false } },
+        { isDeleted: false },
+      ],
+    },
   ],
 };
 

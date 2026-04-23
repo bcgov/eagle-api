@@ -4,7 +4,7 @@
  * Change Stream listener — syncs MongoDB epic collection to Typesense in near real-time.
  *
  * Watches the MongoDB "epic" collection for insert/update/replace/delete events
- * and mirrors them to Typesense. Only public documents (read: ['public']) are synced.
+ * and mirrors them to Typesense. Syncs public documents: read contains 'public', or no read field (eagle-api $$DESCEND behaviour).
  *
  * Resume tokens are stored in-memory. On restart, the listener starts from the
  * current oplog position (missing at most a few seconds of changes). The nightly
@@ -19,6 +19,9 @@
  *   TYPESENSE_HOST, TYPESENSE_PORT, TYPESENSE_API_KEY
  */
 
+// Load .env when running locally (no-op in production where env vars are injected)
+require('dotenv').config();
+
 const { MongoClient } = require('mongodb');
 const { getClient }   = require('./typesenseClient');
 const { transformDoc, buildListLookup, buildProjectLookup, buildPcpLookup } = require('./transform');
@@ -27,7 +30,10 @@ const { buildMongoUri } = require('./config');
 
 const INDEXED_SCHEMAS = new Set(Object.keys(SCHEMAS));
 
+// Match eagle-api's $redact logic: include docs where read contains 'public',
+// OR where read does not exist ($$DESCEND behaviour for legacy docs).
 function isPublic(doc) {
+  if (!doc.read) return true; // no read field → public by $$DESCEND
   return Array.isArray(doc.read) && doc.read.includes('public');
 }
 
