@@ -47,27 +47,70 @@ spec:
                 - bash
                 - -c
                 - |
-                  # Wait for MongoDB to accept connections (up to 60s)
+                  # Phase 1: Wait for mongod to accept connections (up to 60s).
                   for i in $(seq 1 30); do
                     mongosh --quiet --eval "db.adminCommand('ping')" 2>/dev/null && break
                     sleep 2
                   done
-                  # Initialize replica set if not already done.
-                  # Uses the service hostname (eagle-api-mongodb:27017) which resolves
-                  # to the pod IP via the headless service — so MongoDB recognises itself.
-                  mongosh --quiet \
-                    -u "$MONGO_INITDB_ROOT_USERNAME" \
-                    -p "$MONGO_INITDB_ROOT_PASSWORD" \
-                    --authenticationDatabase admin \
-                    --eval "
-                      try {
-                        var s = rs.status();
-                        print('Replica set already initialized: ' + s.set + ' state:' + s.myState);
-                      } catch(e) {
-                        var r = rs.initiate({_id:'rs0', members:[{_id:0, host:'{{ include "eagle-api.mongodb.fullname" . }}:27017'}]});
-                        print('rs.initiate result: ' + JSON.stringify(r));
-                      }
-                    " || true
+
+                  MONGO_HOST="{{ include "eagle-api.mongodb.fullname" . }}:27017"
+                  CONN="mongodb://localhost:27017/?directConnection=true"
+
+                  # Phase 2: Ensure RS is configured with the correct hostname.
+                  # The RS subsystem may not be ready immediately after mongod accepts
+                  # connections — poll until rs.status() returns a usable state.
+                  # On fresh PV: rs.status() errors with "no replset config" → rs.initiate().
+                  # On existing PV: rs.status() may return STARTUP/STARTUP2/REMOVED because
+                  # the stored member host differs from this pod's DNS resolution. In that
+                  # case rs.reconfig({force:true}) fixes the hostname and triggers election.
+                  for attempt in $(seq 1 20); do
+                    result=$(mongosh "$CONN" --quiet \
+                      -u "$MONGO_INITDB_ROOT_USERNAME" \
+                      -p "$MONGO_INITDB_ROOT_PASSWORD" \
+                      --authenticationDatabase admin \
+                      --eval "
+                        try {
+                          var st = rs.status();
+                          var state = st.myState;
+                          if (state === 1) {
+                            // Already PRIMARY — verify hostname is correct then done.
+                            var cfg = rs.conf();
+                            if (cfg.members[0].host !== '$MONGO_HOST') {
+                              cfg.members[0].host = '$MONGO_HOST';
+                              rs.reconfig(cfg, {force: true});
+                              print('RECONFIG_DONE');
+                            } else {
+                              print('ALREADY_PRIMARY');
+                            }
+                          } else {
+                            // SECONDARY/STARTUP/REMOVED — force reconfig to correct hostname
+                            // and let MongoDB re-run the election.
+                            var cfg = rs.conf();
+                            cfg.members[0].host = '$MONGO_HOST';
+                            cfg.version = (cfg.version || 1) + 1;
+                            rs.reconfig(cfg, {force: true});
+                            print('RECONFIG_DONE');
+                          }
+                        } catch(e) {
+                          var msg = e.message || '';
+                          if (msg.indexOf('no replset config') >= 0 ||
+                              msg.indexOf('not initialized') >= 0 ||
+                              msg.indexOf('NotYetInitialized') >= 0) {
+                            // Fresh PV — first-time init.
+                            rs.initiate({_id:'rs0', members:[{_id:0, host:'$MONGO_HOST'}]});
+                            print('INITIATED');
+                          } else {
+                            // RS subsystem not ready yet — caller will retry.
+                            print('RETRY:' + msg.substring(0, 80));
+                          }
+                        }
+                      " 2>/dev/null)
+                    echo "Attempt $attempt: $result"
+                    case "$result" in
+                      *ALREADY_PRIMARY*|*RECONFIG_DONE*|*INITIATED*) break ;;
+                    esac
+                    sleep 3
+                  done || true
         env:
         - name: MONGO_INITDB_ROOT_USERNAME
           valueFrom:
@@ -100,11 +143,24 @@ spec:
           timeoutSeconds: {{ .Values.mongodb.probes.liveness.timeoutSeconds }}
           failureThreshold: {{ .Values.mongodb.probes.liveness.failureThreshold }}
         readinessProbe:
-          tcpSocket:
-            port: 27017
+          # Check RS PRIMARY state, not just TCP connectivity.
+          # Pod is only added to Service endpoints when isWritablePrimary = true.
+          # This ensures eagle-api's initContainer (which polls the Service for a
+          # primary) only succeeds once MongoDB is actually ready to accept writes.
+          exec:
+            command:
+              - bash
+              - -c
+              - |
+                result=$(mongosh "mongodb://localhost:27017/?directConnection=true" \
+                  -u "$MONGO_INITDB_ROOT_USERNAME" \
+                  -p "$MONGO_INITDB_ROOT_PASSWORD" \
+                  --authenticationDatabase admin --quiet \
+                  --eval "db.adminCommand('hello').isWritablePrimary" 2>/dev/null)
+                [ "$result" = "true" ]
           initialDelaySeconds: {{ .Values.mongodb.probes.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.mongodb.probes.readiness.periodSeconds }}
-          timeoutSeconds: {{ .Values.mongodb.probes.readiness.timeoutSeconds }}
+          timeoutSeconds: 10
           failureThreshold: {{ .Values.mongodb.probes.readiness.failureThreshold }}
       volumes:
       - name: mongodb-data

@@ -116,7 +116,10 @@ if (process.env.NODE_ENV !== 'test') {
       defaultLog.info('Started server on port ' + api_default_port);
     });
   }).catch(function (err) {
-    defaultLog.info('err:', err);
+    // loadMongoose() already retried and exited on exhaustion, but catch any
+    // unexpected rejection here too — crashing is better than serving 400s.
+    defaultLog.error('Fatal: MongoDB connection failed:', err);
+    process.exit(1);
   });
 }
 

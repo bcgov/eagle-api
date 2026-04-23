@@ -37,35 +37,51 @@ var credentials = {
   db_password : db_password
 };
 
+// Register all Mongoose models unconditionally at require time.
+// Mongoose allows schema registration before a connection exists — models are
+// bound to the default connection and become usable once connect() resolves.
+// Registering outside the connect callback means models are always available
+// even if the initial connect attempt is retried or delayed.
+require('./api/helpers/models/audit');
+require('./api/helpers/models/list');
+require('./api/helpers/models/user');
+require('./api/helpers/models/group');
+require('./api/helpers/models/pin');
+require('./api/helpers/models/organization');
+require('./api/helpers/models/vc');
+require('./api/helpers/models/inspectionItem');
+require('./api/helpers/models/inspection');
+require('./api/helpers/models/inspectionElement');
+require('./api/helpers/models/project');
+require('./api/helpers/models/recentActivity');
+require('./api/helpers/models/document');
+require('./api/helpers/models/comment');
+require('./api/helpers/models/commentperiod');
+require('./api/helpers/models/topic');
+require('./api/helpers/models/projectNotification');
+require('./api/helpers/models/cacUser');
+
 async function loadModels(dbConnection, options, logger) {
-  log(logger, 'Connecting to:' + dbConnection);
-  await mongoose.connect(dbConnection, options).then(() => {
-    log(logger, 'Database connected');
-    log(logger, 'loading db models');
-    require('./api/helpers/models/audit');
-    require('./api/helpers/models/list');
-    require('./api/helpers/models/user');
-    require('./api/helpers/models/group');
-    require('./api/helpers/models/pin');
-    require('./api/helpers/models/organization');
-    require('./api/helpers/models/vc');
-    require('./api/helpers/models/inspectionItem');
-    require('./api/helpers/models/inspection');
-    require('./api/helpers/models/inspectionElement');
-    require('./api/helpers/models/project');
-    require('./api/helpers/models/recentActivity');
-    require('./api/helpers/models/document');
-    require('./api/helpers/models/comment');
-    require('./api/helpers/models/commentperiod');
-    require('./api/helpers/models/topic');
-    require('./api/helpers/models/projectNotification');
-    require('./api/helpers/models/cacUser');
-    log(logger, 'db model loading done.');
-  },
-  err => {
-    log(logger, 'err:' + err);
-    return;
-  });
+  const MAX_RETRIES = 10;
+  const BASE_DELAY_MS = 2000;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      log(logger, `Connecting to MongoDB (attempt ${attempt}/${MAX_RETRIES}): ${dbConnection}`);
+      await mongoose.connect(dbConnection, options);
+      log(logger, 'Database connected');
+      return; // success
+    } catch (err) {
+      log(logger, `MongoDB connect error (attempt ${attempt}): ${err.message}`);
+      if (attempt === MAX_RETRIES) {
+        log(logger, 'All MongoDB connect attempts exhausted. Exiting so Kubernetes can restart.');
+        process.exit(1);
+      }
+      const delay = Math.min(BASE_DELAY_MS * Math.pow(2, attempt - 1), 30000);
+      log(logger, `Retrying in ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
 }
 
 function log(logger, msg) {
