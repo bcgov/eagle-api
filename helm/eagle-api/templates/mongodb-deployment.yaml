@@ -99,6 +99,21 @@ spec:
                             // Fresh PV — first-time init.
                             rs.initiate({_id:'rs0', members:[{_id:0, host:'$MONGO_HOST'}]});
                             print('INITIATED');
+                          } else if (msg.indexOf('not a member') >= 0 ||
+                                     msg.indexOf('invalid') >= 0) {
+                            // "Our replica set config is invalid or we are not a member"
+                            // DNS for service name may not resolve to this pod yet.
+                            // Force reconfig — if DNS is up it fixes immediately,
+                            // otherwise the attempt fails harmlessly and we retry.
+                            try {
+                              var cfg2 = rs.conf();
+                              cfg2.members[0].host = '$MONGO_HOST';
+                              cfg2.version = (cfg2.version || 1) + 1;
+                              rs.reconfig(cfg2, {force: true});
+                              print('RECONFIG_DONE');
+                            } catch(e2) {
+                              print('RETRY:' + e2.message.substring(0, 80));
+                            }
                           } else {
                             // RS subsystem not ready yet — caller will retry.
                             print('RETRY:' + msg.substring(0, 80));
@@ -156,7 +171,7 @@ spec:
                   -u "$MONGO_INITDB_ROOT_USERNAME" \
                   -p "$MONGO_INITDB_ROOT_PASSWORD" \
                   --authenticationDatabase admin --quiet \
-                  --eval "db.adminCommand('hello').isWritablePrimary" 2>/dev/null)
+                  --eval "db.adminCommand('hello').isWritablePrimary" 2>/dev/null | tail -1)
                 [ "$result" = "true" ]
           initialDelaySeconds: {{ .Values.mongodb.probes.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.mongodb.probes.readiness.periodSeconds }}

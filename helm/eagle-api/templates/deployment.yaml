@@ -35,6 +35,42 @@ spec:
         {{- include "eagle-api.selectorLabels" . | nindent 8 }}
         role: api-eagle-epic
     spec:
+      {{- if .Values.mongodb.enabled }}
+      initContainers:
+        - name: wait-for-mongodb
+          image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          command:
+            - bash
+            - -c
+            - |
+              echo "Waiting for MongoDB RS primary at eagle-api-mongodb:27017..."
+              for i in $(seq 1 60); do
+                result=$(mongosh "mongodb://eagle-api-mongodb:27017/?directConnection=true" \
+                  -u "$MONGO_USER" -p "$MONGO_PASS" \
+                  --authenticationDatabase admin --quiet \
+                  --eval "db.adminCommand('isMaster').ismaster" 2>/dev/null | tail -1)
+                if [ "$result" = "true" ]; then
+                  echo "MongoDB RS primary ready."
+                  exit 0
+                fi
+                echo "Attempt $i: not primary yet (result: $result), waiting 3s..."
+                sleep 3
+              done
+              echo "ERROR: MongoDB RS primary not available after 180s"
+              exit 1
+          env:
+            - name: MONGO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.existingSecret }}
+                  key: {{ .Values.mongodb.secretKeys.user }}
+            - name: MONGO_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.existingSecret }}
+                  key: {{ .Values.mongodb.secretKeys.password }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

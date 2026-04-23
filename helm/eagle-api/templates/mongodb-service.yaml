@@ -11,6 +11,11 @@ spec:
   # service name to the VIP (which doesn't match any pod network interface), so
   # it puts itself in REMOVED state and Change Streams fail.
   clusterIP: None
+  # Publish DNS records for pods that haven't passed their readiness probe yet.
+  # Without this, the headless service has no DNS entries while the pod is
+  # not-Ready, but MongoDB needs to resolve its own service name during RS
+  # bootstrap to elect itself PRIMARY — creating a deadlock.
+  publishNotReadyAddresses: true
   ports:
   - port: 27017
     targetPort: mongodb
