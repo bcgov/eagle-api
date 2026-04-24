@@ -94,6 +94,8 @@ const RECENTACTIVITY_SCHEMA = {
     { name: 'pcpId',                    type: 'string',               optional: true },
     { name: 'pcpIsMet',                 type: 'bool',                 optional: true },
     { name: 'pcpMetURL',                type: 'string',               optional: true },
+    // ProjectNotification ref — used by the Updates tab to fetch inline documents
+    { name: 'projectNotificationId',    type: 'string',               optional: true },
   ],
 };
 

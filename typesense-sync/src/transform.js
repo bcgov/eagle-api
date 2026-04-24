@@ -143,6 +143,8 @@ function transformRecentActivity(doc, listLookup, projectLookup, pcpLookup) {
     ...(pcpId                          && { pcpId }),
     ...(pcpMeta?.isMet === true        && { pcpIsMet: true }),
     ...(pcpMeta?.metURL                && { pcpMetURL: str(pcpMeta.metURL) }),
+    // ProjectNotification ref — lets the frontend fetch inline documents on the Updates tab
+    ...(doc.projectNotification        && { projectNotificationId: doc.projectNotification.toString() }),
   };
 }
 
