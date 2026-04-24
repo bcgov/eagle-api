@@ -42,23 +42,29 @@ function isDeleted(doc) {
 }
 
 /**
- * Resolve the active Typesense collection name for a given schema.
- * If an alias exists (set by full-sync), use it; otherwise create the base collection.
+ * Ensure base collections exist for first-run (before any full-sync has run).
+ * Uses the alias if present, otherwise checks/creates the base collection.
+ * Distinguishes 404 (not found) from network errors — only creates on 404.
  */
-async function resolveCollection(typesense, schemaName) {
-  const aliasName = SCHEMAS[schemaName].name;
-  try {
-    const alias = await typesense.aliases(aliasName).retrieve();
-    return alias.collection_name;
-  } catch {
-    // No alias yet — ensure the base collection exists and return its name
+async function ensureCollections(typesense) {
+  for (const [schemaName, schema] of Object.entries(SCHEMAS)) {
+    const aliasName = schema.name;
     try {
-      await typesense.collections(aliasName).retrieve();
-    } catch {
-      await typesense.collections().create(SCHEMAS[schemaName]);
-      console.log(`Created initial collection: ${aliasName}`);
+      await typesense.aliases(aliasName).retrieve();
+      // Alias exists — nightly full-sync has run; nothing to do
+    } catch (aliasErr) {
+      const isNotFound = aliasErr.httpStatus === 404 || aliasErr.message?.includes('404');
+      if (!isNotFound) throw aliasErr; // network/auth error — propagate
+      // No alias yet (first run) — ensure base collection exists
+      try {
+        await typesense.collections(aliasName).retrieve();
+      } catch (colErr) {
+        const colNotFound = colErr.httpStatus === 404 || colErr.message?.includes('404');
+        if (!colNotFound) throw colErr;
+        await typesense.collections().create(schema);
+        console.log(`Created initial collection: ${aliasName}`);
+      }
     }
-    return aliasName;
   }
 }
 
@@ -72,7 +78,10 @@ async function upsertDoc(typesense, schemaName, fullDoc, listLookup, projectLook
   const transformed = transformDoc(schemaName, fullDoc, listLookup, projectLookup, pcpLookup);
   if (!transformed) return;
 
-  const collectionName = await resolveCollection(typesense, schemaName);
+  // Use alias name directly — Typesense resolves aliases server-side for all write ops.
+  // This avoids a race condition where resolving the alias gives a stale timestamped
+  // collection name that the nightly full-sync may have already dropped.
+  const collectionName = SCHEMAS[schemaName].name;
   try {
     await typesense.collections(collectionName).documents().upsert(transformed);
   } catch (err) {
@@ -81,7 +90,8 @@ async function upsertDoc(typesense, schemaName, fullDoc, listLookup, projectLook
 }
 
 async function deleteDoc(typesense, schemaName, id) {
-  const collectionName = await resolveCollection(typesense, schemaName);
+  // Use alias name directly — same reasoning as upsertDoc above.
+  const collectionName = SCHEMAS[schemaName].name;
   try {
     await typesense.collections(collectionName).documents(id).delete();
     console.log(`Deleted ${schemaName} ${id} from Typesense`);
@@ -217,6 +227,8 @@ async function main() {
 
       const pcpLookupRef = { map: await buildPcpLookup(db) };
       console.log(`PCP lookup loaded: ${pcpLookupRef.map.size} entries`);
+
+      await ensureCollections(typesense);
 
       await startWatcher(typesense, db, listLookupRef, projectLookupRef, pcpLookupRef);
 

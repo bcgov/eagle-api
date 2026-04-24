@@ -13,7 +13,7 @@ function getClient() {
         protocol: process.env.TYPESENSE_PROTOCOL || 'http',
       }],
       apiKey:                   process.env.TYPESENSE_API_KEY || 'local-dev-key',
-      connectionTimeoutSeconds: 10,
+      connectionTimeoutSeconds: 30,
       retryIntervalSeconds:     5,
       numRetries:               3,
     });
