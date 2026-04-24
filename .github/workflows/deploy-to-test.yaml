@@ -177,6 +177,11 @@ jobs:
     needs: [deploy, build-sync]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository at version tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.version }}
+
       - name: Install OpenShift CLI
         run: |
           curl -LO "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz"
@@ -184,17 +189,29 @@ jobs:
           sudo mv oc /usr/local/bin/
           rm -f openshift-client-linux.tar.gz
 
+      - name: Install Helm
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
+
       - name: Log into OpenShift
         run: oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ secrets.OPENSHIFT_URL }}
 
-      - name: Restart sync deployments
+      - name: Upgrade Typesense chart
         run: |
-          echo "Restarting typesense-sync deployments to pick up new image..."
+          helm upgrade --install typesense ./helm/typesense \
+            --namespace ${{ env.OPENSHIFT_NAMESPACE_TEST }} \
+            --values ./helm/typesense/values-test.yaml \
+            --wait --timeout=5m
+
+      - name: Restart sync deployment
+        run: |
+          echo "Restarting typesense-sync deployment to pick up new image..."
           if oc get deployment typesense-typesense-sync -n ${{ env.OPENSHIFT_NAMESPACE_TEST }} &>/dev/null; then
             oc rollout restart deployment/typesense-typesense-sync -n ${{ env.OPENSHIFT_NAMESPACE_TEST }}
             oc rollout status deployment/typesense-typesense-sync -n ${{ env.OPENSHIFT_NAMESPACE_TEST }} --timeout=3m
             echo "✓ Sync deployment restarted"
           else
-            echo "⚠ typesense-sync deployment not found — skipping (run Deploy Typesense workflow first)"
+            echo "⚠ typesense-sync deployment not found — skipping"
           fi
 
