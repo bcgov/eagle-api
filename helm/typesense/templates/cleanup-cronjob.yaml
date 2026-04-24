@@ -1,0 +1,65 @@
+{{- if .Values.cleanup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "typesense.fullname" . }}-cleanup
+  labels:
+    {{- include "typesense.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cleanup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: {{ .Values.cleanup.ttlSecondsAfterFinished }}
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: cleanup
+            image: "{{ .Values.cleanup.image.repository }}:{{ .Values.cleanup.image.tag }}"
+            imagePullPolicy: {{ .Values.cleanup.image.pullPolicy }}
+            command:
+              - node
+              - -e
+              - |-
+                (async () => {
+                  const base = `http://${process.env.TYPESENSE_HOST}:${process.env.TYPESENSE_PORT}`;
+                  const h = { 'X-TYPESENSE-API-KEY': process.env.TYPESENSE_API_KEY };
+
+                  const [collections, aliasResult] = await Promise.all([
+                    fetch(`${base}/collections`, { headers: h }).then(r => r.json()),
+                    fetch(`${base}/aliases`, { headers: h }).then(r => r.json()),
+                  ]);
+
+                  const aliased = new Set(aliasResult.aliases.map(a => a.collection_name));
+                  console.log(`Collections: ${collections.length}, aliased: ${aliased.size}`);
+
+                  let deleted = 0;
+                  for (const col of collections) {
+                    if (!aliased.has(col.name)) {
+                      console.log(`Deleting stale collection: ${col.name}`);
+                      const res = await fetch(
+                        `${base}/collections/${encodeURIComponent(col.name)}`,
+                        { method: 'DELETE', headers: h }
+                      );
+                      console.log(`  → ${res.status}`);
+                      deleted++;
+                    }
+                  }
+                  console.log(`Cleanup complete. Deleted ${deleted} stale collection(s).`);
+                })().catch(e => { console.error(e); process.exit(1); });
+            env:
+            - name: TYPESENSE_HOST
+              value: {{ include "typesense.fullname" . }}
+            - name: TYPESENSE_PORT
+              value: {{ .Values.typesense.port | quote }}
+            - name: TYPESENSE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.typesense.existingSecret }}
+                  key: TYPESENSE_API_KEY
+            resources:
+              {{- toYaml .Values.cleanup.resources | nindent 14 }}
+{{- end }}

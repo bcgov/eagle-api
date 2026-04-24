@@ -5,3 +5,16 @@ sync:
 reindex:
   image:
     tag: dev
+
+typesense:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 2Gi
+
+cleanup:
+  image:
+    tag: dev

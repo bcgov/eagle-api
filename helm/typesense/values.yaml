@@ -24,22 +24,33 @@ typesense:
     storageClass: netapp-block-standard   # Block storage preferred for search indexes
     mountPath: /data
 
+  # Safety valve: Typesense rejects writes at this % of container memory limit
+  # instead of silently growing to OOM. Sync/reindex jobs get 429 and retry.
+  memoryUsedMaxPercentage: 85
+
   resources:
     requests:
       cpu: 100m
-      memory: 256Mi
+      memory: 512Mi
     limits:
       cpu: 500m
-      memory: 1Gi
+      memory: 2Gi
 
   probes:
+    # Startup probe gates liveness/readiness until Typesense has finished loading
+    # all collections into memory (can take minutes with 60k+ docs on cold start).
+    startup:
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 30    # 5 min total budget (30 * 10s)
     liveness:
-      initialDelaySeconds: 15
+      initialDelaySeconds: 0
       periodSeconds: 30
       timeoutSeconds: 5
       failureThreshold: 3
     readiness:
-      initialDelaySeconds: 10
+      initialDelaySeconds: 0
       periodSeconds: 10
       timeoutSeconds: 5
       failureThreshold: 3
@@ -137,3 +148,28 @@ mongodb:
   host: eagle-api-mongodb
   port: 27017
   authSource: admin
+
+# ---------------------------------------------------------------------------
+# Cleanup CronJob — deletes stale timestamped collections not referenced by
+# any alias. The nightly reindex creates new timestamped collections but never
+# deletes the previous ones; they accumulate and waste memory on startup.
+# Runs after reindex (2 AM) and popularity (3 AM) jobs.
+# ---------------------------------------------------------------------------
+cleanup:
+  enabled: true
+  schedule: "30 3 * * *"   # 3:30 AM daily — after popularity sync
+
+  image:
+    repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/typesense-sync
+    tag: "dev"             # Override per env in values-{env}.yaml
+    pullPolicy: Always
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+  ttlSecondsAfterFinished: 3600

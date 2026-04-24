@@ -25,6 +25,7 @@ spec:
           - --data-dir=/data
           - --api-key=$(TYPESENSE_API_KEY)
           - --enable-cors
+          - --memory-used-max-percentage={{ .Values.typesense.memoryUsedMaxPercentage }}
         ports:
         - name: http
           containerPort: {{ .Values.typesense.port }}
@@ -54,6 +55,14 @@ spec:
           periodSeconds: {{ .Values.typesense.probes.readiness.periodSeconds }}
           timeoutSeconds: {{ .Values.typesense.probes.readiness.timeoutSeconds }}
           failureThreshold: {{ .Values.typesense.probes.readiness.failureThreshold }}
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: {{ .Values.typesense.probes.startup.initialDelaySeconds }}
+          periodSeconds: {{ .Values.typesense.probes.startup.periodSeconds }}
+          timeoutSeconds: {{ .Values.typesense.probes.startup.timeoutSeconds }}
+          failureThreshold: {{ .Values.typesense.probes.startup.failureThreshold }}
         resources:
           {{- toYaml .Values.typesense.resources | nindent 10 }}
       volumes:

@@ -5,3 +5,16 @@ sync:
 reindex:
   image:
     tag: prod
+
+typesense:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 2Gi
+
+cleanup:
+  image:
+    tag: prod
