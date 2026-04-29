@@ -27,6 +27,9 @@ env:
   ENABLE_VIRUS_SCANNING: "true"
   # Temp directory for uploads (no PVC mounted)
   UPLOAD_DIRECTORY: "/tmp/"
+  TYPESENSE_ENABLED: "true"
+  TYPESENSE_HOST: typesense-typesense
+  TYPESENSE_PORT: "8108"
 
 keycloak:
   url: "https://loginproxy.gov.bc.ca/auth"
@@ -45,6 +48,9 @@ secrets:
     name: getok-secret
     clientIdKey: CLIENTID
     clientSecretKey: CLIENT_SECRET
+  typesense:
+    name: typesense-api-key
+    apiKeyKey: TYPESENSE_API_KEY
 
 # Disable persistence - current production doesn't use uploads PVC
 persistence:
