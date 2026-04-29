@@ -4,13 +4,6 @@ const constants = require('../constants');
 async function update(defaultLog, afterTimestamp) {
   const queryAggregates = [
     {
-      $project: {
-        action: "$action",
-        performedBy: "$performedBy",
-        timestamp: '$timestamp'
-      }
-    },
-    {
       $match: {
         $and: [
           {

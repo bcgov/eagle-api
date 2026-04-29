@@ -10,7 +10,7 @@ module.exports = require('../models')('Audit', {
   deletedBy     : { type: String, default: null },
   performedBy   : { type: String, default: null },
 
-  timestamp     : { type: Date, default: Date.now() },
+  timestamp     : { type: Date, default: Date.now(), index: true },
 
   // Permissions
   write         : [{ type: String, trim: true, default: '["project-system-admin"]' }],

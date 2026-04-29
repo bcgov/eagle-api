@@ -4,13 +4,6 @@ const constants = require('../constants');
 async function update(defaultLog, afterTimestamp) {
   const queryAggregates = [
     {
-      $project: {
-        "meta": "$meta",
-        "action": "$action",
-        "timestamp": "$timestamp"
-      }
-    },
-    {
       $match: {
         "action": { $eq: "Search" },
         "timestamp": { $gt: new Date(afterTimestamp) }

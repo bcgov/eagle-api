@@ -5,7 +5,16 @@ async function update(defaultLog) {
   // Set the limit for number of days to pull for the report.
   const dateLimit = DateTime.now().minus({ days: 14 }).toFormat('yyyy-MM-dd');
 
+  // Pre-filter on real timestamp field so MongoDB can use an index before
+  // the $project stage that computes the derived timestampDay field.
+  const dateLimitDate = new Date(dateLimit);
+
   const queryAggregates = [
+    {
+      $match: {
+        timestamp: { $gte: dateLimitDate }
+      }
+    },
     {
       $project: {
         performedBy: "$performedBy",
