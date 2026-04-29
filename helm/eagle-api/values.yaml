@@ -185,6 +185,13 @@ mongodb:
       memory: 2Gi
   
   probes:
+    startup:
+      # Allows up to 5 + (5 × 60) = 305s for MongoDB to start before kill.
+      # Protects against WiredTiger journal recovery after unclean shutdown.
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 60
     liveness:
       initialDelaySeconds: 30
       periodSeconds: 10

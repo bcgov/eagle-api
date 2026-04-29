@@ -130,6 +130,16 @@ spec:
           periodSeconds: {{ .Values.mongodb.probes.liveness.periodSeconds }}
           timeoutSeconds: {{ .Values.mongodb.probes.liveness.timeoutSeconds }}
           failureThreshold: {{ .Values.mongodb.probes.liveness.failureThreshold }}
+        startupProbe:
+          # Startup probe gives MongoDB time for WiredTiger journal recovery after
+          # an unclean shutdown (can take 60-120s). Liveness/readiness probes are
+          # suppressed until this succeeds, preventing crash-loop on slow restarts.
+          tcpSocket:
+            port: 27017
+          initialDelaySeconds: {{ .Values.mongodb.probes.startup.initialDelaySeconds | default 5 }}
+          periodSeconds: {{ .Values.mongodb.probes.startup.periodSeconds | default 5 }}
+          timeoutSeconds: {{ .Values.mongodb.probes.startup.timeoutSeconds | default 3 }}
+          failureThreshold: {{ .Values.mongodb.probes.startup.failureThreshold | default 60 }}
         readinessProbe:
           # Check RS PRIMARY state, not just TCP connectivity.
           # Pod is only added to Service endpoints when isWritablePrimary = true.
