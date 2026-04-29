@@ -70,6 +70,8 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
     schemaAggregation = recentActivityAggregator.createRecentActivityAggr(populate);
     break;
+  // NOTE: RecentActivity with populate uses an optimized pipeline (see below)
+  // that paginates BEFORE $lookup to avoid N×$lookup on the entire collection.
   case constants.INSPECTION:
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
     schemaAggregation = inspectionAggregator.createInspectionAggr(populate);
@@ -115,7 +117,31 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
 
   // Combine all the aggregations.
   let aggregation;
-  if (!schemaAggregation) {
+
+  // Performance optimization for RecentActivity with populate:
+  // Paginate BEFORE $lookup so we only join 'pageSize' documents (e.g. 10)
+  // instead of running $lookup on the entire matched set (thousands of docs).
+  if (schemaName === constants.RECENT_ACTIVITY && populate && schemaAggregation && schemaAggregation.length > 0) {
+    const sortStages = [];
+    if (sortField && sortDirection) {
+      sortStages.push({ $sort: sortingValue });
+    }
+    aggregation = [
+      ...matchAggregation,
+      ...keywordRegexFilter,
+      {
+        $facet: {
+          searchResults: [
+            ...sortStages,
+            { $skip: pageNum * pageSize },
+            { $limit: pageSize },
+            ...schemaAggregation
+          ],
+          meta: [{ $count: 'searchResultsTotal' }]
+        }
+      }
+    ];
+  } else if (!schemaAggregation) {
     aggregation = [...matchAggregation, ...keywordRegexFilter, ...resultAggr];
   } else {
     aggregation = [...matchAggregation, ...schemaAggregation, ...keywordRegexFilter, ...regexKeywordAggregation, ...resultAggr];
