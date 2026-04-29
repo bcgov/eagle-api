@@ -190,7 +190,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     collectionObj.aggregate(aggregation)
       .allowDiskUse(true)
       .collation(aggregateCollation)
-      .maxTimeMS(45000)
+      .option('maxTimeMS', 45000)
       .exec()
       .then(function (data) {
         resolve(Utils.filterData(schemaName, data, roles));
