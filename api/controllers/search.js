@@ -141,6 +141,43 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
         }
       }
     ];
+  } else if (schemaName === constants.PROJECT && (!projectLegislation || projectLegislation === 'default') && schemaAggregation && schemaAggregation.length > 1) {
+    // Performance optimization for Project with default legislation:
+    // schemaAggregation[0] is $addFields (setProjectDefault - picks correct legislation year).
+    // schemaAggregation[1..] are 4×$lookup/$unwind + $addFields + $replaceRoot.
+    // Run setProjectDefault first so we can sort by default.fieldName,
+    // then paginate BEFORE expensive lookups.
+    const preSortStage = schemaAggregation[0]; // $addFields { default: ... }
+    const postPaginationStages = schemaAggregation.slice(1); // lookups + replaceRoot
+
+    // Prefix sort fields with 'default.' since name/type/region live inside
+    // the default sub-document until $replaceRoot flattens them.
+    const adjustedSortValues = {};
+    for (const [key, val] of Object.entries(sortingValue)) {
+      adjustedSortValues[`default.${key}`] = val;
+    }
+
+    const sortStages = [];
+    if (sortField && sortDirection) {
+      sortStages.push({ $sort: adjustedSortValues });
+    }
+
+    aggregation = [
+      ...matchAggregation,
+      ...keywordRegexFilter,
+      preSortStage,
+      {
+        $facet: {
+          searchResults: [
+            ...sortStages,
+            { $skip: pageNum * pageSize },
+            { $limit: pageSize },
+            ...postPaginationStages
+          ],
+          meta: [{ $count: 'searchResultsTotal' }]
+        }
+      }
+    ];
   } else if (!schemaAggregation) {
     aggregation = [...matchAggregation, ...keywordRegexFilter, ...resultAggr];
   } else {
@@ -153,6 +190,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     collectionObj.aggregate(aggregation)
       .allowDiskUse(true)
       .collation(aggregateCollation)
+      .maxTimeMS(45000)
       .exec()
       .then(function (data) {
         resolve(Utils.filterData(schemaName, data, roles));
