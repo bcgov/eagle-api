@@ -188,6 +188,8 @@ exports.protectedPut = async function (args, res) {
   var obj = args.swagger.params.RecentActivityObject.value;
   // Strip security tags - these will not be updated on this route.
   defaultLog.info('Incoming updated object:', obj);
+  // Normalize active — defend against frontend boolean coercion bugs (false → null)
+  obj.active = obj.active === true;
   if (obj.active) {
     obj.read = ['sysadmin', 'staff', 'public'];
   } else {
@@ -206,7 +208,7 @@ exports.protectedPut = async function (args, res) {
       obj.project = null;
     }
 
-    var rec = await RecentActivity.findOneAndUpdate({ _id: objId }, obj, { upsert: false });
+    var rec = await RecentActivity.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true });
     Utils.recordAction('Put', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, rec._id);
     defaultLog.info('Updated RecentActivity object:', rec._id);
     return Actions.sendResponse(res, 200, rec);
