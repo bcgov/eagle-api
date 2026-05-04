@@ -167,6 +167,14 @@ spec:
                   name: {{ .Values.secrets.smokeApiKey.name }}
                   key: {{ .Values.secrets.smokeApiKey.key }}
             {{- end }}
+            {{- if .Values.cronJobs.enabled }}
+            # Internal API key for cron → /api/task authentication
+            - name: INTERNAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.cronJobs.apiKeySecretName }}
+                  key: {{ .Values.cronJobs.apiKeySecretKey }}
+            {{- end }}
             {{- if .Values.keycloak.enabled }}
             # Keycloak SSO Configuration
             - name: SSO_ISSUER
