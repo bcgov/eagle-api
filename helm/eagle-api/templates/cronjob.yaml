@@ -24,6 +24,7 @@ spec:
         metadata:
           labels:
             app: {{ .name }}
+            role: cron
         spec:
           restartPolicy: Never
           containers:
