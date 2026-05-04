@@ -2,7 +2,8 @@
 
 echo "-------- STARTING CRON --------"
 
-cp -a /scripts/. /opt/cron/jobs/
+# cp -a (preserve all) fails as non-root; use -r (recursive only) instead
+cp -r /scripts/. /opt/cron/jobs/
 
 for SCRIPT in /opt/cron/jobs/*.sh
 do
