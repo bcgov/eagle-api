@@ -3,7 +3,7 @@
 const defaultLog = require('winston').loggers.get('default');
 const Actions = require('../helpers/actions');
 
-const { updateAllMaterializedViews } = require('../materialized_views/updateViews');
+const { updateAllMaterializedViews, updateHotViews, updateColdViews } = require('../materialized_views/updateViews');
 
 exports.protectedOptions = async function (args, res) {
   res.status(200).send();
@@ -30,6 +30,12 @@ exports.protectedCreateTask = async function (args, res) {
       switch (args.swagger.params.task.value.materializedViewSubset) {
         case 'default':
           updateAllMaterializedViews(defaultLog);
+          break;
+        case 'hot':
+          updateHotViews(defaultLog);
+          break;
+        case 'cold':
+          updateColdViews(defaultLog);
           break;
         default:
           defaultLog.error(`protectedCreateTask - unknown materialized view subset`);

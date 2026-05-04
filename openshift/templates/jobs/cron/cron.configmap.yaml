@@ -1,4 +1,4 @@
-apiVersion: v1
+apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
   name: eagle-cron
@@ -7,15 +7,28 @@ objects:
   data:
     updateMaterializedView.sh: |-
       #!/usr/bin/env bash
+      set -euo pipefail
 
-      EAGLE_API_URL=https://eagle-dev.pathfinder.gov.bc.ca/api
+      EAGLE_API_URL=${EAGLE_API_URL}
 
-      echo -e "-------- UPDATING SUBSETS --------\n"
-      echo -e "Updating default subset\n"
-      curl -H "Authorization: Bearer ${TOKEN}" \
+      echo -e "-------- UPDATING ${SUBSET} SUBSET --------\n"
+      HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          -H "x-api-key: ${API_KEY}" \
           -H "Content-Type: application/json" \
-          -d '{"taskType":"updateMaterializedView", "materializedViewSubset":"default"}' \
-          ${EAGLE_API_URL}/task
+          -d "{\"taskType\":\"updateMaterializedView\", \"materializedViewSubset\":\"${SUBSET}\"}" \
+          "${EAGLE_API_URL}/task")
+      echo "API response: ${HTTP_STATUS}"
+      [ "${HTTP_STATUS}" = "200" ] || exit 1
   kind: ConfigMap
   metadata:
-    name: cron-config
+    name: ${CONFIGMAP_NAME}
+parameters:
+  - name: CONFIGMAP_NAME
+    description: 'Name of the ConfigMap (e.g. cron-hot-config, cron-cold-config)'
+    value: 'cron-config'
+  - name: SUBSET
+    description: 'Materialized view subset to refresh: default | hot | cold'
+    value: 'default'
+  - name: EAGLE_API_URL
+    description: 'Base URL of the Eagle API'
+    value: 'https://eagle-dev.apps.silver.devops.gov.bc.ca/api'

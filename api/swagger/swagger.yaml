@@ -712,6 +712,8 @@ definitions:
         example: 'default'
         enum: &materializedViewSubset
           - default
+          - hot
+          - cold
 ### Path Definitions
 paths:
   /login/token:
