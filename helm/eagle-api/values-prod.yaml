@@ -69,6 +69,14 @@ autoscaling:
 # MongoDB Configuration
 mongodb:
   enabled: true
+
+# Materialized view refresh cron jobs
+cronJobs:
+  enabled: true
+  image:
+    tag: "prod"
+  apiUrl: "http://eagle-api:3000/api"
+
   persistence:
     existingClaim: ""
   resources:

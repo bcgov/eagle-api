@@ -25,7 +25,7 @@ objects:
                     - name: API_KEY
                       valueFrom:
                         secretKeyRef:
-                          key: SMOKE_API_KEY
+                          key: INTERNAL_API_KEY
                           name: ${API_KEY_SECRET_NAME}
                   volumeMounts:
                     - mountPath: /scripts
@@ -47,5 +47,5 @@ parameters:
     description: 'Name of the ConfigMap containing the cron scripts to mount'
     value: 'cron-config'
   - name: API_KEY_SECRET_NAME
-    description: 'Name of the Secret containing SMOKE_API_KEY for cron authentication'
-    value: 'eagle-api-smoke-key'
+    description: 'Name of the Secret containing INTERNAL_API_KEY for cron authentication'
+    value: 'eagle-cron-secret'

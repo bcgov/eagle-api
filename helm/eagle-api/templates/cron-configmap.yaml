@@ -1,0 +1,28 @@
+{{- if .Values.cronJobs.enabled }}
+# ==============================================================================
+# Cron Job ConfigMap
+# ==============================================================================
+# Shared script for all mat-view refresh cron jobs.
+# SUBSET and EAGLE_API_URL are injected as container env vars by each CronJob.
+# ==============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "eagle-api.fullname" . }}-cron-script
+  labels:
+    {{- include "eagle-api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cron
+data:
+  updateMaterializedView.sh: |
+    #!/usr/bin/env sh
+    set -eu
+
+    echo "-------- UPDATING ${SUBSET} SUBSET --------"
+    HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+        -H "X-API-Key: ${API_KEY}" \
+        -H "Content-Type: application/json" \
+        -d "{\"taskType\":\"updateMaterializedView\", \"materializedViewSubset\":\"${SUBSET}\"}" \
+        "${EAGLE_API_URL}/task")
+    echo "API response: ${HTTP_STATUS}"
+    [ "${HTTP_STATUS}" = "200" ] || exit 1
+{{- end }}

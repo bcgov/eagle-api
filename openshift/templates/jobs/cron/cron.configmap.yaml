@@ -13,7 +13,7 @@ objects:
 
       echo -e "-------- UPDATING ${SUBSET} SUBSET --------\n"
       HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-          -H "x-api-key: ${API_KEY}" \
+          -H "X-API-Key: ${API_KEY}" \
           -H "Content-Type: application/json" \
           -d "{\"taskType\":\"updateMaterializedView\", \"materializedViewSubset\":\"${SUBSET}\"}" \
           "${EAGLE_API_URL}/task")

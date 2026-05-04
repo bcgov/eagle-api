@@ -1,15 +1,13 @@
-FROM registry.access.redhat.com/ubi8/ubi:8.3-227
+FROM alpine:3.21
 
-RUN yum install -y jq && \
-    mkdir -p /opt/cron && chgrp -R 0 /opt/cron && \
-    chmod -R g=u /opt/cron && \
-    yum clean all -y
+# Install curl and jq (only runtime deps needed for the cron scripts)
+RUN apk add --no-cache curl jq && \
+    mkdir -p /opt/cron/jobs && \
+    chgrp -R 0 /opt/cron && \
+    chmod -R g=u /opt/cron
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY get-token.sh /opt/cron/get-token.sh
-
-RUN chmod +x /usr/local/bin/entrypoint.sh && \
-    chmod +x /opt/cron/get-token.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 WORKDIR /opt/cron
 

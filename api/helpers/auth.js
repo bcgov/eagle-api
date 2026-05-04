@@ -30,20 +30,20 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
     return req.res.status(403).json({ message: 'Error: Access Denied' });
   }
 
-  // API key check — only active when SMOKE_API_KEY env var is set (dev/test envs only).
-  // Allows smoke tests to authenticate without a Keycloak token.
-  const SMOKE_API_KEY = process.env.SMOKE_API_KEY;
-  if (SMOKE_API_KEY) {
+  // API key check — active when INTERNAL_API_KEY (or legacy SMOKE_API_KEY) env var is set.
+  // Used by internal services (cron jobs) and smoke tests to authenticate without Keycloak.
+  const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || process.env.SMOKE_API_KEY;
+  if (INTERNAL_API_KEY) {
     const apiKey = req.headers['x-api-key'];
     if (apiKey) {
       const crypto = require('crypto');
       const keyBuf = Buffer.from(apiKey);
-      const expectedBuf = Buffer.from(SMOKE_API_KEY);
+      const expectedBuf = Buffer.from(INTERNAL_API_KEY);
       if (keyBuf.length === expectedBuf.length &&
           crypto.timingSafeEqual(keyBuf, expectedBuf)) {
         req.swagger.params.auth_payload = {
           iss: ISSUER,
-          preferred_username: 'smoke-test',
+          preferred_username: 'internal-service',
           realm_access: { roles: ['sysadmin', 'project-system-admin', 'project-admin-staff', 'project-proponent', 'project-team', 'public'] }
         };
         return callback(null);

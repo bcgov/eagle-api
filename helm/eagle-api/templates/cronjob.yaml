@@ -1,0 +1,56 @@
+{{- if .Values.cronJobs.enabled }}
+{{- range .Values.cronJobs.jobs }}
+{{- if .enabled }}
+# ==============================================================================
+# CronJob: {{ .name }}
+# ==============================================================================
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .name }}
+  labels:
+    {{- include "eagle-api.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: cron
+    app.kubernetes.io/part-of: eagle-cron
+spec:
+  schedule: {{ .schedule | quote }}
+  concurrencyPolicy: Forbid
+  suspend: false
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ .name }}
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: {{ .name }}
+              image: "{{ $.Values.cronJobs.image.repository }}:{{ $.Values.cronJobs.image.tag }}"
+              imagePullPolicy: {{ $.Values.cronJobs.image.pullPolicy }}
+              env:
+                - name: SUBSET
+                  value: {{ .subset | quote }}
+                - name: EAGLE_API_URL
+                  value: {{ $.Values.cronJobs.apiUrl | quote }}
+                - name: API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ $.Values.cronJobs.apiKeySecretName }}
+                      key: {{ $.Values.cronJobs.apiKeySecretKey }}
+              resources:
+                {{- toYaml $.Values.cronJobs.resources | nindent 16 }}
+              volumeMounts:
+                - name: cron-script
+                  mountPath: /scripts
+          volumes:
+            - name: cron-script
+              configMap:
+                name: {{ include "eagle-api.fullname" $ }}-cron-script
+                defaultMode: 0755
+---
+{{- end }}
+{{- end }}
+{{- end }}

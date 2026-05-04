@@ -24,6 +24,7 @@ env:
   OPENSHIFT_NAMESPACE_DEV: 6cdc9e-dev
   IMAGE_NAME: eagle-api
   SYNC_IMAGE_NAME: typesense-sync
+  CRON_IMAGE_NAME: eagle-cron
   APP_NAME: eagle-api
 
 jobs:
@@ -182,9 +183,33 @@ jobs:
             ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:ci-latest
             ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:${{ needs.scan.outputs.SHORT_SHA }}
 
+  build-cron:
+    name: Build Cron Image
+    needs: scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Login to OpenShift registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ secrets.OPENSHIFT_REPOSITORY }}
+          username: ${{ secrets.OPENSHIFT_REPOSITORY_USERNAME }}
+          password: ${{ secrets.OPENSHIFT_REPOSITORY_PASSWORD }}
+
+      - name: Build and push cron image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./openshift/templates/jobs/cron/docker
+          push: true
+          tags: |
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.CRON_IMAGE_NAME }}:dev
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.CRON_IMAGE_NAME }}:${{ needs.scan.outputs.SHORT_SHA }}
+
   deploy:
     name: Deploy to Dev
-    needs: push
+    needs: [push, build-cron]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

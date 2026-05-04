@@ -224,3 +224,37 @@ mongodb:
         cpu: 500m
         memory: 2Gi
 
+# Materialized view refresh cron jobs
+# Two jobs: hot (frequent, recent data) and cold (nightly, full refresh)
+cronJobs:
+  enabled: false  # Enable in values-{env}.yaml
+
+  image:
+    repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/eagle-cron
+    tag: "latest"
+    pullPolicy: Always
+
+  # Internal service URL — avoids external round-trip
+  apiUrl: "http://eagle-api:3000/api"
+
+  # Secret containing INTERNAL_API_KEY for the /task endpoint
+  apiKeySecretName: eagle-cron-secret
+  apiKeySecretKey: INTERNAL_API_KEY
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+  jobs:
+    - name: eagle-cron-hot
+      subset: hot
+      schedule: "*/30 * * * *"
+      enabled: true
+    - name: eagle-cron-cold
+      subset: cold
+      schedule: "0 2 * * *"
+      enabled: true

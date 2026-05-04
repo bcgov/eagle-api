@@ -24,6 +24,7 @@ env:
   OPENSHIFT_NAMESPACE_PROD: 6cdc9e-prod
   IMAGE_NAME: eagle-api
   SYNC_IMAGE_NAME: typesense-sync
+  CRON_IMAGE_NAME: eagle-cron
   APP_NAME: eagle-api
 
 jobs:
@@ -104,6 +105,32 @@ jobs:
         run: |
           echo "Deployment successful!"
           oc get pods -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} -l app.kubernetes.io/name=${{ env.APP_NAME }}
+
+  build-cron:
+    name: Build Cron Image
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository at version tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.version }}
+
+      - name: Login to OpenShift registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ secrets.OPENSHIFT_REPOSITORY }}
+          username: ${{ secrets.OPENSHIFT_REPOSITORY_USERNAME }}
+          password: ${{ secrets.OPENSHIFT_REPOSITORY_PASSWORD }}
+
+      - name: Build and push cron image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./openshift/templates/jobs/cron/docker
+          push: true
+          tags: |
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.CRON_IMAGE_NAME }}:prod
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.CRON_IMAGE_NAME }}:${{ inputs.version }}
 
   build-sync:
     name: Build Sync Image
