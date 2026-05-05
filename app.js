@@ -8,10 +8,10 @@ var uploadDir        = process.env.UPLOAD_DIRECTORY || './uploads/';
 var hostname         = process.env.API_HOSTNAME || 'localhost:3000';
 var YAML             = require('js-yaml');
 var swaggerUi        = require('swagger-ui-express');
+var app_helper       = require('./app_helper');
 var createRouter     = require('./api/middleware/swagger-router');
 var swaggerSpec      = YAML.load(fs.readFileSync('./api/swagger/swagger.yaml', 'utf8'));
 var bodyParser       = require('body-parser');
-var app_helper       = require('./app_helper');
 
 var api_default_port = 3000;
 
