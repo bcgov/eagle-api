@@ -13,27 +13,36 @@ async function acquireLock(lockId, defaultLog) {
   const now = new Date();
   const stale = staleThreshold();
 
-  // Atomic: only set running=true if not already running, or if lock is stale.
-  // findOneAndUpdate with a filter ensures only one concurrent caller wins.
-  const result = await col().findOneAndUpdate(
-    {
-      _id: lockId,
-      $or: [
-        { running: { $ne: true } },
-        { startedAt: { $lte: stale } },
-      ],
-    },
-    { $set: { running: true, startedAt: now, hostname: os.hostname() } },
-    { upsert: true, returnDocument: 'before' }
-  );
-
-  if (result === null) {
-    // Document existed and did NOT match the filter → locked by another process
-    const existing = await col().findOne({ _id: lockId });
-    defaultLog.warn(`[mat-view] lock '${lockId}' held since ${existing && existing.startedAt ? existing.startedAt.toISOString() : 'unknown'} — skipping`);
-    return false;
+  // Atomic compare-and-set: only one concurrent caller can win.
+  //
+  // findOneAndUpdate with upsert and returnDocument:'before':
+  //   - Filter matches (running=false or stale) → updates doc, returns old doc → WE HAVE LOCK
+  //   - Filter no-match, doc absent              → upserts new doc, returns null → WE HAVE LOCK (first run)
+  //   - Filter no-match, doc present (running)  → upsert throws E11000 (dup key) → LOCK HELD BY OTHER
+  let result;
+  try {
+    result = await col().findOneAndUpdate(
+      {
+        _id: lockId,
+        $or: [
+          { running: { $ne: true } },
+          { startedAt: { $lte: stale } },
+        ],
+      },
+      { $set: { running: true, startedAt: now, hostname: os.hostname() } },
+      { upsert: true, returnDocument: 'before' }
+    );
+  } catch (err) {
+    if (err.code === 11000) {
+      // Another process holds the lock — upsert collided on _id
+      defaultLog.warn(`[mat-view] lock '${lockId}' held by another process — skipping`);
+      return false;
+    }
+    throw err;
   }
 
+  // result === null → upsert fired (first-ever run) → we own the lock
+  // result is a doc  → we updated an existing unlocked/stale doc → we own the lock
   if (result && result.running && result.startedAt <= stale) {
     defaultLog.warn(`[mat-view] lock '${lockId}' stale since ${result.startedAt.toISOString()} — taking over`);
   }
