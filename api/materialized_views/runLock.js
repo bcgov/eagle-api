@@ -11,21 +11,33 @@ const staleThreshold = () => new Date(Date.now() - STALE_MS);
 
 async function acquireLock(lockId, defaultLog) {
   const now = new Date();
-  const existing = await col().findOne({ _id: lockId });
+  const stale = staleThreshold();
 
-  if (existing && existing.running) {
-    if (existing.startedAt > staleThreshold()) {
-      defaultLog.warn(`[mat-view] lock '${lockId}' held since ${existing.startedAt.toISOString()} — skipping`);
-      return false;
-    }
-    defaultLog.warn(`[mat-view] lock '${lockId}' stale since ${existing.startedAt.toISOString()} — taking over`);
+  // Atomic: only set running=true if not already running, or if lock is stale.
+  // findOneAndUpdate with a filter ensures only one concurrent caller wins.
+  const result = await col().findOneAndUpdate(
+    {
+      _id: lockId,
+      $or: [
+        { running: { $ne: true } },
+        { startedAt: { $lte: stale } },
+      ],
+    },
+    { $set: { running: true, startedAt: now, hostname: os.hostname() } },
+    { upsert: true, returnDocument: 'before' }
+  );
+
+  if (result === null) {
+    // Document existed and did NOT match the filter → locked by another process
+    const existing = await col().findOne({ _id: lockId });
+    defaultLog.warn(`[mat-view] lock '${lockId}' held since ${existing && existing.startedAt ? existing.startedAt.toISOString() : 'unknown'} — skipping`);
+    return false;
   }
 
-  await col().updateOne(
-    { _id: lockId },
-    { $set: { running: true, startedAt: now, hostname: os.hostname() } },
-    { upsert: true }
-  );
+  if (result && result.running && result.startedAt <= stale) {
+    defaultLog.warn(`[mat-view] lock '${lockId}' stale since ${result.startedAt.toISOString()} — taking over`);
+  }
+
   return true;
 }
 
