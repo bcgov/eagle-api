@@ -60,9 +60,6 @@ autoscaling:
 # Materialized view refresh cron jobs
 cronJobs:
   enabled: true
-  image:
-    tag: "dev"
-  apiUrl: "http://eagle-api:3000/api"
 
 # MongoDB enabled for dev environment
 mongodb:

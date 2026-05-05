@@ -6,10 +6,8 @@ const documentTaggingProgressBarGraph = require('./reports/documentTaggingProgre
 const documentTaggingProgressByProject = require('./reports/documentTaggingProgressByProject');
 const documentTaggingProgressTotal = require('./reports/documentTaggingProgressTotal');
 const projectInfo = require('./reports/projectInfo');
-const projectNotificationInfo = require('./reports/projectNotificationInfo');
 const projectStatsFull = require('./reports/projectStatsFull');
 const publishedComments = require('./reports/publishedComments');
-const publishedNewItems = require('./reports/publishedNewItems');
 const topUserVisitsAllTime = require('./reports/topUserVisitsAllTime');
 const topUserVisitsLast14 = require('./reports/topUserVisitsLast14');
 const unpublishedComments = require('./reports/unpublishedComments');
@@ -49,8 +47,7 @@ async function runView(name, fn, defaultLog) {
  * Inserts a stagger delay between each view.
  */
 async function runViews(views, lockId, defaultLog) {
-  const acquired = await acquireLock(lockId, defaultLog);
-  if (!acquired) return;
+  if (!await acquireLock(lockId, defaultLog)) return;
 
   const totalStart = Date.now();
   const succeeded = [];
@@ -61,18 +58,15 @@ async function runViews(views, lockId, defaultLog) {
       const { name, fn } = views[i];
       const ok = await runView(name, fn, defaultLog);
       (ok ? succeeded : failed).push(name);
-      if (i < views.length - 1) {
-        await sleep(STAGGER_MS);
-      }
+      if (i < views.length - 1) await sleep(STAGGER_MS);
     }
   } finally {
-    await releaseLock(lockId, defaultLog);
+    const durationMs = Date.now() - totalStart;
+    await releaseLock(lockId, defaultLog, { durationMs, succeeded, failed });
+    const summary = `[mat-view] '${lockId}' done in ${durationMs}ms — ok:[${succeeded.join(',')}]` +
+      (failed.length ? ` FAILED:[${failed.join(',')}]` : '');
+    defaultLog.info(summary);
   }
-
-  const summary = `[mat-view] run '${lockId}' finished in ${Date.now() - totalStart}ms` +
-    ` — ok: [${succeeded.join(', ')}]` +
-    (failed.length ? ` FAILED: [${failed.join(', ')}]` : '');
-  defaultLog.info(summary);
 }
 
 /**
@@ -81,7 +75,6 @@ async function runViews(views, lockId, defaultLog) {
 function buildHotViews(defaultLog) {
   return [
     { name: 'projectInfo',             fn: () => projectInfo.update(defaultLog) },
-    { name: 'projectNotificationInfo', fn: () => projectNotificationInfo.update(defaultLog) },
     { name: 'projectStatsFull',        fn: () => projectStatsFull.update(defaultLog) },
     { name: 'organizations',           fn: () => organizations.update(defaultLog) },
     { name: 'contactDetails',          fn: () => contactDetails.update(defaultLog) },
@@ -92,40 +85,21 @@ function buildHotViews(defaultLog) {
  * Cold views — admin reports. Run off-peak (nightly).
  */
 function buildColdViews(defaultLog) {
-  // Timestamp-tracked: each view owns its own get_last watermark
-  const timestampTracked = [
-    {
-      name: 'topSearchTerms',
+  // Helper for views that use a watermark timestamp
+  function tsView(name, mod) {
+    return {
+      name,
       fn: async () => {
-        const ts = await topSearchTerms.get_last(defaultLog);
-        await topSearchTerms.update(defaultLog, ts);
-      }
-    },
-    {
-      name: 'changesPerformedByNonPublicUsers',
-      fn: async () => {
-        const ts = await changesPerformedByNonPublicUsers.get_last(defaultLog);
-        await changesPerformedByNonPublicUsers.update(defaultLog, ts);
-      }
-    },
-    {
-      name: 'publishedNewItems',
-      fn: async () => {
-        const ts = await publishedNewItems.get_last(defaultLog);
-        await publishedNewItems.update(defaultLog, ts);
-      }
-    },
-    {
-      name: 'topUserVisitsAllTime',
-      fn: async () => {
-        const ts = await topUserVisitsAllTime.get_last(defaultLog);
-        await topUserVisitsAllTime.update(defaultLog, ts);
-      }
-    },
-  ];
+        const ts = await mod.get_last(defaultLog);
+        await mod.update(defaultLog, ts);
+      },
+    };
+  }
 
-  // Fixed-window views: no watermark, always recompute over a fixed time range
-  const fixedWindow = [
+  return [
+    tsView('topSearchTerms',                   topSearchTerms),
+    tsView('changesPerformedByNonPublicUsers',  changesPerformedByNonPublicUsers),
+    tsView('topUserVisitsAllTime',              topUserVisitsAllTime),
     { name: 'changesPerformedOverLast14Days',   fn: () => changesPerformedByNonPublicUsersLast14.update(defaultLog) },
     { name: 'projectsWithCompletelyTaggedDocs', fn: () => projectsWithCompletelyTaggedDocs.update(defaultLog) },
     { name: 'documentTaggingProgressBarGraph',  fn: () => documentTaggingProgressBarGraph.update(defaultLog) },
@@ -136,8 +110,6 @@ function buildColdViews(defaultLog) {
     { name: 'unpublishedComments',              fn: () => unpublishedComments.update(defaultLog) },
     { name: 'whoPublishedUnpublishedAllUsers',  fn: () => whoPublishedUnpublishedAllUsers.update(defaultLog) },
   ];
-
-  return [...timestampTracked, ...fixedWindow];
 }
 
 /**

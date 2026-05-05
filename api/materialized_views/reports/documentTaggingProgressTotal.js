@@ -7,20 +7,10 @@ async function update(defaultLog) {
         $expr: {
           $and: [
             {
-              $eq: [
-                {
-                  $toLower: "$_schemaName"
-                },
-                "document"
-              ]
+              $eq: [ "$_schemaName", "Document" ]
             },
             {
-              $eq: [
-                {
-                  $toLower: "$documentSource"
-                },
-                "project"
-              ]
+              $eq: [ "$documentSource", "PROJECT" ]
             }
           ]
         }
@@ -130,22 +120,15 @@ async function update(defaultLog) {
 
     const details = await mongoose.model('Document').aggregate(queryAggregates);
 
-    details.forEach(stats => {
-      const collection = mongoose.connection.db.collection('read_only__reports__document_tagging_total');
-      collection.updateOne({
-        '_id': stats['_id'],
-      },
-      {
-        $set: {
-          'count': stats['count']
-        },
-      },
-      {
-        upsert: true,
-      });
-
-      defaultLog.debug(`updated '${stats['_id']}' set count to ${stats['count']}`);
-    });
+    const ops = details.map(stats => ({
+      updateOne: {
+        filter: { _id: stats['_id'] },
+        update: { $set: { count: stats['count'] } },
+        upsert: true
+      }
+    }));
+    if (ops.length) await collection.bulkWrite(ops, { ordered: false });
+    defaultLog.debug(`bulkWrite ${ops.length} ops to read_only__reports__document_tagging_total`);
   } else {
     defaultLog.debug('initializing read_only__reports__document_tagging_total');
 

@@ -1,65 +1,76 @@
 'use strict';
 
+const os = require('os');
 const mongoose = require('mongoose');
 
 const LOCK_COLLECTION = '_system_locks';
-const STALE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
+const STALE_MS = 60 * 60 * 1000; // 60 minutes
 
-/**
- * Attempt to acquire a named execution lock stored in MongoDB.
- * Returns true if the lock was acquired, false if it is already held.
- *
- * A lock is considered stale (and therefore acquirable) when the holding
- * process has not released it within STALE_THRESHOLD_MS, which indicates
- * an unclean exit.
- *
- * @param {string} lockId
- * @param {object} defaultLog - winston logger
- * @returns {Promise<boolean>}
- */
+const col = () => mongoose.connection.db.collection(LOCK_COLLECTION);
+const staleThreshold = () => new Date(Date.now() - STALE_MS);
+
 async function acquireLock(lockId, defaultLog) {
-  const collection = mongoose.connection.db.collection(LOCK_COLLECTION);
   const now = new Date();
-  const staleThreshold = new Date(now.getTime() - STALE_THRESHOLD_MS);
-
-  const existing = await collection.findOne({ _id: lockId });
-  if (existing && existing.running && existing.startedAt > staleThreshold) {
-    defaultLog.warn(
-      `[mat-view] lock '${lockId}' already held since ${existing.startedAt.toISOString()} — skipping run`
-    );
-    return false;
-  }
+  const existing = await col().findOne({ _id: lockId });
 
   if (existing && existing.running) {
-    defaultLog.warn(
-      `[mat-view] lock '${lockId}' was stale (held since ${existing.startedAt.toISOString()}) — forcing acquisition`
-    );
+    if (existing.startedAt > staleThreshold()) {
+      defaultLog.warn(`[mat-view] lock '${lockId}' held since ${existing.startedAt.toISOString()} — skipping`);
+      return false;
+    }
+    defaultLog.warn(`[mat-view] lock '${lockId}' stale since ${existing.startedAt.toISOString()} — taking over`);
   }
 
-  await collection.updateOne(
+  await col().updateOne(
     { _id: lockId },
-    { $set: { running: true, startedAt: now } },
+    { $set: { running: true, startedAt: now, hostname: os.hostname() } },
     { upsert: true }
   );
-
   return true;
 }
 
-/**
- * Release a named execution lock.
- * Errors are swallowed and logged — a lock release failure must never
- * crash the calling process.
- *
- * @param {string} lockId
- * @param {object} defaultLog - winston logger
- */
-async function releaseLock(lockId, defaultLog) {
+// stats: optional { durationMs, succeeded[], failed[] } — written to lastRun field
+async function releaseLock(lockId, defaultLog, stats) {
   try {
-    const collection = mongoose.connection.db.collection(LOCK_COLLECTION);
-    await collection.updateOne({ _id: lockId }, { $set: { running: false } });
+    const update = { running: false };
+    if (stats) {
+      update.lastRun = {
+        completedAt: new Date(),
+        durationMs: stats.durationMs || 0,
+        succeeded: stats.succeeded || [],
+        failed: stats.failed || [],
+      };
+    }
+    await col().updateOne({ _id: lockId }, { $set: update });
   } catch (err) {
     defaultLog.error(`[mat-view] failed to release lock '${lockId}': ${err.message}`);
   }
 }
 
-module.exports = { acquireLock, releaseLock };
+async function isLocked(lockId) {
+  const lock = await col().findOne({ _id: lockId });
+  return !!(lock && lock.running && lock.startedAt > staleThreshold());
+}
+
+async function getLockInfo(lockId) {
+  const lock = await col().findOne({ _id: lockId });
+  if (!lock) return { running: false };
+  const stale = lock.running && lock.startedAt <= staleThreshold();
+  return {
+    running: lock.running && !stale,
+    stale,
+    startedAt: lock.startedAt || null,
+    lastRun: lock.lastRun || null,
+  };
+}
+
+async function forceRelease(lockId, defaultLog) {
+  try {
+    await col().updateOne({ _id: lockId }, { $set: { running: false } });
+    defaultLog.warn(`[mat-view] lock '${lockId}' force-released`);
+  } catch (err) {
+    defaultLog.error(`[mat-view] failed to force-release lock '${lockId}': ${err.message}`);
+  }
+}
+
+module.exports = { acquireLock, releaseLock, isLocked, getLockInfo, forceRelease };

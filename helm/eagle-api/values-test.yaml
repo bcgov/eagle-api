@@ -60,9 +60,6 @@ autoscaling:
 # Materialized view refresh cron jobs
 cronJobs:
   enabled: true
-  image:
-    tag: "test"
-  apiUrl: "http://eagle-api:3000/api"
 
 # MongoDB enabled for test environment
 mongodb:

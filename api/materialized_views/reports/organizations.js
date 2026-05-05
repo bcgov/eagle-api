@@ -35,32 +35,29 @@ async function update(defaultLog) {
 
     const orgs = await mongoose.model('Organization').aggregate(queryAggregates);
 
-    orgs.forEach(org => {
-      const collection = mongoose.connection.db.collection('read_only__reports__organizations');
-      collection.updateOne({
-        '_id': org['_id'],
-      },
-      {
-        $set: {
-          name: org['name'],
-          companyType: org['companyType'],
-          parentCompany: org['parentCompany'],
-          companyLegal: org['companyLegal'],
-          notes: org['notes'],
-          address1: org['address1'],
-          address2: org['address2'],
-          city: org['city'],
-          province: org['province'],
-          postal: org['postal'],
-          country: org['country'],
-        }
-      },
-      {
-        upsert: true,
-      });
-
-      defaultLog.debug(`updated info for organization '${org['name']}'`);
-    });
+    const ops = orgs.map(org => ({
+      updateOne: {
+        filter: { _id: org['_id'] },
+        update: {
+          $set: {
+            name: org['name'],
+            companyType: org['companyType'],
+            parentCompany: org['parentCompany'],
+            companyLegal: org['companyLegal'],
+            notes: org['notes'],
+            address1: org['address1'],
+            address2: org['address2'],
+            city: org['city'],
+            province: org['province'],
+            postal: org['postal'],
+            country: org['country'],
+          }
+        },
+        upsert: true
+      }
+    }));
+    if (ops.length) await collection.bulkWrite(ops, { ordered: false });
+    defaultLog.debug(`bulkWrite ${ops.length} ops to read_only__reports__organizations`);
   } else {
     defaultLog.debug('initializing read_only__reports__organizations');
 

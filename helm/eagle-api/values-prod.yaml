@@ -69,16 +69,18 @@ autoscaling:
 # MongoDB Configuration
 mongodb:
   enabled: true
+  wiredTigerCacheSizeGB: 1.5
+  resources:
+    requests:
+      cpu: 250m
+      memory: 2Gi
+    limits:
+      cpu: 500m
+      memory: 4Gi
 
 # Materialized view refresh cron jobs
 cronJobs:
   enabled: true
-  image:
-    tag: "prod"
-  apiUrl: "http://eagle-api:3000/api"
-
-  persistence:
-    existingClaim: ""
   resources:
     requests:
       cpu: 250m

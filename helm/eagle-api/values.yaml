@@ -176,6 +176,10 @@ mongodb:
     size: 5Gi
     storageClass: netapp-file-standard
   
+  # WiredTiger cache size in GB. Recommend ~37% of memory limit.
+  # Default (unset): MongoDB auto-calculates (50% of (RAM-1GB)).
+  wiredTigerCacheSizeGB: null
+
   resources:
     requests:
       cpu: 100m
@@ -229,25 +233,23 @@ mongodb:
 cronJobs:
   enabled: false  # Enable in values-{env}.yaml
 
-  image:
-    repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/eagle-cron
-    tag: "latest"
-    pullPolicy: Always
+  # CronJobs reuse the eagle-api image (image/pullPolicy from top-level image values)
+  # and connect directly to MongoDB — no HTTP API call needed.
 
-  # Internal service URL — avoids external round-trip
-  apiUrl: "http://eagle-api:3000/api"
-
-  # Secret containing INTERNAL_API_KEY for the /task endpoint
-  apiKeySecretName: eagle-cron-secret
-  apiKeySecretKey: INTERNAL_API_KEY
+  # MongoDB secret and host for direct DB connection in worker pods
+  # secretName: name of the secret holding database-name/user/password keys
+  # (defaults to the mongodb existingSecret value)
+  mongodb:
+    secretName: eagle-api-mongodb
+    host: eagle-api-mongodb
 
   resources:
     requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
   jobs:
     - name: eagle-cron-hot

@@ -59,21 +59,15 @@ async function update(defaultLog) {
 
     const projects = await mongoose.model('Project').aggregate(queryAggregates);
 
-    projects.forEach(project => {
-      const collection = mongoose.connection.db.collection('read_only__reports__project_stats_full');
-      collection.updateOne({
-        'objectType': project['objectType'],
-        'projectName': project['projectName']
-      },
-      {
-        $set: { count: project['count'] },
-      },
-      {
-        upsert: true,
-      });
-
-      defaultLog.debug(`updated info for project '${project['objectType']}'`);
-    });
+    const ops = projects.map(project => ({
+      updateOne: {
+        filter: { objectType: project['objectType'], projectName: project['projectName'] },
+        update: { $set: { count: project['count'] } },
+        upsert: true
+      }
+    }));
+    if (ops.length) await collection.bulkWrite(ops, { ordered: false });
+    defaultLog.debug(`bulkWrite ${ops.length} ops to read_only__reports__project_stats_full`);
   } else {
     defaultLog.debug('initializing read_only__reports__project_stats_full');
 

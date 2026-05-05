@@ -4,14 +4,7 @@ async function update(defaultLog) {
   const queryAggregates = [
     {
       $match: {
-        $expr: {
-          $eq: [
-            {
-              $toLower: '$_schemaName'
-            },
-            'project'
-          ]
-        }
+        _schemaName: 'Project'
       }
     },
     {
@@ -31,12 +24,7 @@ async function update(defaultLog) {
               $expr: {
                 $and: [
                   {
-                    $eq: [
-                      {
-                        $toLower: '$_schemaName'
-                      },
-                      'document'
-                    ]
+                    $eq: [ '$_schemaName', 'Document' ]
                   },
                   {
                     $eq: [
@@ -45,12 +33,7 @@ async function update(defaultLog) {
                     ]
                   },
                   {
-                    $eq: [
-                      {
-                        $toLower: '$documentSource'
-                      },
-                      'project'
-                    ]
+                    $eq: [ '$documentSource', 'PROJECT' ]
                   }
                 ]
               }
@@ -329,27 +312,12 @@ async function update(defaultLog) {
     // Should always be a single result.
     if (stats) {
       const collection = mongoose.connection.db.collection('read_only__reports__projects_completely_tagged_docs');
-      collection.updateOne({
-        '_id': 'Completely Tagged',
-      },
-      {
-        $set: { 'count': stats.completelyTagged },
-      },
-      {
-        upsert: true,
-      });
-      defaultLog.debug(`updated 'Completely Tagged' to ${stats.completelyTagged}`);
-
-      collection.updateOne({
-        '_id': 'In Progress',
-      },
-      {
-        $set: { 'count': stats.inProgress },
-      },
-      {
-        upsert: true,
-      });
-      defaultLog.debug(`updated 'In Progress' to ${stats.inProgress}`);
+      const ops = [
+        { updateOne: { filter: { _id: 'Completely Tagged' }, update: { $set: { count: stats.completelyTagged } }, upsert: true } },
+        { updateOne: { filter: { _id: 'In Progress' }, update: { $set: { count: stats.inProgress } }, upsert: true } },
+      ];
+      await collection.bulkWrite(ops, { ordered: false });
+      defaultLog.debug(`bulkWrite 2 ops to read_only__reports__projects_completely_tagged_docs (${stats.completelyTagged} completely tagged, ${stats.inProgress} in progress)`);
     }
   } else {
     defaultLog.debug('initializing read_only__reports__projects_completely_tagged_docs');

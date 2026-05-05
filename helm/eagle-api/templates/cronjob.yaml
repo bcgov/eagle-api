@@ -20,6 +20,7 @@ spec:
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
+      activeDeadlineSeconds: 7200
       template:
         metadata:
           labels:
@@ -29,28 +30,33 @@ spec:
           restartPolicy: Never
           containers:
             - name: {{ .name }}
-              image: "{{ $.Values.cronJobs.image.repository }}:{{ $.Values.cronJobs.image.tag }}"
-              imagePullPolicy: {{ $.Values.cronJobs.image.pullPolicy }}
+              image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+              imagePullPolicy: {{ $.Values.image.pullPolicy }}
+              command: ["node", "worker/matview-worker.js"]
               env:
                 - name: SUBSET
                   value: {{ .subset | quote }}
-                - name: EAGLE_API_URL
-                  value: {{ $.Values.cronJobs.apiUrl | quote }}
-                - name: API_KEY
+                - name: MONGODB_DATABASE
                   valueFrom:
                     secretKeyRef:
-                      name: {{ $.Values.cronJobs.apiKeySecretName }}
-                      key: {{ $.Values.cronJobs.apiKeySecretKey }}
+                      name: {{ $.Values.cronJobs.mongodb.secretName }}
+                      key: MONGODB_DATABASE
+                - name: MONGODB_USERNAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ $.Values.cronJobs.mongodb.secretName }}
+                      key: MONGODB_USER
+                - name: MONGODB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ $.Values.cronJobs.mongodb.secretName }}
+                      key: MONGODB_PASSWORD
+                - name: MONGODB_SERVICE_HOST
+                  value: {{ $.Values.cronJobs.mongodb.host | quote }}
+                - name: MONGODB_AUTHSOURCE
+                  value: "admin"
               resources:
                 {{- toYaml $.Values.cronJobs.resources | nindent 16 }}
-              volumeMounts:
-                - name: cron-script
-                  mountPath: /scripts
-          volumes:
-            - name: cron-script
-              configMap:
-                name: {{ include "eagle-api.fullname" $ }}-cron-script
-                defaultMode: 0755
 ---
 {{- end }}
 {{- end }}

@@ -4,14 +4,7 @@ async function update(defaultLog) {
   const queryAggregates = [
     {
       $match: {
-        $expr: {
-          $eq: [
-            {
-              $toLower: "$_schemaName"
-            },
-            "project"
-          ]
-        }
+        _schemaName: "Project"
       }
     },
     {
@@ -186,54 +179,51 @@ async function update(defaultLog) {
 
     const projects = await mongoose.model('Project').aggregate(queryAggregates);
 
-    projects.forEach(project => {
-      const collection = mongoose.connection.db.collection('read_only__reports__project_info');
-      collection.updateOne({
-        '_id': project['_id'],
-      },
-      {
-        $set: {
-          name: project['name'],
-          centroid: project['centroid'],
-          legislation: project['legislation'],
-          location: project['location'],
-          region: project['region'],
-          sector: project['sector'],
-          shortName: project['shortName'],
-          status: project['status'],
-          type: project['type'],
-          projectLead: project['projectLead'],
-          projectLeadEmail: project['projectLeadEmail'],
-          projectLeadPhone: project['projectLeadPhone'],
-          responsibleEPD: project['responsibleEPD'],
-          responsibleEPDEmail: project['responsibleEPDEmail'],
-          responsibleEPDPhone: project['responsibleEPDPhone'],
-          nature: project['nature'],
-          subType: project['sector'],
-          currentPhaseName: project['currentPhaseName'],
-          proponent: project['proponent'],
-          IAACInvolvement: project['IAACInvolvement'],
-          IAACUrl: project['IAACUrl'],
-          description: project['description'],
-          capitalInvestment: project['capitalInvestment'],
-          notes: project['notes'],
-          eaDecisionDate: project['eaDecisionDate'],
-          eaDecision: project['eaDecision'],
-          substantially: project['substantially'],
-          substantiallyDate: project['substantiallyDate'],
-          disputeResolution: project['disputeResolution'] ? 'Yes' : 'No',
-          disputeDate: project['disputeDate'],
-          readinessDecision: project['eaStatus'],
-          readinessDecisionDate: project['readinessDecisionDate'],
-          published: project['read'].includes('public')
+    const ops = projects.map(project => ({
+      updateOne: {
+        filter: { _id: project['_id'] },
+        update: {
+          $set: {
+            name: project['name'],
+            centroid: project['centroid'],
+            legislation: project['legislation'],
+            location: project['location'],
+            region: project['region'],
+            sector: project['sector'],
+            shortName: project['shortName'],
+            status: project['status'],
+            type: project['type'],
+            projectLead: project['projectLead'],
+            projectLeadEmail: project['projectLeadEmail'],
+            projectLeadPhone: project['projectLeadPhone'],
+            responsibleEPD: project['responsibleEPD'],
+            responsibleEPDEmail: project['responsibleEPDEmail'],
+            responsibleEPDPhone: project['responsibleEPDPhone'],
+            nature: project['nature'],
+            subType: project['sector'],
+            currentPhaseName: project['currentPhaseName'],
+            proponent: project['proponent'],
+            IAACInvolvement: project['IAACInvolvement'],
+            IAACUrl: project['IAACUrl'],
+            description: project['description'],
+            capitalInvestment: project['capitalInvestment'],
+            notes: project['notes'],
+            eaDecisionDate: project['eaDecisionDate'],
+            eaDecision: project['eaDecision'],
+            substantially: project['substantially'],
+            substantiallyDate: project['substantiallyDate'],
+            disputeResolution: project['disputeResolution'] ? 'Yes' : 'No',
+            disputeDate: project['disputeDate'],
+            readinessDecision: project['eaStatus'],
+            readinessDecisionDate: project['readinessDecisionDate'],
+            published: project['read'].includes('public')
+          },
         },
-      },
-      {
-        upsert: true,
-      });
-
-      defaultLog.debug(`updated info for project '${project['name']}'`);
-    });
+        upsert: true
+      }
+    }));
+    if (ops.length) await collection.bulkWrite(ops, { ordered: false });
+    defaultLog.debug(`bulkWrite ${ops.length} ops to read_only__reports__project_info`);
   } else {
     defaultLog.debug('initializing read_only__reports__project_info');
 

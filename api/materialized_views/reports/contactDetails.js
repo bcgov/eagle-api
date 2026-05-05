@@ -42,39 +42,36 @@ async function update(defaultLog) {
 
     const users = await mongoose.model('User').aggregate(queryAggregates);
 
-    users.forEach(user => {
-      const collection = mongoose.connection.db.collection('read_only__reports__contact_details');
-      collection.updateOne({
-        '_id': user['_id'],
-      },
-      {
-        $set: {
-          firstName: user['firstName'],
-          middleName: user['middleName'],
-          lastName: user['lastName'],
-          salutation: user['salutation'],
-          title: user['title'],
-          department: user['department'],
-          organization: user['organization'],
-          phoneNumber: user['phoneNumber'],
-          faxNumber: user['faxNumber'],
-          cellPhoneNumber: user['cellPhoneNumber'],
-          email: user['email'],
-          address1: user['address1'],
-          address2: user['address2'],
-          city: user['city'],
-          province: user['province'],
-          country: user['country'],
-          postalCode: user['postalCode'],
-          notes: user['notes']
-        }
-      },
-      {
-        upsert: true,
-      });
-
-      defaultLog.debug(`updated info for user '${user['_id']}'`);
-    });
+    const ops = users.map(user => ({
+      updateOne: {
+        filter: { _id: user['_id'] },
+        update: {
+          $set: {
+            firstName: user['firstName'],
+            middleName: user['middleName'],
+            lastName: user['lastName'],
+            salutation: user['salutation'],
+            title: user['title'],
+            department: user['department'],
+            organization: user['organization'],
+            phoneNumber: user['phoneNumber'],
+            faxNumber: user['faxNumber'],
+            cellPhoneNumber: user['cellPhoneNumber'],
+            email: user['email'],
+            address1: user['address1'],
+            address2: user['address2'],
+            city: user['city'],
+            province: user['province'],
+            country: user['country'],
+            postalCode: user['postalCode'],
+            notes: user['notes']
+          }
+        },
+        upsert: true
+      }
+    }));
+    if (ops.length) await collection.bulkWrite(ops, { ordered: false });
+    defaultLog.debug(`bulkWrite ${ops.length} ops to read_only__reports__contact_details`);
   } else {
     defaultLog.debug('initializing read_only__reports__contact_details');
 

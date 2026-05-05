@@ -121,22 +121,15 @@ async function update(defaultLog) {
 
     const latestSinceLastRun = await mongoose.model('Audit').aggregate(queryAggregates);
 
-    latestSinceLastRun.forEach(recentlyUpdated => {
-      const collection = mongoose.connection.db.collection('read_only__reports__changes_non_public_last_14');
-      collection.updateOne({
-        '_id': recentlyUpdated['_id'],
-      },
-      {
-        $set: {
-          'count': recentlyUpdated['count']
-        },
-      },
-      {
-        upsert: true,
-      });
-
-      defaultLog.debug(`updated '${recentlyUpdated['_id']}' to ${recentlyUpdated['count']}`);
-    });
+    const ops = latestSinceLastRun.map(recentlyUpdated => ({
+      updateOne: {
+        filter: { _id: recentlyUpdated['_id'] },
+        update: { $set: { count: recentlyUpdated['count'] } },
+        upsert: true
+      }
+    }));
+    if (ops.length) await collection.bulkWrite(ops, { ordered: false });
+    defaultLog.debug(`bulkWrite ${ops.length} ops to read_only__reports__changes_non_public_last_14`);
   } else {
     defaultLog.debug('initializing read_only__reports__changes_non_public_last_14');
 

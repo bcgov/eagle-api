@@ -112,12 +112,7 @@ async function update(defaultLog) {
                     ]
                   },
                   {
-                    $eq: [
-                      {
-                        $toLower: "$_schemaName"
-                      },
-                      "project"
-                    ]
+                    $eq: [ "$_schemaName", "Project" ]
                   }
                 ]
               }
@@ -347,47 +342,44 @@ async function update(defaultLog) {
 
     const details = await mongoose.model('Audit').aggregate(queryAggregates);
 
-    details.forEach(detail => {
-      const collection = mongoose.connection.db.collection('read_only__reports__who_published_all_users');
-      collection.updateOne({
-        '_id': detail['_id'],
-      },
-      {
-        $set: {
-          'timestamp': detail['timestamp'],
-          'objectType': detail['objectType'],
-          'projectName': detail['projectName'],
-          'action': detail['action'],
-          'performedBy': detail['performedBy'],
-          'documentDisplayName': detail['documentDisplayName'],
-          'commentStatus': detail['commentStatus'],
-          'recentActivityHeadline': detail['recentActivityHeadline'],
-          'recentActivityPinned': detail['recentActivityPinned'],
-          'recentActivityActive': detail['recentActivityActive'],
-          'commentPeriodIsResolved': detail['commentPeriodIsResolved'],
-          'commentPeriodIsPublished': detail['commentPeriodIsPublished'],
-          'commentPeriodIsVetted': detail['commentPeriodIsVetted'],
-          'commentPeriodIsClassified': detail['commentPeriodIsClassified'],
-          'deletedBy': detail['deletedBy'],
-          'updatedBy': detail['updatedBy'],
-          'addedBy': detail['addedBy'],
-          '_objectSchema': detail['_objectSchema'],
-          '_schemaName': detail['_schemaName'],
-          'objectId': detail['objectId'],
-          'projectId': detail['projectId'],
-          '_id': detail['_id'],
-          'meta': detail['meta'],
-          'read': detail['read'],
-          'write': detail['write'],
-          'delete': detail['delete']
-        }
-      },
-      {
-        upsert: true,
-      });
-
-      defaultLog.debug(`updated info for '${detail['_id']}'`);
-    });
+    const ops = details.map(detail => ({
+      updateOne: {
+        filter: { _id: detail['_id'] },
+        update: {
+          $set: {
+            timestamp: detail['timestamp'],
+            objectType: detail['objectType'],
+            projectName: detail['projectName'],
+            action: detail['action'],
+            performedBy: detail['performedBy'],
+            documentDisplayName: detail['documentDisplayName'],
+            commentStatus: detail['commentStatus'],
+            recentActivityHeadline: detail['recentActivityHeadline'],
+            recentActivityPinned: detail['recentActivityPinned'],
+            recentActivityActive: detail['recentActivityActive'],
+            commentPeriodIsResolved: detail['commentPeriodIsResolved'],
+            commentPeriodIsPublished: detail['commentPeriodIsPublished'],
+            commentPeriodIsVetted: detail['commentPeriodIsVetted'],
+            commentPeriodIsClassified: detail['commentPeriodIsClassified'],
+            deletedBy: detail['deletedBy'],
+            updatedBy: detail['updatedBy'],
+            addedBy: detail['addedBy'],
+            _objectSchema: detail['_objectSchema'],
+            _schemaName: detail['_schemaName'],
+            objectId: detail['objectId'],
+            projectId: detail['projectId'],
+            _id: detail['_id'],
+            meta: detail['meta'],
+            read: detail['read'],
+            write: detail['write'],
+            delete: detail['delete']
+          }
+        },
+        upsert: true
+      }
+    }));
+    if (ops.length) await collection.bulkWrite(ops, { ordered: false });
+    defaultLog.debug(`bulkWrite ${ops.length} ops to read_only__reports__who_published_all_users`);
   } else {
     defaultLog.debug('initializing read_only__reports__who_published_all_users');
 

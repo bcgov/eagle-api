@@ -37,22 +37,16 @@ async function update(defaultLog, afterTimestamp) {
 
     const latestSinceLastRun = await mongoose.model('Audit').aggregate(queryAggregates);
 
-    latestSinceLastRun.forEach(recentlyUpdated => {
-      const collection = mongoose.connection.db.collection('read_only__reports__top_search_terms');
-      collection.updateOne({
-        "_id": recentlyUpdated['_id'],
-        "latest": { "$ne": recentlyUpdated['latest'] }
-      },
-      {
-        $inc: { "count": recentlyUpdated['count'] },
-        $set: { "latest": recentlyUpdated['latest'] }
-      },
-      {
-        upsert: true,
-      });
-
-      defaultLog.debug('updated "' + recentlyUpdated['_id'] + '" to \'' + recentlyUpdated['latest'] + '\' and incremented count by ' + recentlyUpdated['count'] +']');
-    });
+    const collection = mongoose.connection.db.collection('read_only__reports__top_search_terms');
+    const ops = latestSinceLastRun.map(recentlyUpdated => ({
+      updateOne: {
+        filter: { _id: recentlyUpdated['_id'], latest: { $ne: recentlyUpdated['latest'] } },
+        update: { $inc: { count: recentlyUpdated['count'] }, $set: { latest: recentlyUpdated['latest'] } },
+        upsert: true
+      }
+    }));
+    if (ops.length) await collection.bulkWrite(ops, { ordered: false });
+    defaultLog.debug(`bulkWrite ${ops.length} ops to read_only__reports__top_search_terms`);
   } else {
     defaultLog.debug('initializing read_only__reports__top_search_terms');
 

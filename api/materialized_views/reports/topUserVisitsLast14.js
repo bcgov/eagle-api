@@ -133,20 +133,15 @@ async function update(defaultLog) {
 
     const visits = await mongoose.model('Audit').aggregate(queryAggregates);
 
-    visits.forEach(visit => {
-      const collection = mongoose.connection.db.collection('read_only__reports__users_last_14');
-      collection.updateOne({
-        '_id': visit['_id'],
-      },
-      {
-        $set: { 'count': visit['count'] }
-      },
-      {
-        upsert: true,
-      });
-
-      defaultLog.debug(`updated info for '${visit['_id']}' and set count to ${visit['count']}`);
-    });
+    const ops = visits.map(visit => ({
+      updateOne: {
+        filter: { _id: visit['_id'] },
+        update: { $set: { count: visit['count'] } },
+        upsert: true
+      }
+    }));
+    if (ops.length) await collection.bulkWrite(ops, { ordered: false });
+    defaultLog.debug(`bulkWrite ${ops.length} ops to read_only__reports__users_last_14`);
   } else {
     defaultLog.debug('initializing read_only__reports__users_last_14');
 

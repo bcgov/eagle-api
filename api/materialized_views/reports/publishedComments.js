@@ -47,20 +47,15 @@ async function update(defaultLog) {
 
     const comments = await mongoose.model('Comment').aggregate(queryAggregates);
 
-    comments.forEach(comment => {
-      const collection = mongoose.connection.db.collection('read_only__reports__published_comments');
-      collection.updateOne({
-        '_id': comment['_id'],
-      },
-      {
-        $set: { count: comment['count'] },
-      },
-      {
-        upsert: true,
-      });
-
-      defaultLog.debug(`updated info for comment '${comment['_id']}'`);
-    });
+    const ops = comments.map(comment => ({
+      updateOne: {
+        filter: { _id: comment['_id'] },
+        update: { $set: { count: comment['count'] } },
+        upsert: true
+      }
+    }));
+    if (ops.length) await collection.bulkWrite(ops, { ordered: false });
+    defaultLog.debug(`bulkWrite ${ops.length} ops to read_only__reports__published_comments`);
   } else {
     defaultLog.debug('initializing read_only__reports__published_comments');
 

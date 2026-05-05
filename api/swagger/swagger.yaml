@@ -7055,6 +7055,83 @@ paths:
           schema:
             $ref: "#/definitions/Error"
 ### Task Routes
+  /materialized-views/refresh:
+    x-swagger-router-controller: materialized-view
+    options:
+      tags:
+        - materialized-views
+      summary: 'Pre-flight request'
+      operationId: protectedOptions
+      description: 'Options on materialized-views refresh route'
+      responses:
+        '200':
+          description: 'Success'
+    post:
+      tags:
+        - materialized-views
+      summary: 'Trigger a materialized view refresh'
+      operationId: protectedRefresh
+      description: 'Authenticated access to manually trigger a mat view refresh run'
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - sysadmin
+      parameters:
+        - name: body
+          in: body
+          required: false
+          schema:
+            type: object
+            properties:
+              subset:
+                type: string
+                enum:
+                  - hot
+                  - cold
+                  - all
+                default: all
+              force:
+                type: boolean
+                default: false
+                description: 'Force-release any existing lock before starting (use to recover from stale locks)'
+      responses:
+        '202':
+          description: 'Refresh started'
+        '409':
+          description: 'Refresh already in progress'
+        '403':
+          description: 'Access Denied'
+          schema:
+            $ref: '#/definitions/Error'
+  /materialized-views/status:
+    x-swagger-router-controller: materialized-view
+    options:
+      tags:
+        - materialized-views
+      summary: 'Pre-flight request'
+      operationId: protectedOptions
+      description: 'Options on materialized-views status route'
+      responses:
+        '200':
+          description: 'Success'
+    get:
+      tags:
+        - materialized-views
+      summary: 'Get materialized view lock status'
+      operationId: protectedGetStatus
+      description: 'Authenticated access to check current run-lock status for mat views'
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - sysadmin
+        - staff
+      responses:
+        '200':
+          description: 'Success'
+        '403':
+          description: 'Access Denied'
+          schema:
+            $ref: '#/definitions/Error'
   /task:
     x-swagger-router-controller: import-task
     options:
