@@ -13,8 +13,13 @@ typesense:
       memory: 512Mi
     limits:
       cpu: 500m
-      memory: 2Gi
+      memory: 4Gi
 
 cleanup:
+  image:
+    tag: dev
+
+contentExtract:
+  enabled: true
   image:
     tag: dev

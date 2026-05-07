@@ -20,7 +20,7 @@ typesense:
   existingSecret: typesense-api-key
 
   persistence:
-    size: 2Gi
+    size: 5Gi
     storageClass: netapp-block-standard   # Block storage preferred for search indexes
     mountPath: /data
 
@@ -34,7 +34,7 @@ typesense:
       memory: 512Mi
     limits:
       cpu: 500m
-      memory: 2Gi
+      memory: 4Gi
 
   probes:
     # Startup probe gates liveness/readiness until Typesense has finished loading
@@ -172,4 +172,46 @@ cleanup:
       cpu: 100m
       memory: 128Mi
 
+  ttlSecondsAfterFinished: 3600
+
+# ---------------------------------------------------------------------------
+# Content extraction CronJob — extracts text from public PDFs, stores as
+# DocumentChunk records in MongoDB, which the Change Stream and nightly
+# reindex then sync to the document_chunks Typesense collection.
+#
+# Runs at 4 AM — after reindex (2 AM), popularity (3 AM), cleanup (3:30 AM).
+#
+# Requires: eagle-api-minio-keys secret (same secret used by eagle-api pod).
+# ---------------------------------------------------------------------------
+contentExtract:
+  enabled: false          # Enable after Phase 0 infra changes (RAM/PVC expansion)
+  schedule: "0 */2 * * *"  # Every 2 hours — separate pod, zero impact on eagle-api
+
+  image:
+    repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/typesense-sync
+    tag: "latest"
+    pullPolicy: Always
+
+  minioSecret:
+    name: eagle-api-minio-keys
+    hostKey: MINIO_HOST
+    accessKeyKey: MINIO_ACCESS_KEY
+    secretKeyKey: MINIO_SECRET_KEY
+    bucketKey: MINIO_BUCKET_NAME
+
+  # Optional tuning env vars (override chunker.js defaults)
+  env: {}
+    # MAX_CHUNK_SIZE: "4000"
+    # MAX_PAGES_PER_DOC: "200"
+    # CONTENT_EXTRACT_CONCURRENCY: "10"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  backoffLimit: 2
   ttlSecondsAfterFinished: 3600

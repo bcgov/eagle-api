@@ -66,6 +66,7 @@ mongodb:
   enabled: true
   persistence:
     existingClaim: ""
+    size: 10Gi
   resources:
     requests:
       cpu: 100m

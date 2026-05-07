@@ -127,12 +127,35 @@ const PROJECTNOTIFICATION_SCHEMA = {
   ],
 };
 
+const DOCUMENT_CHUNKS_SCHEMA = {
+  name: 'document_chunks',
+  fields: [
+    { name: 'id',           type: 'string' },
+    // Search field — indexed for full-text search
+    { name: 'content',      type: 'string',  index: true },
+    // Grouping / filtering — indexed
+    { name: 'documentId',   type: 'string',  facet: true },
+    { name: 'projectId',    type: 'string',  facet: true },
+    { name: 'pageNumber',   type: 'int32',   sort: true },
+    // Facet / display
+    { name: 'documentType', type: 'string',  facet: true, optional: true },
+    { name: 'datePosted',   type: 'int64',   sort: true,  optional: true },
+    // Display-only — not indexed to save RAM
+    { name: 'chunkIndex',     type: 'int32',   index: false, optional: true },
+    { name: 'documentName',   type: 'string',  index: false, optional: true },
+    { name: 'projectName',    type: 'string',  index: false, optional: true },
+    // Future: embedding field for vector/AI search
+    // { name: 'embedding', type: 'float[]', num_dim: 768, optional: true },
+  ],
+};
+
 /** Map _schemaName → Typesense schema */
 const SCHEMAS = {
   Document:            DOCUMENT_SCHEMA,
   Project:             PROJECT_SCHEMA,
   RecentActivity:      RECENTACTIVITY_SCHEMA,
   ProjectNotification: PROJECTNOTIFICATION_SCHEMA,
+  DocumentChunk:       DOCUMENT_CHUNKS_SCHEMA,
 };
 
 /**
@@ -156,6 +179,10 @@ const QUERY_BY = {
     fields:  'name,description,proponent,associatedProjectName,region,location',
     weights: '9000,8000,3000,2000,1500,1000',
   },
+  DocumentChunk: {
+    fields:  'content,documentName',
+    weights: '9000,2000',
+  },
 };
 
 /**
@@ -166,6 +193,7 @@ const FACET_BY = {
   Project:             'region,status,currentPhaseName,eacDecision,type,sector',
   RecentActivity:      'type',
   ProjectNotification: 'type,region,decision,pcp',
+  DocumentChunk:       'documentType,projectId',
 };
 
 module.exports = { SCHEMAS, QUERY_BY, FACET_BY };

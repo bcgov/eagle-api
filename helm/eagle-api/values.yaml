@@ -173,7 +173,7 @@ mongodb:
   persistence:
     existingClaim: ""
     mountPath: /data/db
-    size: 5Gi
+    size: 10Gi
     storageClass: netapp-file-standard
   
   # WiredTiger cache size in GB. Recommend ~37% of memory limit.

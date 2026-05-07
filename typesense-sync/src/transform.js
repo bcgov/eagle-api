@@ -178,11 +178,32 @@ function transformProjectNotification(doc, listLookup) {
   };
 }
 
+function transformDocumentChunk(doc) {
+  const documentId = doc.documentId ? doc.documentId.toString() : undefined;
+  const projectId  = doc.projectId  ? doc.projectId.toString()  : undefined;
+
+  if (!documentId || !str(doc.content)) return null;
+
+  return {
+    id: `${documentId}_chunk_${doc.chunkIndex ?? 0}_p${doc.pageNumber ?? 0}`,
+    content:      str(doc.content),
+    documentId,
+    ...(projectId                    && { projectId }),
+    pageNumber:   typeof doc.pageNumber  === 'number' ? doc.pageNumber  : 0,
+    ...(typeof doc.chunkIndex === 'number' && { chunkIndex: doc.chunkIndex }),
+    ...(str(doc.documentType)        && { documentType:  str(doc.documentType) }),
+    ...(toTimestamp(doc.datePosted) !== undefined && { datePosted: toTimestamp(doc.datePosted) }),
+    ...(str(doc.documentName)        && { documentName:  str(doc.documentName) }),
+    ...(str(doc.projectName)         && { projectName:   str(doc.projectName) }),
+  };
+}
+
 const TRANSFORMS = {
   Document:            transformDocument,
   Project:             transformProject,
   RecentActivity:      transformRecentActivity,
   ProjectNotification: transformProjectNotification,
+  DocumentChunk:       transformDocumentChunk,
 };
 
 /**
