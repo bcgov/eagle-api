@@ -18,3 +18,8 @@ typesense:
 cleanup:
   image:
     tag: test
+
+contentExtract:
+  enabled: true
+  image:
+    tag: test
