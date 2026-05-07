@@ -7,7 +7,7 @@
  *  - Primary grain: 1 page = 1 chunk
  *  - If page > MAX_CHUNK_SIZE chars: split into sub-chunks with OVERLAP_SIZE overlap
  *  - If page < MIN_CHUNK_SIZE chars: merge with next page
- *  - Pages beyond MAX_PAGES_PER_DOC are skipped (e.g. enormous appendix packs)
+ *  - All pages processed — no cap
  *
  * Why pages:
  *  - Clean source attribution ("page 7")
@@ -15,10 +15,9 @@
  *  - AI embeddings work well with page-sized chunks
  */
 
-const MAX_CHUNK_SIZE    = parseInt(process.env.MAX_CHUNK_SIZE    || '4000', 10);
-const MIN_CHUNK_SIZE    = parseInt(process.env.MIN_CHUNK_SIZE    || '100',  10);
-const OVERLAP_SIZE      = parseInt(process.env.OVERLAP_SIZE      || '200',  10);
-const MAX_PAGES_PER_DOC = parseInt(process.env.MAX_PAGES_PER_DOC || '200',  10);
+const MAX_CHUNK_SIZE = parseInt(process.env.MAX_CHUNK_SIZE || '4000', 10);
+const MIN_CHUNK_SIZE = parseInt(process.env.MIN_CHUNK_SIZE || '100',  10);
+const OVERLAP_SIZE   = parseInt(process.env.OVERLAP_SIZE   || '200',  10);
 
 /**
  * Split a single page's text into one or more sub-chunks.
@@ -52,14 +51,13 @@ function splitPage(text) {
  */
 function chunkPages(pages) {
   const chunks = [];
-  const capped = pages.slice(0, MAX_PAGES_PER_DOC);
 
   let pending = '';
   let pendingPage = 1;
 
-  for (let i = 0; i < capped.length; i++) {
+  for (let i = 0; i < pages.length; i++) {
     const pageNum  = i + 1;
-    const pageText = (capped[i] || '').trim();
+    const pageText = (pages[i] || '').trim();
 
     // Merge tiny pages with pending buffer
     if (pageText.length < MIN_CHUNK_SIZE) {
@@ -86,4 +84,4 @@ function chunkPages(pages) {
   return chunks;
 }
 
-module.exports = { chunkPages, MAX_PAGES_PER_DOC };
+module.exports = { chunkPages };

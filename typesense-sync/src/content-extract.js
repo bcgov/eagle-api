@@ -24,7 +24,7 @@
  * Environment variables:
  *   MONGODB_* (same as full-sync.js)
  *   MINIO_HOST, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET_NAME
- *   MAX_CHUNK_SIZE, MIN_CHUNK_SIZE, OVERLAP_SIZE, MAX_PAGES_PER_DOC (see chunker.js)
+ *   MAX_CHUNK_SIZE, MIN_CHUNK_SIZE, OVERLAP_SIZE (see chunker.js)
  *   CONTENT_EXTRACT_CONCURRENCY  - parallel extractions (default: 10)
  */
 
