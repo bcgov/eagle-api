@@ -40,7 +40,13 @@ app.use(function (req, res, next) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Vary', 'Origin');
   if (req.method === 'GET') {
-    res.setHeader('Cache-Control', 'max-age=60');
+    // Authenticated requests must not be cached — admin users need fresh data
+    // after mutations (delete, publish, etc.). Public GETs can cache briefly.
+    if (req.headers.authorization) {
+      res.setHeader('Cache-Control', 'no-store');
+    } else {
+      res.setHeader('Cache-Control', 'max-age=60');
+    }
   } else {
     res.setHeader('Cache-Control', 'no-store');
   }
