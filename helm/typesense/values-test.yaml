@@ -23,3 +23,9 @@ contentExtract:
   enabled: true
   image:
     tag: test
+  minioSecret:
+    name: nr-object-store-credential
+    hostKey: endpoint_url
+    accessKeyKey: user_account
+    secretKeyKey: password
+    bucketKey: bucket_name
