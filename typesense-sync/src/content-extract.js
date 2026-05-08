@@ -42,6 +42,12 @@ const { buildMongoUri } = require('./config');
 const CONCURRENCY = parseInt(process.env.CONTENT_EXTRACT_CONCURRENCY || '10', 10);
 const BUCKET      = process.env.MINIO_BUCKET_NAME || 'uploads';
 
+// Number of random documents to probe before starting a batch run.
+// If all probes fail, the bucket likely has no matching files (e.g. DB was
+// imported from another environment without syncing the object store). We abort
+// early rather than flooding the object store with thousands of 404 requests.
+const BUCKET_PROBE_SIZE = 5;
+
 const PDF_EXTENSIONS = new Set(['pdf', 'PDF', '.pdf', '.PDF']);
 
 // Public, non-deleted filter — matches full-sync.js PUBLIC_QUERY
@@ -62,6 +68,54 @@ function getMinioClient() {
     accessKey: process.env.MINIO_ACCESS_KEY || '',
     secretKey: process.env.MINIO_SECRET_KEY || '',
   });
+}
+
+// ── Bucket verification ─────────────────────────────────────────────────────
+
+/**
+ * Verify the configured bucket exists and is accessible.
+ * Surfaces credential and network errors before the extraction loop starts.
+ */
+async function verifyBucketAccess(minioClient) {
+  const exists = await minioClient.bucketExists(BUCKET);
+  if (!exists) {
+    throw new Error(`Bucket "${BUCKET}" does not exist or is not accessible`);
+  }
+  console.log(`  Bucket "${BUCKET}" accessible`);
+}
+
+/**
+ * Probe a random sample of documents to check whether their files exist in the
+ * bucket. Catches the common case where MongoDB was imported from another
+ * environment without syncing the corresponding object store files.
+ *
+ * @param {Minio.Client} minioClient
+ * @param {Collection}   epic         - MongoDB epic collection
+ * @param {object}       filter       - the same filter used for the full batch
+ * @returns {number} count of sample files that exist in the bucket
+ */
+async function probeSampleDocuments(minioClient, epic, filter) {
+  const sample = await epic.aggregate([
+    { $match: filter },
+    { $match: { internalURL: { $exists: true, $ne: '' } } },
+    { $sample: { size: BUCKET_PROBE_SIZE } },
+    { $project: { internalURL: 1 } },
+  ]).toArray();
+
+  if (sample.length === 0) return 0;
+
+  let found = 0;
+  for (const doc of sample) {
+    try {
+      await minioClient.statObject(BUCKET, doc.internalURL);
+      found++;
+    } catch {
+      // File absent — expected when bucket is unpopulated, not an error here
+    }
+  }
+
+  console.log(`  Bucket probe: ${found}/${sample.length} sample files present`);
+  return found;
 }
 
 // ── PDF download + parse ──────────────────────────────────────────────────────
@@ -255,6 +309,21 @@ async function main() {
 
     const total = await epic.countDocuments(filter);
     console.log(`  Eligible documents: ${total}`);
+
+    // ── Bucket verification ──────────────────────────────────────────────────
+    // Skip for single-doc mode (explicit debugging) and dry-run (count only).
+    // Also skip when batch is too small to sample — those are newly-uploaded
+    // documents in the environment and can be assumed to exist.
+    if (!docIdArg && !dryRun && total > BUCKET_PROBE_SIZE) {
+      await verifyBucketAccess(minio);
+      const found = await probeSampleDocuments(minio, epic, filter);
+      if (found === 0) {
+        console.error(`  ABORT: 0 of ${BUCKET_PROBE_SIZE} sampled files exist in bucket "${BUCKET}".`);
+        console.error('  Database likely imported from another environment without syncing the object store.');
+        console.error('  Sync files to the bucket first, or use --doc-id to extract a specific document.');
+        process.exit(1);
+      }
+    }
 
     if (dryRun || total === 0) {
       console.log('Content extraction complete (dry run or nothing to do).');
