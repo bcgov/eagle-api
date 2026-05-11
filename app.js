@@ -30,7 +30,7 @@ app.disable('x-powered-by');
 // Reflect the requesting origin instead of '*' so that credentialed requests
 // (those carrying an Authorization header) are accepted by all browsers.
 app.use(function (req, res, next) {
-  defaultLog.info(req.method, req.url);
+  defaultLog.info(`${req.method} ${req.url}`);
 
   var origin = req.headers.origin || '*';
   res.setHeader('Access-Control-Allow-Origin', origin);

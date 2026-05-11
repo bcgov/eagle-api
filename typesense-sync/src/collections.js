@@ -180,8 +180,8 @@ const QUERY_BY = {
     weights: '9000,8000,3000,2000,1500,1000',
   },
   DocumentChunk: {
-    fields:  'content,documentName',
-    weights: '9000,2000',
+    fields:  'content',
+    weights: '9000',
   },
 };
 
