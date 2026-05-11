@@ -20,6 +20,11 @@ spec:
         {{- include "eagle-api.mongodb.selectorLabels" . | nindent 8 }}
         role: database-eagle-epic  # Legacy label required by NetworkPolicy
     spec:
+      # shareProcessNamespace: Kubernetes pause container becomes PID 1 and reaps
+      # zombie children. Without this, mongod is PID 1 and never calls wait() —
+      # every readiness probe exec (bash + mongosh) leaves a zombie. Over ~12 days
+      # (~8,640 probes/day) the container hits the kernel PID limit and wedges.
+      shareProcessNamespace: true
       containers:
       - name: mongodb
         image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
@@ -45,6 +50,20 @@ spec:
           protocol: TCP
           name: mongodb
         lifecycle:
+          preStop:
+            exec:
+              # With shareProcessNamespace=true, mongod is not PID 1 and won't
+              # receive SIGTERM from Kubernetes directly. Shut it down cleanly.
+              command:
+                - bash
+                - -c
+                - |
+                  HOME=/tmp mongosh "mongodb://localhost:27017/?directConnection=true" \
+                    -u "$MONGO_INITDB_ROOT_USERNAME" \
+                    -p "$MONGO_INITDB_ROOT_PASSWORD" \
+                    --authenticationDatabase admin --quiet \
+                    --eval "db.adminCommand({shutdown: 1, force: false, timeoutSecs: 30})" \
+                    2>/dev/null || kill -SIGTERM $(pgrep -x mongod) || true
           postStart:
             exec:
               command:

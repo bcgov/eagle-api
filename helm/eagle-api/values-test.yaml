@@ -64,6 +64,7 @@ cronJobs:
 # MongoDB enabled for test environment
 mongodb:
   enabled: true
+  wiredTigerCacheSizeGB: 1.0  # 33% of 3Gi limit — explicit, leaves ~2Gi for connections + threads
   persistence:
     existingClaim: ""
     size: 10Gi

@@ -20,6 +20,7 @@ spec:
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
+      backoffLimit: 2           # Fail fast; avoid piling up retry pods when MongoDB wedged
       activeDeadlineSeconds: 7200
       template:
         metadata:

@@ -203,7 +203,7 @@ mongodb:
       failureThreshold: 3
     readiness:
       initialDelaySeconds: 3
-      periodSeconds: 10
+      periodSeconds: 15   # Reduced from 10 — fewer probe spawns = fewer potential zombies (defence-in-depth)
       timeoutSeconds: 1
       failureThreshold: 3
 
