@@ -311,7 +311,7 @@ exports.protectedPost = async function (args, res) {
   var Comment = mongoose.model('Comment');
 
   var vcs = [];
-  obj.valuedComponents.forEach(function (vc) {
+  (obj.valuedComponents || []).forEach(function (vc) {
     if (!mongoose.Types.ObjectId.isValid(vc)) {
       return Actions.sendResponse(res, 400, { });
     }
@@ -319,7 +319,7 @@ exports.protectedPost = async function (args, res) {
   });
 
   var docs = [];
-  obj.documents.forEach(function (doc) {
+  (obj.documents || []).forEach(function (doc) {
     if (!mongoose.Types.ObjectId.isValid(doc)) {
       return Actions.sendResponse(res, 400, { });
     }
