@@ -458,7 +458,7 @@ exports.updateProject = async function(user, sourceProject, updatedProject) {
     sourceProject.legislation_1996 = filteredData;
   }
 
-  var doc = await mongoose.model('Project').findOneAndUpdate({ _id: new mongoose.Types.ObjectId(sourceProject._id) }, sourceProject, { upsert: false, new: true });
+  var doc = await mongoose.model('Project').findOneAndUpdate({ _id: new mongoose.Types.ObjectId(sourceProject._id) }, sourceProject, { upsert: false, returnDocument: 'after' });
   // Project.update({ _id: new mongoose.Types.ObjectId(objId) }, { $set: updateObj }, function (err, o) {
   if (doc) {
     Utils.recordAction('Put', 'Project', user, doc._id);

@@ -45,7 +45,7 @@ exports.protectedGroupPut = async function (args, res) {
 
   var Group = mongoose.model('Group');
   try {
-    var group = await Group.findOneAndUpdate({ _id: groupId }, obj, { upsert: false, new: true });
+    var group = await Group.findOneAndUpdate({ _id: groupId }, obj, { upsert: false, returnDocument: 'after' });
     Utils.recordAction('Put', 'Group', args.swagger.params.auth_payload.preferred_username, groupId);
     defaultLog.info('Updated group:', groupId);
     return Actions.sendResponse(res, 200, group);

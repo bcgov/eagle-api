@@ -162,7 +162,7 @@ exports.protectedPut = async function (args, res) {
   defaultLog.info('Incoming updated object:', organization);
 
   try {
-    var org = await Organization.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).exec();
+    var org = await Organization.findOneAndUpdate({ _id: objId }, obj, { upsert: false, returnDocument: 'after' }).exec();
     // Update the name for all users associated with the organization.
     await User.updateMany({ _schemaName: 'User', org: new mongoose.Types.ObjectId(objId) }, { $set: { orgName: obj.name } });
 

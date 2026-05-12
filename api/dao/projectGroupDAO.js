@@ -59,7 +59,7 @@ exports.updateGroup = async function(user, updatedGroup, sourceGroup) {
   let groupModel = require('mongoose').model('Group');
 
   try {
-    let group = await groupModel.findOneAndUpdate({ _id: sourceGroup._id }, updatedGroup, { upsert: false, new: true });
+    let group = await groupModel.findOneAndUpdate({ _id: sourceGroup._id }, updatedGroup, { upsert: false, returnDocument: 'after' });
 
     Utils.recordAction('Put', 'Group', user, sourceGroup._id);
 

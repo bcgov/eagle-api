@@ -92,7 +92,7 @@ exports.protectedPut = async function (args, res) {
   // Change this to use guid instead of idir/user
   topic._updatedBy = args.swagger.params.auth_payload.preferred_username;
 
-  var data = await topic.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).exec();
+  var data = await topic.findOneAndUpdate({ _id: objId }, obj, { upsert: false, returnDocument: 'after' }).exec();
   Utils.recordAction('Put', 'Topic', args.swagger.params.auth_payload.preferred_username, objId);
   return Actions.sendResponse(res, 200, data);
 };

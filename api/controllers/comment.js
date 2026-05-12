@@ -367,7 +367,7 @@ exports.protectedPost = async function (args, res) {
 
 async function getNextCommentIdCount(period) {
   var CommentPeriod = mongoose.model('CommentPeriod');
-  var periodUpdated = await CommentPeriod.findOneAndUpdate({ _id: period }, { $inc: { commentIdCount: 1 } }, { new: true });
+  var periodUpdated = await CommentPeriod.findOneAndUpdate({ _id: period }, { $inc: { commentIdCount: 1 } }, { returnDocument: 'after' });
   return periodUpdated.commentIdCount;
 }
 

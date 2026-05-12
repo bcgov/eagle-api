@@ -97,7 +97,7 @@ exports.publicCACSignUp = async function (args, res) {
     const projectData = await Project.findOneAndUpdate(
       { _id: new mongoose.Types.ObjectId(projectId) },
       { $addToSet: { 'cacMembers': new mongoose.Types.ObjectId(cacUser._id) } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     Utils.recordAction('Post', 'ProjectCACMember', 'public', cacUser._id);
 

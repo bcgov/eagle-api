@@ -101,7 +101,7 @@ exports.protectedPut = async function (args, res) {
   defaultLog.info('Incoming updated object:', obj);
 
   var valuedComponent = require('mongoose').model('Vc');
-  var data = await valuedComponent.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).exec();
+  var data = await valuedComponent.findOneAndUpdate({ _id: objId }, obj, { upsert: false, returnDocument: 'after' }).exec();
   Utils.recordAction('Put', 'Vc', args.swagger.params.auth_payload.preferred_username, objId);
   return Actions.sendResponse(res, 200, data);
 };

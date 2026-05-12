@@ -30,11 +30,11 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
       true,   // proponent populate
       null);
 
-    defaultLog.debug('[PIN-DEBUG] runDataQuery returned', data ? data.length : 0, 'docs');
+    defaultLog.debug(`[PIN-DEBUG] runDataQuery returned ${data ? data.length : 0} docs`);
     if (data && data.length > 0) {
-      defaultLog.debug('[PIN-DEBUG] data[0] keys:', Object.keys(data[0]));
-      defaultLog.debug('[PIN-DEBUG] data[0].pins:', data[0].pins ? data[0].pins.length + ' items' : 'MISSING');
-      defaultLog.debug('[PIN-DEBUG] data[0].pinsRead:', data[0].pinsRead);
+      defaultLog.debug(`[PIN-DEBUG] data[0] keys: ${Object.keys(data[0]).join(', ')}`);
+      defaultLog.debug(`[PIN-DEBUG] data[0].pins: ${data[0].pins ? data[0].pins.length + ' items' : 'MISSING'}`);
+      defaultLog.debug(`[PIN-DEBUG] data[0].pinsRead: ${JSON.stringify(data[0].pinsRead)}`);
     }
 
     if (!data || data.length === 0) {
@@ -142,7 +142,7 @@ exports.protectedAddPins = async function (args, res) {
     var doc = await Project.findOneAndUpdate(
       { _id: new mongoose.Types.ObjectId(objId) },
       { $push: { pins: { $each: pinsArr } } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (doc) {
       Utils.recordAction('Add', 'Pin', args.swagger.params.auth_payload.preferred_username, objId);
