@@ -18,3 +18,17 @@ typesense:
 cleanup:
   image:
     tag: prod
+
+contentExtract:
+  enabled: false
+  image:
+    tag: prod
+  env:
+    CONTENT_EXTRACT_CONCURRENCY: "3"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 2Gi
