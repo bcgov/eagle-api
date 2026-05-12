@@ -23,6 +23,7 @@ describe('Pins Controller', () => {
 
   let res;
   let projectModel;
+  let orgModel;
 
   // Build a minimal swagger args object; supply overrides for individual params.
   function makeArgs(paramOverrides = {}) {
@@ -49,13 +50,29 @@ describe('Pins Controller', () => {
     res = { status: sinon.stub().returnsThis(), json: sinon.stub() };
 
     projectModel = {
-      findOne:   sinon.stub(),
-      updateOne: sinon.stub()
+      findOne:          sinon.stub(),
+      updateOne:        sinon.stub(),
+      findOneAndUpdate: sinon.stub()
+    };
+
+    // Chainable query builder for Organization.find()
+    const orgFindQuery = {
+      select: sinon.stub().returnsThis(),
+      sort:   sinon.stub().returnsThis(),
+      skip:   sinon.stub().returnsThis(),
+      limit:  sinon.stub().returnsThis(),
+      lean:   sinon.stub().resolves([])
+    };
+    orgModel = {
+      find:            sinon.stub().returns(orgFindQuery),
+      countDocuments:  sinon.stub().resolves(0),
+      _findQuery:      orgFindQuery  // expose so individual tests can override lean()
     };
 
     // Intercept every mongoose.model() call inside the controller functions.
     sinon.stub(mongoose, 'model').callsFake(name => {
-      if (name === 'Project') return projectModel;
+      if (name === 'Project')      return projectModel;
+      if (name === 'Organization') return orgModel;
       return {};
     });
 
@@ -112,20 +129,19 @@ describe('Pins Controller', () => {
     });
 
     it('returns 200 with org data for published pins and records Get action', async () => {
-      const orgData = [{ _id: VALID_PIN_ID, name: 'TestOrg', total_items: 1 }];
-      Utils.runDataQuery
-        .onFirstCall().resolves([{ pins: [VALID_PIN_ID], pinsRead: ['public'] }])
-        .onSecondCall().resolves(orgData);
+      const orgs = [{ _id: VALID_PIN_ID, name: 'TestOrg' }];
+      Utils.runDataQuery.resolves([{ pins: [VALID_PIN_ID], pinsRead: ['public'] }]);
+      orgModel._findQuery.lean.resolves(orgs);
+      orgModel.countDocuments.resolves(1);
       await pins.publicPinGet(makeArgs(), res);
       expect(res.status.calledWith(200)).to.be.true;
       expect(Utils.recordAction.calledWith('Get', 'Pin')).to.be.true;
     });
 
-    it('attaches pinsRead to orgData[0].read on success', async () => {
-      const orgData = [{ _id: VALID_PIN_ID, name: 'TestOrg' }];
-      Utils.runDataQuery
-        .onFirstCall().resolves([{ pins: [VALID_PIN_ID], pinsRead: ['public', 'sysadmin'] }])
-        .onSecondCall().resolves(orgData);
+    it('attaches pinsRead to response[0].read on success', async () => {
+      Utils.runDataQuery.resolves([{ pins: [VALID_PIN_ID], pinsRead: ['public', 'sysadmin'] }]);
+      orgModel._findQuery.lean.resolves([{ _id: VALID_PIN_ID, name: 'TestOrg' }]);
+      orgModel.countDocuments.resolves(1);
       await pins.publicPinGet(makeArgs(), res);
       expect(res.json.args[0][0][0].read).to.include('public');
     });
@@ -161,14 +177,20 @@ describe('Pins Controller', () => {
     });
 
     it('returns 200 and records Add action on success', async () => {
-      projectModel.updateOne.resolves({ modifiedCount: 1 });
+      projectModel.findOneAndUpdate.resolves({ _id: VALID_PROJ_ID, pins: [VALID_PIN_ID] });
       await pins.protectedAddPins(makeArgs(), res);
       expect(res.status.calledWith(200)).to.be.true;
       expect(Utils.recordAction.calledWith('Add', 'Pin', 'testuser', VALID_PROJ_ID)).to.be.true;
     });
 
+    it('returns 404 when project not found', async () => {
+      projectModel.findOneAndUpdate.resolves(null);
+      await pins.protectedAddPins(makeArgs(), res);
+      expect(res.status.calledWith(404)).to.be.true;
+    });
+
     it('returns 400 and logs error when DB throws', async () => {
-      projectModel.updateOne.rejects(new Error('write conflict'));
+      projectModel.findOneAndUpdate.rejects(new Error('write conflict'));
       await pins.protectedAddPins(makeArgs(), res);
       expect(res.status.calledWith(400)).to.be.true;
       expect(defaultLog.error.called).to.be.true;
