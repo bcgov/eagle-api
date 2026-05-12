@@ -30,6 +30,13 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
       true,   // proponent populate
       null);
 
+    defaultLog.debug('[PIN-DEBUG] runDataQuery returned', data ? data.length : 0, 'docs');
+    if (data && data.length > 0) {
+      defaultLog.debug('[PIN-DEBUG] data[0] keys:', Object.keys(data[0]));
+      defaultLog.debug('[PIN-DEBUG] data[0].pins:', data[0].pins ? data[0].pins.length + ' items' : 'MISSING');
+      defaultLog.debug('[PIN-DEBUG] data[0].pinsRead:', data[0].pinsRead);
+    }
+
     if (!data || data.length === 0) {
       defaultLog.info('Project not found or no permission, projId:', projectId.value);
       return Actions.sendResponse(res, 200, [{ total_items: 0 }]);

@@ -18,6 +18,7 @@ resources:
     memory: 256Mi
 
 env:
+  LOG_LEVEL: "debug"
   API_HOSTNAME: eagle-dev.apps.silver.devops.gov.bc.ca
   CHES_ENDPOINT: "https://ches-dev.api.gov.bc.ca/api/v1"
   GETOK_ENDPOINT: "https://sso-dev.pathfinder.gov.bc.ca"

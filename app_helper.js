@@ -5,10 +5,11 @@ const options       = require('./config/mongoose_options').mongooseOptions;
 
 // Logging middleware
 const { format, transports } = winston;
+const logLevel = process.env.LOG_LEVEL || 'info';
 winston.loggers.add('default', {
   transports: [
     new transports.File({
-      level: 'info',
+      level: logLevel,
       filename: '/tmp/epic-app.log',
       handleExceptions: true,
       maxsize: 5242880, // 5MB
@@ -22,7 +23,7 @@ winston.loggers.add('default', {
       )
     }),
     new transports.Console({
-      level: 'info',
+      level: logLevel,
       handleExceptions: true,
       format: format.combine(
         format.errors({ stack: true }),
