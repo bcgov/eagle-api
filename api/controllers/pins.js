@@ -63,18 +63,28 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
     skip = processedParameters.skip;
     limit = processedParameters.limit;
 
-    var orgData = await Utils.runDataQuery('Organization',
-      roles,
-      { _id: { $in: thePins } },
-      fields,
-      null,
-      sort, skip, limit,
-      true); // count
+    // Use direct mongoose query to bypass $redact permission filter.
+    // PIN-linked orgs are explicitly admin-managed and must be visible to all admin users
+    // regardless of the org document's read field values.
+    var OrgModel = mongoose.model('Organization');
+    var orgQuery = OrgModel.find({ _id: { $in: thePins } })
+      .select('_id name website province read');
+    if (sort) { orgQuery = orgQuery.sort(sort); }
+    if (skip != null) { orgQuery = orgQuery.skip(skip); }
+    if (limit != null) { orgQuery = orgQuery.limit(limit); }
 
-    // Attach pinsRead to response
-    if (orgData && orgData.length > 0) {
-      orgData[0].read = read ? read.slice() : [];
-    }
+    const [orgs, totalCount] = await Promise.all([
+      orgQuery.lean(),
+      OrgModel.countDocuments({ _id: { $in: thePins } })
+    ]);
+
+    // Return in same shape as runDataQuery count:true — [{ total_items, results, read }]
+    const orgData = [{
+      total_items: totalCount,
+      results: orgs,
+      read: read ? read.slice() : []
+    }];
+
     Utils.recordAction('Get', 'Pin', username, projectId.value);
     defaultLog.info('Got pins for project:', projectId.value);
     return Actions.sendResponse(res, 200, orgData);
@@ -122,14 +132,15 @@ exports.protectedAddPins = async function (args, res) {
   var pinsArr = args.swagger.params.pins.value.map(item => new mongoose.Types.ObjectId(item));
 
   try {
-    var doc = await Project.updateOne(
+    var doc = await Project.findOneAndUpdate(
       { _id: new mongoose.Types.ObjectId(objId) },
-      { $push: { pins: { $each: pinsArr } } }
+      { $push: { pins: { $each: pinsArr } } },
+      { new: true }
     );
     if (doc) {
       Utils.recordAction('Add', 'Pin', args.swagger.params.auth_payload.preferred_username, objId);
       defaultLog.info('Added', pinsArr.length, 'pin(s) to project:', objId);
-      return Actions.sendResponse(res, 200, doc);
+      return Actions.sendResponse(res, 200, { pins: doc.pins });
     } else {
       defaultLog.info('Project not found:', objId);
       return Actions.sendResponse(res, 404, {});
