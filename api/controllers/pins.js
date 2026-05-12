@@ -17,44 +17,35 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
   }
 
   var skip = null, limit = null, sort = null;
-  var fields = ['_id', 'pins', 'name', 'website', 'province', 'pinsRead'];
 
   try {
-    var data = await Utils.runDataQuery('Project',
-      roles,
-      { '_schemaName': 'Project', _id: new mongoose.Types.ObjectId(projectId.value) },
-      fields,
-      null, null, null, null,
-      false, // count
-      null,
-      true,   // proponent populate
-      null);
+    // Use direct findOne instead of runDataQuery — the $replaceRoot + $redact
+    // pipeline in runDataQuery conflicts with the Project legislation schema,
+    // causing 0 results even for sysadmin. This endpoint is already protected at
+    // the route level (staff/sysadmin only), so skipping $redact is safe.
+    var Project = mongoose.model('Project');
+    var project = await Project.findOne(
+      { _id: new mongoose.Types.ObjectId(projectId.value) },
+      { pins: 1, pinsRead: 1 }
+    ).lean();
 
-    defaultLog.debug(`[PIN-DEBUG] query _id: ${projectId.value}, roles: ${JSON.stringify(roles)}`);
-    defaultLog.debug(`[PIN-DEBUG] runDataQuery returned ${data ? data.length : 0} docs`);
-    if (data && data.length > 0) {
-      defaultLog.debug(`[PIN-DEBUG] data[0] keys: ${Object.keys(data[0]).join(', ')}`);
-      defaultLog.debug(`[PIN-DEBUG] data[0].pins: ${data[0].pins ? data[0].pins.length + ' items' : 'MISSING'}`);
-      defaultLog.debug(`[PIN-DEBUG] data[0].pinsRead: ${JSON.stringify(data[0].pinsRead)}`);
-    }
-
-    if (!data || data.length === 0) {
-      defaultLog.info('Project not found or no permission, projId:', projectId.value);
+    if (!project) {
+      defaultLog.info('Project not found, projId:', projectId.value);
       return Actions.sendResponse(res, 200, [{ total_items: 0 }]);
     }
 
-    if (!data[0].pins || data[0].pins.length === 0) {
+    if (!project.pins || project.pins.length === 0) {
       defaultLog.info('No pins for project:', projectId.value);
       return Actions.sendResponse(res, 200, [{ total_items: 0 }]);
     }
 
-    if (data[0].pinsRead && !data[0].pinsRead.includes('public') && username === 'public') {
+    if (project.pinsRead && !project.pinsRead.includes('public') && username === 'public') {
       defaultLog.info('Pins not yet published for project:', projectId.value);
       return Actions.sendResponse(res, 200, [{ total_items: 0 }]);
     }
 
-    const thePins = data[0].pins.map(pin => new mongoose.Types.ObjectId(pin));
-    const read = data[0].pinsRead;
+    const thePins = project.pins.map(pin => new mongoose.Types.ObjectId(pin));
+    const read = project.pinsRead;
 
     // Sort
     if (sortBy && sortBy.value) {

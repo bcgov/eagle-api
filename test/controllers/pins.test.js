@@ -55,6 +55,9 @@ describe('Pins Controller', () => {
       findOneAndUpdate: sinon.stub()
     };
 
+    // projectModel.findOne returns a lean-able query by default
+    projectModel.findOne.returns({ lean: sinon.stub().resolves(null) });
+
     // Chainable query builder for Organization.find()
     const orgFindQuery = {
       select: sinon.stub().returnsThis(),
@@ -110,27 +113,27 @@ describe('Pins Controller', () => {
     });
 
     it('returns 200 empty array when project is not found', async () => {
-      Utils.runDataQuery.resolves([]);
+      projectModel.findOne.returns({ lean: sinon.stub().resolves(null) });
       await pins.publicPinGet(makeArgs(), res);
       expect(res.status.calledWith(200)).to.be.true;
       expect(res.json.args[0][0]).to.deep.equal([{ total_items: 0 }]);
     });
 
     it('returns 200 empty array when project has no pins', async () => {
-      Utils.runDataQuery.resolves([{ pins: [], pinsRead: ['public'] }]);
+      projectModel.findOne.returns({ lean: sinon.stub().resolves({ pins: [], pinsRead: ['public'] }) });
       await pins.publicPinGet(makeArgs(), res);
       expect(res.json.args[0][0]).to.deep.equal([{ total_items: 0 }]);
     });
 
     it('returns 200 empty array when pins not yet published (pinsRead lacks public)', async () => {
-      Utils.runDataQuery.resolves([{ pins: [VALID_PIN_ID], pinsRead: [] }]);
+      projectModel.findOne.returns({ lean: sinon.stub().resolves({ pins: [VALID_PIN_ID], pinsRead: [] }) });
       await pins.publicPinGet(makeArgs(), res);
       expect(res.json.args[0][0]).to.deep.equal([{ total_items: 0 }]);
     });
 
     it('returns 200 with org data for published pins and records Get action', async () => {
       const orgs = [{ _id: VALID_PIN_ID, name: 'TestOrg' }];
-      Utils.runDataQuery.resolves([{ pins: [VALID_PIN_ID], pinsRead: ['public'] }]);
+      projectModel.findOne.returns({ lean: sinon.stub().resolves({ pins: [VALID_PIN_ID], pinsRead: ['public'] }) });
       orgModel._findQuery.lean.resolves(orgs);
       orgModel.countDocuments.resolves(1);
       await pins.publicPinGet(makeArgs(), res);
@@ -139,7 +142,7 @@ describe('Pins Controller', () => {
     });
 
     it('attaches pinsRead to response[0].read on success', async () => {
-      Utils.runDataQuery.resolves([{ pins: [VALID_PIN_ID], pinsRead: ['public', 'sysadmin'] }]);
+      projectModel.findOne.returns({ lean: sinon.stub().resolves({ pins: [VALID_PIN_ID], pinsRead: ['public', 'sysadmin'] }) });
       orgModel._findQuery.lean.resolves([{ _id: VALID_PIN_ID, name: 'TestOrg' }]);
       orgModel.countDocuments.resolves(1);
       await pins.publicPinGet(makeArgs(), res);
@@ -147,7 +150,7 @@ describe('Pins Controller', () => {
     });
 
     it('returns 400 and logs error when DB throws', async () => {
-      Utils.runDataQuery.rejects(new Error('DB connection lost'));
+      projectModel.findOne.returns({ lean: sinon.stub().rejects(new Error('DB connection lost')) });
       await pins.publicPinGet(makeArgs(), res);
       expect(res.status.calledWith(400)).to.be.true;
       expect(defaultLog.error.called).to.be.true;
@@ -156,11 +159,12 @@ describe('Pins Controller', () => {
 
   // ---------------------------------------------------------------------------
   describe('protectedPinGet', () => {
-    it('passes auth roles from payload to runDataQuery', async () => {
-      Utils.runDataQuery.resolves([]);
+    it('returns 200 with pins when project found', async () => {
+      projectModel.findOne.returns({ lean: sinon.stub().resolves({ pins: [VALID_PIN_ID], pinsRead: ['sysadmin'] }) });
+      orgModel._findQuery.lean.resolves([{ _id: VALID_PIN_ID, name: 'TestOrg' }]);
+      orgModel.countDocuments.resolves(1);
       await pins.protectedPinGet(makeArgs(), res);
-      // Second arg to runDataQuery is the roles array
-      expect(Utils.runDataQuery.firstCall.args[1]).to.deep.equal(['sysadmin']);
+      expect(res.status.calledWith(200)).to.be.true;
     });
 
     it('returns 400 for invalid projId', async () => {
