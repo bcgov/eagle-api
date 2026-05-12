@@ -30,6 +30,7 @@ const handleGetPins = async function (projectId, roles, sortBy, pageSize, pageNu
       true,   // proponent populate
       null);
 
+    defaultLog.debug(`[PIN-DEBUG] query _id: ${projectId.value}, roles: ${JSON.stringify(roles)}`);
     defaultLog.debug(`[PIN-DEBUG] runDataQuery returned ${data ? data.length : 0} docs`);
     if (data && data.length > 0) {
       defaultLog.debug(`[PIN-DEBUG] data[0] keys: ${Object.keys(data[0]).join(', ')}`);
