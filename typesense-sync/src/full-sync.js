@@ -3,11 +3,15 @@
 /**
  * Full sync: MongoDB → Typesense (zero-downtime using collection aliases).
  *
- * For each schema (Document, Project, Comment):
+ * For each schema (Document, Project, RecentActivity, ProjectNotification, DocumentChunk):
  *   1. Create a new timestamped collection (e.g. "documents_20260408_020000")
- *   2. Query all public documents from MongoDB and bulk-import in batches
+ *   2. Query ALL non-deleted documents from MongoDB (access control via allowed_roles field)
  *   3. Switch the alias (e.g. "documents") to point at the new collection
  *   4. Drop the old collection (if one existed)
+ *
+ * Access control: every document gets an allowed_roles field (from its read array).
+ * Scoped search keys used by the frontend embed filter_by: "allowed_roles:=[<roles>]"
+ * so Typesense enforces permissions — clients cannot bypass the filter.
  *
  * Run manually:   node typesense-sync/src/full-sync.js
  * Run via cron:   Kubernetes CronJob (helm/typesense/templates/sync-cronjob.yaml)
@@ -29,24 +33,15 @@ const { buildMongoUri } = require('./config');
 
 const BATCH_SIZE = 500;
 
-// MongoDB query: only public, non-deleted documents
-// Match eagle-api's $redact logic: include docs where read contains 'public',
-// OR where read does not exist (eagle-api $$DESCEND behaviour — e.g. project-linked
-// RecentActivity docs that predate the read-tagging convention).
-const PUBLIC_QUERY = {
-  $and: [
-    {
-      $or: [
-        { read: { $in: ['public'] } },
-        { read: { $exists: false } },
-      ],
-    },
-    {
-      $or: [
-        { isDeleted: { $exists: false } },
-        { isDeleted: false },
-      ],
-    },
+// MongoDB query: all non-deleted documents regardless of read permissions.
+// Access control is enforced at query time via Typesense scoped search keys
+// that embed a filter_by: "allowed_roles:=[<roles>]" constraint — clients
+// physically cannot bypass it. The allowed_roles field is populated by
+// transform.js using each document's read array.
+const SYNC_QUERY = {
+  $or: [
+    { isDeleted: { $exists: false } },
+    { isDeleted: false },
   ],
 };
 
@@ -92,7 +87,7 @@ async function syncSchema(typesense, mongoDB, listLookup, projectLookup, pcpLook
 
   // Stream all matching documents from MongoDB and import in batches
   const collection = mongoDB.collection('epic');
-  const cursor     = collection.find({ _schemaName: schemaName, ...PUBLIC_QUERY });
+  const cursor     = collection.find({ _schemaName: schemaName, ...SYNC_QUERY });
 
   let batch = [];
   let total = 0;

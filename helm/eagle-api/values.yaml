@@ -103,8 +103,9 @@ secrets:
     clientSecretKey: _GETOK_CLIENT_SECRET
 
   typesense:
-    name: typesense-api-key     # Created by: oc create secret generic typesense-api-key --from-literal=TYPESENSE_API_KEY=$(openssl rand -hex 32)
+    name: typesense-api-key     # Created by: oc create secret generic typesense-api-key --from-literal=TYPESENSE_API_KEY=$(openssl rand -hex 32) --from-literal=TYPESENSE_SEARCH_KEY=<search-only-key>
     apiKeyKey: TYPESENSE_API_KEY
+    searchKeyKey: TYPESENSE_SEARCH_KEY
 
 # Keycloak SSO Configuration
 keycloak:

@@ -6430,6 +6430,31 @@ paths:
           schema:
             $ref: "#/definitions/Error"
 
+  /public/search/key:
+    x-swagger-router-controller: search
+    get:
+      tags:
+        - search
+      summary: "Get a scoped Typesense search key"
+      operationId: publicGetSearchKey
+      description: "Returns a Typesense scoped search-only key with allowed_roles filter baked in. Safe to expose to browsers — Typesense enforces the embedded filter. Public requests get a key scoped to public content only."
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Base64-encoded scoped search key"
+              expiresAt:
+                type: integer
+                description: "Unix timestamp (seconds) when the key expires"
+        "500":
+          description: "Server Error"
+          schema:
+            $ref: "#/definitions/Error"
+
   /public/search:
     x-swagger-router-controller: search
     options:

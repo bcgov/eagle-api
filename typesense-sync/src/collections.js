@@ -39,6 +39,8 @@ const DOCUMENT_SCHEMA = {
     { name: 'documentSource',     type: 'string',  facet: true,  optional: true },
     // 30-day click/download score — updated nightly by popularity-sync.js
     { name: 'popularity',         type: 'int32',   sort: true,   optional: true },
+    // Access control — roles that may see this document (mirrors MongoDB read array)
+    { name: 'allowed_roles',      type: 'string[]', facet: true,  optional: true },
   ],
 };
 
@@ -66,6 +68,8 @@ const PROJECT_SCHEMA = {
     { name: 'centroid',         type: 'float[]',               optional: true },
     // 30-day click score — updated nightly by popularity-sync.js
     { name: 'popularity',       type: 'int32',   sort: true,   optional: true },
+    // Access control — roles that may see this project (mirrors MongoDB read array)
+    { name: 'allowed_roles',    type: 'string[]', facet: true,  optional: true },
   ],
 };
 
@@ -96,6 +100,8 @@ const RECENTACTIVITY_SCHEMA = {
     { name: 'pcpMetURL',                type: 'string',               optional: true },
     // ProjectNotification ref — used by the Updates tab to fetch inline documents
     { name: 'projectNotificationId',    type: 'string',               optional: true },
+    // Access control — roles that may see this activity (mirrors MongoDB read array)
+    { name: 'allowed_roles',            type: 'string[]', facet: true,  optional: true },
   ],
 };
 
@@ -124,6 +130,8 @@ const PROJECTNOTIFICATION_SCHEMA = {
     { name: 'centroid',                    type: 'float[]',               optional: true },
     // Original HTML for display (not indexed)
     { name: 'descriptionHtml',             type: 'string',  index: false, optional: true },
+    // Access control — roles that may see this notification (mirrors MongoDB read array)
+    { name: 'allowed_roles',               type: 'string[]', facet: true,  optional: true },
   ],
 };
 
@@ -144,6 +152,8 @@ const DOCUMENT_CHUNKS_SCHEMA = {
     { name: 'chunkIndex',     type: 'int32',   index: false, optional: true },
     { name: 'documentName',   type: 'string',  index: false, optional: true },
     { name: 'projectName',    type: 'string',  index: false, optional: true },
+    // Access control — inherited from parent document's read array
+    { name: 'allowed_roles',  type: 'string[]', facet: true,  optional: true },
     // Future: embedding field for vector/AI search
     // { name: 'embedding', type: 'float[]', num_dim: 768, optional: true },
   ],

@@ -143,18 +143,33 @@ async function search(schemaName, keywords, pageNum, pageSize, sortBy, and) {
 }
 
 /**
- * Generate a scoped search-only API key for one or more collections.
- * Used via the /api/search/scoped-key endpoint (Phase 3, step 11).
+ * Generate a scoped search key with an embedded filter_by constraint.
+ * Pure HMAC derivation — no network call to Typesense, no latency.
  *
- * The key is safe to expose to the browser — it cannot write or delete.
+ * The returned key is safe to expose to browsers: it is read-only and
+ * Typesense enforces the embedded filter_by regardless of what the client sends.
+ *
+ * Requires TYPESENSE_SEARCH_KEY env var (search-only key, separate from the
+ * admin TYPESENSE_API_KEY used by the sync service).
+ *
+ * @param {string[]} roles     - User roles from Keycloak JWT (e.g. ['public', 'staff'])
+ * @param {number} [ttl=3600] - Key lifetime in seconds (default 1 hour)
+ * @returns {{ key: string, expiresAt: number }} - Scoped key and its Unix expiry timestamp
  */
-async function createScopedSearchKey(collections = ['projects']) {
+function generateScopedSearchKey(roles, ttl = 3600) {
+  const searchKey = process.env.TYPESENSE_SEARCH_KEY;
+  if (!searchKey) {
+    throw new Error('TYPESENSE_SEARCH_KEY not configured — cannot generate scoped search key');
+  }
+  // Always include 'public' so scoped key also sees public content
+  const effectiveRoles = roles.includes('public') ? roles : [...roles, 'public'];
+  const expiresAt = Math.floor(Date.now() / 1000) + ttl;
   const client = getClient();
-  return client.keys().create({
-    description: `eagle-public search-only key (${new Date().toISOString()})`,
-    actions:     ['documents:search'],
-    collections,
+  const key = client.keys().generateScopedSearchKey(searchKey, {
+    filter_by: `allowed_roles:=[${effectiveRoles.join(',')}]`,
+    expires_at: expiresAt,
   });
+  return { key, expiresAt };
 }
 
-module.exports = { search, createScopedSearchKey, buildFilterBy, buildSortBy };
+module.exports = { search, generateScopedSearchKey, buildFilterBy, buildSortBy };

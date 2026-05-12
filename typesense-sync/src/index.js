@@ -4,7 +4,9 @@
  * Change Stream listener — syncs MongoDB epic collection to Typesense in near real-time.
  *
  * Watches the MongoDB "epic" collection for insert/update/replace/delete events
- * and mirrors them to Typesense. Syncs public documents: read contains 'public', or no read field (eagle-api $$DESCEND behaviour).
+ * and mirrors them to Typesense. All non-deleted documents are synced regardless
+ * of read permissions — access control is enforced at query time via Typesense
+ * scoped search keys that embed a filter_by: "allowed_roles:=[<roles>]" constraint.
  *
  * Resume tokens are stored in-memory. On restart, the listener starts from the
  * current oplog position (missing at most a few seconds of changes). The nightly
@@ -29,13 +31,6 @@ const { SCHEMAS }     = require('./collections');
 const { buildMongoUri } = require('./config');
 
 const INDEXED_SCHEMAS = new Set(Object.keys(SCHEMAS));
-
-// Match eagle-api's $redact logic: include docs where read contains 'public',
-// OR where read does not exist ($$DESCEND behaviour for legacy docs).
-function isPublic(doc) {
-  if (!doc.read) return true; // no read field → public by $$DESCEND
-  return Array.isArray(doc.read) && doc.read.includes('public');
-}
 
 function isDeleted(doc) {
   return doc.isDeleted === true;
@@ -69,8 +64,8 @@ async function ensureCollections(typesense) {
 }
 
 async function upsertDoc(typesense, schemaName, fullDoc, listLookup, projectLookup, pcpLookup) {
-  if (!isPublic(fullDoc) || isDeleted(fullDoc)) {
-    // Doc is no longer public — remove from Typesense if it was there
+  if (isDeleted(fullDoc)) {
+    // Doc deleted — remove from Typesense
     await deleteDoc(typesense, schemaName, fullDoc._id.toString());
     return;
   }

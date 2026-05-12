@@ -36,6 +36,17 @@ function parseCentroid(c) {
 
 const OBJECT_ID_RE = /^[0-9a-f]{24}$/i;
 
+/**
+ * Extract allowed roles from a MongoDB document's read array.
+ * Defaults to ['public'] when read is absent (legacy docs without explicit ACL).
+ * Used to populate the allowed_roles field in Typesense so scoped search keys
+ * can filter by role at query time.
+ */
+function extractRoles(doc) {
+  if (Array.isArray(doc.read) && doc.read.length > 0) return doc.read;
+  return ['public'];
+}
+
 function resolveStrict(val, listLookup) {
   if (val == null || val === '') return undefined;
   const s = val.toString();
@@ -82,6 +93,7 @@ function transformDocument(doc, listLookup, projectLookup) {
     ...(toTimestamp(doc.dateUploaded)  !== undefined && { dateUploaded:  toTimestamp(doc.dateUploaded) }),
     isFeatured: doc.isFeatured === true,
     ...(str(doc.documentSource)    && { documentSource: str(doc.documentSource) }),
+    allowed_roles: extractRoles(doc),
   };
 }
 
@@ -104,6 +116,7 @@ function transformProject(doc, listLookup) {
     ...(toTimestamp(leg.dateUpdated)    !== undefined && { updatedDate:   toTimestamp(leg.dateUpdated) }),
     ...(toTimestamp(leg.decisionDate)  !== undefined && { decisionDate:  toTimestamp(leg.decisionDate) }),
     ...parseCentroid(leg.centroid),
+    allowed_roles: extractRoles(doc),
   };
 }
 
@@ -145,6 +158,7 @@ function transformRecentActivity(doc, listLookup, projectLookup, pcpLookup) {
     ...(pcpMeta?.metURL                && { pcpMetURL: str(pcpMeta.metURL) }),
     // ProjectNotification ref — lets the frontend fetch inline documents on the Updates tab
     ...(doc.projectNotification        && { projectNotificationId: doc.projectNotification.toString() }),
+    allowed_roles: extractRoles(doc),
   };
 }
 
@@ -175,6 +189,7 @@ function transformProjectNotification(doc, listLookup) {
     ...(doc.associatedProjectId          && { associatedProjectId:     doc.associatedProjectId.toString() }),
     ...(str(doc.associatedProjectName)   && { associatedProjectName:   str(doc.associatedProjectName) }),
     ...parseCentroid(doc.centroid),
+    allowed_roles: extractRoles(doc),
   };
 }
 
@@ -195,6 +210,8 @@ function transformDocumentChunk(doc) {
     ...(toTimestamp(doc.datePosted) !== undefined && { datePosted: toTimestamp(doc.datePosted) }),
     ...(str(doc.documentName)        && { documentName:  str(doc.documentName) }),
     ...(str(doc.projectName)         && { projectName:   str(doc.projectName) }),
+    // Chunks inherit roles from parent document (doc.read stored by content-extract.js)
+    allowed_roles: extractRoles(doc),
   };
 }
 
