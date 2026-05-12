@@ -215,3 +215,21 @@ contentExtract:
 
   backoffLimit: 2
   ttlSecondsAfterFinished: 3600
+
+# ---------------------------------------------------------------------------
+# Search Key Init Job — registers TYPESENSE_SEARCH_KEY in Typesense keystore.
+# Runs as a post-install / post-upgrade Helm hook.
+#
+# Prerequisite: typesense-api-key secret must contain TYPESENSE_SEARCH_KEY.
+# Add it with:
+#   oc patch secret typesense-api-key -n <namespace> --type=json \
+#     -p='[{"op":"add","path":"/data/TYPESENSE_SEARCH_KEY",
+#            "value":"<base64-encoded-key>"}]'
+# ---------------------------------------------------------------------------
+searchKeyInit:
+  enabled: true
+
+  image:
+    repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/typesense-sync
+    tag: "latest"
+    pullPolicy: Always

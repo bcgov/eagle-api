@@ -1,0 +1,132 @@
+{{- if .Values.searchKeyInit.enabled }}
+# =============================================================================
+# Search Key Init Job
+# =============================================================================
+# Registers TYPESENSE_SEARCH_KEY in the Typesense keystore. Runs as a
+# post-install / post-upgrade Helm hook — after the Typesense server pod is
+# updated but before the release is marked as deployed.
+#
+# Why: generateScopedSearchKey (HMAC) only works if the parent key exists in
+# Typesense's keystore. Without this job, the key exists in the secret but
+# isn't registered, causing 401s on all scoped key searches.
+#
+# Idempotent: Typesense ignores duplicate key registration (same `value`
+# string = same key). Safe to re-run on every upgrade.
+# =============================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "typesense.fullname" . }}-search-key-init
+  labels:
+    {{- include "typesense.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        {{- include "typesense.selectorLabels" . | nindent 8 }}
+        role: search-typesense-eagle
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: search-key-init
+        image: "{{ .Values.searchKeyInit.image.repository }}:{{ .Values.searchKeyInit.image.tag }}"
+        imagePullPolicy: {{ .Values.searchKeyInit.image.pullPolicy }}
+        command:
+          - node
+          - -e
+          - |-
+            (async () => {
+              const base = `http://${process.env.TYPESENSE_HOST}:${process.env.TYPESENSE_PORT}`;
+              const adminKey = process.env.TYPESENSE_API_KEY;
+              const searchKey = process.env.TYPESENSE_SEARCH_KEY;
+              const headers = {
+                'X-TYPESENSE-API-KEY': adminKey,
+                'Content-Type': 'application/json',
+              };
+
+              if (!searchKey) {
+                console.error('TYPESENSE_SEARCH_KEY not set — cannot register key');
+                process.exit(1);
+              }
+
+              // Retry loop: Typesense may still be loading collections after pod restart
+              const MAX_ATTEMPTS = 18;   // 18 * 10s = 3 min max wait
+              const RETRY_DELAY_MS = 10000;
+
+              for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                try {
+                  const health = await fetch(`${base}/health`, { headers });
+                  if (health.ok) break;
+                  console.log(`Attempt ${attempt}/${MAX_ATTEMPTS}: Typesense not healthy yet (${health.status}), retrying...`);
+                } catch (e) {
+                  console.log(`Attempt ${attempt}/${MAX_ATTEMPTS}: Connection failed (${e.message}), retrying...`);
+                }
+                if (attempt === MAX_ATTEMPTS) {
+                  console.error('Typesense not healthy after max retries');
+                  process.exit(1);
+                }
+                await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+              }
+
+              // List existing keys to check if search key already registered
+              const listRes = await fetch(`${base}/keys`, { headers });
+              const { keys = [] } = await listRes.json();
+
+              // Check by value_prefix (first 4 chars of key)
+              const prefix = searchKey.substring(0, 4);
+              const alreadyExists = keys.some(k => k.value_prefix === prefix);
+
+              if (alreadyExists) {
+                console.log(`Search key with prefix "${prefix}" already registered — skipping`);
+                process.exit(0);
+              }
+
+              // Register the search key with explicit value (deterministic)
+              const body = {
+                description: 'Search-only key for eagle-public scoped key generation',
+                actions: ['documents:search'],
+                collections: ['*'],
+                value: searchKey,
+              };
+
+              const res = await fetch(`${base}/keys`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(body),
+              });
+
+              const result = await res.json();
+
+              if (res.ok) {
+                console.log(`Search key registered: id=${result.id}, prefix=${result.value_prefix}`);
+                process.exit(0);
+              } else if (res.status === 409) {
+                console.log('Search key already exists (409) — skipping');
+                process.exit(0);
+              } else {
+                console.error(`Failed to register search key: ${res.status} ${JSON.stringify(result)}`);
+                process.exit(1);
+              }
+            })();
+        env:
+        - name: TYPESENSE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.typesense.existingSecret }}
+              key: TYPESENSE_API_KEY
+        - name: TYPESENSE_SEARCH_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.typesense.existingSecret }}
+              key: TYPESENSE_SEARCH_KEY
+        - name: TYPESENSE_HOST
+          value: {{ include "typesense.fullname" . }}
+        - name: TYPESENSE_PORT
+          value: {{ .Values.typesense.port | quote }}
+{{- end }}
