@@ -31,7 +31,10 @@ const { SCHEMAS }     = require('./collections');
 const { transformDoc, buildListLookup, buildProjectLookup, buildPcpLookup } = require('./transform');
 const { buildMongoUri } = require('./config');
 
-const BATCH_SIZE = 500;
+const BATCH_SIZES = {
+  DocumentChunk: 100,   // large content field — smaller batches to reduce peak heap
+  default:       500,
+};
 
 // MongoDB query: all non-deleted documents regardless of read permissions.
 // Access control is enforced at query time via Typesense scoped search keys
@@ -86,8 +89,9 @@ async function syncSchema(typesense, mongoDB, listLookup, projectLookup, pcpLook
   }
 
   // Stream all matching documents from MongoDB and import in batches
+  const batchSize  = BATCH_SIZES[schemaName] ?? BATCH_SIZES.default;
   const collection = mongoDB.collection('epic');
-  const cursor     = collection.find({ _schemaName: schemaName, ...SYNC_QUERY });
+  const cursor     = collection.find({ _schemaName: schemaName, ...SYNC_QUERY }).batchSize(batchSize);
 
   let batch = [];
   let total = 0;
@@ -96,7 +100,7 @@ async function syncSchema(typesense, mongoDB, listLookup, projectLookup, pcpLook
     const transformed = transformDoc(schemaName, doc, listLookup, projectLookup, pcpLookup);
     if (transformed) {
       batch.push(transformed);
-      if (batch.length >= BATCH_SIZE) {
+      if (batch.length >= batchSize) {
         await importBatch(typesense, newCollection, batch);
         total += batch.length;
         process.stdout.write(`  Imported ${total}...\r`);

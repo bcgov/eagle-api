@@ -56,6 +56,8 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.typesense.existingSecret }}
                   key: TYPESENSE_API_KEY
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=512"
             resources:
               {{- toYaml .Values.reindex.resources | nindent 14 }}
 {{- end }}
