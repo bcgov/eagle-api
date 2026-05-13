@@ -47,12 +47,25 @@ function loadControllers(dirs) {
 }
 
 /**
+ * Resolve a $ref to a top-level parameter definition.
+ */
+function resolveParam(p, globalParams) {
+  if (p && p.$ref) {
+    // $ref format: "#/parameters/tsCollection"
+    const name = p.$ref.split('/').pop();
+    return (globalParams && globalParams[name]) || p;
+  }
+  return p;
+}
+
+/**
  * Merge path-level and operation-level parameter definitions.
  * Operation params override path params with the same name+location.
  */
-function mergeParams(pathParams, operationParams) {
-  const merged = [...(pathParams || [])];
-  for (const p of (operationParams || [])) {
+function mergeParams(pathParams, operationParams, globalParams) {
+  const merged = (pathParams || []).map(p => resolveParam(p, globalParams));
+  for (const raw of (operationParams || [])) {
+    const p = resolveParam(raw, globalParams);
     const idx = merged.findIndex(x => x.name === p.name && x.in === p.in);
     if (idx >= 0) merged[idx] = p;
     else merged.push(p);
@@ -173,7 +186,7 @@ function createSwaggerRouter(spec, controllerDirs) {
         continue;
       }
 
-      const paramDefs = mergeParams(pathParams, operation.parameters);
+      const paramDefs = mergeParams(pathParams, operation.parameters, spec.parameters);
 
       // Detect file upload parameters
       const fileParams = paramDefs.filter(p => p.in === 'formData' && p.type === 'file');
