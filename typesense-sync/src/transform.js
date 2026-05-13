@@ -44,7 +44,9 @@ const OBJECT_ID_RE = /^[0-9a-f]{24}$/i;
  */
 function extractRoles(doc) {
   if (Array.isArray(doc.read) && doc.read.length > 0) return doc.read;
-  return ['public'];
+  // Fail-closed: docs with no read array default to sysadmin-only.
+  // Never default to 'public' — that would expose unpublished/legacy docs.
+  return ['sysadmin'];
 }
 
 function resolveStrict(val, listLookup) {
