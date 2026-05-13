@@ -20,8 +20,11 @@ var express_server;
 var defaultLog = app_helper.defaultLog;
 
 // Increase postbody sizing
-app.use(bodyParser.json({limit: '10mb', extended: true}));
-app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
+// Accept both application/json and text/plain — Typesense SearchClient sends
+// multi_search bodies as text/plain (to avoid CORS preflight), but the body
+// content is always valid JSON.
+app.use(bodyParser.json({ limit: '10mb', type: ['application/json', 'text/plain'] }));
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 // disable powered by header
 app.disable('x-powered-by');
