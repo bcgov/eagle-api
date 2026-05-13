@@ -38,3 +38,7 @@ contentExtract:
     limits:
       cpu: 500m
       memory: 2Gi
+
+searchKeyInit:
+  image:
+    tag: test
