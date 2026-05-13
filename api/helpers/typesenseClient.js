@@ -41,13 +41,27 @@ function getClient() {
  *  - Equality filters:  and[milestone]=EA Certificate  → milestone:=[EA Certificate]
  *  - Date range start:  and[datePostedStart]=2024-01-01 → datePosted:>=1704067200
  *  - Date range end:    and[datePostedEnd]=2024-12-31   → datePosted:<=1735603200
+ *
+ * Security: Keys are validated against ALLOWED_FILTER_KEYS to prevent filter
+ * injection via Typesense operators (||, &&, :=) in user-controlled key names.
  */
+
+// Whitelist of filter keys accepted from the and/or query parameters.
+// Any key not in this set is silently dropped — prevents filter injection.
+const ALLOWED_FILTER_KEYS = new Set([
+  'milestone', 'type', 'documentAuthorType', 'projectPhase', 'legislation',
+  'documentSource', 'region', 'status', 'currentPhaseName', 'eacDecision',
+  'sector', 'projectId', 'datePostedStart', 'datePostedEnd',
+]);
+
 function buildFilterBy(and) {
   if (!and || typeof and !== 'object' || Object.keys(and).length === 0) return '';
 
   const filters = [];
   for (const [key, value] of Object.entries(and)) {
     if (!value) continue;
+    // Reject keys not in whitelist — prevents filter_by injection via operators in key names
+    if (!ALLOWED_FILTER_KEYS.has(key)) continue;
     if (key === 'datePostedStart') {
       const ts = Math.floor(new Date(value).getTime() / 1000);
       if (!isNaN(ts)) filters.push(`datePosted:>=${ts}`);
@@ -97,13 +111,20 @@ function buildSortBy(sortBy) {
  * @param {number} pageSize    - results per page
  * @param {Array}  sortBy      - array of sort strings, e.g. ['-datePosted']
  * @param {object} and         - filter object
+ * @param {string[]} roles     - user roles (e.g. ['public'] or ['sysadmin','staff','public'])
  * @returns {Array}            - result in eagle-api response shape
  */
-async function search(schemaName, keywords, pageNum, pageSize, sortBy, and) {
+async function search(schemaName, keywords, pageNum, pageSize, sortBy, and, roles) {
   const client    = getClient();
   const queryBy   = QUERY_BY[schemaName];
   const facetBy   = FACET_BY[schemaName] || '';
   const aliasName = schemaName.toLowerCase() + 's';  // 'projects'
+
+  // Build role-based access control filter — only return docs whose
+  // allowed_roles intersect with the caller's roles. This is the server-side
+  // enforcement equivalent of MongoDB's $redact stage.
+  const effectiveRoles = Array.isArray(roles) && roles.length > 0 ? roles : ['public'];
+  const roleFilter = effectiveRoles.map(r => `allowed_roles:=${r}`).join(' || ');
 
   const searchParams = {
     q:                  keywords || '*',
@@ -120,8 +141,11 @@ async function search(schemaName, keywords, pageNum, pageSize, sortBy, and) {
     typo_tokens_threshold: 1,
   };
 
-  const filterBy = buildFilterBy(and);
-  if (filterBy) searchParams.filter_by = filterBy;
+  // Combine role filter with facet filters
+  const facetFilter = buildFilterBy(and);
+  const parts = [roleFilter];
+  if (facetFilter) parts.push(facetFilter);
+  searchParams.filter_by = parts.join(' && ');
 
   const result = await client.collections(aliasName).documents().search(searchParams);
 

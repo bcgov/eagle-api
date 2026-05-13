@@ -290,7 +290,7 @@ const executeQuery = async function (args, res) {
   ) {
     try {
       const typesense = getTypesenseClient();
-      const collectionData = await typesense.search(dataset, keywords, pageNum, pageSize, sortBy, and);
+      const collectionData = await typesense.search(dataset, keywords, pageNum, pageSize, sortBy, and, roles);
       defaultLog.info('Typesense search returned', collectionData[0].meta[0].searchResultsTotal, 'results');
       return Actions.sendResponse(res, 200, collectionData);
     } catch (err) {
