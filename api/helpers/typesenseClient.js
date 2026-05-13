@@ -155,6 +155,8 @@ async function search(schemaName, keywords, pageNum, pageSize, sortBy, and, role
     doc._id         = doc.id;
     doc._schemaName = schemaName;
     doc._highlights = hit.highlight || {};
+    // Strip internal ACL field — never expose to clients
+    delete doc.allowed_roles;
     return doc;
   });
 
