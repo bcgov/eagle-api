@@ -30,7 +30,7 @@ spec:
     metadata:
       labels:
         {{- include "typesense.selectorLabels" . | nindent 8 }}
-        role: search-typesense-eagle
+        role: api-eagle-epic
     spec:
       restartPolicy: OnFailure
       containers:
