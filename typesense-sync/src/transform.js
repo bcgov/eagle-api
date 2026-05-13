@@ -49,6 +49,24 @@ function extractRoles(doc) {
   return ['sysadmin'];
 }
 
+/**
+ * Constrain a child document's roles to the intersection with its parent project's read array.
+ * A child (activity, document) must never be more visible than its parent project.
+ *
+ * ONLY call this when projectId exists. Fail-closed:
+ *  - projectMeta missing (deleted/unnamed project) → sysadmin-only
+ *  - empty read array on project → sysadmin-only
+ *  - empty intersection → sysadmin-only
+ */
+function constrainToProject(childRoles, projectMeta) {
+  if (!projectMeta || !Array.isArray(projectMeta.read) || projectMeta.read.length === 0) {
+    return ['sysadmin'];
+  }
+  const projectSet = new Set(projectMeta.read);
+  const intersected = childRoles.filter(role => projectSet.has(role));
+  return intersected.length > 0 ? intersected : ['sysadmin'];
+}
+
 function resolveStrict(val, listLookup) {
   if (val == null || val === '') return undefined;
   const s = val.toString();
@@ -70,9 +88,10 @@ function getLegislationBlock(doc) {
 
 function transformDocument(doc, listLookup, projectLookup) {
   const projectId  = doc.project ? doc.project.toString() : undefined;
-  const projectName = (projectLookup && projectId && projectLookup.has(projectId))
+  const projectMeta = (projectLookup && projectId && projectLookup.has(projectId))
     ? projectLookup.get(projectId)
     : undefined;
+  const projectName = projectMeta?.name;
 
   const leg = typeof doc.legislation === 'number' && doc.legislation > 0
     ? doc.legislation
@@ -95,7 +114,7 @@ function transformDocument(doc, listLookup, projectLookup) {
     ...(toTimestamp(doc.dateUploaded)  !== undefined && { dateUploaded:  toTimestamp(doc.dateUploaded) }),
     isFeatured: doc.isFeatured === true,
     ...(str(doc.documentSource)    && { documentSource: str(doc.documentSource) }),
-    allowed_roles: extractRoles(doc),
+    allowed_roles: projectId ? constrainToProject(extractRoles(doc), projectMeta) : extractRoles(doc),
   };
 }
 
@@ -124,9 +143,10 @@ function transformProject(doc, listLookup) {
 
 function transformRecentActivity(doc, listLookup, projectLookup, pcpLookup) {
   const projectId   = doc.project ? doc.project.toString() : undefined;
-  const projectName = (projectLookup && projectId && projectLookup.has(projectId))
+  const projectMeta = (projectLookup && projectId && projectLookup.has(projectId))
     ? projectLookup.get(projectId)
     : undefined;
+  const projectName = projectMeta?.name;
 
   // Strip HTML tags so indexed text doesn't contain markup; preserve original for display.
   const contentHtml  = str(doc.content);
@@ -160,7 +180,7 @@ function transformRecentActivity(doc, listLookup, projectLookup, pcpLookup) {
     ...(pcpMeta?.metURL                && { pcpMetURL: str(pcpMeta.metURL) }),
     // ProjectNotification ref — lets the frontend fetch inline documents on the Updates tab
     ...(doc.projectNotification        && { projectNotificationId: doc.projectNotification.toString() }),
-    allowed_roles: extractRoles(doc),
+    allowed_roles: projectId ? constrainToProject(extractRoles(doc), projectMeta) : extractRoles(doc),
   };
 }
 
@@ -226,19 +246,21 @@ const TRANSFORMS = {
 };
 
 /**
- * Build a Map<projectIdString, projectName> for all public Project documents.
+ * Build a Map<projectIdString, { name, read }> for all Project documents.
  * Project names are nested under legislation sub-objects (e.g. legislation_2018.name).
+ * The read array is included so child documents (activities, documents) can inherit
+ * the parent project's visibility — a child must never be more permissive than its project.
  */
 async function buildProjectLookup(db) {
   const docs = await db.collection('epic')
     .find({ _schemaName: 'Project' })
-    .project({ _id: 1, legislation_2018: 1, legislation_2002: 1, legislation_1996: 1, currentLegislationYear: 1 })
+    .project({ _id: 1, read: 1, legislation_2018: 1, legislation_2002: 1, legislation_1996: 1, currentLegislationYear: 1 })
     .toArray();
   const map = new Map();
   for (const item of docs) {
     const leg = getLegislationBlock(item);
     const name = leg.name || leg.shortName;
-    if (name) map.set(item._id.toString(), name);
+    if (name) map.set(item._id.toString(), { name, read: item.read || [] });
   }
   return map;
 }

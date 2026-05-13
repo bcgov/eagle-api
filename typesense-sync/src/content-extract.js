@@ -238,7 +238,8 @@ async function processDocument(db, minioClient, doc, projectLookup) {
   try {
     const pages      = await extractPages(minioClient, objectPath);
     const pageChunks = chunkPages(pages);
-    const projectName = doc.project ? projectLookup.get(doc.project.toString()) : undefined;
+    const projectMeta = doc.project ? projectLookup.get(doc.project.toString()) : undefined;
+    const projectName = projectMeta?.name;
     const count      = await insertChunks(db, docId, doc.project, doc, pageChunks, projectName);
     await markExtracted(db, docId, count, null);
 
@@ -335,7 +336,7 @@ async function main() {
                     type: 1, datePosted: 1, read: 1 },
     }).toArray();
 
-    // Build project id→name lookup for denormalizing projectName into chunks
+    // Build project id→{name} lookup for denormalizing projectName into chunks
     const projectIds = [...new Set(docs.map(d => d.project).filter(Boolean).map(String))];
     const projectLookup = new Map();
     if (projectIds.length > 0) {
@@ -343,7 +344,7 @@ async function main() {
         { _schemaName: 'Project', _id: { $in: projectIds.map(id => new ObjectId(id)) } },
         { projection: { _id: 1, name: 1 } },
       ).toArray();
-      projects.forEach(p => projectLookup.set(p._id.toString(), p.name));
+      projects.forEach(p => projectLookup.set(p._id.toString(), { name: p.name }));
     }
 
     let ok = 0, errors = 0, skipped = 0;
