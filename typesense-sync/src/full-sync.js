@@ -59,15 +59,58 @@ async function ensureCollectionExists(typesense, schema) {
 
 async function importBatch(typesense, collectionName, docs) {
   if (docs.length === 0) return;
-  const results = await typesense
-    .collections(collectionName)
-    .documents()
-    .import(docs, { action: 'upsert' });
+  const MAX_RETRIES = 3;
+  let lastErr;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const results = await typesense
+        .collections(collectionName)
+        .documents()
+        .import(docs, { action: 'upsert' });
+      const failures = results.filter(r => !r.success);
+      if (failures.length > 0) {
+        console.warn(`  ${failures.length} import failures in ${collectionName}:`,
+          failures.slice(0, 3).map(f => f.error));
+      }
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < MAX_RETRIES) {
+        const wait = attempt * 10000;
+        console.warn(`  [importBatch] Attempt ${attempt} failed: ${err.message}. Retrying in ${wait / 1000}s...`);
+        await new Promise(r => setTimeout(r, wait));
+      }
+    }
+  }
+  throw lastErr;
+}
 
-  const failures = results.filter(r => !r.success);
-  if (failures.length > 0) {
-    console.warn(`  ${failures.length} import failures in ${collectionName}:`,
-      failures.slice(0, 3).map(f => f.error));
+/**
+ * Delete any leftover timestamped collections for this schema from previous failed full-syncs.
+ * Called before starting each schema's import so orphans don't accumulate in Typesense memory.
+ *
+ * @param {object} typesense   - Typesense client
+ * @param {string} alias       - The alias/base name (e.g. "document_chunks")
+ * @param {Set}    keepNames   - Collection names to preserve (live + new)
+ */
+async function purgeOrphanCollections(typesense, alias, keepNames) {
+  try {
+    const all = await typesense.collections().retrieve();
+    const orphans = all
+      .map(c => c.name)
+      .filter(name => (name === alias || name.startsWith(alias + '_')) && !keepNames.has(name));
+    if (orphans.length === 0) return;
+    console.log(`  Purging ${orphans.length} orphan collection(s) for "${alias}"...`);
+    for (const name of orphans) {
+      try {
+        await typesense.collections(name).delete();
+        console.log(`  Purged orphan: ${name}`);
+      } catch (err) {
+        console.warn(`  Could not purge ${name}:`, err.message);
+      }
+    }
+  } catch (err) {
+    console.warn(`  Orphan purge failed (non-fatal):`, err.message);
   }
 }
 
@@ -88,6 +131,10 @@ async function syncSchema(typesense, mongoDB, listLookup, projectLookup, pcpLook
     // Alias doesn't exist yet — first run
   }
 
+  // Purge leftover timestamped collections from previous failed syncs so they
+  // don't accumulate in Typesense memory and slow down server startup.
+  await purgeOrphanCollections(typesense, alias, new Set([oldCollection, newCollection].filter(Boolean)));
+
   // Stream all matching documents from MongoDB and import in batches
   const batchSize  = BATCH_SIZES[schemaName] ?? BATCH_SIZES.default;
   const collection = mongoDB.collection('epic');
@@ -105,6 +152,8 @@ async function syncSchema(typesense, mongoDB, listLookup, projectLookup, pcpLook
         total += batch.length;
         process.stdout.write(`  Imported ${total}...\r`);
         batch = [];
+        // Yield to event loop so V8 can run GC between batches
+        await new Promise(resolve => setImmediate(resolve));
       }
     }
   }
