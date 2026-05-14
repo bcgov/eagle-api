@@ -35,8 +35,17 @@ const ALLOWED_COLLECTIONS = new Set([
 // Client-supplied filter keys that are permitted to pass through.
 // All other keys are dropped. Prevents filter injection via operator-bearing key names.
 const ALLOWED_FILTER_KEYS = new Set([
-  'milestone', 'type', 'documentAuthorType', 'projectPhase', 'legislation',
-  'documentSource', 'region', 'status', 'currentPhaseName', 'eacDecision',
+  // projects
+  'region', 'type', 'currentPhaseName', 'eacDecision', 'decisionDate',
+  // documents
+  'milestone', 'documentAuthorType', 'projectPhase', 'datePosted',
+  // activities (no user-filterable facets beyond type)
+  // notifications
+  'subType', 'decision', 'trigger', 'pcp', 'notificationReceivedDate',
+  // document chunks
+  'documentType',
+  // shared / legacy
+  'legislation', 'documentSource', 'status',
   'sector', 'projectId', 'documentId', 'datePostedStart', 'datePostedEnd',
   'active', 'isFeatured', 'pinned', 'complianceAndEnforcement',
 ]);
@@ -104,9 +113,10 @@ function sanitizeFilterBy(rawFilter) {
       continue;
     }
 
-    // Basic value sanity — allow alphanumeric, spaces, hyphens, brackets, colons, commas
-    // Blocks SQL-style injections, Typesense-operator abuse in values
-    if (!/^[=<>![\],\w\s\-:.+/*]+$/.test(rest)) {
+    // Basic value sanity — allow alphanumeric, spaces, hyphens, brackets, colons, commas,
+    // backticks (Typesense adapter wraps all string values in backticks), parens, & and '
+    // (legal in project/phase names). FORBIDDEN_FILTER_KEYS is the primary injection guard.
+    if (!/^[=<>![\],\w\s\-:.+/*`()&']+$/.test(rest)) {
       defaultLog.warn('[TypesenseProxy] Dropping clause with unsafe value:', clause);
       continue;
     }
