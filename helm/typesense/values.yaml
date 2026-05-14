@@ -43,7 +43,7 @@ typesense:
       initialDelaySeconds: 5
       periodSeconds: 10
       timeoutSeconds: 5
-      failureThreshold: 30    # 5 min total budget (30 * 10s)
+      failureThreshold: 120   # 20 min total budget (120 * 10s) - needed for large document_chunks collections
     liveness:
       initialDelaySeconds: 0
       periodSeconds: 30
