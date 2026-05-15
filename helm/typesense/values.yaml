@@ -20,13 +20,17 @@ typesense:
   existingSecret: typesense-api-key
 
   persistence:
-    size: 5Gi
+    size: 10Gi
     storageClass: netapp-block-standard   # Block storage preferred for search indexes
     mountPath: /data
 
-  # Safety valve: Typesense rejects writes at this % of container memory limit
-  # instead of silently growing to OOM. Sync/reindex jobs get 429 and retry.
+  # Safety valves: reject writes before memory or disk is exhausted.
+  # memoryUsedMaxPercentage: Typesense returns 429 to sync/reindex jobs when
+  #   container memory hits this %; jobs catch 429 and retry with backoff.
+  # diskUsedMaxPercentage: Typesense returns 503 to writes when disk hits this %.
+  #   Prevents raft snapshot failures that cause unrecoverable deadlock on restart.
   memoryUsedMaxPercentage: 85
+  diskUsedMaxPercentage: 85
 
   resources:
     requests:

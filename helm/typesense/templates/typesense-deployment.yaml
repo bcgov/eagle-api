@@ -26,6 +26,7 @@ spec:
           - --api-key=$(TYPESENSE_API_KEY)
           - --enable-cors
           - --memory-used-max-percentage={{ .Values.typesense.memoryUsedMaxPercentage }}
+          - --disk-used-max-percentage={{ .Values.typesense.diskUsedMaxPercentage }}
         ports:
         - name: http
           containerPort: {{ .Values.typesense.port }}
