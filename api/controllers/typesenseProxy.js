@@ -32,8 +32,14 @@ const ALLOWED_COLLECTIONS = new Set([
   'projects', 'documents', 'activities', 'notifications', 'document_chunks',
 ]);
 
+// These keys must NEVER come from the client — always server-injected only.
+// Checked explicitly before the allowlist as defense-in-depth: if allowed_roles
+// were ever accidentally added to ALLOWED_FILTER_KEYS, this catches it first.
+const FORBIDDEN_FILTER_KEYS = new Set(['allowed_roles']);
+
 // Client-supplied filter keys that are permitted to pass through.
-// All other keys are dropped. Prevents filter injection via operator-bearing key names.
+// All other keys are dropped — including security-critical keys like allowed_roles
+// which are intentionally absent here and always server-injected.
 const ALLOWED_FILTER_KEYS = new Set([
   // projects
   'region', 'type', 'currentPhaseName', 'eacDecision', 'decisionDate',
@@ -50,9 +56,6 @@ const ALLOWED_FILTER_KEYS = new Set([
   'active', 'isFeatured', 'pinned', 'complianceAndEnforcement',
 ]);
 
-// These keys must NEVER come from client — always server-injected only.
-const FORBIDDEN_FILTER_KEYS = new Set(['allowed_roles']);
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
@@ -61,10 +64,7 @@ const FORBIDDEN_FILTER_KEYS = new Set(['allowed_roles']);
  */
 function getRoles(args) {
   const payload = args.swagger.params.auth_payload;
-  if (!payload) return ['public'];
-  const roles = payload.realm_access && Array.isArray(payload.realm_access.roles)
-    ? [...payload.realm_access.roles]
-    : [];
+  const roles = payload?.realm_access?.roles ? [...payload.realm_access.roles] : [];
   if (!roles.includes('public')) roles.push('public');
   return roles;
 }
@@ -101,15 +101,13 @@ function sanitizeFilterBy(rawFilter) {
     const key = clause.slice(0, colonIdx).trim();
     const rest = clause.slice(colonIdx + 1).trim();
 
-    // Drop forbidden keys regardless of context
-    if (FORBIDDEN_FILTER_KEYS.has(key)) {
-      defaultLog.warn('[TypesenseProxy] Dropping forbidden filter key from client request:', key);
-      continue;
-    }
-
-    // Drop unknown keys
     if (!ALLOWED_FILTER_KEYS.has(key)) {
-      defaultLog.warn('[TypesenseProxy] Dropping unknown filter key from client request:', key);
+      // Check forbidden keys first (defense-in-depth before allowlist)
+      if (FORBIDDEN_FILTER_KEYS.has(key)) {
+        defaultLog.warn('[TypesenseProxy] Dropping forbidden filter key from client request:', key);
+      } else {
+        defaultLog.warn('[TypesenseProxy] Dropping unknown filter key from client request:', key);
+      }
       continue;
     }
 
@@ -140,10 +138,7 @@ function injectRoleFilter(existingFilter, roleFilter) {
  * Strip allowed_roles from all document hits in a Typesense response.
  */
 function stripAllowedRoles(data) {
-  if (!data || !Array.isArray(data.hits)) return data;
-  for (const hit of data.hits) {
-    if (hit.document) delete hit.document.allowed_roles;
-  }
+  data?.hits?.forEach(hit => delete hit.document?.allowed_roles);
   return data;
 }
 
@@ -157,12 +152,8 @@ async function forwardToTypesense(path, method, queryParams, body) {
   }
 
   const url = new URL(`${TYPESENSE_BASE_URL}${path}`);
-  if (queryParams) {
-    for (const [k, v] of Object.entries(queryParams)) {
-      if (v !== undefined && v !== null && v !== '') {
-        url.searchParams.set(k, String(v));
-      }
-    }
+  for (const [k, v] of Object.entries(queryParams ?? {})) {
+    if (v != null && v !== '') url.searchParams.set(k, String(v));
   }
 
   const options = {
@@ -172,7 +163,7 @@ async function forwardToTypesense(path, method, queryParams, body) {
   };
 
   if (body) {
-    options.body = typeof body === 'string' ? body : JSON.stringify(body);
+    options.body    = typeof body === 'string' ? body : JSON.stringify(body);
     options.headers['Content-Type'] = 'application/json';
   }
 
@@ -199,6 +190,27 @@ exports.publicHealth = async function (args, res) {
 
 // ── Single Collection Search ──────────────────────────────────────────────────
 
+// Default values for every Typesense search query param.
+const SEARCH_PARAM_DEFAULTS = {
+  q:                     '*',
+  query_by:              '',
+  sort_by:               '',
+  facet_by:              '',
+  per_page:              '25',
+  page:                  '1',
+  highlight_fields:      '',
+  highlight_full_fields: '',
+  include_fields:        '',
+  exclude_fields:        '',
+  query_by_weights:      '',
+  prefix:                '',
+  num_typos:             '',
+  typo_tokens_threshold: '',
+  split_join_tokens:     '',
+  highlight_start_tag:   '<mark>',
+  highlight_end_tag:     '</mark>',
+};
+
 /**
  * Core handler for single-collection search (GET).
  * Shared by public and protected routes.
@@ -212,32 +224,16 @@ async function handleCollectionSearch(args, res) {
   const roles      = getRoles(args);
   const roleFilter = buildRoleFilter(roles);
 
-  // Build query params to forward, injecting role filter
+  // Build query params, injecting role filter
   const params = args.swagger.params;
-  const query = {
-    q:                  params.q?.value          || '*',
-    query_by:           params.query_by?.value    || '',
-    filter_by:          injectRoleFilter(params.filter_by?.value, roleFilter),
-    sort_by:            params.sort_by?.value     || '',
-    facet_by:           params.facet_by?.value    || '',
-    per_page:           params.per_page?.value    || '25',
-    page:               params.page?.value        || '1',
-    highlight_fields:   params.highlight_fields?.value || '',
-    highlight_full_fields: params.highlight_full_fields?.value || '',
-    include_fields:     params.include_fields?.value || '',
-    exclude_fields:     params.exclude_fields?.value || '',
-    query_by_weights:   params.query_by_weights?.value || '',
-    prefix:             params.prefix?.value      || '',
-    num_typos:          params.num_typos?.value   || '',
-    typo_tokens_threshold: params.typo_tokens_threshold?.value || '',
-    split_join_tokens:  params.split_join_tokens?.value || '',
-    highlight_start_tag: params.highlight_start_tag?.value || '<mark>',
-    highlight_end_tag:   params.highlight_end_tag?.value  || '</mark>',
-  };
+  const query = Object.fromEntries(
+    Object.entries(SEARCH_PARAM_DEFAULTS).map(([k, def]) => [k, params[k]?.value || def])
+  );
+  query.filter_by = injectRoleFilter(params.filter_by?.value, roleFilter);
 
   // Remove empty params — Typesense treats empty string differently from absent
   for (const k of Object.keys(query)) {
-    if (query[k] === '' || query[k] === null || query[k] === undefined) delete query[k];
+    if (query[k] == null || query[k] === '') delete query[k];
   }
 
   try {
@@ -300,12 +296,7 @@ async function handleMultiSearch(args, res) {
       { searches: cleanSearches }
     );
 
-    // Strip allowed_roles from every result set
-    if (data && Array.isArray(data.results)) {
-      for (const result of data.results) {
-        stripAllowedRoles(result);
-      }
-    }
+    data?.results?.forEach(stripAllowedRoles);
 
     return res.status(status).json(data);
   } catch (err) {
