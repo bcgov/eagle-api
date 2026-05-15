@@ -243,8 +243,8 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
           'preserveNullAndEmptyArrays': true
         }
       },
-      // Populate Recent Activity PCP
-      (modelType !== 'Project') && {
+      // Populate Recent Activity PCP and projectNotification (RecentActivity only)
+      (modelType === 'RecentActivity') && {
         '$lookup': {
           'from': 'epic',
           'localField': 'pcp',
@@ -252,13 +252,13 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
           'as': 'pcp'
         }
       },
-      (modelType !== 'Project') && {
+      (modelType === 'RecentActivity') && {
         '$unwind': {
           'path': '$pcp',
           'preserveNullAndEmptyArrays': true
         }
       },
-      (modelType !== 'Project') && {
+      (modelType === 'RecentActivity') && {
         '$lookup': {
           'from': 'epic',
           'localField': 'project._id',
@@ -266,7 +266,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
           'as': 'projectNotification'
         }
       },
-      (modelType !== 'Project') && {
+      (modelType === 'RecentActivity') && {
         '$unwind': {
           'path': '$projectNotification',
           'preserveNullAndEmptyArrays': true

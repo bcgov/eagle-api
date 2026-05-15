@@ -23,6 +23,26 @@ exports.protectedGet = async function (args, res) {
   }
   var fields = args.swagger.params.fields.value;
 
+  // Sort
+  if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
+    sort = {};
+    args.swagger.params.sortBy.value.forEach(function (value) {
+      var order_by = value.charAt(0) == '-' ? -1 : 1;
+      var sort_by = value.slice(1);
+      sort[sort_by] = order_by;
+    });
+  }
+
+  // Skip and limit
+  var processedParameters = Utils.getSkipLimitParameters(args.swagger.params.pageSize, args.swagger.params.pageNum);
+  skip = processedParameters.skip;
+  limit = processedParameters.limit;
+
+  // Count
+  if (args.swagger.params.count && args.swagger.params.count.value) {
+    count = args.swagger.params.count.value;
+  }
+
   // set query to get project notifications
   _.assignIn(query, { '_schemaName': 'ProjectNotification'});
 
@@ -37,7 +57,7 @@ exports.protectedGet = async function (args, res) {
       limit,
       count,
       null,
-      true,
+      false, // populateProponent — proponent is a plain string, not an ObjectId ref
     );
     Utils.recordAction('Get', 'ProjectNotification', args.swagger.params.auth_payload.preferred_username);
 
