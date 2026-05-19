@@ -108,6 +108,12 @@ parameters:
     type: string
     required: false
     description: "Comma-separated list of fields to facet on"
+  tsMaxFacetValues:
+    in: query
+    name: max_facet_values
+    type: integer
+    required: false
+    description: "Maximum number of facet values to return per facet (default: 10)"
   tsPerPage:
     in: query
     name: per_page
@@ -6611,6 +6617,7 @@ paths:
         - $ref: "#/parameters/tsFilterBy"
         - $ref: "#/parameters/tsSortBy"
         - $ref: "#/parameters/tsFacetBy"
+        - $ref: "#/parameters/tsMaxFacetValues"
         - $ref: "#/parameters/tsPerPage"
         - $ref: "#/parameters/tsPage"
         - $ref: "#/parameters/tsIncludeFields"
@@ -6659,6 +6666,7 @@ paths:
         - $ref: "#/parameters/tsFilterBy"
         - $ref: "#/parameters/tsSortBy"
         - $ref: "#/parameters/tsFacetBy"
+        - $ref: "#/parameters/tsMaxFacetValues"
         - $ref: "#/parameters/tsPerPage"
         - $ref: "#/parameters/tsPage"
         - $ref: "#/parameters/tsIncludeFields"

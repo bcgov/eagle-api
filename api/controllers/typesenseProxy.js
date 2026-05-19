@@ -196,6 +196,7 @@ const SEARCH_PARAM_DEFAULTS = {
   query_by:              '',
   sort_by:               '',
   facet_by:              '',
+  max_facet_values:      '',
   per_page:              '25',
   page:                  '1',
   highlight_fields:      '',
