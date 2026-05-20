@@ -83,13 +83,14 @@ jobs:
           git tag -a "${{ inputs.version }}" -m "Release ${{ inputs.version }}"
           git push origin "${{ inputs.version }}"
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release (draft)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "${{ inputs.version }}" \
             --title "Release ${{ inputs.version }}" \
-            --generate-notes
+            --generate-notes \
+            --draft
 
   deploy:
     name: Deploying ${{ inputs.version }} to Test

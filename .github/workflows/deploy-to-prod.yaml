@@ -113,6 +113,22 @@ jobs:
           echo "Deployment successful!"
           oc get pods -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} -l app.kubernetes.io/name=${{ env.APP_NAME }}
 
+  publish-release:
+    name: Publish GitHub Release
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Publish draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "${{ inputs.version }}" \
+            --repo ${{ github.repository }} \
+            --draft=false
+
   build-sync:
     name: Build Sync Image
     needs: validate
