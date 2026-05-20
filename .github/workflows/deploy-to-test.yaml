@@ -95,7 +95,9 @@ jobs:
   deploy:
     name: Deploying ${{ inputs.version }} to Test
     needs: [validate, release]
-    if: always() && needs.validate.result == 'success'
+    if: |
+      needs.validate.result == 'success' &&
+      (needs.release.result == 'success' || needs.release.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -103,6 +105,8 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.version }}
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Install OpenShift CLI
         run: |
@@ -158,7 +162,10 @@ jobs:
 
   build-sync:
     name: Build Sync Image
-    needs: validate
+    needs: [validate, release]
+    if: |
+      needs.validate.result == 'success' &&
+      (needs.release.result == 'success' || needs.release.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
