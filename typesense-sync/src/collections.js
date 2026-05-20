@@ -18,13 +18,13 @@ const DOCUMENT_SCHEMA = {
   fields: [
     { name: 'id',                 type: 'string' },
     // Search fields
-    { name: 'displayName',        type: 'string',  index: true,  optional: true },
+    { name: 'displayName',        type: 'string',  index: true,  sort: true,  optional: true },
     { name: 'documentFileName',   type: 'string',  index: true,  optional: true },
     { name: 'description',        type: 'string',  index: true,  optional: true },
-    { name: 'projectName',        type: 'string',  index: true,  optional: true },
+    { name: 'projectName',        type: 'string',  index: true,  sort: true,  optional: true },
     // Facet / filter fields
-    { name: 'type',               type: 'string',  facet: true,  optional: true },
-    { name: 'milestone',          type: 'string',  facet: true,  optional: true },
+    { name: 'type',               type: 'string',  facet: true,  sort: true,  optional: true },
+    { name: 'milestone',          type: 'string',  facet: true,  sort: true,  optional: true },
     { name: 'documentAuthorType', type: 'string',  facet: true,  optional: true },
     { name: 'projectPhase',       type: 'string',  facet: true,  optional: true },
     { name: 'legislation',        type: 'int32',   facet: true,  optional: true },
@@ -48,20 +48,20 @@ const PROJECT_SCHEMA = {
   name: 'projects',
   fields: [
     { name: 'id',               type: 'string' },
-    { name: 'name',             type: 'string',  index: true,  optional: true },
+    { name: 'name',             type: 'string',  index: true,  sort: true,  optional: true },
     { name: 'displayName',      type: 'string',  index: true,  optional: true },
     { name: 'description',      type: 'string',  index: true,  optional: true },
     { name: 'epicProjectId',    type: 'string',  index: true,  optional: true },
     // Filter + facet fields
-    { name: 'region',           type: 'string',  facet: true,  optional: true },
+    { name: 'region',           type: 'string',  facet: true,  sort: true,  optional: true },
     { name: 'status',           type: 'string',  facet: true,  optional: true },
-    { name: 'currentPhaseName', type: 'string',  facet: true,  optional: true },
-    { name: 'eacDecision',      type: 'string',  facet: true,  optional: true },
-    { name: 'type',             type: 'string',  facet: true,  optional: true },
+    { name: 'currentPhaseName', type: 'string',  facet: true,  sort: true,  optional: true },
+    { name: 'eacDecision',      type: 'string',  facet: true,  sort: true,  optional: true },
+    { name: 'type',             type: 'string',  facet: true,  sort: true,  optional: true },
     { name: 'sector',           type: 'string',  facet: true,  optional: true },
     { name: 'location',         type: 'string',               optional: true },
     // Proponent name stored for display / search
-    { name: 'proponent',        type: 'string',  index: true,  optional: true },
+    { name: 'proponent',        type: 'string',  index: true,  sort: true,  optional: true },
     { name: 'updatedDate',      type: 'int64',   sort: true,   optional: true },
     { name: 'decisionDate',     type: 'int64',   sort: true,   optional: true },
     // [lng, lat] centroid for map thumbnail in search results
@@ -110,15 +110,15 @@ const PROJECTNOTIFICATION_SCHEMA = {
   fields: [
     { name: 'id',                          type: 'string' },
     // Search fields
-    { name: 'name',                        type: 'string',  index: true,  optional: true },
+    { name: 'name',                        type: 'string',  index: true,  sort: true,  optional: true },
     { name: 'description',                 type: 'string',  index: true,  optional: true },
-    { name: 'proponent',                   type: 'string',  index: true,  optional: true },
+    { name: 'proponent',                   type: 'string',  index: true,  sort: true,  optional: true },
     { name: 'associatedProjectName',       type: 'string',  index: true,  optional: true },
-    { name: 'region',                      type: 'string',  facet: true,  index: true,  optional: true },
+    { name: 'region',                      type: 'string',  facet: true,  index: true,  sort: true,  optional: true },
     { name: 'location',                    type: 'string',  index: true,  optional: true },
     // Facet / filter fields
-    { name: 'type',                        type: 'string',  facet: true,  optional: true },
-    { name: 'subType',                     type: 'string',  facet: true,  optional: true },
+    { name: 'type',                        type: 'string',  facet: true,  sort: true,  optional: true },
+    { name: 'subType',                     type: 'string',  facet: true,  sort: true,  optional: true },
     { name: 'trigger',                     type: 'string',  facet: true,  optional: true },
     { name: 'decision',                    type: 'string',  facet: true,  optional: true },
     { name: 'pcp',                         type: 'string',  facet: true,  optional: true },
