@@ -29,7 +29,7 @@ const DOCUMENT_SCHEMA = {
     { name: 'projectPhase',       type: 'string',  facet: true,  optional: true },
     { name: 'legislation',        type: 'int32',   facet: true,  optional: true },
     // Metadata
-    { name: 'projectId',          type: 'string',               optional: true },
+    { name: 'projectId',          type: 'string',  facet: true,  optional: true },
     { name: 'internalExt',        type: 'string',               optional: true },
     { name: 'datePosted',         type: 'int64',   sort: true,   optional: true },
     { name: 'dateUploaded',       type: 'int64',   sort: true,   optional: true },
@@ -84,7 +84,7 @@ const RECENTACTIVITY_SCHEMA = {
     // Facet
     { name: 'type',                     type: 'string',  facet: true,  optional: true },
     // Metadata
-    { name: 'projectId',                type: 'string',               optional: true },
+    { name: 'projectId',                type: 'string',  facet: true,  optional: true },
     { name: 'projectName',              type: 'string',               optional: true },
     { name: 'active',                   type: 'bool',                 optional: true },
     { name: 'pinned',                   type: 'bool',    sort: true,   optional: true },
