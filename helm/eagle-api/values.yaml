@@ -73,9 +73,7 @@ env:
   
   # Feature Flags
   ENABLE_VIRUS_SCANNING: "true"
-  TYPESENSE_ENABLED: "false"   # Set to "true" after Typesense chart is deployed and indexed
-
-  # Typesense Search Service (only used when TYPESENSE_ENABLED=true)
+  # Typesense Search Service
   TYPESENSE_HOST: typesense-typesense   # Kubernetes service name: <helm-release>-typesense
   TYPESENSE_PORT: "8108"
   

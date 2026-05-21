@@ -281,24 +281,6 @@ const executeQuery = async function (args, res) {
   defaultLog.info('sortField:', sortField);
   defaultLog.info('sortDirection:', sortDirection);
 
-  // Typesense fast-path: Project and Document search (public requests, when feature flag is enabled).
-  const TYPESENSE_SCHEMAS = [constants.PROJECT, constants.DOCUMENT];
-  if (
-    process.env.TYPESENSE_ENABLED === 'true' &&
-    TYPESENSE_SCHEMAS.includes(dataset) &&
-    roles.includes('public')
-  ) {
-    try {
-      const typesense = getTypesenseClient();
-      const collectionData = await typesense.search(dataset, keywords, pageNum, pageSize, sortBy, and, roles);
-      defaultLog.info('Typesense search returned', collectionData[0].meta[0].searchResultsTotal, 'results');
-      return Actions.sendResponse(res, 200, collectionData);
-    } catch (err) {
-      defaultLog.warn('Typesense unavailable, falling back to MongoDB:', err.message);
-      // Fall through to MongoDB path below.
-    }
-  }
-
   if (dataset !== constants.ITEM) {
     const collectionData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue, categorized, fuzzy);
 

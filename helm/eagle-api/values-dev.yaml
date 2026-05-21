@@ -24,7 +24,6 @@ env:
   GETOK_ENDPOINT: "https://sso-dev.pathfinder.gov.bc.ca"
   ENABLE_VIRUS_SCANNING: "false"
   UPLOAD_DIRECTORY: "/tmp/"
-  TYPESENSE_ENABLED: "true"
   TYPESENSE_HOST: typesense-typesense
 
 keycloak:
