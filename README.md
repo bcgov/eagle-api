@@ -34,7 +34,7 @@ These projects comprise EAO EPIC:
 
 ## Quick Start
 
-**Requirements**: Node 22.x, Docker
+**Requirements**: Node 24.x, Yarn 4.x, Docker
 
 ```bash
 # 1. Install dependencies
@@ -43,10 +43,19 @@ yarn install
 # 2. Configure environment
 cp .env.example .env
 
-# 3. Start MongoDB
+# 3. Start MongoDB and Typesense
 yarn db:up
 
-# 4. Start the API
+# 4. First time only: initialise MongoDB replica set (required for Typesense sync)
+docker compose exec mongodb mongosh --eval "rs.initiate()"
+
+# 5. First time only: restore data
+yarn db:restore < epic-prod-dump.archive
+
+# 6. First time only: populate Typesense search index
+cd typesense-sync && cp .env.example .env && node src/full-sync.js && cd ..
+
+# 7. Start the API
 yarn start
 ```
 
@@ -55,7 +64,22 @@ Swagger UI at `http://localhost:3000/api/docs/`
 
 For watch mode (auto-restart on changes): `yarn start-watch`
 
-To stop MongoDB: `yarn db:down`
+To stop all services: `yarn db:down`
+
+## Testing
+
+```bash
+# Run unit tests once
+yarn test
+
+# Watch mode (re-runs on changes)
+yarn test:watch
+
+# Smoke tests (requires a running API at localhost:3000)
+yarn test:smoke
+```
+
+Tests use **Mocha + Chai**. Test files are in the `test/` directory.
 
 ## Deployment
 
@@ -137,6 +161,9 @@ Key variables for local development:
 - `KEYCLOAK_ENABLED=false` — disables Keycloak, uses local JWT with `SECRET`
 - `MONGODB_SERVICE_HOST=localhost` — MongoDB host (default: localhost)
 - `MONGODB_DATABASE=epic` — database name
+- `TYPESENSE_HOST=localhost` — Typesense host (matches docker-compose.yml)
+- `TYPESENSE_API_KEY=local-dev-key` — admin key (matches docker-compose.yml)
+- `TYPESENSE_SEARCH_KEY=local-dev-key` — search proxy key (same as admin key for local dev)
 
 Full reference: [Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management) wiki.
 
