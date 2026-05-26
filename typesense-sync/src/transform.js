@@ -229,6 +229,7 @@ function transformDocumentChunk(doc) {
     pageNumber:   typeof doc.pageNumber  === 'number' ? doc.pageNumber  : 0,
     ...(typeof doc.chunkIndex === 'number' && { chunkIndex: doc.chunkIndex }),
     ...(str(doc.documentType)        && { documentType:  str(doc.documentType) }),
+    ...(str(doc.milestone)           && { milestone:     str(doc.milestone) }),
     ...(toTimestamp(doc.datePosted) !== undefined && { datePosted: toTimestamp(doc.datePosted) }),
     ...(str(doc.documentName)        && { documentName:  str(doc.documentName) }),
     ...(str(doc.projectName)         && { projectName:   str(doc.projectName) }),
