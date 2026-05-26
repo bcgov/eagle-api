@@ -215,7 +215,7 @@ function transformProjectNotification(doc, listLookup) {
   };
 }
 
-function transformDocumentChunk(doc) {
+function transformDocumentChunk(doc, listLookup) {
   const documentId = doc.documentId ? doc.documentId.toString() : undefined;
   const projectId  = doc.projectId  ? doc.projectId.toString()  : undefined;
 
@@ -225,11 +225,11 @@ function transformDocumentChunk(doc) {
     id: `${documentId}_chunk_${doc.chunkIndex ?? 0}_p${doc.pageNumber ?? 0}`,
     content:      str(doc.content),
     documentId,
-    ...(projectId                    && { projectId }),
+    ...(projectId                                              && { projectId }),
     pageNumber:   typeof doc.pageNumber  === 'number' ? doc.pageNumber  : 0,
     ...(typeof doc.chunkIndex === 'number' && { chunkIndex: doc.chunkIndex }),
-    ...(str(doc.documentType)        && { documentType:  str(doc.documentType) }),
-    ...(str(doc.milestone)           && { milestone:     str(doc.milestone) }),
+    ...(resolveStrict(doc.documentType, listLookup)           && { documentType: resolveStrict(doc.documentType, listLookup) }),
+    ...(resolveStrict(doc.milestone, listLookup)              && { milestone:    resolveStrict(doc.milestone, listLookup) }),
     ...(toTimestamp(doc.datePosted) !== undefined && { datePosted: toTimestamp(doc.datePosted) }),
     ...(str(doc.documentName)        && { documentName:  str(doc.documentName) }),
     ...(str(doc.projectName)         && { projectName:   str(doc.projectName) }),
@@ -255,12 +255,12 @@ const TRANSFORMS = {
 async function buildProjectLookup(db) {
   const docs = await db.collection('epic')
     .find({ _schemaName: 'Project' })
-    .project({ _id: 1, read: 1, legislation_2018: 1, legislation_2002: 1, legislation_1996: 1, currentLegislationYear: 1 })
+    .project({ _id: 1, read: 1, name: 1, displayName: 1, legislation_2018: 1, legislation_2002: 1, legislation_1996: 1, currentLegislationYear: 1 })
     .toArray();
   const map = new Map();
   for (const item of docs) {
     const leg = getLegislationBlock(item);
-    const name = leg.name || leg.shortName;
+    const name = leg.name || leg.shortName || item.name || item.displayName;
     if (name) map.set(item._id.toString(), { name, read: item.read || [] });
   }
   return map;
