@@ -215,11 +215,14 @@ function transformProjectNotification(doc, listLookup) {
   };
 }
 
-function transformDocumentChunk(doc, listLookup) {
+function transformDocumentChunk(doc, listLookup, projectLookup) {
   const documentId = doc.documentId ? doc.documentId.toString() : undefined;
   const projectId  = doc.projectId  ? doc.projectId.toString()  : undefined;
 
   if (!documentId || !str(doc.content)) return null;
+
+  const projectMeta = (projectLookup && projectId) ? projectLookup.get(projectId) : undefined;
+  const projectName = str(doc.projectName) || projectMeta?.name;
 
   return {
     id: `${documentId}_chunk_${doc.chunkIndex ?? 0}_p${doc.pageNumber ?? 0}`,
@@ -232,7 +235,7 @@ function transformDocumentChunk(doc, listLookup) {
     ...(resolveStrict(doc.milestone, listLookup)              && { milestone:    resolveStrict(doc.milestone, listLookup) }),
     ...(toTimestamp(doc.datePosted) !== undefined && { datePosted: toTimestamp(doc.datePosted) }),
     ...(str(doc.documentName)        && { documentName:  str(doc.documentName) }),
-    ...(str(doc.projectName)         && { projectName:   str(doc.projectName) }),
+    ...(projectName                  && { projectName }),
     // Chunks inherit roles from parent document (doc.read stored by content-extract.js)
     allowed_roles: extractRoles(doc),
   };
