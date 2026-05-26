@@ -187,6 +187,7 @@ async function insertChunks(db, documentId, projectId, doc, pageChunks, projectN
     documentName: doc.displayName || doc.documentFileName || '',
     projectName:  projectName || undefined,
     documentType: doc.type || undefined,
+    milestone:    doc.milestone || undefined,
     datePosted:   doc.datePosted || undefined,
     read:         doc.read,
     write:        ['sysadmin', 'staff'],
