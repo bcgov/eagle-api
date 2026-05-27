@@ -215,24 +215,29 @@ function transformProjectNotification(doc, listLookup) {
   };
 }
 
-function transformDocumentChunk(doc, listLookup, projectLookup) {
+function transformDocumentChunk(doc, listLookup, projectLookup, _pcpLookup, documentLookup) {
   const documentId = doc.documentId ? doc.documentId.toString() : undefined;
   const projectId  = doc.projectId  ? doc.projectId.toString()  : undefined;
 
   if (!documentId || !str(doc.content)) return null;
 
-  const projectMeta = (projectLookup && projectId) ? projectLookup.get(projectId) : undefined;
-  const projectName = str(doc.projectName) || projectMeta?.name;
+  const projectMeta  = (projectLookup  && projectId)  ? projectLookup.get(projectId)   : undefined;
+  const projectName  = str(doc.projectName) || projectMeta?.name;
+  const parentDoc    = (documentLookup && documentId) ? documentLookup.get(documentId) : undefined;
+
+  // Prefer the value stored on the chunk itself; fall back to the parent Document
+  const milestoneRaw    = doc.milestone    ?? parentDoc?.milestone;
+  const documentTypeRaw = doc.documentType ?? parentDoc?.type;
 
   return {
     id: `${documentId}_chunk_${doc.chunkIndex ?? 0}_p${doc.pageNumber ?? 0}`,
     content:      str(doc.content),
     documentId,
-    ...(projectId                                              && { projectId }),
+    ...(projectId                                                  && { projectId }),
     pageNumber:   typeof doc.pageNumber  === 'number' ? doc.pageNumber  : 0,
     ...(typeof doc.chunkIndex === 'number' && { chunkIndex: doc.chunkIndex }),
-    ...(resolveStrict(doc.documentType, listLookup)           && { documentType: resolveStrict(doc.documentType, listLookup) }),
-    ...(resolveStrict(doc.milestone, listLookup)              && { milestone:    resolveStrict(doc.milestone, listLookup) }),
+    ...(resolveStrict(documentTypeRaw, listLookup)                 && { documentType: resolveStrict(documentTypeRaw, listLookup) }),
+    ...(resolveStrict(milestoneRaw, listLookup)                    && { milestone:    resolveStrict(milestoneRaw, listLookup) }),
     ...(toTimestamp(doc.datePosted) !== undefined && { datePosted: toTimestamp(doc.datePosted) }),
     ...(str(doc.documentName)        && { documentName:  str(doc.documentName) }),
     ...(projectName                  && { projectName }),
@@ -289,6 +294,23 @@ async function buildPcpLookup(db) {
 }
 
 /**
+ * Build a Map<idString, { milestone, documentType }> for all Documents.
+ * Used to resolve milestone and documentType on DocumentChunks that were extracted
+ * before those fields were denormalised into the chunk records.
+ */
+async function buildDocumentLookup(db) {
+  const docs = await db.collection('epic')
+    .find({ _schemaName: 'Document' })
+    .project({ _id: 1, milestone: 1, type: 1 })
+    .toArray();
+  const map = new Map();
+  for (const item of docs) {
+    map.set(item._id.toString(), { milestone: item.milestone, type: item.type });
+  }
+  return map;
+}
+
+/**
  * Build a Map<idString, name> for all List and Organization documents.
  * Pass the result into transformDoc so ObjectId references are resolved to labels.
  */
@@ -311,15 +333,15 @@ async function buildListLookup(db) {
  * @param {Map} [projectLookup] - Optional id→name map built with buildProjectLookup()
  * @param {Map} [pcpLookup]     - Optional id→{ isMet, metURL } map built with buildPcpLookup()
  */
-function transformDoc(schemaName, doc, listLookup, projectLookup, pcpLookup) {
+function transformDoc(schemaName, doc, listLookup, projectLookup, pcpLookup, documentLookup) {
   const fn = TRANSFORMS[schemaName];
   if (!fn) return null;
   try {
-    return fn(doc, listLookup, projectLookup, pcpLookup);
+    return fn(doc, listLookup, projectLookup, pcpLookup, documentLookup);
   } catch (err) {
     console.warn(`Transform failed for ${schemaName} ${doc._id}:`, err.message);
     return null;
   }
 }
 
-module.exports = { transformDoc, buildListLookup, buildProjectLookup, buildPcpLookup };
+module.exports = { transformDoc, buildListLookup, buildProjectLookup, buildPcpLookup, buildDocumentLookup };
