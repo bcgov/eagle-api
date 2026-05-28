@@ -38,7 +38,9 @@ const OBJECT_ID_RE = /^[0-9a-f]{24}$/i;
 
 /**
  * Extract allowed roles from a MongoDB document's read array.
- * Defaults to ['public'] when read is absent (legacy docs without explicit ACL).
+ * Fail-closed: returns ['sysadmin'] when read is absent or empty, so unpublished
+ * docs are never exposed publicly. Only docs with an explicit read array containing
+ * role names (e.g. ['public']) will be visible to those roles at search time.
  * Used to populate the allowed_roles field in Typesense so scoped search keys
  * can filter by role at query time.
  */
