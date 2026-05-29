@@ -28,7 +28,7 @@ require('dotenv').config();
 const { MongoClient } = require('mongodb');
 const { getClient }   = require('./typesenseClient');
 const { SCHEMAS }     = require('./collections');
-const { transformDoc, buildListLookup, buildProjectLookup, buildPcpLookup } = require('./transform');
+const { transformDoc, buildListLookup, buildProjectLookup, buildPcpLookup, buildDocumentLookup } = require('./transform');
 const { buildMongoUri } = require('./config');
 
 const BATCH_SIZES = {
@@ -114,7 +114,7 @@ async function purgeOrphanCollections(typesense, alias, keepNames) {
   }
 }
 
-async function syncSchema(typesense, mongoDB, listLookup, projectLookup, pcpLookup, schemaName, schema) {
+async function syncSchema(typesense, mongoDB, listLookup, projectLookup, pcpLookup, documentLookup, schemaName, schema) {
   const timestamp     = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
   const newCollection = `${schema.name}_${timestamp}`;
   const alias         = schema.name;
@@ -144,7 +144,7 @@ async function syncSchema(typesense, mongoDB, listLookup, projectLookup, pcpLook
   let total = 0;
 
   for await (const doc of cursor) {
-    const transformed = transformDoc(schemaName, doc, listLookup, projectLookup, pcpLookup);
+    const transformed = transformDoc(schemaName, doc, listLookup, projectLookup, pcpLookup, documentLookup);
     if (transformed) {
       batch.push(transformed);
       if (batch.length >= batchSize) {
@@ -233,8 +233,11 @@ async function main() {
     const pcpLookup = await buildPcpLookup(db);
     console.log(`PCP lookup loaded: ${pcpLookup.size} entries`);
 
+    const documentLookup = await buildDocumentLookup(db);
+    console.log(`Document lookup loaded: ${documentLookup.size} entries`);
+
     for (const [schemaName, schema] of Object.entries(SCHEMAS)) {
-      await syncSchema(typesense, db, listLookup, projectLookup, pcpLookup, schemaName, schema);
+      await syncSchema(typesense, db, listLookup, projectLookup, pcpLookup, documentLookup, schemaName, schema);
     }
 
     console.log('\nFull sync complete:', new Date().toISOString());

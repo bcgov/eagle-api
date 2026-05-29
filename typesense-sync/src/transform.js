@@ -38,7 +38,9 @@ const OBJECT_ID_RE = /^[0-9a-f]{24}$/i;
 
 /**
  * Extract allowed roles from a MongoDB document's read array.
- * Defaults to ['public'] when read is absent (legacy docs without explicit ACL).
+ * Fail-closed: returns ['sysadmin'] when read is absent or empty, so unpublished
+ * docs are never exposed publicly. Only docs with an explicit read array containing
+ * role names (e.g. ['public']) will be visible to those roles at search time.
  * Used to populate the allowed_roles field in Typesense so scoped search keys
  * can filter by role at query time.
  */
@@ -215,23 +217,32 @@ function transformProjectNotification(doc, listLookup) {
   };
 }
 
-function transformDocumentChunk(doc) {
+function transformDocumentChunk(doc, listLookup, projectLookup, _pcpLookup, documentLookup) {
   const documentId = doc.documentId ? doc.documentId.toString() : undefined;
   const projectId  = doc.projectId  ? doc.projectId.toString()  : undefined;
 
   if (!documentId || !str(doc.content)) return null;
 
+  const projectMeta  = (projectLookup  && projectId)  ? projectLookup.get(projectId)   : undefined;
+  const projectName  = str(doc.projectName) || projectMeta?.name;
+  const parentDoc    = (documentLookup && documentId) ? documentLookup.get(documentId) : undefined;
+
+  // Prefer the value stored on the chunk itself; fall back to the parent Document
+  const milestoneRaw    = doc.milestone    ?? parentDoc?.milestone;
+  const documentTypeRaw = doc.documentType ?? parentDoc?.type;
+
   return {
     id: `${documentId}_chunk_${doc.chunkIndex ?? 0}_p${doc.pageNumber ?? 0}`,
     content:      str(doc.content),
     documentId,
-    ...(projectId                    && { projectId }),
+    ...(projectId                                                  && { projectId }),
     pageNumber:   typeof doc.pageNumber  === 'number' ? doc.pageNumber  : 0,
     ...(typeof doc.chunkIndex === 'number' && { chunkIndex: doc.chunkIndex }),
-    ...(str(doc.documentType)        && { documentType:  str(doc.documentType) }),
+    ...(resolveStrict(documentTypeRaw, listLookup)                 && { documentType: resolveStrict(documentTypeRaw, listLookup) }),
+    ...(resolveStrict(milestoneRaw, listLookup)                    && { milestone:    resolveStrict(milestoneRaw, listLookup) }),
     ...(toTimestamp(doc.datePosted) !== undefined && { datePosted: toTimestamp(doc.datePosted) }),
     ...(str(doc.documentName)        && { documentName:  str(doc.documentName) }),
-    ...(str(doc.projectName)         && { projectName:   str(doc.projectName) }),
+    ...(projectName                  && { projectName }),
     // Chunks inherit roles from parent document (doc.read stored by content-extract.js)
     allowed_roles: extractRoles(doc),
   };
@@ -254,12 +265,12 @@ const TRANSFORMS = {
 async function buildProjectLookup(db) {
   const docs = await db.collection('epic')
     .find({ _schemaName: 'Project' })
-    .project({ _id: 1, read: 1, legislation_2018: 1, legislation_2002: 1, legislation_1996: 1, currentLegislationYear: 1 })
+    .project({ _id: 1, read: 1, name: 1, displayName: 1, legislation_2018: 1, legislation_2002: 1, legislation_1996: 1, currentLegislationYear: 1 })
     .toArray();
   const map = new Map();
   for (const item of docs) {
     const leg = getLegislationBlock(item);
-    const name = leg.name || leg.shortName;
+    const name = leg.name || leg.shortName || item.name || item.displayName;
     if (name) map.set(item._id.toString(), { name, read: item.read || [] });
   }
   return map;
@@ -280,6 +291,23 @@ async function buildPcpLookup(db) {
       isMet:  item.isMet  === true,
       metURL: item.metURL || null,
     });
+  }
+  return map;
+}
+
+/**
+ * Build a Map<idString, { milestone, documentType }> for all Documents.
+ * Used to resolve milestone and documentType on DocumentChunks that were extracted
+ * before those fields were denormalised into the chunk records.
+ */
+async function buildDocumentLookup(db) {
+  const docs = await db.collection('epic')
+    .find({ _schemaName: 'Document' })
+    .project({ _id: 1, milestone: 1, type: 1 })
+    .toArray();
+  const map = new Map();
+  for (const item of docs) {
+    map.set(item._id.toString(), { milestone: item.milestone, type: item.type });
   }
   return map;
 }
@@ -307,15 +335,15 @@ async function buildListLookup(db) {
  * @param {Map} [projectLookup] - Optional id→name map built with buildProjectLookup()
  * @param {Map} [pcpLookup]     - Optional id→{ isMet, metURL } map built with buildPcpLookup()
  */
-function transformDoc(schemaName, doc, listLookup, projectLookup, pcpLookup) {
+function transformDoc(schemaName, doc, listLookup, projectLookup, pcpLookup, documentLookup) {
   const fn = TRANSFORMS[schemaName];
   if (!fn) return null;
   try {
-    return fn(doc, listLookup, projectLookup, pcpLookup);
+    return fn(doc, listLookup, projectLookup, pcpLookup, documentLookup);
   } catch (err) {
     console.warn(`Transform failed for ${schemaName} ${doc._id}:`, err.message);
     return null;
   }
 }
 
-module.exports = { transformDoc, buildListLookup, buildProjectLookup, buildPcpLookup };
+module.exports = { transformDoc, buildListLookup, buildProjectLookup, buildPcpLookup, buildDocumentLookup };

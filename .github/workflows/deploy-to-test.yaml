@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      tag_exists: ${{ steps.check-tag.outputs.exists }}
+      needs_release: ${{ steps.check.outputs.needs_release }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -51,21 +51,27 @@ jobs:
             exit 1
           fi
 
-      - name: Check if tag exists
-        id: check-tag
+      - name: Check tag and release
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if git rev-parse "${{ inputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag ${{ inputs.version }} already exists"
+          needs_release=false
+          if ! git rev-parse "${{ inputs.version }}" >/dev/null 2>&1; then
+            echo "Tag ${{ inputs.version }} does not exist - will create tag and release"
+            needs_release=true
+          elif ! gh release view "${{ inputs.version }}" >/dev/null 2>&1; then
+            echo "Tag exists but no GitHub Release - will create release"
+            needs_release=true
           else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Tag ${{ inputs.version }} does not exist - will create"
+            echo "Tag and release both exist - skipping"
           fi
+          echo "needs_release=$needs_release" >> $GITHUB_OUTPUT
 
   release:
     name: Create Release
     needs: validate
-    if: needs.validate.outputs.tag_exists == 'false'
+    if: needs.validate.outputs.needs_release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -78,19 +84,27 @@ jobs:
 
       - name: Create Git tag
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "${{ inputs.version }}" -m "Release ${{ inputs.version }}"
-          git push origin "${{ inputs.version }}"
+          if git rev-parse "${{ inputs.version }}" >/dev/null 2>&1; then
+            echo "Tag ${{ inputs.version }} already exists - skipping"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -a "${{ inputs.version }}" -m "Release ${{ inputs.version }}"
+            git push origin "${{ inputs.version }}"
+          fi
 
       - name: Create GitHub Release (draft)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${{ inputs.version }}" \
-            --title "Release ${{ inputs.version }}" \
-            --generate-notes \
-            --draft
+          if gh release view "${{ inputs.version }}" >/dev/null 2>&1; then
+            echo "Release ${{ inputs.version }} already exists - skipping"
+          else
+            gh release create "${{ inputs.version }}" \
+              --title "Release ${{ inputs.version }}" \
+              --generate-notes \
+              --draft
+          fi
 
   deploy:
     name: Deploying ${{ inputs.version }} to Test

@@ -36,6 +36,7 @@ const pdf    = require('pdf-parse');
 
 const { chunkPages } = require('./chunker');
 const { buildMongoUri } = require('./config');
+const { buildListLookup, buildProjectLookup } = require('./transform');
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -173,8 +174,17 @@ function buildPageArray(result) {
 
 // ── MongoDB helpers ───────────────────────────────────────────────────────────
 
-async function insertChunks(db, documentId, projectId, doc, pageChunks, projectName) {
+async function insertChunks(db, documentId, projectId, doc, pageChunks, projectName, listLookup) {
   if (pageChunks.length === 0) return 0;
+
+  function resolveLabel(val) {
+    if (val == null || val === '') return undefined;
+    const s = val.toString();
+    if (listLookup && listLookup.has(s)) return listLookup.get(s);
+    // If raw ObjectId hex remains unresolved, suppress it (don't show an ID in UI)
+    if (/^[0-9a-f]{24}$/i.test(s)) return undefined;
+    return s;
+  }
 
   const now = new Date();
   const records = pageChunks.map(({ pageNumber, chunkIndex, content }) => ({
@@ -186,7 +196,8 @@ async function insertChunks(db, documentId, projectId, doc, pageChunks, projectN
     content,
     documentName: doc.displayName || doc.documentFileName || '',
     projectName:  projectName || undefined,
-    documentType: doc.type || undefined,
+    documentType: resolveLabel(doc.type),
+    milestone:    resolveLabel(doc.milestone),
     datePosted:   doc.datePosted || undefined,
     read:         doc.read,
     write:        ['sysadmin', 'staff'],
@@ -226,7 +237,7 @@ async function markExtracted(db, docId, pageCount, error) {
 
 // ── Per-document extraction ───────────────────────────────────────────────────
 
-async function processDocument(db, minioClient, doc, projectLookup) {
+async function processDocument(db, minioClient, doc, projectLookup, listLookup) {
   const docId     = doc._id.toString();
   const objectPath = doc.internalURL;
 
@@ -240,7 +251,7 @@ async function processDocument(db, minioClient, doc, projectLookup) {
     const pageChunks = chunkPages(pages);
     const projectMeta = doc.project ? projectLookup.get(doc.project.toString()) : undefined;
     const projectName = projectMeta?.name;
-    const count      = await insertChunks(db, docId, doc.project, doc, pageChunks, projectName);
+    const count      = await insertChunks(db, docId, doc.project, doc, pageChunks, projectName, listLookup);
     await markExtracted(db, docId, count, null);
 
     return { docId, status: 'ok', chunks: count, pages: pages.length };
@@ -333,8 +344,11 @@ async function main() {
 
     const docs = await epic.find(filter, {
       projection: { _id: 1, internalURL: 1, project: 1, displayName: 1, documentFileName: 1,
-                    type: 1, datePosted: 1, read: 1 },
+                    type: 1, milestone: 1, datePosted: 1, read: 1 },
     }).toArray();
+
+    // Build list id→name lookup (for resolving type/milestone ObjectId refs to human labels)
+    const listLookup = await buildListLookup(db);
 
     // Build project id→{name} lookup for denormalizing projectName into chunks
     const projectIds = [...new Set(docs.map(d => d.project).filter(Boolean).map(String))];
@@ -342,15 +356,15 @@ async function main() {
     if (projectIds.length > 0) {
       const projects = await epic.find(
         { _schemaName: 'Project', _id: { $in: projectIds.map(id => new ObjectId(id)) } },
-        { projection: { _id: 1, name: 1 } },
+        { projection: { _id: 1, name: 1, displayName: 1 } },
       ).toArray();
-      projects.forEach(p => projectLookup.set(p._id.toString(), { name: p.name }));
+      projects.forEach(p => projectLookup.set(p._id.toString(), { name: p.name || p.displayName || '' }));
     }
 
     let ok = 0, errors = 0, skipped = 0;
 
     const results = await runWithConcurrency(docs, async (doc) => {
-      const r = await processDocument(db, minio, doc, projectLookup);
+      const r = await processDocument(db, minio, doc, projectLookup, listLookup);
       if (r.status === 'ok')      { ok++;      process.stdout.write(`  \r  ${ok + errors + skipped}/${total}...`); }
       if (r.status === 'error')   { errors++; }
       if (r.status === 'skipped') { skipped++; }

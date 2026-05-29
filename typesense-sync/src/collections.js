@@ -145,13 +145,14 @@ const DOCUMENT_CHUNKS_SCHEMA = {
     { name: 'documentId',   type: 'string',  facet: true },
     { name: 'projectId',    type: 'string',  facet: true },
     { name: 'pageNumber',   type: 'int32',   sort: true },
-    // Facet / display
-    { name: 'documentType', type: 'string',  facet: true, optional: true },
-    { name: 'datePosted',   type: 'int64',   sort: true,  optional: true },
-    // Display-only — not indexed to save RAM
-    { name: 'chunkIndex',     type: 'int32',   index: false, optional: true },
-    { name: 'documentName',   type: 'string',  index: false, optional: true },
-    { name: 'projectName',    type: 'string',  index: false, optional: true },
+    // Facet / filter fields — searched by queryBy weights
+    { name: 'documentType', type: 'string',  facet: true,  index: true,  optional: true },
+    { name: 'milestone',    type: 'string',  facet: true,  index: true,  optional: true },
+    { name: 'datePosted',   type: 'int64',   sort: true,   optional: true },
+    // Display + search fields
+    { name: 'chunkIndex',   type: 'int32',   index: false, optional: true },
+    { name: 'documentName', type: 'string',  index: true,  sort: true,   optional: true },
+    { name: 'projectName',  type: 'string',  index: true,  optional: true },
     // Access control — inherited from parent document's read array
     { name: 'allowed_roles',  type: 'string[]', facet: true,  optional: true },
     // Future: embedding field for vector/AI search
