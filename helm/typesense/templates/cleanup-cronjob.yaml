@@ -36,7 +36,7 @@ spec:
                   const aliased = new Set(aliasResult.aliases.map(a => a.collection_name));
                   console.log(`Collections: ${collections.length}, aliased: ${aliased.size}`);
 
-                  let deleted = 0;
+                  let deleted = 0, failed = 0;
                   for (const col of collections) {
                     if (!aliased.has(col.name)) {
                       console.log(`Deleting stale collection: ${col.name}`);
@@ -45,10 +45,11 @@ spec:
                         { method: 'DELETE', headers: h }
                       );
                       console.log(`  → ${res.status}`);
-                      deleted++;
+                      if (res.ok) { deleted++; } else { failed++; }
                     }
                   }
-                  console.log(`Cleanup complete. Deleted ${deleted} stale collection(s).`);
+                  console.log(`Cleanup complete. Deleted ${deleted}, failed ${failed}.`);
+                  if (failed > 0) process.exit(1);
                 })().catch(e => { console.error(e); process.exit(1); });
             env:
             - name: TYPESENSE_HOST
