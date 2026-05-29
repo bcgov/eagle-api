@@ -15,7 +15,7 @@ typesense:
       memory: 512Mi
     limits:
       cpu: 500m
-      memory: 4Gi
+      memory: 6Gi
 
 cleanup:
   image:
