@@ -195,6 +195,10 @@ function transformProjectNotification(doc, listLookup) {
   // pcp is stored as a plain string: 'none' | 'pending' | 'open' | 'closed'
   const pcp = str(doc.pcp) && doc.pcp !== 'none' ? str(doc.pcp) : undefined;
 
+  // Engage engagement link — mirrors the CommentPeriod isMet/metURL pattern
+  const isMet  = doc.isMet === true;
+  const metURL = str(doc.metURL);
+
   return {
     id: doc._id.toString(),
     ...(str(doc.name)                    && { name:                    str(doc.name) }),
@@ -208,6 +212,8 @@ function transformProjectNotification(doc, listLookup) {
     ...(resolvePermissive(doc.region, listLookup) && { region: resolvePermissive(doc.region, listLookup) }),
     ...(str(doc.decision)                && { decision:                str(doc.decision) }),
     ...(pcp                              && { pcp }),
+    ...(isMet                            && { isMet: true }),
+    ...(metURL                           && { metURL }),
     ...(toTimestamp(doc.notificationReceivedDate) !== undefined && { notificationReceivedDate: toTimestamp(doc.notificationReceivedDate) }),
     ...(toTimestamp(doc.decisionDate)    !== undefined && { decisionDate: toTimestamp(doc.decisionDate) }),
     ...(doc.associatedProjectId          && { associatedProjectId:     doc.associatedProjectId.toString() }),

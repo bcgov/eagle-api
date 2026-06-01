@@ -663,6 +663,9 @@ definitions:
       - 'associatedProjectId'
       - 'associatedProjectName'
       - 'trigger'
+      - 'pcp'
+      - 'isMet'
+      - 'metURL'
   ProjectNotificationSortByFields:
     type: string
     description: "Optional fields to sort by (prefixed with + or - for order)"

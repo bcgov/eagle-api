@@ -18,6 +18,12 @@ module.exports = require('../models')('ProjectNotification', {
   trigger: { type: String, default: null },
   associatedProjectId: { type: String, default: null },
   associatedProjectName : { type: String, default: null },
+
+  // Comment period / Engage engagement fields
+  pcp    : { type: String, default: 'none' }, // 'none' | 'pending' | 'open' | 'closed'
+  isMet  : { type: Boolean, default: false },  // true when comment period is Engage-managed
+  metURL : { type: String, default: '' },       // direct Engage engagement URL (when isMet)
+
   centroid: [{ type: Mixed, default: 0.00 }],
 
   // Permissions
