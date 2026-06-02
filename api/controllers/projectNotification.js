@@ -128,6 +128,11 @@ exports.protectedPut = async function (args, res) {
     projectNotification.centroid = requestData.centroid || [];
     projectNotification.associatedProjectId = requestData.associatedProjectId || '';
     projectNotification.associatedProjectName = requestData.associatedProjectName || '';
+    projectNotification.dateStarted = requestData.dateStarted || null;
+    projectNotification.dateCompleted = requestData.dateCompleted || null;
+    projectNotification.pcp = requestData.pcp || '';
+    projectNotification.isMet = requestData.isMet ?? false;
+    projectNotification.metURL = requestData.metURL || '';
 
     // Only update read permission if it is currently not set.
     if (publish && !projectNotification.read.includes('public')) {
