@@ -232,6 +232,13 @@ async function handleCollectionSearch(args, res) {
   );
   query.filter_by = injectRoleFilter(params.filter_by?.value, roleFilter);
 
+  // Cap per_page — prevent memory exhaustion on Typesense from unbounded result sets
+  const rawPerPage = parseInt(query.per_page, 10);
+  if (Number.isFinite(rawPerPage) && rawPerPage > 100) {
+    defaultLog.warn(`[TypesenseProxy] per_page ${rawPerPage} exceeds limit, capping to 100`);
+  }
+  query.per_page = String(Number.isFinite(rawPerPage) && rawPerPage > 0 ? Math.min(rawPerPage, 100) : 25);
+
   // Remove empty params — Typesense treats empty string differently from absent
   for (const k of Object.keys(query)) {
     if (query[k] == null || query[k] === '') delete query[k];
@@ -278,6 +285,13 @@ async function handleMultiSearch(args, res) {
   const roles      = getRoles(args);
   const roleFilter = buildRoleFilter(roles);
 
+  // Reject oversized multi-search batches — prevents DoS via batch amplification
+  if (body.searches.length > 10) {
+    defaultLog.warn(`[TypesenseProxy] multi_search rejected: ${body.searches.length} searches exceeds limit of 10`);
+    return res.status(400).json({
+      error: `multi_search body exceeds maximum of 10 searches (got ${body.searches.length})`,
+    });
+  }
   const cleanSearches = body.searches.map(s => {
     const collection = s.collection || '';
     if (!ALLOWED_COLLECTIONS.has(collection)) {

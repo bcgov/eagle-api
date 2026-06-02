@@ -12,6 +12,7 @@ var app_helper       = require('./app_helper');
 var createRouter     = require('./api/middleware/swagger-router');
 var swaggerSpec      = YAML.load(fs.readFileSync('./api/swagger/swagger.yaml', 'utf8'));
 var bodyParser       = require('body-parser');
+const rateLimit      = require('express-rate-limit');
 
 var api_default_port = 3000;
 
@@ -28,6 +29,10 @@ app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 // disable powered by header
 app.disable('x-powered-by');
+
+// Trust one proxy hop (nginx) so req.ip reflects the real client IP, not nginx's
+// address. Required for express-rate-limit to key on the correct remote IP.
+app.set('trust proxy', 1);
 
 // Enable CORS
 // Reflect the requesting origin instead of '*' so that credentialed requests
@@ -98,6 +103,31 @@ if (hostname !== 'localhost:3000') {
 }
 swaggerSpec.host = hostname;
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Rate limiters — applied before the auto-wired router so they run on all /api routes.
+// Typesense search is limited tightly (CPU-heavy queries); general API has a generous burst.
+// NOTE: health check at /api/health is registered above and responds before reaching
+// these limiters, so health probes are not counted against the rate limit.
+const searchLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Search rate limit exceeded. Please try again later.' },
+});
+
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 200,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again later.' },
+});
+
+// More-specific paths first — Express applies the first matching middleware
+app.use('/api/public/typesense', searchLimiter);
+app.use('/api/typesense', searchLimiter);
+app.use('/api', globalLimiter);
 
 // Auto-wired API router — reads swagger.yaml and registers one Express route per
 // operation, populates req.swagger.params, enforces Bearer auth, and calls the
