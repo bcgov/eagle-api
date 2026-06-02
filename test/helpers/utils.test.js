@@ -116,15 +116,33 @@ describe('Utils Helper Functions', () => {
       const pageNum = { value: 0 };
       const params = utils.getSkipLimitParameters(pageSize, pageNum);
       
-      expect(params.limit).to.equal(100); // DEFAULT_PAGESIZE
+      expect(params.limit).to.equal(25); // DEFAULT_PAGESIZE
     });
 
-    it('should handle negative pageSize by using default', () => {
+    it('should use default page size for negative pageSize', () => {
       const pageSize = { value: -10 };
       const pageNum = { value: 0 };
       const params = utils.getSkipLimitParameters(pageSize, pageNum);
       
-      expect(params.limit).to.equal(100); // DEFAULT_PAGESIZE
+      expect(params.limit).to.equal(25); // DEFAULT_PAGESIZE
+    });
+
+    it('should clamp pageSize to MAX_PAGESIZE (100) when exceeded', () => {
+      const pageSize = { value: 500 };
+      const pageNum = { value: 0 };
+      const params = utils.getSkipLimitParameters(pageSize, pageNum);
+      
+      expect(params.limit).to.equal(100); // MAX_PAGESIZE
+      expect(params.skip).to.equal(0);
+    });
+
+    it('should respect pageSize within allowed range', () => {
+      const pageSize = { value: 50 };
+      const pageNum = { value: 2 };
+      const params = utils.getSkipLimitParameters(pageSize, pageNum);
+      
+      expect(params.limit).to.equal(50);
+      expect(params.skip).to.equal(100);
     });
 
     it('should ignore negative page numbers', () => {

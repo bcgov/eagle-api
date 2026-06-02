@@ -28,6 +28,12 @@ const commentPeriodAggregator = require('../aggregators/commentPeriodAggregator'
 const searchAggregator = require('../aggregators/searchAggregator');
 const aggregateHelper = require('../helpers/aggregators');
 
+// Pagination limits
+const PAGE_SIZE_DEFAULT = 25;
+const PAGE_SIZE_MAX_PUBLIC = 100;  // unauthenticated requests
+const PAGE_SIZE_MAX_AUTH   = 1000; // authenticated staff requests
+const PAGE_SIZE_MAX_LIST   = 500;  // List dataset (reference/dropdown data)
+
 const searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue, categorized, fuzzy) {
   const aggregateCollation = {
     locale: 'en',
@@ -205,8 +211,14 @@ const executeQuery = async function (args, res) {
   const dataset = args.swagger.params.dataset.value;
   const project = args.swagger.params.project.value;
   const populate = args.swagger.params.populate ? args.swagger.params.populate.value : false;
+  const isAuthenticated = !!args.swagger.params.auth_payload;
   const pageNum = args.swagger.params.pageNum.value || 0;
-  const pageSize = args.swagger.params.pageSize.value || 25;
+  const rawPageSize = args.swagger.params.pageSize.value || PAGE_SIZE_DEFAULT;
+  if (rawPageSize < 0) {
+    return Actions.sendResponse(res, 400, { message: 'pageSize must be a positive integer' });
+  }
+  const maxPageSize = dataset === constants.LIST ? PAGE_SIZE_MAX_LIST : (isAuthenticated ? PAGE_SIZE_MAX_AUTH : PAGE_SIZE_MAX_PUBLIC);
+  const pageSize = Math.min(rawPageSize, maxPageSize);
   const projectLegislation = args.swagger.params.projectLegislation.value || '';
   // Normalize sortBy to always be an array; swagger may pass a single string when only one sort field is provided.
   const sortByRaw = args.swagger.params.sortBy.value ? args.swagger.params.sortBy.value : keywords ? ['-score'] : [];

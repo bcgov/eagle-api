@@ -5,7 +5,8 @@ var mongoose        = require('mongoose');
 var NodeClam        = require('clamscan');
 var MAX_LIMIT       = 1000;
 const defaultLog      = require('winston').loggers.get('default');
-var DEFAULT_PAGESIZE  = 100;
+var DEFAULT_PAGESIZE  = 25;
+var MAX_PAGESIZE      = 100;
 
 // ClamAV scanner instance (initialized on first use)
 let clamScanner = null;
@@ -108,7 +109,7 @@ exports.getSkipLimitParameters = function (pageSize, pageNum) {
   var ps = DEFAULT_PAGESIZE; // Default
   if (pageSize && pageSize.value !== undefined) {
     if (pageSize.value > 0) {
-      ps = pageSize.value;
+      ps = Math.min(pageSize.value, MAX_PAGESIZE);
     }
   }
   if (pageNum && pageNum.value !== undefined) {
