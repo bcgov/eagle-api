@@ -214,6 +214,8 @@ function transformProjectNotification(doc, listLookup) {
     ...(pcp                              && { pcp }),
     ...(isMet                            && { isMet: true }),
     ...(metURL                           && { metURL }),
+    ...(toTimestamp(doc.dateStarted)   !== undefined && { dateStarted:   toTimestamp(doc.dateStarted) }),
+    ...(toTimestamp(doc.dateCompleted) !== undefined && { dateCompleted: toTimestamp(doc.dateCompleted) }),
     ...(toTimestamp(doc.notificationReceivedDate) !== undefined && { notificationReceivedDate: toTimestamp(doc.notificationReceivedDate) }),
     ...(toTimestamp(doc.decisionDate)    !== undefined && { decisionDate: toTimestamp(doc.decisionDate) }),
     ...(doc.associatedProjectId          && { associatedProjectId:     doc.associatedProjectId.toString() }),

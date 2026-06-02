@@ -124,6 +124,8 @@ const PROJECTNOTIFICATION_SCHEMA = {
     { name: 'pcp',                         type: 'string',  facet: true,  optional: true },
     { name: 'isMet',                       type: 'bool',                  optional: true },
     { name: 'metURL',                      type: 'string',                optional: true },
+    { name: 'dateStarted',                 type: 'int64',   sort: true,   optional: true },
+    { name: 'dateCompleted',               type: 'int64',   sort: true,   optional: true },
     // Dates
     { name: 'notificationReceivedDate',    type: 'int64',   sort: true,   optional: true },
     { name: 'decisionDate',                type: 'int64',   sort: true,   optional: true },

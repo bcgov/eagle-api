@@ -20,9 +20,11 @@ module.exports = require('../models')('ProjectNotification', {
   associatedProjectName : { type: String, default: null },
 
   // Comment period / Engage engagement fields
-  pcp    : { type: String, default: 'none' }, // 'none' | 'pending' | 'open' | 'closed'
-  isMet  : { type: Boolean, default: false },  // true when comment period is Engage-managed
-  metURL : { type: String, default: '' },       // direct Engage engagement URL (when isMet)
+  pcp    : { type: String,   default: 'none' }, // 'none' | 'pending' | 'open' | 'closed'
+  isMet  : { type: Boolean,  default: false },  // true when comment period is Engage-managed
+  metURL : { type: String,   default: '' },       // direct Engage engagement URL (when isMet)
+  dateStarted   : { type: Date, default: null },  // CP open date
+  dateCompleted : { type: Date, default: null },  // CP close date
 
   centroid: [{ type: Mixed, default: 0.00 }],
 
