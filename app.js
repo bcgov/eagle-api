@@ -122,8 +122,8 @@ const globalLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   skip: (req) =>
-    req.path.startsWith('/api/public/typesense') ||
-    req.path.startsWith('/api/typesense'),
+    req.path.startsWith('/public/typesense') ||
+    req.path.startsWith('/typesense'),
   message: { error: 'Too many requests. Please try again later.' },
 });
 
