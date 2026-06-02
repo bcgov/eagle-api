@@ -211,7 +211,9 @@ const executeQuery = async function (args, res) {
   const dataset = args.swagger.params.dataset.value;
   const project = args.swagger.params.project.value;
   const populate = args.swagger.params.populate ? args.swagger.params.populate.value : false;
-  const isAuthenticated = !!args.swagger.params.auth_payload;
+  // swagger-security.js always sets auth_payload (synthetic public payload for unauthenticated routes).
+  // Distinguish real auth by checking roles: synthetic public = ['public'] only.
+  const isAuthenticated = !(roles.length === 1 && roles[0] === 'public');
   const pageNum = args.swagger.params.pageNum.value || 0;
   const rawPageSize = args.swagger.params.pageSize.value || PAGE_SIZE_DEFAULT;
   if (rawPageSize < 0) {
