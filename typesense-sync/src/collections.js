@@ -97,7 +97,7 @@ const RECENTACTIVITY_SCHEMA = {
     { name: 'contentUrl',               type: 'string',               optional: true },
     // Original HTML stored for display (not indexed — stripped version in content)
     { name: 'contentHtml',              type: 'string',  index: false, optional: true },
-    { name: 'dateAdded',                type: 'int64',   sort: true,   range_index: true,  optional: true },
+    { name: 'dateAdded',                type: 'int64',   sort: true,   range_index: true },  // non-optional for default_sorting_field
     // PCP (Comment Period) fields — needed for "View Engagement" button routing
     { name: 'pcpId',                    type: 'string',               optional: true },
     { name: 'pcpIsMet',                 type: 'bool',                 optional: true },
@@ -132,7 +132,7 @@ const PROJECTNOTIFICATION_SCHEMA = {
     { name: 'dateStarted',                 type: 'int64',   sort: true,   range_index: true,  optional: true },
     { name: 'dateCompleted',               type: 'int64',   sort: true,   range_index: true,  optional: true },
     // Dates
-    { name: 'notificationReceivedDate',    type: 'int64',   sort: true,   range_index: true,  optional: true },
+    { name: 'notificationReceivedDate',    type: 'int64',   sort: true,   range_index: true },  // non-optional for default_sorting_field
     { name: 'decisionDate',                type: 'int64',   sort: true,   range_index: true,  optional: true },
     // Metadata
     { name: 'associatedProjectId',         type: 'string',               optional: true },

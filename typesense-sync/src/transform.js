@@ -177,7 +177,7 @@ function transformRecentActivity(doc, listLookup, projectLookup, pcpLookup) {
     complianceAndEnforcement: doc.complianceAndEnforcement === true,
     ...(str(doc.documentUrl)           && { documentUrl:              str(doc.documentUrl) }),
     ...(str(doc.contentUrl)            && { contentUrl:               str(doc.contentUrl) }),
-    ...(toTimestamp(doc.dateAdded) !== undefined && { dateAdded: toTimestamp(doc.dateAdded) }),
+    dateAdded: toTimestamp(doc.dateAdded) ?? 0,  // non-optional for default_sorting_field
     // PCP routing fields
     ...(pcpId                          && { pcpId }),
     ...(pcpMeta?.isMet === true        && { pcpIsMet: true }),
@@ -218,7 +218,7 @@ function transformProjectNotification(doc, listLookup) {
     ...(metURL                           && { metURL }),
     ...(toTimestamp(doc.dateStarted)   !== undefined && { dateStarted:   toTimestamp(doc.dateStarted) }),
     ...(toTimestamp(doc.dateCompleted) !== undefined && { dateCompleted: toTimestamp(doc.dateCompleted) }),
-    ...(toTimestamp(doc.notificationReceivedDate) !== undefined && { notificationReceivedDate: toTimestamp(doc.notificationReceivedDate) }),
+    notificationReceivedDate: toTimestamp(doc.notificationReceivedDate) ?? 0,  // non-optional for default_sorting_field
     ...(toTimestamp(doc.decisionDate)    !== undefined && { decisionDate: toTimestamp(doc.decisionDate) }),
     ...(doc.associatedProjectId          && { associatedProjectId:     doc.associatedProjectId.toString() }),
     ...(str(doc.associatedProjectName)   && { associatedProjectName:   str(doc.associatedProjectName) }),
