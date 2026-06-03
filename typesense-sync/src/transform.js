@@ -116,6 +116,7 @@ function transformDocument(doc, listLookup, projectLookup) {
     ...(toTimestamp(doc.dateUploaded)  !== undefined && { dateUploaded:  toTimestamp(doc.dateUploaded) }),
     isFeatured: doc.isFeatured === true,
     ...(str(doc.documentSource)    && { documentSource: str(doc.documentSource) }),
+    popularity:   0,  // default; overwritten nightly by popularity-sync.js
     allowed_roles: projectId ? constrainToProject(extractRoles(doc), projectMeta) : extractRoles(doc),
   };
 }
@@ -139,6 +140,7 @@ function transformProject(doc, listLookup) {
     ...(toTimestamp(leg.dateUpdated)    !== undefined && { updatedDate:   toTimestamp(leg.dateUpdated) }),
     ...(toTimestamp(leg.decisionDate)  !== undefined && { decisionDate:  toTimestamp(leg.decisionDate) }),
     ...parseCentroid(leg.centroid),
+    popularity:   0,  // default; overwritten nightly by popularity-sync.js
     allowed_roles: extractRoles(doc),
   };
 }

@@ -39,8 +39,8 @@ const DOCUMENT_SCHEMA = {
     { name: 'isFeatured',         type: 'bool',                  optional: true },
     // Source of the document (e.g. 'COMMENT', 'DOCUMENT') — used as a filter
     { name: 'documentSource',     type: 'string',  facet: true,  optional: true },
-    // 30-day click/download score — updated nightly by popularity-sync.js
-    { name: 'popularity',         type: 'int32',   sort: true,   optional: true },
+    // 30-day click/download score — updated nightly by popularity-sync.js (0 = unscored)
+    { name: 'popularity',         type: 'int32',   sort: true },  // must be non-optional for default_sorting_field
     // Access control — roles that may see this document (mirrors MongoDB read array)
     { name: 'allowed_roles',      type: 'string[]', facet: true,  optional: true },
   ],
@@ -69,8 +69,8 @@ const PROJECT_SCHEMA = {
     { name: 'decisionDate',     type: 'int64',   sort: true,   range_index: true,  optional: true },
     // [lng, lat] centroid for map thumbnail in search results
     { name: 'centroid',         type: 'float[]',               optional: true },
-    // 30-day click score — updated nightly by popularity-sync.js
-    { name: 'popularity',       type: 'int32',   sort: true,   optional: true },
+    // 30-day click score — updated nightly by popularity-sync.js (0 = unscored)
+    { name: 'popularity',       type: 'int32',   sort: true },  // must be non-optional for default_sorting_field
     // Access control — roles that may see this project (mirrors MongoDB read array)
     { name: 'allowed_roles',    type: 'string[]', facet: true,  optional: true },
   ],
