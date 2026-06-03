@@ -15,6 +15,8 @@
 
 const DOCUMENT_SCHEMA = {
   name: 'documents',
+  default_sorting_field: 'popularity',
+  token_separators: ['.', '_', '-'],
   fields: [
     { name: 'id',                 type: 'string' },
     // Search fields
@@ -31,8 +33,8 @@ const DOCUMENT_SCHEMA = {
     // Metadata
     { name: 'projectId',          type: 'string',  facet: true,  optional: true },
     { name: 'internalExt',        type: 'string',               optional: true },
-    { name: 'datePosted',         type: 'int64',   sort: true,   optional: true },
-    { name: 'dateUploaded',       type: 'int64',   sort: true,   optional: true },
+    { name: 'datePosted',         type: 'int64',   sort: true,   range_index: true,  optional: true },
+    { name: 'dateUploaded',       type: 'int64',   sort: true,   range_index: true,  optional: true },
     // Featured flag — shown on project's Featured Documents tab
     { name: 'isFeatured',         type: 'bool',                  optional: true },
     // Source of the document (e.g. 'COMMENT', 'DOCUMENT') — used as a filter
@@ -46,6 +48,7 @@ const DOCUMENT_SCHEMA = {
 
 const PROJECT_SCHEMA = {
   name: 'projects',
+  default_sorting_field: 'popularity',
   fields: [
     { name: 'id',               type: 'string' },
     { name: 'name',             type: 'string',  index: true,  sort: true,  optional: true },
@@ -62,8 +65,8 @@ const PROJECT_SCHEMA = {
     { name: 'location',         type: 'string',               optional: true },
     // Proponent name stored for display / search
     { name: 'proponent',        type: 'string',  index: true,  sort: true,  optional: true },
-    { name: 'updatedDate',      type: 'int64',   sort: true,   optional: true },
-    { name: 'decisionDate',     type: 'int64',   sort: true,   optional: true },
+    { name: 'updatedDate',      type: 'int64',   sort: true,   range_index: true,  optional: true },
+    { name: 'decisionDate',     type: 'int64',   sort: true,   range_index: true,  optional: true },
     // [lng, lat] centroid for map thumbnail in search results
     { name: 'centroid',         type: 'float[]',               optional: true },
     // 30-day click score — updated nightly by popularity-sync.js
@@ -75,6 +78,7 @@ const PROJECT_SCHEMA = {
 
 const RECENTACTIVITY_SCHEMA = {
   name: 'activities',
+  default_sorting_field: 'dateAdded',
   fields: [
     { name: 'id',                       type: 'string' },
     // Search fields
@@ -93,7 +97,7 @@ const RECENTACTIVITY_SCHEMA = {
     { name: 'contentUrl',               type: 'string',               optional: true },
     // Original HTML stored for display (not indexed — stripped version in content)
     { name: 'contentHtml',              type: 'string',  index: false, optional: true },
-    { name: 'dateAdded',                type: 'int64',   sort: true,   optional: true },
+    { name: 'dateAdded',                type: 'int64',   sort: true,   range_index: true,  optional: true },
     // PCP (Comment Period) fields — needed for "View Engagement" button routing
     { name: 'pcpId',                    type: 'string',               optional: true },
     { name: 'pcpIsMet',                 type: 'bool',                 optional: true },
@@ -107,6 +111,7 @@ const RECENTACTIVITY_SCHEMA = {
 
 const PROJECTNOTIFICATION_SCHEMA = {
   name: 'notifications',
+  default_sorting_field: 'notificationReceivedDate',
   fields: [
     { name: 'id',                          type: 'string' },
     // Search fields
@@ -124,11 +129,11 @@ const PROJECTNOTIFICATION_SCHEMA = {
     { name: 'pcp',                         type: 'string',  facet: true,  optional: true },
     { name: 'isMet',                       type: 'bool',                  optional: true },
     { name: 'metURL',                      type: 'string',                optional: true },
-    { name: 'dateStarted',                 type: 'int64',   sort: true,   optional: true },
-    { name: 'dateCompleted',               type: 'int64',   sort: true,   optional: true },
+    { name: 'dateStarted',                 type: 'int64',   sort: true,   range_index: true,  optional: true },
+    { name: 'dateCompleted',               type: 'int64',   sort: true,   range_index: true,  optional: true },
     // Dates
-    { name: 'notificationReceivedDate',    type: 'int64',   sort: true,   optional: true },
-    { name: 'decisionDate',                type: 'int64',   sort: true,   optional: true },
+    { name: 'notificationReceivedDate',    type: 'int64',   sort: true,   range_index: true,  optional: true },
+    { name: 'decisionDate',                type: 'int64',   sort: true,   range_index: true,  optional: true },
     // Metadata
     { name: 'associatedProjectId',         type: 'string',               optional: true },
     { name: 'centroid',                    type: 'float[]',               optional: true },
@@ -152,7 +157,7 @@ const DOCUMENT_CHUNKS_SCHEMA = {
     // Facet / filter fields — searched by queryBy weights
     { name: 'documentType', type: 'string',  facet: true,  index: true,  optional: true },
     { name: 'milestone',    type: 'string',  facet: true,  index: true,  optional: true },
-    { name: 'datePosted',   type: 'int64',   sort: true,   optional: true },
+    { name: 'datePosted',   type: 'int64',   sort: true,   range_index: true,  optional: true },
     // Display + search fields
     { name: 'chunkIndex',   type: 'int32',   index: false, optional: true },
     { name: 'documentName', type: 'string',  index: true,  sort: true,   optional: true },
