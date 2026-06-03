@@ -10,9 +10,47 @@
  */
 
 const Typesense = require('typesense');
-// collections.js is the single source of truth for schema, query fields and facets —
-// shared by both the sync service (typesense-sync/) and this API helper.
-const { QUERY_BY, FACET_BY } = require('../../typesense-sync/src/collections');
+
+/**
+ * Query_by fields and their weights for each schema, used in search requests.
+ * Weights mirror the MongoDB searchIndex_1 text index weights.
+ *
+ * Source of truth: eagle-typesense repo (src/collections.js).
+ * Keep in sync when schemas change.
+ */
+const QUERY_BY = {
+  Document: {
+    fields:  'displayName,documentFileName,description,projectName',
+    weights: '8500,5000,8000,3000',
+  },
+  Project: {
+    fields:  'name,displayName,description,epicProjectId,proponent',
+    weights: '9000,8500,8000,3000,1000',
+  },
+  RecentActivity: {
+    fields:  'headline,content,notificationName',
+    weights: '9000,8000,3000',
+  },
+  ProjectNotification: {
+    fields:  'name,description,proponent,associatedProjectName,region,location',
+    weights: '9000,8000,3000,2000,1500,1000',
+  },
+  DocumentChunk: {
+    fields:  'content',
+    weights: '9000',
+  },
+};
+
+/**
+ * Facet fields to include in every search response, keyed by schemaName.
+ */
+const FACET_BY = {
+  Document:            'type,milestone,documentAuthorType,projectPhase,legislation,documentSource',
+  Project:             'region,status,currentPhaseName,eacDecision,type,sector',
+  RecentActivity:      'type',
+  ProjectNotification: 'type,region,decision,pcp',
+  DocumentChunk:       'documentType,projectId',
+};
 
 let _client = null;
 

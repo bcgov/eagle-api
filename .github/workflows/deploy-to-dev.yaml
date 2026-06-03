@@ -3,7 +3,7 @@
 # =============================================================================
 # Triggered on push to develop branch.
 # Builds Docker image, scans for vulnerabilities, pushes to OpenShift registry,
-# and deploys with Helm. Also rebuilds typesense-sync when its code changes.
+# and deploys with Helm.
 # =============================================================================
 
 name: Deploy to Dev
@@ -28,7 +28,6 @@ env:
   OPENSHIFT_NAMESPACE_TOOLS: 6cdc9e-tools
   OPENSHIFT_NAMESPACE_DEV: 6cdc9e-dev
   IMAGE_NAME: eagle-api
-  SYNC_IMAGE_NAME: typesense-sync
   APP_NAME: eagle-api
 
 jobs:
@@ -171,81 +170,9 @@ jobs:
             echo "✓ MongoDB deployment verified"
           fi
 
-  build-sync:
-    name: Build Sync Image
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
-
-      - name: Login to OpenShift registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
-        with:
-          registry: ${{ secrets.OPENSHIFT_REPOSITORY }}
-          username: ${{ secrets.OPENSHIFT_REPOSITORY_USERNAME }}
-          password: ${{ secrets.OPENSHIFT_REPOSITORY_PASSWORD }}
-
-      - name: Build and push sync image
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
-        with:
-          context: ./typesense-sync
-          push: true
-          tags: |
-            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.SYNC_IMAGE_NAME }}:dev
-            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.SYNC_IMAGE_NAME }}:${{ needs.build-and-push.outputs.SHORT_SHA }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  deploy-sync:
-    name: Deploy Sync to Dev
-    needs: [deploy, build-sync]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Install OpenShift CLI
-        run: |
-          curl -LO "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz"
-          tar -xvzf openshift-client-linux.tar.gz
-          sudo mv oc /usr/local/bin/
-          rm -f openshift-client-linux.tar.gz
-
-      - name: Install Helm
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-          helm version
-
-      - name: Log into OpenShift
-        run: oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ secrets.OPENSHIFT_URL }}
-
-      - name: Upgrade Typesense chart
-        run: |
-          helm upgrade --install typesense ./helm/typesense \
-            --namespace ${{ env.OPENSHIFT_NAMESPACE_DEV }} \
-            --values ./helm/typesense/values-dev.yaml \
-            --wait --timeout=5m
-
-      - name: Restart sync deployment
-        run: |
-          echo "Restarting typesense-sync deployment to pick up new image..."
-          if oc get deployment typesense-typesense-sync -n ${{ env.OPENSHIFT_NAMESPACE_DEV }} &>/dev/null; then
-            oc rollout restart deployment/typesense-typesense-sync -n ${{ env.OPENSHIFT_NAMESPACE_DEV }}
-            oc rollout status deployment/typesense-typesense-sync -n ${{ env.OPENSHIFT_NAMESPACE_DEV }} --timeout=3m
-            echo "✓ Sync deployment restarted"
-          else
-            echo "⚠ typesense-sync deployment not found — skipping"
-          fi
-
   smoke-test:
     name: Smoke Test Dev
-    needs: [deploy, deploy-sync]
+    needs: [deploy]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:

@@ -52,8 +52,8 @@ docker compose exec mongodb mongosh --eval "rs.initiate()"
 # 5. First time only: restore data
 yarn db:restore < epic-prod-dump.archive
 
-# 6. First time only: populate Typesense search index
-cd typesense-sync && cp .env.example .env && node src/full-sync.js && cd ..
+# 6. First time only: populate Typesense search index (see eagle-typesense repo)
+# cd ../eagle-typesense && cp .env.example .env && npm run full-sync && cd ../eagle-api
 
 # 7. Start the API
 yarn start

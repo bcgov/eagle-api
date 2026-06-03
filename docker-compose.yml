@@ -22,7 +22,7 @@ services:
       TYPESENSE_API_KEY: local-dev-key
     command: ["--data-dir=/data", "--api-key=local-dev-key", "--enable-cors"]
     # Health check: curl http://localhost:8108/health
-    # Populate data: node typesense-sync/src/full-sync.js
+    # Populate data: see eagle-typesense repo (npm run full-sync)
 
 volumes:
   mongodb-data:

@@ -1,9 +1,0 @@
-apiVersion: v2
-name: typesense
-description: >
-  Typesense search engine + MongoDB sync service for eagle-api.
-  Deploy separately from eagle-api so it can be torn down independently.
-  Tear down: helm uninstall typesense -n <namespace>
-type: application
-version: 0.1.0
-appVersion: "30.1"

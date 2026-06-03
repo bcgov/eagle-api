@@ -22,7 +22,27 @@
 require('dotenv').config();
 
 const { MongoClient } = require('mongodb');
-const { buildMongoUri } = require('../typesense-sync/src/config');
+
+/**
+ * Build a MongoDB connection URI from environment variables.
+ * (Inlined from eagle-typesense src/config.js — migration must be self-contained.)
+ */
+function buildMongoUri() {
+  const user = encodeURIComponent(process.env.MONGODB_USERNAME || '');
+  const pass = encodeURIComponent(process.env.MONGODB_PASSWORD || '');
+  const host = process.env.MONGODB_HOST || 'localhost';
+  const port = process.env.MONGODB_PORT || '27017';
+  const db   = process.env.MONGODB_DATABASE || 'epic';
+  const auth = process.env.MONGODB_AUTHSOURCE || 'admin';
+  const replication = process.env.MONGODB_DIRECT === 'true'
+    ? 'directConnection=true'
+    : 'replicaSet=rs0';
+
+  if (user && pass) {
+    return `mongodb://${user}:${pass}@${host}:${port}/${db}?authSource=${auth}&${replication}`;
+  }
+  return `mongodb://${host}:${port}/${db}?${replication}`;
+}
 
 async function run() {
   const uri    = buildMongoUri();
