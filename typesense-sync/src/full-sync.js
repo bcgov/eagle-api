@@ -208,6 +208,31 @@ async function main() {
   const typesense = getClient();
 
   try {
+    // Pre-flight: verify Typesense has enough free disk for a collection swap.
+    // Swap holds old + new collection simultaneously, so peak usage ≈ 2× current data.
+    // Default threshold: 20 GiB. Override with TYPESENSE_MIN_FREE_GIB env var.
+    try {
+      const metrics = await typesense.metrics.retrieve();
+      const total   = metrics.system_disk_total_bytes;
+      const used    = metrics.system_disk_used_bytes;
+      const freeGiB = (total - used) / (1024 ** 3);
+      const minFreeGiB = parseFloat(process.env.TYPESENSE_MIN_FREE_GIB || '20');
+      const usedPct = ((used / total) * 100).toFixed(1);
+      console.log(`Disk pre-flight: ${freeGiB.toFixed(1)} GiB free (${usedPct}% used)`);
+      if (freeGiB < minFreeGiB) {
+        throw new Error(
+          `Pre-flight disk check failed: only ${freeGiB.toFixed(1)} GiB free on Typesense data volume ` +
+          `(${usedPct}% used). Need >= ${minFreeGiB} GiB free for zero-downtime collection swap. ` +
+          'Expand the PVC or run POST /operations/db/compact before retrying.'
+        );
+      }
+    } catch (err) {
+      if (err.message.startsWith('Pre-flight')) throw err;
+      // Metrics endpoint unavailable — log warning but do not abort.
+      // Older Typesense versions may not expose system_disk_* metrics.
+      console.warn('Disk pre-flight check skipped (metrics unavailable):', err.message);
+    }
+
     await mongo.connect();
     const db = mongo.db(process.env.MONGODB_DATABASE || 'epic');
     console.log('Connected to MongoDB');
