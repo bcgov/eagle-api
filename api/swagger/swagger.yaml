@@ -7569,3 +7569,52 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+
+  # ── DEMI Demo ───────────────────────────────────────────────────────────────
+
+  /demi/extract:
+    x-swagger-router-controller: demi
+    post:
+      tags:
+        - demi
+      summary: "Extract text from a document via docling-serve (demo only)"
+      operationId: extractDocument
+      description: "Accepts a PDF/DOCX/PPTX/XLSX file, forwards it to the eagle-demi extraction service, and returns the extracted markdown text. Nothing is stored. For testing purposes only."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      consumes:
+        - multipart/form-data
+      parameters:
+        - name: upfile
+          in: formData
+          description: "The document file to extract text from (PDF, DOCX, PPTX, XLSX)."
+          required: true
+          type: file
+      responses:
+        "200":
+          description: "Extraction successful"
+          schema:
+            type: object
+            properties:
+              markdown:
+                type: string
+                description: "Extracted text in Markdown format"
+        "400":
+          description: "Bad request (no file uploaded)"
+          schema:
+            $ref: "#/definitions/Error"
+        "413":
+          description: "File too large (max 50 MB)"
+          schema:
+            $ref: "#/definitions/Error"
+        "502":
+          description: "Extraction service unavailable or returned an error"
+          schema:
+            $ref: "#/definitions/Error"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"

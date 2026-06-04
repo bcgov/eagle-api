@@ -105,6 +105,12 @@ secrets:
     apiKeyKey: TYPESENSE_API_KEY
     searchKeyKey: TYPESENSE_SEARCH_KEY
 
+  # eagle-demi API key — same secret created by eagle-demi Helm chart
+  # Only enabled in envs where eagle-demi is deployed
+  # demi:
+  #   name: eagle-demi-api-key
+  #   key: DOCLING_SERVE_API_KEY
+
 # Keycloak SSO Configuration
 keycloak:
   enabled: true

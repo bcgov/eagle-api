@@ -49,6 +49,9 @@ secrets:
   smokeApiKey:
     name: eagle-api-smoke-key
     key: SMOKE_API_KEY
+  demi:
+    name: eagle-demi-api-key
+    key: DOCLING_SERVE_API_KEY
 
 # Disable persistence to avoid PVC attachment issues
 persistence:

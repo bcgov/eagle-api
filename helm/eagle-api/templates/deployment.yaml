@@ -173,6 +173,14 @@ spec:
                   name: {{ .Values.secrets.smokeApiKey.name }}
                   key: {{ .Values.secrets.smokeApiKey.key }}
             {{- end }}
+            {{- if .Values.secrets.demi }}
+            # eagle-demi API key — required to call the extraction service
+            - name: DOCLING_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.demi.name }}
+                  key: {{ .Values.secrets.demi.key }}
+            {{- end }}
             {{- if .Values.keycloak.enabled }}
             # Keycloak SSO Configuration
             - name: SSO_ISSUER
