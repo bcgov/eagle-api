@@ -74,7 +74,7 @@ env:
   # Feature Flags
   ENABLE_VIRUS_SCANNING: "true"
   # Typesense Search Service
-  TYPESENSE_HOST: typesense-typesense   # Kubernetes service name: <helm-release>-typesense
+  TYPESENSE_HOST: eagle-typesense   # Kubernetes service name set by fullnameOverride in eagle-typesense chart
   TYPESENSE_PORT: "8108"
   
   # External Services
