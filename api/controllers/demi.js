@@ -43,7 +43,7 @@ exports.extractDocument = async function (args, res) {
   let response;
   try {
     const fd = new FormData();
-    fd.append('file', new Blob([file.buffer], { type: file.mimetype }), file.originalname);
+    fd.append('files', new Blob([file.buffer], { type: file.mimetype }), file.originalname);
 
     const headers = {};
     if (DOCLING_API_KEY) {
