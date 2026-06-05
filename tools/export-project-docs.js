@@ -102,12 +102,12 @@ async function main() {
       documentAuthor: 1, documentAuthorType: 1,
       milestone: 1, projectPhase: 1,
       datePosted: 1, dateUploaded: 1, description: 1,
-      eaoStatus: 1,
+      eaoStatus: 1, labels: 1,
     },
   }).sort({ datePosted: 1 }).toArray();
 
   // CSV output
-  process.stdout.write('Document Name,Legislation,Document Type,Author,Milestone,Project Phase,Document Date,Upload Date,Description\n');
+  process.stdout.write('Document Name,Legislation,Document Type,Author,Milestone,Project Phase,Document Date,Upload Date,Description,Labels\n');
 
   for (const doc of docs) {
     const name    = doc.displayName || doc.documentFileName || '';
@@ -119,8 +119,9 @@ async function main() {
     const docDate = fmtDate(doc.datePosted);
     const upDate  = fmtDate(doc.dateUploaded);
     const desc    = doc.description || '';
+    const tags    = (Array.isArray(doc.labels) ? doc.labels.filter(Boolean) : []).join('; ');
 
-    process.stdout.write([name, leg, docType, author, ms, phase, docDate, upDate, desc].map(csvEscape).join(',') + '\n');
+    process.stdout.write([name, leg, docType, author, ms, phase, docDate, upDate, desc, tags].map(csvEscape).join(',') + '\n');
   }
 
   process.stderr.write(`Done. ${docs.length} document(s) exported for project ${projectId}.\n`);
