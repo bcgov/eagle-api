@@ -72,6 +72,8 @@ async function startJobQueue() {
     defaultLockLifetime: 5 * 60 * 1000, // 5 min — restart stuck jobs
   });
 
+  // demi-extract jobs can run up to 60min — override lock lifetime per-job below
+
   // ── Job definitions ────────────────────────────────────────────────────────
 
   /**
@@ -110,7 +112,7 @@ async function startJobQueue() {
    * result: { markdown, filename }
    * progress: { doclingStatus, queuePosition, taskMeta }
    */
-  agenda.define('demi-extract', { concurrency: 3 }, async (job) => {
+  agenda.define('demi-extract', { concurrency: 3, lockLifetime: 70 * 60 * 1000 }, async (job) => {
     const { filePath, originalFilename, fileSize } = job.attrs.data;
     const DOCLING_URL = process.env.DOCLING_URL || 'http://eagle-demi:5001';
     const DOCLING_API_KEY = process.env.DOCLING_API_KEY || '';
@@ -151,7 +153,7 @@ async function startJobQueue() {
     defaultLog.info(`[jobQueue] demi-extract task_id=${taskId} for ${originalFilename}`);
 
     // Poll until complete — persist progress to MongoDB on each tick
-    const MAX_POLLS = 360; // 30 min @ 5s intervals
+    const MAX_POLLS = parseInt(process.env.DEMI_MAX_POLLS || '720', 10); // default 60min @ 5s
     for (let i = 0; i < MAX_POLLS; i++) {
       const pollRes = await fetch(`${DOCLING_URL}/v1/status/poll/${taskId}?wait=5`, {
         headers: docHeaders,
