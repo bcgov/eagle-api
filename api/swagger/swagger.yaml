@@ -7577,9 +7577,9 @@ paths:
     post:
       tags:
         - demi
-      summary: "Extract text from a document via docling-serve (demo only)"
+      summary: "Submit a document for async extraction via docling-serve (demo only)"
       operationId: extractDocument
-      description: "Accepts a PDF/DOCX/PPTX/XLSX file, forwards it to the eagle-demi extraction service, and returns the extracted markdown text. Nothing is stored. For testing purposes only."
+      description: "Accepts a PDF/DOCX/PPTX/XLSX file, submits it to the eagle-demi extraction service asynchronously, and returns a jobId for polling. Nothing is stored. For testing purposes only."
       security:
         - Bearer: []
       x-security-scopes:
@@ -7594,20 +7594,68 @@ paths:
           required: true
           type: file
       responses:
-        "200":
-          description: "Extraction successful"
+        "202":
+          description: "Job accepted — poll /demi/jobs/{jobId} for status and result"
           schema:
             type: object
             properties:
-              markdown:
+              jobId:
                 type: string
-                description: "Extracted text in Markdown format"
+                description: "Opaque job identifier for polling"
         "400":
           description: "Bad request (no file uploaded)"
           schema:
             $ref: "#/definitions/Error"
         "413":
-          description: "File too large (max 50 MB)"
+          description: "File too large (max 100 MB)"
+          schema:
+            $ref: "#/definitions/Error"
+        "502":
+          description: "Extraction service unavailable or returned an error"
+          schema:
+            $ref: "#/definitions/Error"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
+  /demi/jobs/{jobId}:
+    x-swagger-router-controller: demi
+    get:
+      tags:
+        - demi
+      summary: "Poll async extraction job status"
+      operationId: getJobStatus
+      description: "Returns the current status of an extraction job. Poll until status is 'success' or 'failure'. On success, the markdown field contains the extracted text."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      parameters:
+        - name: jobId
+          in: path
+          description: "Job ID returned by POST /demi/extract"
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Job status (continue polling if status is pending or started)"
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [pending, started, success, failure]
+                description: "Current task status"
+              queuePosition:
+                type: integer
+                description: "Position in queue (null when running or complete)"
+              markdown:
+                type: string
+                description: "Extracted text in Markdown format (only present when status is success)"
+        "404":
+          description: "Job not found or expired"
           schema:
             $ref: "#/definitions/Error"
         "502":
