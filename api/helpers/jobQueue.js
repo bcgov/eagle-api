@@ -4,7 +4,9 @@
  * jobQueue.js
  *
  * Agenda-based job queue backed by MongoDB.
- * Uses the existing Mongoose connection so no second DB connection is opened.
+ * Agenda opens its own MongoDB connection (driver version mismatch with Mongoose
+ * prevents sharing the existing connection). exportProjectDocs still uses
+ * mongoose.connection.db for queries.
  *
  * Multi-pod safety: Agenda claims jobs atomically via findOneAndUpdate
  * ({lockedAt: null}). Only one pod runs each job regardless of how many pods
@@ -19,8 +21,25 @@
 
 const { Agenda } = require('agenda');
 const mongoose = require('mongoose');
+const { dbConnection, credentials } = require('../../app_helper');
 const { exportProjectDocs } = require('./export-docs-helper');
 const defaultLog = require('winston').loggers.get('default');
+
+/**
+ * Build a MongoDB URI that includes credentials if configured.
+ * app_helper exports dbConnection (no auth) and credentials separately.
+ */
+function buildAgendaUri() {
+  const { db_username, db_password } = credentials || {};
+  if (db_username && db_password) {
+    // Insert user:pass@ after the mongodb:// scheme prefix
+    return dbConnection.replace(
+      'mongodb://',
+      `mongodb://${encodeURIComponent(db_username)}:${encodeURIComponent(db_password)}@`
+    );
+  }
+  return dbConnection;
+}
 
 /** @type {InstanceType<typeof Agenda> | null} */
 let agenda = null;
@@ -40,8 +59,10 @@ function getAgenda() {
  */
 async function startJobQueue() {
   agenda = new Agenda({
-    mongo: mongoose.connection.db,
-    db: { collection: 'agendaJobs' },
+    db: {
+      address: buildAgendaUri(),
+      collection: 'agendaJobs',
+    },
     processEvery: '5 seconds',
     defaultLockLifetime: 5 * 60 * 1000, // 5 min — restart stuck jobs
   });
