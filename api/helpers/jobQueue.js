@@ -17,7 +17,7 @@
  *   const agenda = getAgenda(); // use anywhere after that
  */
 
-const Agenda  = require('agenda');
+const { Agenda } = require('agenda');
 const mongoose = require('mongoose');
 const { exportProjectDocs } = require('./export-docs-helper');
 const defaultLog = require('winston').loggers.get('default');
