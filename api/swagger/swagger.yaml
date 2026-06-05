@@ -7780,7 +7780,6 @@ paths:
       security:
         - Bearer: []
       x-security-scopes:
-        - staff
         - sysadmin
       consumes:
         - multipart/form-data
@@ -7792,13 +7791,13 @@ paths:
           type: file
       responses:
         "202":
-          description: "Job accepted — poll /demi/jobs/{jobId} for status and result"
+          description: "Job accepted — poll GET /api/jobs/{jobId} for status and result"
           schema:
             type: object
             properties:
               jobId:
                 type: string
-                description: "Opaque job identifier for polling"
+                description: "MongoDB ObjectId — use with GET /api/jobs/{jobId} and GET /api/jobs/{jobId}/download"
         "400":
           description: "Bad request (no file uploaded)"
           schema:
@@ -7816,50 +7815,3 @@ paths:
           schema:
             $ref: "#/definitions/Error"
 
-  /demi/jobs/{jobId}:
-    x-swagger-router-controller: demi
-    get:
-      tags:
-        - demi
-      summary: "Poll async extraction job status"
-      operationId: getJobStatus
-      description: "Returns the current status of an extraction job. Poll until status is 'success' or 'failure'. On success, the markdown field contains the extracted text."
-      security:
-        - Bearer: []
-      x-security-scopes:
-        - staff
-        - sysadmin
-      parameters:
-        - name: jobId
-          in: path
-          description: "Job ID returned by POST /demi/extract"
-          required: true
-          type: string
-      responses:
-        "200":
-          description: "Job status (continue polling if status is pending or started)"
-          schema:
-            type: object
-            properties:
-              status:
-                type: string
-                enum: [pending, started, success, failure]
-                description: "Current task status"
-              queuePosition:
-                type: integer
-                description: "Position in queue (null when running or complete)"
-              markdown:
-                type: string
-                description: "Extracted text in Markdown format (only present when status is success)"
-        "404":
-          description: "Job not found or expired"
-          schema:
-            $ref: "#/definitions/Error"
-        "502":
-          description: "Extraction service unavailable or returned an error"
-          schema:
-            $ref: "#/definitions/Error"
-        "403":
-          description: "Access Denied"
-          schema:
-            $ref: "#/definitions/Error"

@@ -35,6 +35,10 @@ const { getAgenda } = require('../helpers/jobQueue');
  */
 const JOB_PERMISSIONS = {
   'project-doc-export': ['sysadmin'],
+  // demi-extract is queued via POST /demi/extract (file upload intake),
+  // not via the generic POST /api/jobs. Listed here for documentation and
+  // so canCreateJob() can gate future direct job creation if needed.
+  'demi-extract': ['sysadmin'],
 };
 
 function hasRole(authPayload, role) {
@@ -62,23 +66,38 @@ function formatJob(job) {
   const a = job.attrs;
 
   let status = 'queued';
-  if (a.failedAt)        status = 'failed';
+  if (a.failedAt)            status = 'failed';
   else if (a.lastFinishedAt) status = 'completed';
-  else if (a.lockedAt)   status = 'running';
+  else if (a.lockedAt)       status = 'running';
 
-  return {
+  const result = {
     jobId:       a._id,
     type:        a.name,
     status,
-    projectId:   a.data?.projectId,
-    includeAll:  a.data?.includeAll,
     requestedBy: a.data?.requestedBy,
     createdAt:   a.data?.requestedAt,
-    startedAt:   a.lockedAt   || null,
-    completedAt: a.lastFinishedAt || null,
-    filename:    status === 'completed' ? (a.data?.result?.filename || null) : null,
-    error:       a.failReason || null,
+    startedAt:   a.lockedAt        || null,
+    completedAt: a.lastFinishedAt  || null,
+    // progress is updated in-flight by the job handler; null until running
+    progress:    a.data?.progress  || null,
+    hasResult:   status === 'completed' && !!a.data?.result,
+    error:       a.failReason      || null,
   };
+
+  // Type-specific fields
+  if (a.name === 'project-doc-export') {
+    result.projectId  = a.data?.projectId;
+    result.includeAll = a.data?.includeAll;
+    result.filename   = status === 'completed' ? (a.data?.result?.filename || null) : null;
+  }
+
+  if (a.name === 'demi-extract') {
+    result.originalFilename = a.data?.originalFilename;
+    result.fileSize         = a.data?.fileSize;
+    result.filename         = status === 'completed' ? (a.data?.result?.filename || null) : null;
+  }
+
+  return result;
 }
 
 function userId(authPayload) {
@@ -235,10 +254,25 @@ exports.downloadJobResult = async function (args, res) {
     }
 
     const result = a.data?.result;
-    if (!result?.csv) {
+    if (!result) {
       return res.status(500).json({ message: 'Job result unavailable.' });
     }
 
+    // demi-extract → markdown
+    if (job.attrs.name === 'demi-extract') {
+      if (!result.markdown) {
+        return res.status(500).json({ message: 'Extraction result unavailable.' });
+      }
+      const filename = result.filename || `${jobId}.md`;
+      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      return res.send(result.markdown);
+    }
+
+    // project-doc-export → CSV
+    if (!result.csv) {
+      return res.status(500).json({ message: 'Export result unavailable.' });
+    }
     const filename = result.filename || `job-${jobId}.csv`;
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

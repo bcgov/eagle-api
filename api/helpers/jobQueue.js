@@ -20,6 +20,7 @@
  */
 
 const { Agenda } = require('agenda');
+const fs = require('fs');
 const mongoose = require('mongoose');
 const { dbConnection, credentials } = require('../../app_helper');
 const { exportProjectDocs } = require('./export-docs-helper');
@@ -96,6 +97,114 @@ async function startJobQueue() {
     await job.save();
 
     defaultLog.info(`[jobQueue] project-doc-export completed: projectId=${projectId}`);
+  });
+
+  /**
+   * demi-extract
+   *
+   * Extracts text from a staged document file via eagle-demi (docling-serve).
+   * Polls docling-serve internally, updating job progress in MongoDB on each
+   * tick so GET /api/jobs/:jobId can report live status.
+   *
+   * data: { filePath, originalFilename, fileSize, requestedBy, requestedAt }
+   * result: { markdown, filename }
+   * progress: { doclingStatus, queuePosition, taskMeta }
+   */
+  agenda.define('demi-extract', { concurrency: 3 }, async (job) => {
+    const { filePath, originalFilename, fileSize } = job.attrs.data;
+    const DOCLING_URL = process.env.DOCLING_URL || 'http://eagle-demi:5001';
+    const DOCLING_API_KEY = process.env.DOCLING_API_KEY || '';
+    const docHeaders = DOCLING_API_KEY ? { 'X-Api-Key': DOCLING_API_KEY } : {};
+
+    defaultLog.info(`[jobQueue] demi-extract started: ${originalFilename} (${fileSize} bytes)`);
+
+    // Read staged file then immediately clean up — don't hold disk on failure
+    let fileBuffer;
+    try {
+      fileBuffer = await fs.promises.readFile(filePath);
+    } catch (err) {
+      throw new Error(`Failed to read staged file ${filePath}: ${err.message}`);
+    } finally {
+      fs.unlink(filePath, () => {});
+    }
+
+    // Submit to docling-serve async API
+    const fd = new FormData();
+    fd.append('files', new Blob([fileBuffer], { type: 'application/octet-stream' }), originalFilename);
+
+    const submitRes = await fetch(`${DOCLING_URL}/v1/convert/file/async`, {
+      method: 'POST',
+      body: fd,
+      headers: docHeaders,
+      signal: AbortSignal.timeout(60_000),
+    });
+
+    if (!submitRes.ok) {
+      const text = await submitRes.text().catch(() => '');
+      throw new Error(`Docling submit returned ${submitRes.status}: ${text}`);
+    }
+
+    const submitData = await submitRes.json();
+    const taskId = submitData?.task_id;
+    if (!taskId) throw new Error('Docling did not return task_id');
+
+    defaultLog.info(`[jobQueue] demi-extract task_id=${taskId} for ${originalFilename}`);
+
+    // Poll until complete — persist progress to MongoDB on each tick
+    const MAX_POLLS = 360; // 30 min @ 5s intervals
+    for (let i = 0; i < MAX_POLLS; i++) {
+      const pollRes = await fetch(`${DOCLING_URL}/v1/status/poll/${taskId}?wait=5`, {
+        headers: docHeaders,
+        signal: AbortSignal.timeout(15_000),
+      });
+
+      if (!pollRes.ok) {
+        const text = await pollRes.text().catch(() => '');
+        throw new Error(`Docling poll returned ${pollRes.status}: ${text}`);
+      }
+
+      const poll = await pollRes.json();
+      const doclingStatus = poll?.task_status;
+
+      job.attrs.data.progress = {
+        doclingStatus,
+        queuePosition: poll?.task_position ?? null,
+        taskMeta:      poll?.task_meta     ?? null,
+      };
+      await job.save();
+
+      if (doclingStatus === 'failure') {
+        throw new Error(`Docling extraction failed (task_id=${taskId})`);
+      }
+      if (doclingStatus === 'success') break;
+
+      if (i === MAX_POLLS - 1) {
+        throw new Error(`Docling extraction timed out after ${MAX_POLLS} polls`);
+      }
+    }
+
+    // Fetch the converted result
+    const resultRes = await fetch(`${DOCLING_URL}/v1/result/${taskId}`, {
+      headers: docHeaders,
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!resultRes.ok) {
+      const text = await resultRes.text().catch(() => '');
+      throw new Error(`Docling result endpoint returned ${resultRes.status}: ${text}`);
+    }
+
+    const resultData = await resultRes.json();
+    const markdown = resultData?.document?.md_content || '';
+
+    job.attrs.data.result = {
+      markdown,
+      filename: originalFilename.replace(/\.[^.]+$/, '') + '.md',
+    };
+    job.attrs.data.progress.doclingStatus = 'success';
+    await job.save();
+
+    defaultLog.info(`[jobQueue] demi-extract done: ${originalFilename} — ${markdown.length} chars`);
   });
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
