@@ -153,7 +153,11 @@ try {
 // Skip MongoDB connection and server startup in test mode
 // Tests handle their own database connection to in-memory MongoDB
 if (process.env.NODE_ENV !== 'test') {
-  app_helper.loadMongoose().then(() => {
+  app_helper.loadMongoose().then(async () => {
+    // Start Agenda job queue after MongoDB is connected
+    const { startJobQueue } = require('./api/helpers/jobQueue');
+    await startJobQueue().catch(err => defaultLog.error('[jobQueue] Failed to start:', err.message));
+
     express_server = app.listen(api_default_port, '0.0.0.0', function() {
       defaultLog.info('Started server on port ' + api_default_port);
     });

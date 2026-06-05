@@ -7570,6 +7570,203 @@ paths:
           schema:
             $ref: "#/definitions/Error"
 
+  # ── Async Jobs ──────────────────────────────────────────────────────────────
+  # Sysadmin-only API for queuing and monitoring background jobs.
+  # Currently supports: project-doc-export
+  /jobs:
+    x-swagger-router-controller: job
+    options:
+      tags:
+        - job
+      operationId: protectedOptions
+      description: "Pre-flight"
+      responses:
+        "200":
+          description: "Success"
+    post:
+      tags:
+        - job
+      summary: "Queue a background job"
+      operationId: createJob
+      description: "Queue a background job. Sysadmin only. Returns 202 with jobId for polling."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - sysadmin
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required: [type, projectId]
+            properties:
+              type:
+                type: string
+                enum: [project-doc-export]
+                description: "Job type"
+              projectId:
+                type: string
+                description: "MongoDB ObjectId of the EPIC project"
+              includeAll:
+                type: boolean
+                description: "Include non-Published documents (default: false)"
+      responses:
+        "202":
+          description: "Job queued"
+          schema:
+            type: object
+            properties:
+              jobId:
+                type: string
+        "400":
+          description: "Bad Request"
+          schema:
+            $ref: "#/definitions/Error"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    get:
+      tags:
+        - job
+      summary: "List caller's recent jobs"
+      operationId: listJobs
+      description: "Returns up to 20 most recent jobs for the authenticated sysadmin."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - sysadmin
+      responses:
+        "200":
+          description: "Job list"
+          schema:
+            type: array
+            items:
+              type: object
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /jobs/{jobId}:
+    x-swagger-router-controller: job
+    options:
+      tags:
+        - job
+      operationId: protectedOptions
+      description: "Pre-flight"
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+    get:
+      tags:
+        - job
+      summary: "Poll job status"
+      operationId: getJobStatus
+      description: "Returns current status of a background job."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - sysadmin
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          type: string
+          description: "Job ID returned by POST /api/jobs"
+      responses:
+        "200":
+          description: "Job status"
+          schema:
+            type: object
+        "404":
+          description: "Not found"
+          schema:
+            $ref: "#/definitions/Error"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+    delete:
+      tags:
+        - job
+      summary: "Cancel or delete a job"
+      operationId: cancelJob
+      description: "Cancels a queued job or removes a completed/failed job record."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - sysadmin
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          type: string
+      responses:
+        "204":
+          description: "Deleted"
+        "404":
+          description: "Not found"
+          schema:
+            $ref: "#/definitions/Error"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+  /jobs/{jobId}/download:
+    x-swagger-router-controller: job
+    options:
+      tags:
+        - job
+      operationId: protectedOptions
+      description: "Pre-flight"
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: "Success"
+    get:
+      tags:
+        - job
+      summary: "Download job result CSV"
+      operationId: downloadJobResult
+      description: "Returns the CSV result for a completed project-doc-export job."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - sysadmin
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          type: string
+      produces:
+        - text/csv
+        - application/json
+      responses:
+        "200":
+          description: "CSV file download"
+        "202":
+          description: "Job not yet complete"
+          schema:
+            type: object
+        "404":
+          description: "Not found"
+          schema:
+            $ref: "#/definitions/Error"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+
   # ── DEMI Demo ───────────────────────────────────────────────────────────────
 
   /demi/extract:

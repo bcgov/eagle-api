@@ -416,6 +416,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"agenda@npm:^6.2.5":
+  version: 6.2.5
+  resolution: "agenda@npm:6.2.5"
+  dependencies:
+    cron-parser: "npm:^5.0.0"
+    date.js: "npm:~0.3.3"
+    debug: "npm:^4.4.0"
+    human-interval: "npm:~2.0.1"
+    luxon: "npm:^3.2.1"
+  checksum: 10c0/84c8c53bb1cba22e1bb1915c1d2f71db5d4e87b22d07f82063315b1cb1593f2cffb89b49cc7e480ecf08c5662e4300e3caba023b8204a9ae30a43689414eda0e
+  languageName: node
+  linkType: hard
+
 "agent-base@npm:^7.1.0, agent-base@npm:^7.1.2":
   version: 7.1.4
   resolution: "agent-base@npm:7.1.4"
@@ -1117,6 +1130,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cron-parser@npm:^5.0.0":
+  version: 5.5.0
+  resolution: "cron-parser@npm:5.5.0"
+  dependencies:
+    luxon: "npm:^3.7.1"
+  checksum: 10c0/ffbda13dcfca26cd79c07d7cb4aa317c3634119696f3690dedf4f3baceacade5b1459fc160f65563b3a367ec1b020a2fd065fa49c4b6d937536ba3d637191cd2
+  languageName: node
+  linkType: hard
+
 "cross-spawn@npm:^7.0.6":
   version: 7.0.6
   resolution: "cross-spawn@npm:7.0.6"
@@ -1181,6 +1203,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"date.js@npm:~0.3.3":
+  version: 0.3.3
+  resolution: "date.js@npm:0.3.3"
+  dependencies:
+    debug: "npm:~3.1.0"
+  checksum: 10c0/7abb5c54ed968c3427da6e71ec53c47f6283c9b61a04646a7a6ac86f8b61a943a434c64541dfaffd7090daa926a470c77c95108a3ebefe776568f3ece3ff8240
+  languageName: node
+  linkType: hard
+
 "debug@npm:2.6.9":
   version: 2.6.9
   resolution: "debug@npm:2.6.9"
@@ -1190,7 +1221,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"debug@npm:4, debug@npm:^4.3.4, debug@npm:^4.3.5, debug@npm:^4.3.7":
+"debug@npm:4, debug@npm:^4.3.4, debug@npm:^4.3.5, debug@npm:^4.3.7, debug@npm:^4.4.0":
   version: 4.4.3
   resolution: "debug@npm:4.4.3"
   dependencies:
@@ -1199,6 +1230,15 @@ __metadata:
     supports-color:
       optional: true
   checksum: 10c0/d79136ec6c83ecbefd0f6a5593da6a9c91ec4d7ddc4b54c883d6e71ec9accb5f67a1a5e96d00a328196b5b5c86d365e98d8a3a70856aaf16b4e7b1985e67f5a6
+  languageName: node
+  linkType: hard
+
+"debug@npm:~3.1.0":
+  version: 3.1.0
+  resolution: "debug@npm:3.1.0"
+  dependencies:
+    ms: "npm:2.0.0"
+  checksum: 10c0/5bff34a352d7b2eaa31886eeaf2ee534b5461ec0548315b2f9f80bd1d2533cab7df1fa52e130ce27bc31c3945fbffb0fc72baacdceb274b95ce853db89254ea4
   languageName: node
   linkType: hard
 
@@ -1331,6 +1371,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "eagle-api@workspace:."
   dependencies:
+    agenda: "npm:^6.2.5"
     axios: "npm:^1.16.0"
     bcryptjs: "npm:^2.4.3"
     biguint-format: "npm:~1.0.0"
@@ -1992,6 +2033,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"human-interval@npm:~2.0.1":
+  version: 2.0.1
+  resolution: "human-interval@npm:2.0.1"
+  dependencies:
+    numbered: "npm:^1.1.0"
+  checksum: 10c0/dae07ae6a90ab598b47fceac8535145d172aa41b6c8d0a80780a16468fd9075e253f1c1f644741485a053508d101bb5b6af4350b4558260c9e5f307633da1566
+  languageName: node
+  linkType: hard
+
 "iconv-lite@npm:^0.6.2":
   version: 0.6.3
   resolution: "iconv-lite@npm:0.6.3"
@@ -2436,7 +2486,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"luxon@npm:^3.7.2":
+"luxon@npm:^3.2.1, luxon@npm:^3.7.1, luxon@npm:^3.7.2":
   version: 3.7.2
   resolution: "luxon@npm:3.7.2"
   checksum: 10c0/ed8f0f637826c08c343a29dd478b00628be93bba6f068417b1d8896b61cb61c6deacbe1df1e057dbd9298334044afa150f9aaabbeb3181418ac8520acfdc2ae2
@@ -2911,6 +2961,13 @@ __metadata:
   bin:
     nopt: bin/nopt.js
   checksum: 10c0/1822eb6f9b020ef6f7a7516d7b64a8036e09666ea55ac40416c36e4b2b343122c3cff0e2f085675f53de1d2db99a2a89a60ccea1d120bcd6a5347bf6ceb4a7fd
+  languageName: node
+  linkType: hard
+
+"numbered@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "numbered@npm:1.1.0"
+  checksum: 10c0/28c24c10dd491bb406a83bf2d68fae9d7040b20d1784a02671d3e3764ae640820e42b07512fc768d3f93907e9cc10d433ed459db9c31b8d6088e9fa3708f6d7b
   languageName: node
   linkType: hard
 
