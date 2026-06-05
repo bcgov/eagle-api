@@ -32,11 +32,15 @@ const defaultLog = require('winston').loggers.get('default');
 function buildAgendaUri() {
   const { db_username, db_password } = credentials || {};
   if (db_username && db_password) {
-    // Insert user:pass@ after the mongodb:// scheme prefix
-    return dbConnection.replace(
+    const authSource = process.env.MONGODB_AUTHSOURCE || 'admin';
+    // Insert user:pass@ after mongodb:// and append authSource (users live in
+    // the admin db, not the app db — must match mongoose_options.js authSource)
+    const withAuth = dbConnection.replace(
       'mongodb://',
       `mongodb://${encodeURIComponent(db_username)}:${encodeURIComponent(db_password)}@`
     );
+    const sep = withAuth.includes('?') ? '&' : '?';
+    return `${withAuth}${sep}authSource=${authSource}`;
   }
   return dbConnection;
 }
