@@ -15,7 +15,7 @@ const defaultLog = require('winston').loggers.get('default');
 const DOCLING_URL = process.env.DOCLING_URL || 'http://eagle-demi:5001';
 const DOCLING_API_KEY = process.env.DOCLING_API_KEY || '';
 
-const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB
 
 /**
  * POST /api/demi/extract
@@ -34,7 +34,7 @@ exports.extractDocument = async function (args, res) {
   }
 
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    return res.status(413).json({ message: 'File too large. Maximum size is 50 MB.' });
+    return res.status(413).json({ message: 'File too large. Maximum size is 100 MB.' });
   }
 
   const targetUrl = `${DOCLING_URL}/v1/convert/file`;
