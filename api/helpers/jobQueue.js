@@ -109,14 +109,20 @@ async function startJobQueue() {
    * tick so GET /api/jobs/:jobId can report live status.
    *
    * data: { filePath, originalFilename, fileSize, requestedBy, requestedAt }
-   * result: { markdown, filename }
+   * result: { resultPath, filename }   ← markdown written to disk, not MongoDB
    * progress: { doclingStatus, queuePosition, taskMeta }
    */
   agenda.define('demi-extract', { concurrency: 3, lockLifetime: 70 * 60 * 1000 }, async (job) => {
     const { filePath, originalFilename, fileSize } = job.attrs.data;
+    const jobId = String(job.attrs._id);
     const DOCLING_URL = process.env.DOCLING_URL || 'http://eagle-demi:5001';
     const DOCLING_API_KEY = process.env.DOCLING_API_KEY || '';
     const docHeaders = DOCLING_API_KEY ? { 'X-Api-Key': DOCLING_API_KEY } : {};
+    // Wall-clock timeout: default 90 min for large scanned PDFs on CPU
+    const TIMEOUT_MS = parseInt(process.env.DEMI_TIMEOUT_MINUTES || '90', 10) * 60 * 1000;
+    // Result written to disk — avoids storing large markdown blobs in MongoDB
+    const RESULT_DIR = process.env.DEMI_RESULT_DIR || '/tmp';
+    const resultPath = path.join(RESULT_DIR, `demi-result-${jobId}.md`);
 
     defaultLog.info(`[jobQueue] demi-extract started: ${originalFilename} (${fileSize} bytes)`);
 
@@ -133,6 +139,8 @@ async function startJobQueue() {
     // Submit to docling-serve async API
     const fd = new FormData();
     fd.append('files', new Blob([fileBuffer], { type: 'application/octet-stream' }), originalFilename);
+    // Free the buffer — no longer needed once submitted
+    fileBuffer = null;
 
     const submitRes = await fetch(`${DOCLING_URL}/v1/convert/file/async`, {
       method: 'POST',
@@ -152,12 +160,16 @@ async function startJobQueue() {
 
     defaultLog.info(`[jobQueue] demi-extract task_id=${taskId} for ${originalFilename}`);
 
-    // Poll until complete — persist progress to MongoDB on each tick
-    const MAX_POLLS = parseInt(process.env.DEMI_MAX_POLLS || '720', 10); // default 60min @ 5s
-    for (let i = 0; i < MAX_POLLS; i++) {
+    // Poll until complete — wall-clock timeout, save progress to MongoDB each tick
+    const deadline = Date.now() + TIMEOUT_MS;
+    let doclingStatus = 'pending';
+
+    while (Date.now() < deadline) {
+      const remaining = deadline - Date.now();
+      // ?wait=5 asks docling-serve to long-poll up to 5s before returning 'started'
       const pollRes = await fetch(`${DOCLING_URL}/v1/status/poll/${taskId}?wait=5`, {
         headers: docHeaders,
-        signal: AbortSignal.timeout(15_000),
+        signal: AbortSignal.timeout(Math.min(15_000, remaining + 1_000)),
       });
 
       if (!pollRes.ok) {
@@ -166,7 +178,7 @@ async function startJobQueue() {
       }
 
       const poll = await pollRes.json();
-      const doclingStatus = poll?.task_status;
+      doclingStatus = poll?.task_status;
 
       job.attrs.data.progress = {
         doclingStatus,
@@ -175,14 +187,25 @@ async function startJobQueue() {
       };
       await job.save();
 
-      if (doclingStatus === 'failure') {
-        throw new Error(`Docling extraction failed (task_id=${taskId})`);
-      }
-      if (doclingStatus === 'success') break;
+      defaultLog.debug(`[jobQueue] demi-extract poll: ${originalFilename} status=${doclingStatus}`);
 
-      if (i === MAX_POLLS - 1) {
-        throw new Error(`Docling extraction timed out after ${MAX_POLLS} polls`);
+      if (doclingStatus === 'failure') {
+        throw new Error(`Docling extraction failed (task_id=${taskId}): ${poll?.error_message || 'unknown'}`);
       }
+      if (doclingStatus === 'success' || doclingStatus === 'partial_success') {
+        break;
+      }
+      // 'skipped' means the document was already converted — treat as success
+      if (doclingStatus === 'skipped') {
+        break;
+      }
+      // 'pending' / 'started' — wait a minimum of 1s between polls regardless
+      // of how quickly docling responds, to avoid hammering on transient errors
+      await new Promise(r => setTimeout(r, 1_000));
+    }
+
+    if (doclingStatus !== 'success' && doclingStatus !== 'partial_success' && doclingStatus !== 'skipped') {
+      throw new Error(`Docling extraction timed out after ${Math.round(TIMEOUT_MS / 60_000)} minutes (status: ${doclingStatus})`);
     }
 
     // Fetch the converted result
@@ -199,14 +222,18 @@ async function startJobQueue() {
     const resultData = await resultRes.json();
     const markdown = resultData?.document?.md_content || '';
 
+    // Write markdown to disk — keeps MongoDB document small regardless of output size
+    await fs.promises.mkdir(RESULT_DIR, { recursive: true });
+    await fs.promises.writeFile(resultPath, markdown, 'utf8');
+
     job.attrs.data.result = {
-      markdown,
+      resultPath,
       filename: originalFilename.replace(/\.[^.]+$/, '') + '.md',
     };
     job.attrs.data.progress.doclingStatus = 'success';
     await job.save();
 
-    defaultLog.info(`[jobQueue] demi-extract done: ${originalFilename} — ${markdown.length} chars`);
+    defaultLog.info(`[jobQueue] demi-extract done: ${originalFilename} — ${markdown.length} chars → ${resultPath}`);
   });
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────

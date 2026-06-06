@@ -258,15 +258,19 @@ exports.downloadJobResult = async function (args, res) {
       return res.status(500).json({ message: 'Job result unavailable.' });
     }
 
-    // demi-extract → markdown
+    // demi-extract → markdown file on disk
     if (job.attrs.name === 'demi-extract') {
-      if (!result.markdown) {
+      const resultPath = result.resultPath;
+      if (!resultPath) {
         return res.status(500).json({ message: 'Extraction result unavailable.' });
       }
       const filename = result.filename || `${jobId}.md`;
       res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      return res.send(result.markdown);
+      // Stream from disk — avoids loading potentially large markdown into RAM
+      const stream = require('fs').createReadStream(resultPath);
+      stream.on('error', () => res.status(500).json({ message: 'Result file not found (pod may have restarted).' }));
+      return stream.pipe(res);
     }
 
     // project-doc-export → CSV
