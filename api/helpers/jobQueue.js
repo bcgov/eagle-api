@@ -21,6 +21,7 @@
 
 const { Agenda } = require('agenda');
 const fs = require('fs');
+const path = require('path');
 const mongoose = require('mongoose');
 const { dbConnection, credentials } = require('../../app_helper');
 const { exportProjectDocs } = require('./export-docs-helper');
