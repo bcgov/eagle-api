@@ -134,15 +134,6 @@ jobs:
       - name: Log into OpenShift
         run: oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ secrets.OPENSHIFT_URL }}
 
-      - name: Tag images in OpenShift ImageStream
-        run: |
-          echo "Tagging images in OpenShift ImageStream..."
-          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
-            ${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.SHORT_SHA }} ${{ env.IMAGE_NAME }}:dev
-          
-          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
-            ${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.SHORT_SHA }} ${{ env.IMAGE_NAME }}:ci-latest
-
       - name: Deploy with Helm
         run: |
           helm upgrade --install ${{ env.APP_NAME }} ./helm/${{ env.APP_NAME }} \
