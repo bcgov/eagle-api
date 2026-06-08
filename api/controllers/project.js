@@ -801,6 +801,9 @@ var handleCommentPeriodForBannerQueryParameters = function (args, projectId) {
     var match = {
       _schemaName: 'CommentPeriod',
       project: new mongoose.Types.ObjectId(projectId),
+      // Only include published comment periods — drafts/scheduled CPs must not
+      // trigger the banner until admin explicitly publishes them.
+      isPublished: true,
       $or: [dateStartedRange, dateCompletedRange, currentDateInBetween]
     };
 

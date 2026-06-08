@@ -57,3 +57,4 @@ migrations_temp
 # Internal AI assistant notes
 .github/copilot-instructions.md
 .github/instructions/
+CLAUDE.md
