@@ -20,10 +20,8 @@ spec:
         {{- include "eagle-api.mongodb.selectorLabels" . | nindent 8 }}
         role: database-eagle-epic  # Legacy label required by NetworkPolicy
     spec:
-      # shareProcessNamespace: Kubernetes pause container becomes PID 1 and reaps
-      # zombie children. Without this, mongod is PID 1 and never calls wait() —
-      # every readiness probe exec (bash + mongosh) leaves a zombie. Over ~12 days
-      # (~8,640 probes/day) the container hits the kernel PID limit and wedges.
+      # shareProcessNamespace: pause container becomes PID 1 and reaps zombie
+      # children from preStop/postStart mongosh invocations.
       shareProcessNamespace: true
       containers:
       - name: mongodb
@@ -164,24 +162,11 @@ spec:
           timeoutSeconds: {{ .Values.mongodb.probes.startup.timeoutSeconds | default 3 }}
           failureThreshold: {{ .Values.mongodb.probes.startup.failureThreshold | default 60 }}
         readinessProbe:
-          # Check RS PRIMARY state, not just TCP connectivity.
-          # Pod is only added to Service endpoints when isWritablePrimary = true.
-          # This ensures eagle-api's initContainer (which polls the Service for a
-          # primary) only succeeds once MongoDB is actually ready to accept writes.
-          exec:
-            command:
-              - bash
-              - -c
-              - |
-                result=$(HOME=/tmp mongosh "mongodb://localhost:27017/?directConnection=true" \
-                  -u "$MONGO_INITDB_ROOT_USERNAME" \
-                  -p "$MONGO_INITDB_ROOT_PASSWORD" \
-                  --authenticationDatabase admin --quiet \
-                  --eval "db.adminCommand('hello').isWritablePrimary" 2>/dev/null)
-                [ "$result" = "true" ]
+          tcpSocket:
+            port: 27017
           initialDelaySeconds: {{ .Values.mongodb.probes.readiness.initialDelaySeconds }}
           periodSeconds: {{ .Values.mongodb.probes.readiness.periodSeconds }}
-          timeoutSeconds: 10
+          timeoutSeconds: {{ .Values.mongodb.probes.readiness.timeoutSeconds }}
           failureThreshold: {{ .Values.mongodb.probes.readiness.failureThreshold }}
       volumes:
       - name: mongodb-data
