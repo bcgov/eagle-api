@@ -509,6 +509,7 @@ definitions:
       - isMet
       - metURL
       - metURLAdmin
+      - metBannerImageUrl
       - milestone
       - openHouses
       - periodType

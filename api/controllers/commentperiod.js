@@ -33,6 +33,7 @@ var getSanitizedFields = function (fields) {
       'isMet',
       'metURL',
       'metURLAdmin',
+      'metBannerImageUrl',
       'milestone',
       'openHouses',
       'periodType',
