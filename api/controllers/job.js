@@ -92,6 +92,8 @@ function formatJob(job) {
   }
 
   if (a.name === 'demi-extract') {
+    result.docId            = a.data?.docId;
+    result.projectId        = a.data?.project;
     result.originalFilename = a.data?.originalFilename;
     result.fileSize         = a.data?.fileSize;
     result.filename         = status === 'completed' ? (a.data?.result?.filename || null) : null;
