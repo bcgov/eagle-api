@@ -54,6 +54,7 @@
     "mongodb": "^7.0.0",
     "mongoose": "^9.3.2",
     "multer": "^2.1.1",
+    "pdf-lib": "^1.17.1",
     "qs": "^6.15.2",
     "sharp": "~0.33.5",
     "stream-transform": "^2.1.3",

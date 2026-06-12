@@ -20,6 +20,7 @@
  */
 
 const { Agenda } = require('agenda');
+const { PDFDocument } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -106,12 +107,15 @@ async function startJobQueue() {
    * demi-extract
    *
    * Extracts text from a staged document file via eagle-demi (docling-serve).
-   * Polls docling-serve internally, updating job progress in MongoDB on each
-   * tick so GET /api/jobs/:jobId can report live status.
+   * Large PDFs are pre-split into 10-page batches (pdf-lib) and each batch is
+   * sent to docling-serve's SYNCHRONOUS /v1/convert/file endpoint one at a time,
+   * keeping per-batch memory bounded regardless of document size. Markdown from
+   * each batch is concatenated in order. Non-PDF inputs are sent whole; a PDF
+   * that pdf-lib cannot parse falls back to a single whole-file send.
    *
    * data: { filePath, originalFilename, fileSize, requestedBy, requestedAt }
    * result: { resultPath, filename }   ← markdown written to disk, not MongoDB
-   * progress: { doclingStatus, queuePosition, taskMeta }
+   * progress: { batch, totalBatches }
    */
   agenda.define('demi-extract', { concurrency: 3, lockLifetime: 70 * 60 * 1000 }, async (job) => {
     const { filePath, originalFilename, fileSize } = job.attrs.data;
@@ -137,91 +141,78 @@ async function startJobQueue() {
       fs.unlink(filePath, () => {});
     }
 
-    // Submit to docling-serve async API
-    const fd = new FormData();
-    fd.append('files', new Blob([fileBuffer], { type: 'application/octet-stream' }), originalFilename);
-    // Free the buffer — no longer needed once submitted
-    fileBuffer = null;
-
-    const submitRes = await fetch(`${DOCLING_URL}/v1/convert/file/async`, {
-      method: 'POST',
-      body: fd,
-      headers: docHeaders,
-      signal: AbortSignal.timeout(60_000),
-    });
-
-    if (!submitRes.ok) {
-      const text = await submitRes.text().catch(() => '');
-      throw new Error(`Docling submit returned ${submitRes.status}: ${text}`);
-    }
-
-    const submitData = await submitRes.json();
-    const taskId = submitData?.task_id;
-    if (!taskId) throw new Error('Docling did not return task_id');
-
-    defaultLog.info(`[jobQueue] demi-extract task_id=${taskId} for ${originalFilename}`);
-
-    // Poll until complete — wall-clock timeout, save progress to MongoDB each tick
+    // Per-batch synchronous convert. Timeout must exceed docling-serve's
+    // DOCLING_SERVE_MAX_SYNC_WAIT (280s) so the server response is received
+    // before the client aborts.
+    const BATCH_PAGES = parseInt(process.env.DEMI_BATCH_PAGES || '10', 10);
+    const BATCH_TIMEOUT_MS = parseInt(process.env.DEMI_BATCH_TIMEOUT_MS || '295000', 10);
     const deadline = Date.now() + TIMEOUT_MS;
-    let doclingStatus = 'pending';
 
-    while (Date.now() < deadline) {
-      const remaining = deadline - Date.now();
-      // ?wait=5 asks docling-serve to long-poll up to 5s before returning 'started'
-      const pollRes = await fetch(`${DOCLING_URL}/v1/status/poll/${taskId}?wait=5`, {
+    /** POST one buffer to the sync convert endpoint, return its markdown. */
+    async function convertBufferSync(buffer, name) {
+      const fd = new FormData();
+      fd.append('files', new Blob([buffer], { type: 'application/octet-stream' }), name);
+      fd.append('options', JSON.stringify({ to_formats: ['md'], return_as_file: false }));
+      const res = await fetch(`${DOCLING_URL}/v1/convert/file`, {
+        method: 'POST',
+        body: fd,
         headers: docHeaders,
-        signal: AbortSignal.timeout(Math.min(15_000, remaining + 1_000)),
+        signal: AbortSignal.timeout(BATCH_TIMEOUT_MS),
       });
-
-      if (!pollRes.ok) {
-        const text = await pollRes.text().catch(() => '');
-        throw new Error(`Docling poll returned ${pollRes.status}: ${text}`);
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Docling convert returned ${res.status}: ${text.slice(0, 200)}`);
       }
-
-      const poll = await pollRes.json();
-      doclingStatus = poll?.task_status;
-
-      job.attrs.data.progress = {
-        doclingStatus,
-        queuePosition: poll?.task_position ?? null,
-        taskMeta:      poll?.task_meta     ?? null,
-      };
-      await job.save();
-
-      defaultLog.debug(`[jobQueue] demi-extract poll: ${originalFilename} status=${doclingStatus}`);
-
-      if (doclingStatus === 'failure') {
-        throw new Error(`Docling extraction failed (task_id=${taskId}): ${poll?.error_message || 'unknown'}`);
-      }
-      if (doclingStatus === 'success' || doclingStatus === 'partial_success') {
-        break;
-      }
-      // 'skipped' means the document was already converted — treat as success
-      if (doclingStatus === 'skipped') {
-        break;
-      }
-      // 'pending' / 'started' — wait a minimum of 1s between polls regardless
-      // of how quickly docling responds, to avoid hammering on transient errors
-      await new Promise(r => setTimeout(r, 1_000));
+      const json = await res.json();
+      return json?.document?.md_content || json?.documents?.[0]?.md_content || '';
     }
 
-    if (doclingStatus !== 'success' && doclingStatus !== 'partial_success' && doclingStatus !== 'skipped') {
-      throw new Error(`Docling extraction timed out after ${Math.round(TIMEOUT_MS / 60_000)} minutes (status: ${doclingStatus})`);
+    // Attempt to parse PDFs for pre-splitting; non-PDFs and unparseable PDFs
+    // are sent whole.
+    const isPdf = /\.pdf$/i.test(originalFilename);
+    let srcPdf = null;
+    if (isPdf) {
+      try {
+        srcPdf = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
+      } catch (err) {
+        defaultLog.warn(`[jobQueue] demi-extract: pdf-lib parse failed for ${originalFilename} (${err.message}); sending whole file`);
+        srcPdf = null;
+      }
     }
 
-    // Fetch the converted result
-    const resultRes = await fetch(`${DOCLING_URL}/v1/result/${taskId}`, {
-      headers: docHeaders,
-      signal: AbortSignal.timeout(30_000),
-    });
+    let markdown;
+    if (srcPdf) {
+      const pageCount = srcPdf.getPageCount();
+      const totalBatches = Math.max(1, Math.ceil(pageCount / BATCH_PAGES));
+      const baseName = originalFilename.replace(/\.[^.]+$/, '');
+      const parts = [];
 
-    if (!resultRes.ok) {
-      const text = await resultRes.text().catch(() => '');
-      throw new Error(`Docling result endpoint returned ${resultRes.status}: ${text}`);
+      for (let b = 0; b < totalBatches; b++) {
+        if (Date.now() > deadline) {
+          throw new Error(`Docling extraction timed out after ${Math.round(TIMEOUT_MS / 60_000)} minutes at batch ${b + 1}/${totalBatches}`);
+        }
+        const start = b * BATCH_PAGES;
+        const end = Math.min(start + BATCH_PAGES, pageCount);
+        const indices = Array.from({ length: end - start }, (_, i) => start + i);
+
+        const batchDoc = await PDFDocument.create();
+        const copied = await batchDoc.copyPages(srcPdf, indices);
+        copied.forEach((p) => batchDoc.addPage(p));
+        const batchBuf = Buffer.from(await batchDoc.save());
+
+        const md = await convertBufferSync(batchBuf, `${baseName}-batch${b + 1}.pdf`);
+        parts.push(md);
+
+        job.attrs.data.progress = { batch: b + 1, totalBatches };
+        await job.save();
+        defaultLog.debug(`[jobQueue] demi-extract: ${originalFilename} batch ${b + 1}/${totalBatches} (${md.length} chars)`);
+      }
+      markdown = parts.join('\n\n');
+    } else {
+      markdown = await convertBufferSync(fileBuffer, originalFilename);
     }
-
-    const resultData = await resultRes.json();
-    const markdown = resultData?.document?.md_content || '';
+    // Free the buffer — extraction complete
+    fileBuffer = null;
 
     // Write markdown to disk — keeps MongoDB document small regardless of output size
     await fs.promises.mkdir(RESULT_DIR, { recursive: true });
@@ -231,7 +222,7 @@ async function startJobQueue() {
       resultPath,
       filename: originalFilename.replace(/\.[^.]+$/, '') + '.md',
     };
-    job.attrs.data.progress.doclingStatus = 'success';
+    job.attrs.data.progress = { ...(job.attrs.data.progress || {}), done: true };
     await job.save();
 
     defaultLog.info(`[jobQueue] demi-extract done: ${originalFilename} — ${markdown.length} chars → ${resultPath}`);
