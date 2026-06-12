@@ -170,7 +170,9 @@ async function startJobQueue() {
         throw new Error(`Docling convert returned ${res.status}: ${text.slice(0, 200)}`);
       }
       const json = await res.json();
-      return json?.document?.md_content || json?.documents?.[0]?.md_content || '';
+      const md = json?.document?.md_content || json?.documents?.[0]?.md_content || '';
+      if (!md) throw new Error('Docling convert returned empty markdown');
+      return md;
     }
 
     // Attempt to parse PDFs for pre-splitting; non-PDFs and unparseable PDFs
