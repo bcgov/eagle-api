@@ -266,13 +266,17 @@ exports.downloadJobResult = async function (args, res) {
       if (!resultPath) {
         return res.status(500).json({ message: 'Extraction result unavailable.' });
       }
+
+      const fs = require('fs');
+      if (!fs.existsSync(resultPath)) {
+        return res.status(404).json({ message: 'Result file not found (pod may have restarted and cleared /tmp).' });
+      }
+
       const filename = result.filename || `${jobId}.md`;
       res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       // Stream from disk — avoids loading potentially large markdown into RAM
-      const stream = require('fs').createReadStream(resultPath);
-      stream.on('error', () => res.status(500).json({ message: 'Result file not found (pod may have restarted).' }));
-      return stream.pipe(res);
+      return fs.createReadStream(resultPath).pipe(res);
     }
 
     // project-doc-export → CSV
