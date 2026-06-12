@@ -179,6 +179,26 @@ var statObject = function (bucketName, objectName) {
 exports.statObject = statObject;
 
 /**
+ * Download an object from Minio and return it as a Buffer.
+ * @param bucketName the name of the bucket where the object is stored
+ * @param objectName the object path/key to download
+ * @returns a promise that resolves with the object bytes as a Buffer
+ */
+var getObject = function (bucketName, objectName) {
+  if (isMockService()) return Promise.resolve(Buffer.alloc(0));
+  return new Promise(function (resolve, reject) {
+    minioClient.getObject(bucketName, objectName, function (err, stream) {
+      if (err) return reject(err);
+      var chunks = [];
+      stream.on('data', function (chunk) { chunks.push(chunk); });
+      stream.on('end', function () { resolve(Buffer.concat(chunks)); });
+      stream.on('error', reject);
+    });
+  });
+};
+exports.getObject = getObject;
+
+/**
  * Wrappers for the above functions to add support for http request/response.
  */
 var asHttpRequest = {

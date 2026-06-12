@@ -44,6 +44,14 @@ module.exports = require ('../models')('Document', {
   keywords         : { type: String, default: '' },
   legislation      : { type: Number, default: 0 },
   legislationYearVetted : { type: Boolean, default: false },
+  // DEMI intake — content extraction + review workflow
+  demiReviewStatus      : { type:String, default:'' },  // ''|'unreviewed'|'flagged'|'approved'
+  contentExtracted      : { type: Boolean, default: false },
+  contentExtractedAt    : { type: Date, default: null },
+  contentPageCount      : { type: Number, default: 0 },
+  contentExtractionError: { type:String, default:null },
+  extractionMethod      : { type:String, default:'' },
+
   // TODO
   labels           : [{ type: Mixed, default: {} }],
   isFeatured       : { type: Boolean, default: false },

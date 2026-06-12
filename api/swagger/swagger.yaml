@@ -7775,9 +7775,9 @@ paths:
     post:
       tags:
         - demi
-      summary: "Submit a document for async extraction via docling-serve (demo only)"
+      summary: "DEMI document intake — upload, store, and extract"
       operationId: extractDocument
-      description: "Accepts a PDF/DOCX/PPTX/XLSX file, submits it to the eagle-demi extraction service asynchronously, and returns a jobId for polling. Nothing is stored. For testing purposes only."
+      description: "Accepts a PDF/DOCX/PPTX/XLSX file plus a required project id. Uploads the file to MinIO, creates a staff-only Document record, and queues an extraction job (OCR for scans) that writes DocumentChunks for content search. Returns jobId and docId."
       security:
         - Bearer: []
       x-security-scopes:
@@ -7790,15 +7790,23 @@ paths:
           description: "The document file to extract text from (PDF, DOCX, PPTX, XLSX)."
           required: true
           type: file
+        - name: project
+          in: formData
+          description: "The EPIC project ObjectId this document belongs to."
+          required: true
+          type: string
       responses:
         "202":
-          description: "Job accepted — poll GET /api/jobs/{jobId} for status and result"
+          description: "Accepted — document stored, extraction queued. Poll GET /api/jobs/{jobId}."
           schema:
             type: object
             properties:
               jobId:
                 type: string
                 description: "MongoDB ObjectId — use with GET /api/jobs/{jobId} and GET /api/jobs/{jobId}/download"
+              docId:
+                type: string
+                description: "ObjectId of the created Document record"
         "400":
           description: "Bad request (no file uploaded)"
           schema:

@@ -26,6 +26,8 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { dbConnection, credentials } = require('../../app_helper');
 const { exportProjectDocs } = require('./export-docs-helper');
+const MinioController = require('./minio');
+const documentChunker = require('./documentChunker');
 const defaultLog = require('winston').loggers.get('default');
 
 /**
@@ -106,19 +108,24 @@ async function startJobQueue() {
   /**
    * demi-extract
    *
-   * Extracts text from a staged document file via eagle-demi (docling-serve).
-   * Large PDFs are pre-split into 10-page batches (pdf-lib) and each batch is
-   * sent to docling-serve's SYNCHRONOUS /v1/convert/file endpoint one at a time,
-   * keeping per-batch memory bounded regardless of document size. Markdown from
-   * each batch is concatenated in order. Non-PDF inputs are sent whole; a PDF
-   * that pdf-lib cannot parse falls back to a single whole-file send.
+   * Extracts text from a DEMI-ingested document via eagle-demi (docling-serve).
+   * The file is pulled from MinIO by the Document's internalURL. Large PDFs are
+   * pre-split into 10-page batches (pdf-lib) and each batch is sent to
+   * docling-serve's SYNCHRONOUS /v1/convert/file endpoint one at a time, keeping
+   * per-batch memory bounded regardless of document size. Markdown from each
+   * batch is concatenated in order. Non-PDF inputs are sent whole; a PDF that
+   * pdf-lib cannot parse falls back to a single whole-file send.
    *
-   * data: { filePath, originalFilename, fileSize, requestedBy, requestedAt }
-   * result: { resultPath, filename }   ← markdown written to disk, not MongoDB
+   * The assembled markdown is written to disk (for /jobs/:id/download) and
+   * chunked into DocumentChunk records (for Typesense content search). The
+   * Document is marked contentExtracted.
+   *
+   * data: { docId, internalURL, project, originalFilename, fileSize, requestedBy }
+   * result: { resultPath, filename, docId, chunkCount }
    * progress: { batch, totalBatches }
    */
   agenda.define('demi-extract', { concurrency: 3, lockLifetime: 70 * 60 * 1000 }, async (job) => {
-    const { filePath, originalFilename, fileSize } = job.attrs.data;
+    const { docId, internalURL, originalFilename, fileSize } = job.attrs.data;
     const jobId = String(job.attrs._id);
     const DOCLING_URL = process.env.DOCLING_URL || 'http://eagle-demi:5001';
     const DOCLING_API_KEY = process.env.DOCLING_API_KEY || '';
@@ -129,16 +136,15 @@ async function startJobQueue() {
     const RESULT_DIR = process.env.DEMI_RESULT_DIR || '/tmp';
     const resultPath = path.join(RESULT_DIR, `demi-result-${jobId}.md`);
 
-    defaultLog.info(`[jobQueue] demi-extract started: ${originalFilename} (${fileSize} bytes)`);
+    defaultLog.info(`[jobQueue] demi-extract started: doc ${docId} ${originalFilename} (${fileSize} bytes)`);
 
-    // Read staged file then immediately clean up — don't hold disk on failure
+    // Pull the file from MinIO by the Document's internalURL
     let fileBuffer;
     try {
-      fileBuffer = await fs.promises.readFile(filePath);
+      fileBuffer = await MinioController.getObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, internalURL);
     } catch (err) {
-      throw new Error(`Failed to read staged file ${filePath}: ${err.message}`);
-    } finally {
-      fs.unlink(filePath, () => {});
+      await documentChunker.markDocument(mongoose.connection.db, docId, 0, `MinIO download failed: ${err.message}`).catch(() => {});
+      throw new Error(`Failed to download ${internalURL} from MinIO: ${err.message}`);
     }
 
     // Per-batch synchronous convert. Timeout must exceed docling-serve's
@@ -218,14 +224,36 @@ async function startJobQueue() {
     await fs.promises.mkdir(RESULT_DIR, { recursive: true });
     await fs.promises.writeFile(resultPath, markdown, 'utf8');
 
+    // Persist DocumentChunks for Typesense content search and mark the Document.
+    let chunkCount = 0;
+    try {
+      const db = mongoose.connection.db;
+      const doc = await db.collection('epic').findOne({ _id: new mongoose.Types.ObjectId(docId) });
+      if (!doc) throw new Error(`Document ${docId} not found`);
+      const listLookup = await documentChunker.buildListLookup(db);
+      let projectName;
+      if (doc.project) {
+        const proj = await db.collection('epic').findOne({ _id: doc.project }, { projection: { name: 1 } });
+        projectName = proj && proj.name;
+      }
+      chunkCount = await documentChunker.writeChunks(db, docId, doc, markdown, projectName, listLookup);
+      await documentChunker.markDocument(db, docId, chunkCount, null);
+    } catch (err) {
+      defaultLog.error(`[jobQueue] demi-extract: chunk persistence failed for doc ${docId}: ${err.message}`);
+      await documentChunker.markDocument(mongoose.connection.db, docId, 0, err.message).catch(() => {});
+      throw err;
+    }
+
     job.attrs.data.result = {
       resultPath,
       filename: originalFilename.replace(/\.[^.]+$/, '') + '.md',
+      docId,
+      chunkCount,
     };
     job.attrs.data.progress = { ...(job.attrs.data.progress || {}), done: true };
     await job.save();
 
-    defaultLog.info(`[jobQueue] demi-extract done: ${originalFilename} — ${markdown.length} chars → ${resultPath}`);
+    defaultLog.info(`[jobQueue] demi-extract done: doc ${docId} ${originalFilename} — ${markdown.length} chars, ${chunkCount} chunks → ${resultPath}`);
   });
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
