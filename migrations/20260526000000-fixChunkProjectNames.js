@@ -57,75 +57,81 @@ async function run() {
     console.log('Loading projects...');
     const projects = await epic.find(
       { _schemaName: 'Project' },
-      { projection: { _id: 1, name: 1, displayName: 1 } }
+      { projection: {
+        _id: 1, name: 1, displayName: 1,
+        currentLegislationYear: 1,
+        legislation_2018: 1, legislation_2002: 1, legislation_1996: 1
+      }}
     ).toArray();
 
     const projectMap = new Map();
     for (const p of projects) {
-      const resolvedName = p.name || p.displayName || '';
+      const legKey = p.currentLegislationYear || 'legislation_2018';
+      const leg = p[legKey] || p.legislation_2018 || p.legislation_2002 || p.legislation_1996 || {};
+      const resolvedName = leg.name || leg.shortName || p.name || p.displayName || '';
       if (resolvedName) {
         projectMap.set(p._id.toString(), resolvedName);
       }
     }
     console.log(`  Loaded ${projectMap.size} projects with resolved names (out of ${projects.length} total).`);
 
-    // ── 2. Find chunks with missing / empty projectName ───────────────────────
-    console.log('Finding DocumentChunk records with missing projectName...');
-    const chunks = await epic.find(
-      { _schemaName: 'DocumentChunk', projectId: { $exists: true }, $or: [
-        { projectName: { $exists: false } },
-        { projectName: '' },
-        { projectName: null },
-      ]},
-      { projection: { _id: 1, projectId: 1, projectName: 1 } }
-    ).toArray();
-    console.log(`  Found ${chunks.length} chunks needing projectName.`);
-
-    if (chunks.length === 0) {
-      console.log('Nothing to fix. Exiting.');
-      return;
-    }
+    // ── 2. Find chunks needing fix ───────────────────────────────────────────
+    console.log('Finding DocumentChunk records needing metadata fix...');
+    const cursor = epic.find({
+      _schemaName: 'DocumentChunk',
+      $or: [
+        { projectName: { $exists: false } }, { projectName: '' }, { projectName: null },
+        { projectId:   { $exists: false } }, { projectId:   '' }, { projectId:   null },
+        { documentId:  { $exists: false } }, { documentId:  '' }, { documentId:  null }
+      ]
+    });
 
     // ── 3. Bulk update ────────────────────────────────────────────────────────
-    console.log('Building bulk update operations...');
-    const ops = [];
+    console.log('Building and executing bulk update operations...');
+    const BATCH = 500;
+    let ops = [];
+    let done = 0;
     let skipped = 0;
 
-    for (const chunk of chunks) {
-      const projectId   = chunk.projectId?.toString();
-      const projectName = projectId ? projectMap.get(projectId) : undefined;
+    while (await cursor.hasNext()) {
+      const chunk = await cursor.next();
+      const pId = (chunk.project || chunk.projectId)?.toString();
+      const dId = (chunk.document || chunk.documentId)?.toString();
 
-      if (!projectName) {
-        skipped++;
-        continue;
+      const update = {};
+      if (pId && projectMap.has(pId)) {
+        update.projectName = projectMap.get(pId);
+        update.projectId   = pId;
+      }
+      if (dId) {
+        update.documentId = dId;
       }
 
-      ops.push({
-        updateOne: {
-          filter: { _id: chunk._id },
-          update: { $set: { projectName } },
-        },
-      });
+      if (Object.keys(update).length > 0) {
+        ops.push({
+          updateOne: {
+            filter: { _id: chunk._id },
+            update: { $set: update },
+          },
+        });
+      } else {
+        skipped++;
+      }
+
+      if (ops.length >= BATCH) {
+        const result = await epic.bulkWrite(ops, { ordered: false });
+        done += result.modifiedCount;
+        ops = [];
+        process.stdout.write(`  \r  ${done} updated, ${skipped} skipped...`);
+      }
     }
 
-    console.log(`  ${ops.length} updates queued, ${skipped} skipped (project not in map).`);
-
-    if (ops.length === 0) {
-      console.log('No updates to apply. Exiting.');
-      return;
-    }
-
-    // Write in batches of 500 to avoid oversized bulkWrite calls
-    const BATCH = 500;
-    let done = 0;
-    for (let i = 0; i < ops.length; i += BATCH) {
-      const batch = ops.slice(i, i + BATCH);
-      const result = await epic.bulkWrite(batch, { ordered: false });
+    if (ops.length > 0) {
+      const result = await epic.bulkWrite(ops, { ordered: false });
       done += result.modifiedCount;
-      process.stdout.write(`  \r  ${done}/${ops.length} updated...`);
     }
 
-    console.log(`\n\nDone. ${done} DocumentChunk records updated with projectName.`);
+    console.log(`\n\nDone. ${done} DocumentChunk records updated.`);
     console.log('Next step: run typesense-reindex (or partial document_chunks sync) to propagate changes.');
 
   } finally {

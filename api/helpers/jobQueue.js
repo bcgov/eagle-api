@@ -235,8 +235,19 @@ async function startJobQueue() {
       const listLookup = await documentChunker.buildListLookup(db);
       let projectName;
       if (doc.project) {
-        const proj = await db.collection('epic').findOne({ _id: doc.project }, { projection: { name: 1 } });
-        projectName = proj && proj.name;
+        const proj = await db.collection('epic').findOne(
+          { _id: doc.project },
+          { projection: {
+            name: 1, displayName: 1,
+            currentLegislationYear: 1,
+            legislation_2018: 1, legislation_2002: 1, legislation_1996: 1
+          }}
+        );
+        if (proj) {
+          const legKey = proj.currentLegislationYear || 'legislation_2018';
+          const leg = proj[legKey] || proj.legislation_2018 || proj.legislation_2002 || proj.legislation_1996 || {};
+          projectName = leg.name || leg.shortName || proj.name || proj.displayName || '';
+        }
       }
       chunkCount = await documentChunker.writeChunks(db, docId, doc, markdown, projectName, listLookup);
       await documentChunker.markDocument(db, docId, chunkCount, null);

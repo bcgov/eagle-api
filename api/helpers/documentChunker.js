@@ -111,7 +111,9 @@ async function writeChunks(db, docId, doc, markdown, projectName, listLookup) {
   const records = pageChunks.map(({ pageNumber, chunkIndex, content }) => ({
     _schemaName:  'DocumentChunk',
     document:     oid,
+    documentId:   docId,
     project:      doc.project || undefined,
+    projectId:    doc.project ? doc.project.toString() : undefined,
     pageNumber,
     chunkIndex,
     content,
