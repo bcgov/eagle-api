@@ -11,9 +11,9 @@ route:
 resources:
   limits:
     cpu: 500m
-    memory: 2Gi
+    memory: 4Gi
   requests:
-    cpu: 250m
+    cpu: 512m
     memory: 512Mi
 
 env:

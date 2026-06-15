@@ -136,7 +136,7 @@ async function startJobQueue() {
     const RESULT_DIR = process.env.DEMI_RESULT_DIR || '/tmp';
     const resultPath = path.join(RESULT_DIR, `demi-result-${jobId}.md`);
 
-    defaultLog.info(`[jobQueue] demi-extract started: doc ${docId} ${originalFilename} (${fileSize} bytes)`);
+    defaultLog.info(`[jobQueue] demi-extract [START]: jobId=${jobId} docId=${docId} file=${originalFilename} (${fileSize} bytes)`);
 
     // Pull the file from MinIO by the Document's internalURL
     let fileBuffer;
@@ -181,7 +181,17 @@ async function startJobQueue() {
     let srcPdf = null;
     if (isPdf) {
       try {
+        const memBefore = Math.round(process.memoryUsage().rss / 1024 / 1024);
+        defaultLog.info(`[jobQueue] demi-extract: parsing PDF ${originalFilename} (current memory: ${memBefore}MB)`);
+        
+        // Granular state for OOM diagnosis
+        job.attrs.data.progress = { status: 'parsing-pdf' };
+        await job.save();
+
         srcPdf = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
+
+        const memAfter = Math.round(process.memoryUsage().rss / 1024 / 1024);
+        defaultLog.info(`[jobQueue] demi-extract: PDF parsed (current memory: ${memAfter}MB)`);
       } catch (err) {
         defaultLog.warn(`[jobQueue] demi-extract: pdf-lib parse failed for ${originalFilename} (${err.message}); sending whole file`);
         srcPdf = null;
@@ -226,6 +236,13 @@ async function startJobQueue() {
     await fs.promises.mkdir(RESULT_DIR, { recursive: true });
     await fs.promises.writeFile(resultPath, markdown, 'utf8');
 
+    // Backup result to MinIO — ensures it survives pod restarts
+    try {
+      await MinioController.putFileDirect(MinioController.BUCKETS.DOCUMENTS_BUCKET, `extracted/${jobId}.md`, resultPath);
+    } catch (err) {
+      defaultLog.error(`[jobQueue] demi-extract: Failed to upload extracted markdown to MinIO for job ${jobId}: ${err.message}`);
+    }
+
     // Persist DocumentChunks for Typesense content search and mark the Document.
     let chunkCount = 0;
     try {
@@ -266,7 +283,7 @@ async function startJobQueue() {
     job.attrs.data.progress = { ...(job.attrs.data.progress || {}), done: true };
     await job.save();
 
-    defaultLog.info(`[jobQueue] demi-extract done: doc ${docId} ${originalFilename} — ${markdown.length} chars, ${chunkCount} chunks → ${resultPath}`);
+    defaultLog.info(`[jobQueue] demi-extract [DONE]: jobId=${jobId} docId=${docId} file=${originalFilename} — resultPath=${resultPath} backedUpToMinio=true`);
   });
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────

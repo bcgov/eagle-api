@@ -124,6 +124,31 @@ var putDocument = function (bucket, projectCode, fileName, pathOnDisk) {
 exports.putDocument = putDocument;
 
 /**
+ * Save a file from disk to Minio at a specific object name.
+ * Unlike putDocument, this does not randomize the file name.
+ * @param bucket the Minio bucket
+ * @param objectName the target path/name in Minio
+ * @param pathOnDisk the path to the file on the local disk
+ */
+var putFileDirect = function (bucket, objectName, pathOnDisk) {
+  if (isMockService()) return Promise.resolve(true);
+  if (isValidBucket(bucket)) {
+    return bucketExists(bucket)
+      .then(function (exists) {
+        if (!exists) {
+          return makeBucket(bucket);
+        }
+      })
+      .then(function () {
+        return minioClient.fPutObject(bucket, objectName, pathOnDisk);
+      });
+  } else {
+    return Promise.reject('[' + bucket + '] is not a valid bucket');
+  }
+};
+exports.putFileDirect = putFileDirect;
+
+/**
  * Delete a file from Minio.
  * @param bucket the Minio bucket
  * @param projectCode a project code

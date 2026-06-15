@@ -269,7 +269,21 @@ exports.downloadJobResult = async function (args, res) {
 
       const fs = require('fs');
       if (!fs.existsSync(resultPath)) {
-        return res.status(404).json({ message: 'Result file not found (pod may have restarted and cleared /tmp).' });
+        // Pod restarted or result wiped from /tmp — try MinIO backup
+        try {
+          const MinioController = require('../helpers/minio');
+          const fileBuffer = await MinioController.getObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, `extracted/${jobId}.md`);
+          const filename = result.filename || `${jobId}.md`;
+          
+          defaultLog.info(`[job] downloadJobResult: Local file missing, successfully retrieved backup from MinIO for job ${jobId}`);
+
+          res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+          return res.send(fileBuffer);
+        } catch (minioErr) {
+          defaultLog.warn(`[job] downloadJobResult: MinIO fallback failed for job ${jobId}: ${minioErr.message}`);
+          return res.status(404).json({ message: 'Result file not found (pod restarted and no MinIO backup found).' });
+        }
       }
 
       const filename = result.filename || `${jobId}.md`;
