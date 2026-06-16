@@ -50,7 +50,10 @@ var getSanitizedFields = function (fields) {
       'isFeatured',
       'sortOrder',
       'publicHitCount',
-      'secureHitCount'], f) !== -1);
+      'secureHitCount',
+      'contentExtractedAt',
+      'extractionMethod',
+      'contentPageCount'], f) !== -1);
   });
 };
 
