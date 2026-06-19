@@ -18,6 +18,7 @@ resources:
     memory: 2Gi
 
 env:
+  TYPESENSE_ENABLED: "false"
   LOG_LEVEL: "error"
   API_HOSTNAME: projects.eao.gov.bc.ca
   CHES_ENDPOINT: "https://ches.api.gov.bc.ca/api/v1"
@@ -26,6 +27,7 @@ env:
   CLAMAV_SERVICE_HOST: "clamav"
   CLAMAV_SERVICE_PORT: "3310"
   ENABLE_VIRUS_SCANNING: "true"
+
   # Temp directory for uploads (no PVC mounted)
   UPLOAD_DIRECTORY: "/tmp/"
   TYPESENSE_HOST: typesense-typesense
@@ -77,6 +79,12 @@ mongodb:
     limits:
       cpu: 500m
       memory: 4Gi
+  backup:
+    enabled: true
+    schedule: "0 8 * * *"
+    retention: 2
+    pvc:
+      existingClaim: eagle-api-mongodb-backup
 
 # Materialized view refresh cron jobs
 cronJobs:
@@ -88,9 +96,3 @@ cronJobs:
     limits:
       cpu: 500m
       memory: 4Gi
-  backup:
-    enabled: true
-    schedule: "0 8 * * *"
-    retention: 2
-    pvc:
-      existingClaim: eagle-api-mongodb-backup

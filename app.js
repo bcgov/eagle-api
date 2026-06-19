@@ -127,6 +127,17 @@ const globalLimiter = rateLimit({
   message: { error: 'Too many requests. Please try again later.' },
 });
 
+// Disable Typesense middleware if TYPESENSE_ENABLED is false
+app.use((req, res, next) => {
+  if (
+    (req.path.startsWith('/api/public/typesense') || req.path.startsWith('/api/typesense')) &&
+    process.env.TYPESENSE_ENABLED === 'false'
+  ) {
+    return res.status(503).json({ error: 'Search is temporarily disabled.' });
+  }
+  next();
+});
+
 // More-specific paths first — Express applies the first matching middleware
 app.use('/api/public/typesense', searchLimiter);
 app.use('/api/typesense', searchLimiter);

@@ -66,6 +66,7 @@ persistence:
 
 # Environment variables
 env:
+  TYPESENSE_ENABLED: "true"
   # MongoDB Configuration
   MONGODB_SERVICE_HOST: eagle-api-mongodb
   MONGODB_DATABASE: epic
@@ -73,6 +74,7 @@ env:
   
   # Feature Flags
   ENABLE_VIRUS_SCANNING: "true"
+
   # Typesense Search Service
   TYPESENSE_HOST: eagle-typesense   # Kubernetes service name set by fullnameOverride in eagle-typesense chart
   TYPESENSE_PORT: "8108"
