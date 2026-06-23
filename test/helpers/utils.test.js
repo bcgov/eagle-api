@@ -127,12 +127,11 @@ describe('Utils Helper Functions', () => {
       expect(params.limit).to.equal(25); // DEFAULT_PAGESIZE
     });
 
-    it('should clamp pageSize to MAX_PAGESIZE (100) when exceeded', () => {
-      const pageSize = { value: 500 };
+    it('should clamp pageSize to MAX_PAGESIZE (500) when exceeded', () => {
+      const pageSize = { value: 1500 };
       const pageNum = { value: 0 };
       const params = utils.getSkipLimitParameters(pageSize, pageNum);
-      
-      expect(params.limit).to.equal(100); // MAX_PAGESIZE
+      expect(params.limit).to.equal(500);
       expect(params.skip).to.equal(0);
     });
 
