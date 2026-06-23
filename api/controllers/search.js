@@ -30,7 +30,7 @@ const aggregateHelper = require('../helpers/aggregators');
 
 // Pagination limits
 const PAGE_SIZE_DEFAULT = 25;
-const PAGE_SIZE_MAX_PUBLIC = 100;  // unauthenticated requests
+const PAGE_SIZE_MAX_PUBLIC = 1000;  // unauthenticated requests
 const PAGE_SIZE_MAX_AUTH   = 1000; // authenticated staff requests
 const PAGE_SIZE_MAX_LIST   = 500;  // List dataset (reference/dropdown data)
 
