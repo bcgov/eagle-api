@@ -19,41 +19,10 @@
  *   MONGODB_HOST, MONGODB_PORT, MONGODB_DATABASE, MONGODB_USERNAME, MONGODB_PASSWORD
  */
 
-require('dotenv').config();
-
-const { MongoClient } = require('mongodb');
-
-/**
- * Build a MongoDB connection URI from environment variables.
- * (Inlined from eagle-typesense src/config.js — migration must be self-contained.)
- */
-function buildMongoUri() {
-  const user = encodeURIComponent(process.env.MONGODB_USERNAME || '');
-  const pass = encodeURIComponent(process.env.MONGODB_PASSWORD || '');
-  const host = process.env.MONGODB_HOST || 'localhost';
-  const port = process.env.MONGODB_PORT || '27017';
-  const db   = process.env.MONGODB_DATABASE || 'epic';
-  const auth = process.env.MONGODB_AUTHSOURCE || 'admin';
-  const replication = process.env.MONGODB_DIRECT === 'true'
-    ? 'directConnection=true'
-    : 'replicaSet=rs0';
-
-  if (user && pass) {
-    return `mongodb://${user}:${pass}@${host}:${port}/${db}?authSource=${auth}&${replication}`;
-  }
-  return `mongodb://${host}:${port}/${db}?${replication}`;
-}
-
-async function run() {
-  const uri    = buildMongoUri();
-  const client = new MongoClient(uri);
-
-  try {
-    await client.connect();
-    const db   = client.db();
+module.exports = {
+  async up(db, client) {
     const epic = db.collection('epic');
 
-    // ── 1. Build project id → name lookup ────────────────────────────────────
     console.log('Loading projects...');
     const projects = await epic.find(
       { _schemaName: 'Project' },
@@ -75,7 +44,6 @@ async function run() {
     }
     console.log(`  Loaded ${projectMap.size} projects with resolved names (out of ${projects.length} total).`);
 
-    // ── 2. Find chunks needing fix ───────────────────────────────────────────
     console.log('Finding DocumentChunk records needing metadata fix...');
     const cursor = epic.find({
       _schemaName: 'DocumentChunk',
@@ -86,7 +54,6 @@ async function run() {
       ]
     });
 
-    // ── 3. Bulk update ────────────────────────────────────────────────────────
     console.log('Building and executing bulk update operations...');
     const BATCH = 500;
     let ops = [];
@@ -122,7 +89,7 @@ async function run() {
         const result = await epic.bulkWrite(ops, { ordered: false });
         done += result.modifiedCount;
         ops = [];
-        process.stdout.write(`  \r  ${done} updated, ${skipped} skipped...`);
+        console.log(`  ${done} updated, ${skipped} skipped...`);
       }
     }
 
@@ -131,15 +98,10 @@ async function run() {
       done += result.modifiedCount;
     }
 
-    console.log(`\n\nDone. ${done} DocumentChunk records updated.`);
-    console.log('Next step: run typesense-reindex (or partial document_chunks sync) to propagate changes.');
+    console.log(`Done. ${done} DocumentChunk records updated.`);
+  },
 
-  } finally {
-    await client.close();
+  async down(db, client) {
+    return null;
   }
-}
-
-run().catch(err => {
-  console.error('Migration failed:', err);
-  process.exit(1);
-});
+};
