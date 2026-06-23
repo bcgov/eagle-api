@@ -147,29 +147,33 @@ nature.set = function (nature) {
 projectDefinition.virtuals__ = [nature];
 
 projectDefinition.presave__ = function(next) {
-  if (this.centroid && this.centroid.length === 2) {
-    let lon = Number(this.centroid[0]);
-    let lat = Number(this.centroid[1]);
+  const legislations = ['legislation_1996', 'legislation_2002', 'legislation_2018'];
 
-    if (!isNaN(lon) && !isNaN(lat)) {
-      // Auto-correct swapped coordinates (lat, lon instead of lon, lat)
-      // In BC, latitude is always < 90 (around 48-60) and longitude magnitude is > 90 (around 114-139)
-      if (Math.abs(lon) < 90 && Math.abs(lat) > 90) {
-        const temp = lon;
-        lon = lat;
-        lat = temp;
-      }
+  for (const leg of legislations) {
+    if (this[leg] && this[leg].centroid && this[leg].centroid.length === 2) {
+      let lon = Number(this[leg].centroid[0]);
+      let lat = Number(this[leg].centroid[1]);
 
-      // Auto-correct positive longitudes (BC longitudes must be negative)
-      if (lon > 0) {
-        lon = -lon;
-      }
+      if (!isNaN(lon) && !isNaN(lat)) {
+        // Auto-correct swapped coordinates (lat, lon instead of lon, lat)
+        // In BC, latitude is always < 90 (around 48-60) and longitude magnitude is > 90 (around 114-139)
+        if (Math.abs(lon) < 90 && Math.abs(lat) > 90) {
+          const temp = lon;
+          lon = lat;
+          lat = temp;
+        }
 
-      // Mark the array as modified so mongoose saves it
-      if (this.centroid[0] !== lon || this.centroid[1] !== lat) {
-        this.centroid.set(0, lon);
-        this.centroid.set(1, lat);
-        this.markModified('centroid');
+        // Auto-correct positive longitudes (BC longitudes must be negative)
+        if (lon > 0) {
+          lon = -lon;
+        }
+
+        // Mark the array as modified so mongoose saves it
+        if (this[leg].centroid[0] !== lon || this[leg].centroid[1] !== lat) {
+          this[leg].centroid.set(0, lon);
+          this[leg].centroid.set(1, lat);
+          this.markModified(`${leg}.centroid`);
+        }
       }
     }
   }
