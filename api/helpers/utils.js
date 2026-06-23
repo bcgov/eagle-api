@@ -6,7 +6,7 @@ var NodeClam        = require('clamscan');
 var MAX_LIMIT       = 1000;
 const defaultLog      = require('winston').loggers.get('default');
 var DEFAULT_PAGESIZE  = 25;
-var MAX_PAGESIZE      = 100;
+var MAX_PAGESIZE      = 500;
 
 // ClamAV scanner instance (initialized on first use)
 let clamScanner = null;

@@ -146,4 +146,34 @@ nature.set = function (nature) {
 
 projectDefinition.virtuals__ = [nature];
 
+projectDefinition.presave__ = function(next) {
+  if (this.centroid && this.centroid.length === 2) {
+    let lon = Number(this.centroid[0]);
+    let lat = Number(this.centroid[1]);
+
+    if (!isNaN(lon) && !isNaN(lat)) {
+      // Auto-correct swapped coordinates (lat, lon instead of lon, lat)
+      // In BC, latitude is always < 90 (around 48-60) and longitude magnitude is > 90 (around 114-139)
+      if (Math.abs(lon) < 90 && Math.abs(lat) > 90) {
+        const temp = lon;
+        lon = lat;
+        lat = temp;
+      }
+
+      // Auto-correct positive longitudes (BC longitudes must be negative)
+      if (lon > 0) {
+        lon = -lon;
+      }
+
+      // Mark the array as modified so mongoose saves it
+      if (this.centroid[0] !== lon || this.centroid[1] !== lat) {
+        this.centroid.set(0, lon);
+        this.centroid.set(1, lat);
+        this.markModified('centroid');
+      }
+    }
+  }
+  next();
+};
+
 module.exports = require('../models')('Project', projectDefinition, 'epic');
