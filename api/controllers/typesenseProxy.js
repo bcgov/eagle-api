@@ -234,10 +234,10 @@ async function handleCollectionSearch(args, res) {
 
   // Cap per_page — prevent memory exhaustion on Typesense from unbounded result sets
   const rawPerPage = parseInt(query.per_page, 10);
-  if (Number.isFinite(rawPerPage) && rawPerPage > 100) {
-    defaultLog.warn(`[TypesenseProxy] per_page ${rawPerPage} exceeds limit, capping to 100`);
+  if (Number.isFinite(rawPerPage) && rawPerPage > 250) {
+    defaultLog.warn(`[TypesenseProxy] per_page ${rawPerPage} exceeds limit, capping to 250`);
   }
-  query.per_page = String(Number.isFinite(rawPerPage) && rawPerPage > 0 ? Math.min(rawPerPage, 100) : 25);
+  query.per_page = String(Number.isFinite(rawPerPage) && rawPerPage > 0 ? Math.min(rawPerPage, 250) : 25);
 
   // Remove empty params — Typesense treats empty string differently from absent
   for (const k of Object.keys(query)) {
