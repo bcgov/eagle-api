@@ -30,7 +30,7 @@ env:
 
   # Temp directory for uploads (no PVC mounted)
   UPLOAD_DIRECTORY: "/tmp/"
-  TYPESENSE_HOST: typesense-typesense
+  TYPESENSE_HOST: eagle-typesense
   TYPESENSE_PORT: "8108"
 
 keycloak:
