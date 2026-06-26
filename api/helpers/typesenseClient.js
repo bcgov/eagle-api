@@ -56,12 +56,14 @@ let _client = null;
 
 function getClient() {
   if (!_client) {
+    const hosts = (process.env.TYPESENSE_HOST || 'typesense').split(',');
+    const nodes = hosts.map(h => ({
+      host:     h.trim(),
+      port:     parseInt(process.env.TYPESENSE_PORT || '8108', 10),
+      protocol: 'http',
+    }));
     _client = new Typesense.Client({
-      nodes: [{
-        host:     process.env.TYPESENSE_HOST || 'typesense',
-        port:     parseInt(process.env.TYPESENSE_PORT || '8108', 10),
-        protocol: 'http',
-      }],
+      nodes,
       apiKey:                   process.env.TYPESENSE_API_KEY,
       connectionTimeoutSeconds: 5,
       retryIntervalSeconds:     2,
