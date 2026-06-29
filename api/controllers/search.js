@@ -219,7 +219,10 @@ const executeQuery = async function (args, res) {
   if (rawPageSize < 0) {
     return Actions.sendResponse(res, 400, { message: 'pageSize must be a positive integer' });
   }
-  const maxPageSize = dataset === constants.LIST ? PAGE_SIZE_MAX_LIST : (isAuthenticated ? PAGE_SIZE_MAX_AUTH : PAGE_SIZE_MAX_PUBLIC);
+  let maxPageSize = dataset === constants.LIST ? PAGE_SIZE_MAX_LIST : (isAuthenticated ? PAGE_SIZE_MAX_AUTH : PAGE_SIZE_MAX_PUBLIC);
+  if (!isAuthenticated && dataset === constants.DOCUMENT) {
+    maxPageSize = 100;
+  }
   const pageSize = Math.min(rawPageSize, maxPageSize);
   const projectLegislation = args.swagger.params.projectLegislation.value || '';
   // Normalize sortBy to always be an array; swagger may pass a single string when only one sort field is provided.

@@ -210,11 +210,15 @@ spec:
             - configMapRef:
                 name: {{ include "eagle-api.fullname" . }}
           volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
             {{- if .Values.persistence.enabled }}
             - name: uploads
               mountPath: {{ .Values.persistence.mountPath }}
             {{- end }}
       volumes:
+        - name: tmp-volume
+          emptyDir: {}
         {{- if .Values.persistence.enabled }}
         - name: uploads
           persistentVolumeClaim:
