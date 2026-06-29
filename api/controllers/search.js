@@ -315,21 +315,10 @@ const executeQuery = async function (args, res) {
 
   } else if (dataset === constants.ITEM) {
     const schemaNameVal = args.swagger.params._schemaName.value;
-    const allowedPublicSchemas = [
-      constants.DOCUMENT,
-      constants.PROJECT,
-      constants.COMMENT,
-      constants.COMMENT_PERIOD,
-      constants.RECENT_ACTIVITY,
-      constants.INSPECTION,
-      constants.INSPECTION_ELEMENT,
-      constants.PROJECT_NOTIFICATION,
-      constants.LIST,
-      constants.ORGANIZATION
-    ];
+    const allowedSchemas = mongoose.modelNames();
 
-    if (!allowedPublicSchemas.includes(schemaNameVal)) {
-      defaultLog.warn('Search attempted on non-public schema: %s', schemaNameVal);
+    if (!allowedSchemas.includes(schemaNameVal)) {
+      defaultLog.warn('Search attempted on invalid schema: %s', schemaNameVal);
       return Actions.sendResponse(res, 400, { message: 'Invalid search schema' });
     }
 
