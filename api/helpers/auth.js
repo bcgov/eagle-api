@@ -139,8 +139,11 @@ function _verifySecret (currentScopes, tokenString, secret, req, callback, sendE
       // check if the issuer matches
       var issuerMatch = decodedToken.iss == ISSUER;
 
-      // Check if user has at least one of the required x-security-scopes
-      var roleMatch = !currentScopes || currentScopes.length === 0 || currentScopes.some(role => decodedToken.realm_access.roles.includes(role));
+      // Check if user has at least one of the required x-security-scopes or is a global sysadmin/staff
+      var roleMatch = !currentScopes || currentScopes.length === 0 ||
+                      decodedToken.realm_access.roles.includes('sysadmin') ||
+                      decodedToken.realm_access.roles.includes('staff') ||
+                      currentScopes.some(role => decodedToken.realm_access.roles.includes(role));
 
       if (roleMatch && issuerMatch) {
         // add the token to the request so that we can access it in the endpoint code if necessary
