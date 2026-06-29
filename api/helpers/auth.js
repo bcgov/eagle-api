@@ -44,7 +44,7 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
         req.swagger.params.auth_payload = {
           iss: ISSUER,
           preferred_username: 'internal-service',
-          realm_access: { roles: ['sysadmin', 'project-system-admin', 'project-admin-staff', 'project-proponent', 'project-team', 'public'] }
+          realm_access: { roles: ['project-admin-staff', 'project-team', 'public'] }
         };
         return callback(null);
       }
@@ -62,7 +62,18 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
       defaultLog.info('Keycloak Enabled, remote JWT verification.');
       const client = jwksClientInstance;
 
-      const kid = jwt.decode(tokenString, { complete: true }).header.kid;
+      let kid;
+      try {
+        const decoded = jwt.decode(tokenString, { complete: true });
+        if (!decoded || !decoded.header || !decoded.header.kid) {
+          defaultLog.warn('JWT header or kid missing');
+          return callback(sendError());
+        }
+        kid = decoded.header.kid;
+      } catch (decodeErr) {
+        defaultLog.error('Failed to decode JWT header:', decodeErr.message);
+        return callback(sendError());
+      }
 
       client.getSigningKey(kid, (err, key) => {
         if (err) {
@@ -76,6 +87,10 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
       });
     } else {
       defaultLog.debug('Local JWT verification.');
+      if (SECRET === 'defaultSecret') {
+        defaultLog.error('KEYCLOAK_ENABLED is false but SECRET is unset or set to defaultSecret. Denying access.');
+        return callback(sendError());
+      }
       _verifySecret(currentScopes, tokenString, SECRET, req, callback, sendError);
     }
   } else {
@@ -97,7 +112,17 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
 };
 
 function _verifySecret (currentScopes, tokenString, secret, req, callback, sendError) {
-  jwt.verify(tokenString, secret, function(
+  // Pinning verification algorithms to RS256 for Keycloak remote JWKS, or HS256 for local SECRET.
+  // Aud is verified downstream or configured on verification options if desired.
+  const options = {
+    algorithms: KEYCLOAK_ENABLED === 'true' ? ['RS256'] : ['HS256'],
+    issuer: ISSUER
+  };
+  if (process.env.SSO_AUDIENCE) {
+    options.audience = process.env.SSO_AUDIENCE;
+  }
+
+  jwt.verify(tokenString, secret, options, function(
     verificationError,
     decodedToken
   ) {
@@ -111,17 +136,19 @@ function _verifySecret (currentScopes, tokenString, secret, req, callback, sendE
         decodedToken.realm_access &&
         decodedToken.realm_access.roles
     ) {
-      // check if the dissuer matches
+      // check if the issuer matches
       var issuerMatch = decodedToken.iss == ISSUER;
 
-      // if (roleMatch && issuerMatch) {
-      if (issuerMatch) {
+      // Check if user has at least one of the required x-security-scopes
+      var roleMatch = !currentScopes || currentScopes.length === 0 || currentScopes.some(role => decodedToken.realm_access.roles.includes(role));
+
+      if (roleMatch && issuerMatch) {
         // add the token to the request so that we can access it in the endpoint code if necessary
         req.swagger.params.auth_payload = decodedToken;
         defaultLog.debug('JWT verified for user: %s', decodedToken.preferred_username);
         return callback(null);
       } else {
-        defaultLog.warn('JWT issuer mismatch for user: %s', decodedToken.preferred_username);
+        defaultLog.warn('JWT verification failed. roleMatch: %s, issuerMatch: %s for user: %s', roleMatch, issuerMatch, decodedToken.preferred_username);
         return callback(sendError());
       }
     } else {
@@ -169,8 +196,8 @@ var hashPassword = function (user, password) {
 };
 
 exports.setPassword = function (user) {
-  var bcrypt = require('bcryptjs');
-  user.salt = bcrypt.genSaltSync(16);
+  const crypto = require('crypto');
+  user.salt = crypto.randomBytes(16).toString('base64');
   user.password = hashPassword(user, user.password);
   return user;
 };

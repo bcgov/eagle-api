@@ -195,7 +195,14 @@ function createSwaggerRouter(spec, controllerDirs) {
 
       // --- Multer for multipart/form-data with file fields ---
       if (fileParams.length > 0) {
-        const upload = multer({ storage: multer.memoryStorage() });
+        const isPublic = swaggerPath.startsWith('/public');
+        const limitSize = isPublic ? 10 * 1024 * 1024 : 3 * 1024 * 1024 * 1024; // 10MB public vs 3GB admin
+        const upload = multer({
+          storage: multer.memoryStorage(),
+          limits: {
+            fileSize: limitSize
+          }
+        });
         middlewares.push(
           fileParams.length === 1
             ? upload.single(fileParams[0].name)

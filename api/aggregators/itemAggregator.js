@@ -41,7 +41,7 @@ exports.createItemAggr = (itemId, schemaName, roles) => {
           },
           then: '$$KEEP',
           else: {
-            $cond: { if: '$read', then: '$$PRUNE', else: '$$DESCEND' }
+            $cond: { if: '$read', then: '$$PRUNE', else: '$$PRUNE' }
           }
         }
       }

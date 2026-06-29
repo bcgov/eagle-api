@@ -311,11 +311,30 @@ const executeQuery = async function (args, res) {
     return Actions.sendResponse(res, 200, collectionData);
 
   } else if (dataset === constants.ITEM) {
-    const collectionObj = mongoose.model(args.swagger.params._schemaName.value);
-    const aggregation = itemAggregator.createItemAggr(args.swagger.params._id.value, args.swagger.params._schemaName.value, roles);
+    const schemaNameVal = args.swagger.params._schemaName.value;
+    const allowedPublicSchemas = [
+      constants.DOCUMENT,
+      constants.PROJECT,
+      constants.COMMENT,
+      constants.COMMENT_PERIOD,
+      constants.RECENT_ACTIVITY,
+      constants.INSPECTION,
+      constants.INSPECTION_ELEMENT,
+      constants.PROJECT_NOTIFICATION,
+      constants.LIST,
+      constants.ORGANIZATION
+    ];
+
+    if (!allowedPublicSchemas.includes(schemaNameVal)) {
+      defaultLog.warn('Search attempted on non-public schema: %s', schemaNameVal);
+      return Actions.sendResponse(res, 400, { message: 'Invalid search schema' });
+    }
+
+    const collectionObj = mongoose.model(schemaNameVal);
+    const aggregation = itemAggregator.createItemAggr(args.swagger.params._id.value, schemaNameVal, roles);
     let data = await collectionObj.aggregate(aggregation).allowDiskUse(true);
 
-    if (args.swagger.params._schemaName.value === constants.COMMENT) {
+    if (schemaNameVal === constants.COMMENT) {
       // Filter
       _.each(data, function (item) {
         if (item.isAnonymous === true) {
@@ -324,9 +343,9 @@ const executeQuery = async function (args, res) {
       });
     }
 
-    if (args.swagger.params._schemaName.value === constants.PROJECT) {
+    if (schemaNameVal === constants.PROJECT) {
       // If we are a project, and we are not authed, we need to sanitize some fields.
-      data = Utils.filterData(args.swagger.params._schemaName.value, data, roles);
+      data = Utils.filterData(schemaNameVal, data, roles);
     }
 
     return Actions.sendResponse(res, 200, data);

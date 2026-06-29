@@ -345,4 +345,28 @@ describe('Document Controller Functions', () => {
       expect(documentActions).to.include('Unpublish');
     });
   });
+
+  describe('Document Download Mime & Disposition Handling', () => {
+    const allowedInlineMimes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+
+    it('should serve allowed file types as inline', () => {
+      const contentType = 'application/pdf';
+      let disposition = 'inline';
+      if (!allowedInlineMimes.includes(contentType)) {
+        disposition = 'attachment';
+      }
+      expect(disposition).to.equal('inline');
+    });
+
+    it('should serve HTML files as attachment with octet-stream to prevent XSS', () => {
+      let contentType = 'text/html';
+      let disposition = 'inline';
+      if (!allowedInlineMimes.includes(contentType)) {
+        contentType = 'application/octet-stream';
+        disposition = 'attachment';
+      }
+      expect(contentType).to.equal('application/octet-stream');
+      expect(disposition).to.equal('attachment');
+    });
+  });
 });

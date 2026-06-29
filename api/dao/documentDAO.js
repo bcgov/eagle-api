@@ -2,15 +2,13 @@ const defaultLog      = require('winston').loggers.get('default');
 const mongoose        = require('mongoose');
 const Actions         = require('../helpers/actions');
 const Utils           = require('../helpers/utils');
-const intformat       = require('biguint-format');
-const FlakeIdGen      = require('flake-idgen');
+const crypto          = require('crypto');
 const uploadDir       = process.env.UPLOAD_DIRECTORY || "./uploads/";
 const MinioController = require('../helpers/minio');
 const constants       = require('../helpers/constants');
 const _               = require('lodash');
 const fs              = require('fs');
 
-const generator = new FlakeIdGen;
 const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING ? process.env.ENABLE_VIRUS_SCANNING.toLowerCase() == 'true' : false;
 
 exports.documentHateoas = function(document, roles) {
@@ -35,7 +33,7 @@ exports.documentHateoas = function(document, roles) {
 };
 
 exports.createDocument = async function(userName, projectId, comment, uploadedFile, ext, documentDetails, isPublic) {
-  let guid = intformat(generator.next(), 'dec');
+  let guid = crypto.randomUUID();
   let tempFilePath = uploadDir + guid + "." + ext;
 
   try {

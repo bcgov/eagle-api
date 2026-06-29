@@ -1053,20 +1053,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bcryptjs@npm:^2.4.3":
-  version: 2.4.3
-  resolution: "bcryptjs@npm:2.4.3"
-  checksum: 10c0/b969467087ed7a01ff905a1c6a0c45014ec586248a448ea08370c8ed8bb314bda16a870ca23e0961d7d23bdce1a04c76fa70a9d680be814fa9ac7d8fc61870a3
-  languageName: node
-  linkType: hard
-
-"biguint-format@npm:~1.0.0":
-  version: 1.0.2
-  resolution: "biguint-format@npm:1.0.2"
-  checksum: 10c0/45d18c96bf7c5f455d4136743a5698687782179da5b5c73aefcc60db167137a69354bc3fad3836ae69c0da6b7c02cdbcaa01c98caa85f801c693f42e3e9979e0
-  languageName: node
-  linkType: hard
-
 "block-stream2@npm:^2.0.0":
   version: 2.1.0
   resolution: "block-stream2@npm:2.1.0"
@@ -1914,8 +1900,6 @@ __metadata:
   dependencies:
     agenda: "npm:5.0.0"
     axios: "npm:^1.16.0"
-    bcryptjs: "npm:^2.4.3"
-    biguint-format: "npm:~1.0.0"
     body-parser: "npm:^1.20.3"
     chai: "npm:^4.3.10"
     clamscan: "npm:^2.4.0"
@@ -1923,11 +1907,10 @@ __metadata:
     dotenv: "npm:^16.0.1"
     express: "npm:^4.21.2"
     express-rate-limit: "npm:^8.5.2"
-    flake-idgen: "npm:~1.1.0"
     js-yaml: "npm:^4.1.1"
     jsonwebtoken: "npm:^9.0.2"
     jwks-rsa: "npm:^3.2.2"
-    lodash: "npm:^4.18.1"
+    lodash: "npm:4.17.21"
     luxon: "npm:^3.7.2"
     migrate-mongo: "npm:^14.0.7"
     minio: "npm:~7.0.8"
@@ -2264,13 +2247,6 @@ __metadata:
     locate-path: "npm:^6.0.0"
     path-exists: "npm:^4.0.0"
   checksum: 10c0/062c5a83a9c02f53cdd6d175a37ecf8f87ea5bbff1fdfb828f04bfa021441bc7583e8ebc0872a4c1baab96221fb8a8a275a19809fb93fbc40bd69ec35634069a
-  languageName: node
-  linkType: hard
-
-"flake-idgen@npm:~1.1.0":
-  version: 1.1.2
-  resolution: "flake-idgen@npm:1.1.2"
-  checksum: 10c0/fbb114cd4f958ead02f602cfb1488e63ec4b5d883d97bf482edb32f1d0bfc5ae4fd1a8424f7ceea13c5b2a47daae91c163ccb021b58233287cca9e9032ba51b5
   languageName: node
   linkType: hard
 
@@ -2998,10 +2974,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:^4.17.21, lodash@npm:^4.18.1":
-  version: 4.18.1
-  resolution: "lodash@npm:4.18.1"
-  checksum: 10c0/757228fc68805c59789e82185135cf85f05d0b2d3d54631d680ca79ec21944ec8314d4533639a14b8bcfbd97a517e78960933041a5af17ecb693ec6eecb99a27
+"lodash@npm:4.17.21":
+  version: 4.17.21
+  resolution: "lodash@npm:4.17.21"
+  checksum: 10c0/d8cbea072bb08655bb4c989da418994b073a608dffa608b09ac04b43a791b12aeae7cd7ad919aa4c925f33b48490b5cfe6c1f71d827956071dae2e7bb3a6b74c
   languageName: node
   linkType: hard
 

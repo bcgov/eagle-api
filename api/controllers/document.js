@@ -3,8 +3,7 @@ const _               = require('lodash');
 const defaultLog      = require('winston').loggers.get('default');
 const mongoose        = require('mongoose');
 const mime            = require('mime-types');
-const FlakeIdGen      = require('flake-idgen');
-const intformat       = require('biguint-format');
+const crypto          = require('crypto');
 const fs              = require('fs');
 const uploadDir       = process.env.UPLOAD_DIRECTORY || './uploads/';
 const constants       = require('../helpers/constants');
@@ -13,8 +12,6 @@ const Utils           = require('../helpers/utils');
 const MinioController = require('../helpers/minio');
 
 const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING ? process.env.ENABLE_VIRUS_SCANNING.toLowerCase() == 'true' : false;
-
-const generator = new FlakeIdGen;
 
 var getSanitizedFields = function (fields) {
   return _.remove(fields, function (f) {
@@ -107,7 +104,29 @@ exports.unProtectedPost = async function (args, res) {
   var _comment = args.swagger.params._comment.value;
   var project = args.swagger.params.project.value;
   var upfile = args.swagger.params.upfile.value;
-  var guid = intformat(generator.next(), 'dec');
+
+  // Enforce file size limit of 10MB in RAM
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
+  if (upfile.size > MAX_FILE_SIZE) {
+    defaultLog.warn('File upload rejected: exceeds 10MB limit (%d bytes)', upfile.size);
+    return Actions.sendResponse(res, 400, { message: 'File size exceeds 10MB limit.' });
+  }
+
+  // Enforce MIME allow-list
+  const allowedMimeTypes = [
+    'application/pdf',
+    'image/png',
+    'image/jpeg',
+    'image/jpg',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ];
+  if (!allowedMimeTypes.includes(upfile.mimetype)) {
+    defaultLog.warn('File upload rejected: unallowed MIME type (%s)', upfile.mimetype);
+    return Actions.sendResponse(res, 400, { message: 'MIME type is not allowed.' });
+  }
+
+  var guid = crypto.randomUUID();
   var ext = mime.extension(upfile.mimetype);
   var tempFilePath = uploadDir + guid + '.' + ext;
 
@@ -324,10 +343,19 @@ exports.publicDownload = function (args, res) {
               return Actions.sendResponse(res, 404, {});
             }
             Utils.recordAction('Download', 'Document', 'public', args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
-            // stream file from Minio to client
+            
+            const allowedInlineMimes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+            let contentType = fileMeta.metaData['content-type'] || 'application/octet-stream';
+            let disposition = 'inline';
+
+            if (!allowedInlineMimes.includes(contentType)) {
+              contentType = 'application/octet-stream';
+              disposition = 'attachment';
+            }
+
             res.setHeader('Content-Length', fileMeta.size);
-            res.setHeader('Content-Type', fileMeta.metaData['content-type']);
-            res.setHeader('Content-Disposition', 'inline;filename="' + fileName + '"');
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Disposition', disposition + ';filename="' + fileName + '"');
             return axios({ method: 'get', url: docURL, responseType: 'stream' })
               .then(response => response.data.pipe(res));
           });
@@ -472,10 +500,18 @@ exports.protectedOpen = function (args, res) {
                 args.swagger.params.auth_payload.preferred_username,
                 args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null
               );
-              // stream file from Minio to client
+              const allowedInlineMimes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+              let contentType = fileMeta.metaData['content-type'] || 'application/octet-stream';
+              let disposition = 'inline';
+
+              if (!allowedInlineMimes.includes(contentType)) {
+                contentType = 'application/octet-stream';
+                disposition = 'attachment';
+              }
+
               res.setHeader('Content-Length', fileMeta.size);
-              res.setHeader('Content-Type', fileMeta.metaData['content-type']);
-              res.setHeader('Content-Disposition', 'inline;filename="' + fileName + '"');
+              res.setHeader('Content-Type', contentType);
+              res.setHeader('Content-Disposition', disposition + ';filename="' + fileName + '"');
 
               return axios({ method: 'get', url: docURL, responseType: 'stream' })
                 .then(response => response.data.pipe(res));
@@ -501,7 +537,13 @@ exports.protectedPost = async function (args, res) {
   }
 
   var upfile = args.swagger.params.upfile.value;
-  var guid = intformat(generator.next(), 'dec');
+  const MAX_FILE_SIZE = 3 * 1024 * 1024 * 1024; // 3GB
+  if (upfile.size > MAX_FILE_SIZE) {
+    defaultLog.warn('Protected file upload rejected: exceeds 3GB limit (%d bytes)', upfile.size);
+    return Actions.sendResponse(res, 400, { message: 'File size exceeds 3GB limit.' });
+  }
+
+  var guid = crypto.randomUUID();
   var ext = mime.extension(upfile.mimetype);
   var tempFilePath = uploadDir + guid + '.' + ext;
 
@@ -600,6 +642,13 @@ exports.protectedPublish = async function (args, res) {
   try {
     var document = await Document.findOne({ _id: objId });
     if (document) {
+      // Authz check: Check if user roles intersect with project write roles or if user is sysadmin/staff
+      const userRoles = args.swagger.params.auth_payload.realm_access.roles;
+      const isAuthorized = userRoles.includes('sysadmin') || userRoles.includes('staff');
+      if (!isAuthorized) {
+        return Actions.sendResponse(res, 403, { message: 'Access Denied: Insufficient permissions to publish document' });
+      }
+
       defaultLog.info('Document:', document);
       document.eaoStatus = 'Published';
       var published = await Actions.publish(await document.save());
@@ -624,6 +673,13 @@ exports.protectedUnPublish = async function (args, res) {
   try {
     var document = await Document.findOne({ _id: objId });
     if (document) {
+      // Authz check: Check if user roles intersect with project write roles or if user is sysadmin/staff
+      const userRoles = args.swagger.params.auth_payload.realm_access.roles;
+      const isAuthorized = userRoles.includes('sysadmin') || userRoles.includes('staff');
+      if (!isAuthorized) {
+        return Actions.sendResponse(res, 403, { message: 'Access Denied: Insufficient permissions to unpublish document' });
+      }
+
       defaultLog.info('Document:', document);
       document.eaoStatus = 'Rejected';
       var unPublished = await Actions.unPublish(await document.save());
@@ -715,6 +771,17 @@ exports.protectedPut = async function (args, res) {
   var Document = mongoose.model('Document');
 
   try {
+    var existingDoc = await Document.findById(objId);
+    if (!existingDoc) {
+      return Actions.sendResponse(res, 404, {});
+    }
+
+    const userRoles = args.swagger.params.auth_payload.realm_access.roles;
+    const isAuthorized = userRoles.includes('sysadmin') || userRoles.includes('staff');
+    if (!isAuthorized) {
+      return Actions.sendResponse(res, 403, { message: 'Access Denied: Insufficient permissions to modify document' });
+    }
+
     var doc = await Document.findOneAndUpdate({ _id: objId }, obj, { upsert: false, returnDocument: 'after' });
     if (doc) {
       Utils.recordAction('put', 'document', args.swagger.params.auth_payload.preferred_username, objId);
@@ -739,6 +806,17 @@ exports.protectedDelete = async function (args, res) {
   }
   var Document = require('mongoose').model('Document');
   try {
+    var existingDoc = await Document.findById(objId);
+    if (!existingDoc) {
+      return Actions.sendResponse(res, 404, {});
+    }
+
+    const userRoles = args.swagger.params.auth_payload.realm_access.roles;
+    const isAuthorized = userRoles.includes('sysadmin') || userRoles.includes('staff');
+    if (!isAuthorized) {
+      return Actions.sendResponse(res, 403, { message: 'Access Denied: Insufficient permissions to delete document' });
+    }
+
     var doc = await Document.findOneAndDelete({ _id: objId });
     console.log('deleting document', doc);
     await MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
@@ -757,6 +835,16 @@ exports.featureDocument = async function (args, res) {
         return Actions.sendResponse(res, 400, { });
       }
       let document = await mongoose.model('Document').findById(new mongoose.Types.ObjectId(args.swagger.params.docId.value));
+      if (!document) {
+        return Actions.sendResponse(res, 404, { status: 404, message: 'Document does not exist'});
+      }
+
+      const userRoles = args.swagger.params.auth_payload.realm_access.roles;
+      const isAuthorized = userRoles.includes('sysadmin') || userRoles.includes('staff');
+      if (!isAuthorized) {
+        return Actions.sendResponse(res, 403, { message: 'Access Denied: Insufficient permissions to modify document' });
+      }
+
       let project = await mongoose.model('Project').findById(new mongoose.Types.ObjectId(document.project));
 
       if(project) {
@@ -787,6 +875,15 @@ exports.unfeatureDocument = async function (args, res) {
         return Actions.sendResponse(res, 400, { });
       }
       let document = await mongoose.model('Document').findById(new mongoose.Types.ObjectId(args.swagger.params.docId.value));
+      if (!document) {
+        return Actions.sendResponse(res, 404, {});
+      }
+
+      const userRoles = args.swagger.params.auth_payload.realm_access.roles;
+      const isAuthorized = userRoles.includes('sysadmin') || userRoles.includes('staff');
+      if (!isAuthorized) {
+        return Actions.sendResponse(res, 403, { message: 'Access Denied: Insufficient permissions to modify document' });
+      }
 
       document.isFeatured = false;
       let result = await document.save();

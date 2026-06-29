@@ -15,7 +15,8 @@
     "yarn": ">=4.0.0"
   },
   "resolutions": {
-    "axios": "^1.15.2"
+    "axios": "^1.15.2",
+    "lodash": "4.17.21"
   },
   "main": "app",
   "typings": "app",
@@ -35,19 +36,16 @@
   "dependencies": {
     "agenda": "5.0.0",
     "axios": "^1.16.0",
-    "bcryptjs": "^2.4.3",
-    "biguint-format": "~1.0.0",
     "body-parser": "^1.20.3",
     "clamscan": "^2.4.0",
     "csv": "~5.1.1",
     "dotenv": "^16.0.1",
     "express": "^4.21.2",
     "express-rate-limit": "^8.5.2",
-    "flake-idgen": "~1.1.0",
     "js-yaml": "^4.1.1",
     "jsonwebtoken": "^9.0.2",
     "jwks-rsa": "^3.2.2",
-    "lodash": "^4.18.1",
+    "lodash": "4.17.21",
     "luxon": "^3.7.2",
     "migrate-mongo": "^14.0.7",
     "minio": "~7.0.8",

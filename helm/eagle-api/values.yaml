@@ -6,7 +6,7 @@ replicaCount: 1
 image:
   repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/eagle-api
   pullPolicy: Always
-  tag: "latest"
+  tag: "v2.10.42"
   # For OpenShift ImageStreamTag trigger
   name: eagle-api
   namespace: 6cdc9e-tools
@@ -147,7 +147,7 @@ migrations:
   enabled: false
   image:
     repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/eagle-api
-    tag: "latest"
+    tag: "v2.10.42"
   resources:
     limits:
       cpu: 500m

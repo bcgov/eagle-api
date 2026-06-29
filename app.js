@@ -40,12 +40,29 @@ app.set('trust proxy', 1);
 app.use(function (req, res, next) {
   defaultLog.info(`${req.method} ${req.url}`);
 
-  var origin = req.headers.origin || '*';
-  res.setHeader('Access-Control-Allow-Origin', origin);
+  const origin = req.headers.origin || '';
+  const corsAllowList = process.env.CORS_ALLOW_LIST
+    ? process.env.CORS_ALLOW_LIST.split(',').map(o => o.trim())
+    : [
+        'http://localhost:4200',
+        'http://localhost:4300',
+        'http://localhost:8080',
+        'https://eagle-dev.apps.silver.devops.gov.bc.ca',
+        'https://eagle-test.apps.silver.devops.gov.bc.ca',
+        'https://projects.eao.gov.bc.ca'
+      ];
+
+  if (corsAllowList.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE, HEAD');
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,Content-Type,Authorization,responseType');
   res.setHeader('Access-Control-Expose-Headers', 'x-total-count,x-pending-comment-count,x-next-comment-id');
-  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Vary', 'Origin');
   if (req.method === 'GET') {
     // Authenticated requests must not be cached — admin users need fresh data

@@ -72,8 +72,16 @@ spec:
                   name: {{ .Values.mongodb.existingSecret }}
                   key: {{ .Values.mongodb.secretKeys.password }}
       {{- end }}
+      securityContext:
+        runAsNonRoot: true
       containers:
         - name: {{ .Chart.Name }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:

@@ -86,7 +86,7 @@ exports.publicGet = async function (args, res) {
             }}}
           ]},
           then: '$$KEEP',
-          else: { $cond: { if: '$read', then: '$$PRUNE', else: '$$DESCEND' } }
+          else: { $cond: { if: '$read', then: '$$PRUNE', else: '$$PRUNE' } }
         }}}
       ];
     }

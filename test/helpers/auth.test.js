@@ -105,4 +105,72 @@ describe('Auth Helper Functions', () => {
       expect(decoded1).to.have.property('iss');
     });
   });
+
+  describe('verifyToken', () => {
+    let mockReq;
+    let resJson;
+    let resStatus;
+
+    beforeEach(() => {
+      resJson = sandbox.spy();
+      resStatus = sandbox.stub().returns({ json: resJson });
+      mockReq = {
+        res: {
+          status: resStatus
+        },
+        swagger: {
+          operation: {
+            'x-security-scopes': []
+          },
+          params: {}
+        }
+      };
+    });
+
+    it('should allow public tokens for public operations', (done) => {
+      const user = { _id: 'user123', username: 'testuser' };
+      const token = 'Bearer ' + auth.issueToken(user, 'dev', ['public']);
+      mockReq.swagger.operation['x-security-scopes'] = ['public'];
+
+      auth.verifyToken(mockReq, {}, token, (err) => {
+        expect(err).to.be.null;
+        expect(mockReq.swagger.params.auth_payload.realm_access.roles).to.include('public');
+        done();
+      });
+    });
+
+    it('should deny token missing required scope', (done) => {
+      const user = { _id: 'user123', username: 'testuser' };
+      const token = 'Bearer ' + auth.issueToken(user, 'dev', ['public']);
+      mockReq.swagger.operation['x-security-scopes'] = ['sysadmin'];
+
+      auth.verifyToken(mockReq, {}, token, (err) => {
+        expect(err).to.not.be.null;
+        expect(resStatus.calledWith(403)).to.be.true;
+        done();
+      });
+    });
+
+    it('should handle malformed token without crashing', (done) => {
+      auth.verifyToken(mockReq, {}, 'Bearer invalid-token-string', (err) => {
+        expect(err).to.not.be.null;
+        expect(resStatus.calledWith(403)).to.be.true;
+        done();
+      });
+    });
+
+    it('should validate x-api-key and set trimmed roles', (done) => {
+      process.env.INTERNAL_API_KEY = 'testApiKey123';
+      mockReq.headers = { 'x-api-key': 'testApiKey123' };
+
+      auth.verifyToken(mockReq, {}, null, (err) => {
+        expect(err).to.be.null;
+        const roles = mockReq.swagger.params.auth_payload.realm_access.roles;
+        expect(roles).to.include('project-admin-staff');
+        expect(roles).to.not.include('sysadmin');
+        delete process.env.INTERNAL_API_KEY;
+        done();
+      });
+    });
+  });
 });

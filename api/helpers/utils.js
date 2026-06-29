@@ -355,7 +355,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
             },
             then: '$$KEEP',
             else: {
-              $cond: { if: '$read', then: '$$PRUNE', else: '$$DESCEND' }
+              $cond: { if: '$read', then: '$$PRUNE', else: '$$PRUNE' }
             }
           }
         }
