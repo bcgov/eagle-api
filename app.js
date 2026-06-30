@@ -1,5 +1,11 @@
 'use strict';
 
+try {
+  process.loadEnvFile();
+} catch (err) {
+  // Silent fallback: use system environment variables (e.g. in container environments)
+}
+
 var express          = require('express');
 var app              = express();
 var fs               = require('fs');

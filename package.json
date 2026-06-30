@@ -21,15 +21,15 @@
   "typings": "app",
   "scripts": {
     "start": "node app",
-    "start-watch": "node --env-file=.env --watch app.js",
+    "start-watch": "node --watch app.js",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f mongodb",
     "db:restore": "docker compose exec -T mongodb mongorestore --archive --drop --db=epic",
-    "test": "node --env-file=.env node_modules/.bin/mocha 'test/aggregators/**/*.test.js' 'test/controllers/**/*.test.js' 'test/helpers/**/*.test.js' 'test/models/**/*.test.js' --recursive --exit",
-    "test:watch": "node --env-file=.env node_modules/.bin/mocha 'test/aggregators/**/*.test.js' 'test/controllers/**/*.test.js' 'test/helpers/**/*.test.js' 'test/models/**/*.test.js' --recursive --watch",
-    "test:smoke": "node --env-file=.env node_modules/.bin/mocha 'test/smoke/**/*.test.js' --recursive --exit --timeout 30000",
-    "test:smoke:public": "node --env-file=.env node_modules/.bin/mocha 'test/smoke/public-*.test.js' --recursive --exit --timeout 30000",
+    "test": "mocha 'test/aggregators/**/*.test.js' 'test/controllers/**/*.test.js' 'test/helpers/**/*.test.js' 'test/models/**/*.test.js' --recursive --exit",
+    "test:watch": "mocha 'test/aggregators/**/*.test.js' 'test/controllers/**/*.test.js' 'test/helpers/**/*.test.js' 'test/models/**/*.test.js' --recursive --watch",
+    "test:smoke": "mocha 'test/smoke/**/*.test.js' --recursive --exit --timeout 30000",
+    "test:smoke:public": "mocha 'test/smoke/public-*.test.js' --recursive --exit --timeout 30000",
     "migrate": "migrate-mongo up"
   },
   "dependencies": {
