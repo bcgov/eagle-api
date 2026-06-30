@@ -706,6 +706,7 @@ exports.protectedPut = async function (args, res) {
   } else if (projectLegislationYear == 1996) {
     fullProjectObject.legislation_1996 = filteredData;
   }
+  fullProjectObject.currentLegislationYear = 'legislation_' + projectLegislationYear;
 
   var doc = await Project.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(objId) }, fullProjectObject, { upsert: false, returnDocument: 'after' });
   // Project.update({ _id: new mongoose.Types.ObjectId(objId) }, { $set: updateObj }, function (err, o) {
