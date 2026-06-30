@@ -46,6 +46,7 @@ async function getClamScanner() {
 }
 
 exports.buildQuery = function (property, values, query) {
+  query = query || {};
   var oids = [];
   if (Array.isArray(values)) {
     values.forEach(function (i) {
@@ -149,9 +150,11 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
     });
 
     // Add requested fields - sanitize first by including only those that we can/want to return
-    fields.forEach(function (f) {
-      projection[f] = 1;
-    });
+    if (Array.isArray(fields)) {
+      fields.forEach(function (f) {
+        projection[f] = 1;
+      });
+    }
 
     var aggregations = [
       {
