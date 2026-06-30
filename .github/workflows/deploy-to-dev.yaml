@@ -92,11 +92,17 @@ jobs:
           TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db:2
 
       - name: Login to OpenShift registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
-        with:
-          registry: ${{ secrets.OPENSHIFT_REPOSITORY }}
-          username: ${{ secrets.OPENSHIFT_REPOSITORY_USERNAME }}
-          password: ${{ secrets.OPENSHIFT_REPOSITORY_PASSWORD }}
+        run: |
+          for i in {1..5}; do
+            echo "${{ secrets.OPENSHIFT_REPOSITORY_PASSWORD }}" | docker login ${{ secrets.OPENSHIFT_REPOSITORY }} --username ${{ secrets.OPENSHIFT_REPOSITORY_USERNAME }} --password-stdin && break || {
+              echo "Login attempt $i failed. Retrying in 10 seconds..."
+              sleep 10
+            }
+            if [ $i -eq 5 ]; then
+              echo "Login failed after 5 attempts."
+              exit 1
+            fi
+          done
 
       - name: Build and push Docker image
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
