@@ -1,7 +1,5 @@
 'use strict';
 
-const axios = require('axios');
-const qs = require('qs');
 const winston = require('winston');
 const defaultLog = winston.loggers.get('default');
 
@@ -49,33 +47,42 @@ exports.sendCACWelcomeEmail = async function (projectId, projectName, email) {
 
   // Send the emails to the CHES (Common Hosted Email Service)
   try {
-    const getOKRes = await axios.post(_GETOK_endpoint,
-      qs.stringify({
+    const getOKRes = await fetch(_GETOK_endpoint, {
+      method: 'POST',
+      body: new URLSearchParams({
         'client_id': _GETOK_CLIENTID,
         'client_secret': _GETOK_CLIENT_SECRET,
         'grant_type': 'client_credentials',
       }),
-      {
-        headers: {
-          'content-type': 'application/x-www-form-urlencoded'
-        }
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded'
       }
-    );
-    if (getOKRes && getOKRes.data && getOKRes.data.access_token) {
-      // Send the welcome email
-      await axios.post(
-        _commonHostingEmailServiceEndpoint + _CHES_emailMergeAPI,
-        emailTemplate,
-        {
-          headers: {
-            "Authorization": 'Bearer ' + getOKRes.data.access_token,
-            "Content-Type": 'application/json'
+    });
+
+    if (getOKRes.ok) {
+      const getOKData = await getOKRes.json();
+      if (getOKData && getOKData.access_token) {
+        // Send the welcome email
+        const chesRes = await fetch(
+          _commonHostingEmailServiceEndpoint + _CHES_emailMergeAPI,
+          {
+            method: 'POST',
+            body: JSON.stringify(emailTemplate),
+            headers: {
+              "Authorization": 'Bearer ' + getOKData.access_token,
+              "Content-Type": 'application/json'
+            }
           }
+        );
+        if (!chesRes.ok) {
+          throw new Error('CHES response status ' + chesRes.status);
         }
-      );
-      defaultLog.info("Email Sent");
+        defaultLog.info("Email Sent");
+      } else {
+        defaultLog.error("Couldn't get a proper token", getOKData);
+      }
     } else {
-      defaultLog.error("Couldn't get a proper token", getOKRes);
+      defaultLog.error("Couldn't get token, status " + getOKRes.status);
     }
   } catch (err) {
     defaultLog.error(`Error:: ${err.message}`);

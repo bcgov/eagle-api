@@ -93,21 +93,27 @@ app.get('/api/health', function (req, res) {
 // Analytics proxy — forwards /analytics/* to penguin-analytics service.
 // In production, nginx routes /analytics directly. This route serves local dev
 // where proxy.conf.js sends /analytics to eagle-api.
-var axios = require('axios');
 var analyticsTarget = process.env.ANALYTICS_SERVICE_URL || 'http://localhost:3001';
 app.use('/analytics', function (req, res) {
   var targetUrl = analyticsTarget + '/analytics' + req.url;
-  axios({
+  fetch(targetUrl, {
     method: req.method,
-    url: targetUrl,
-    data: req.body,
+    body: req.body ? JSON.stringify(req.body) : undefined,
     headers: { 'Content-Type': 'application/json' },
-    timeout: 5000
-  }).then(function (response) {
-    res.status(response.status).json(response.data);
-  }).catch(function (err) {
-    if (err.response) {
-      res.status(err.response.status).json(err.response.data);
+    signal: AbortSignal.timeout(5000)
+  })
+  .then(async function (response) {
+    let data;
+    try {
+      data = await response.json();
+    } catch (e) {
+      data = null;
+    }
+    res.status(response.status).json(data);
+  })
+  .catch(function (err) {
+    if (err.name === 'TimeoutError') {
+      res.status(504).json({ error: 'Analytics service timeout' });
     } else {
       res.status(502).json({ error: 'Analytics service unavailable' });
     }

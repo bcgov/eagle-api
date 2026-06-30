@@ -475,3 +475,18 @@ const getWordSearchTerms = (word) => {
 
   return searchTerms;
 };
+
+/**
+ * Fetch a URL and return it as a Node Readable stream.
+ * @param {string} url - The URL to fetch
+ * @returns {Promise<import('stream').Readable>}
+ */
+exports.getUrlAsStream = async function (url) {
+  const { Readable } = require('stream');
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch URL: ${url}, status: ${response.status}`);
+  }
+  return Readable.fromWeb(response.body);
+};
+

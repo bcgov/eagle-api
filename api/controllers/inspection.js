@@ -5,7 +5,6 @@ var Utils = require('../helpers/utils');
 var mime = require('mime-types');
 var uploadDir = process.env.UPLOAD_DIRECTORY || './uploads/';
 var MinioController = require('../helpers/minio');
-var axios = require('axios');
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
@@ -357,15 +356,11 @@ exports.protectedElementItemGet = function (args, res) {
 
             if (!self.thumbnail) {
               console.log('Getting full');
-              return axios({ method: 'get', url: docURL, responseType: 'stream' })
-                .then(response => response.data.pipe(res));
+              return Utils.getUrlAsStream(docURL)
+                .then(stream => stream.pipe(res));
             } else {
               // Setup a downloader function.
-              const download = url => axios({
-                method: 'get',
-                url,
-                responseType: 'stream',
-              }).then(response => response.data);
+              const download = url => Utils.getUrlAsStream(url);
               // Download the file and pipe the generated thumbnail to it, streaming to the client.
               // TODO: Doesn't take into account orientation.
               return download(docURL)

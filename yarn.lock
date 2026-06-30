@@ -1899,7 +1899,6 @@ __metadata:
   resolution: "eagle-api@workspace:."
   dependencies:
     agenda: "npm:5.0.0"
-    axios: "npm:^1.16.0"
     body-parser: "npm:^1.20.3"
     chai: "npm:^4.3.10"
     clamscan: "npm:^2.4.0"

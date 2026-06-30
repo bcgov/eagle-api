@@ -1,4 +1,3 @@
-const axios           = require('axios');
 const defaultLog      = require('winston').loggers.get('default');
 const mongoose        = require('mongoose');
 const mime            = require('mime-types');
@@ -357,8 +356,8 @@ exports.publicDownload = function (args, res) {
             res.setHeader('Content-Length', fileMeta.size);
             res.setHeader('Content-Type', contentType);
             res.setHeader('Content-Disposition', disposition + ';filename="' + fileName + '"');
-            return axios({ method: 'get', url: docURL, responseType: 'stream' })
-              .then(response => response.data.pipe(res));
+            return Utils.getUrlAsStream(docURL)
+              .then(stream => stream.pipe(res));
           });
       } else {
         return Actions.sendResponse(res, 404, {});
@@ -428,8 +427,8 @@ exports.protectedDownload = function (args, res) {
             res.setHeader('Content-Length', fileMeta.size);
             res.setHeader('Content-Type', fileMeta.metaData['content-type']);
             res.setHeader('Content-Disposition', 'attachment;filename="' + encodeURIComponent(fileName) + '"');
-            return axios({ method: 'get', url: docURL, responseType: 'stream' })
-              .then(response => response.data.pipe(res));
+            return Utils.getUrlAsStream(docURL)
+              .then(stream => stream.pipe(res));
           });
       } else {
         return Actions.sendResponse(res, 404, {});
@@ -514,8 +513,8 @@ exports.protectedOpen = function (args, res) {
               res.setHeader('Content-Type', contentType);
               res.setHeader('Content-Disposition', disposition + ';filename="' + fileName + '"');
 
-              return axios({ method: 'get', url: docURL, responseType: 'stream' })
-                .then(response => response.data.pipe(res));
+              return Utils.getUrlAsStream(docURL)
+                .then(stream => stream.pipe(res));
             }
           });
       } else {
