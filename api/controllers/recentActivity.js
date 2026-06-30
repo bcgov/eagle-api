@@ -1,28 +1,29 @@
-var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 
 var getSanitizedFields = function (fields) {
-  return _.remove(fields, function (f) {
-    return (_.indexOf([
-      '_schemaName',
-      'dateUpdated',
-      'dateAdded',
-      'pinned',
-      'documentUrl',
-      'contentUrl',
-      'type',
-      'notificationName',
-      'projectNotification',
-      'pcp',
-      'active',
-      'project',
-      'content',
-      'headline',
-      'complianceAndEnforcement'
-    ], f) !== -1);
+  if (!Array.isArray(fields)) return [];
+  const allowedList = [
+    '_schemaName',
+    'dateUpdated',
+    'dateAdded',
+    'pinned',
+    'documentUrl',
+    'contentUrl',
+    'type',
+    'notificationName',
+    'projectNotification',
+    'pcp',
+    'active',
+    'project',
+    'content',
+    'headline',
+    'complianceAndEnforcement'
+  ];
+  return fields.filter(function (f) {
+    return allowedList.includes(f);
   });
 };
 exports.protectedOptions = function (args, res) {

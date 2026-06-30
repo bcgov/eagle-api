@@ -3,7 +3,6 @@
 var crypto = require('crypto');
 var minio = require('minio');
 var path = require('path');
-var _ = require('lodash');
 
 const ep = process.env.MINIO_HOST || 'foo.pathfinder.gov.bc.ca';
 
@@ -20,7 +19,7 @@ var minioClient = new minio.Client({
 
 // This is the list of known, valid buckets documents can be uploaded and downloaded from
 // Set from a system environment variable, if that's not available then defaults to 'uploads'
-var BUCKETS = _.isEmpty(process.env.MINIO_BUCKET_NAME) ? { DOCUMENTS_BUCKET: 'uploads' } : { DOCUMENTS_BUCKET: process.env.MINIO_BUCKET_NAME };
+var BUCKETS = !process.env.MINIO_BUCKET_NAME ? { DOCUMENTS_BUCKET: 'uploads' } : { DOCUMENTS_BUCKET: process.env.MINIO_BUCKET_NAME };
 
 exports.BUCKETS = BUCKETS;
 

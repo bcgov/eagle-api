@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const defaultLog = require('winston').loggers.get('default');
 const mongoose = require('mongoose');
 const Utils = require('../helpers/utils');
@@ -12,12 +11,12 @@ exports.getProjectPins = async function (user, roles, project, pageNumber, pageS
 
   let query = {};
 
-  _.assignIn(query, { '_schemaName': 'Project' });
+  Object.assign(query, { '_schemaName': 'Project' });
 
   let fields = ['_id', 'pins', 'name', 'website', 'province', 'pinsRead'];
 
   // Getting a single project
-  _.assignIn(query, { _id: new mongoose.Types.ObjectId(project._id) });
+  Object.assign(query, { _id: new mongoose.Types.ObjectId(project._id) });
 
   var data = await Utils.runDataQuery('Project',
     roles,
@@ -32,7 +31,7 @@ exports.getProjectPins = async function (user, roles, project, pageNumber, pageS
     true,
     null);
 
-  _.assignIn(query, { '_schemaName': 'Organization' });
+  Object.assign(query, { '_schemaName': 'Organization' });
 
   let thePins = [];
 

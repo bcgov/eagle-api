@@ -1,4 +1,3 @@
-const _          = require('lodash');
 const mongoose   = require('mongoose');
 const Utils      = require('../helpers/utils');
 
@@ -100,12 +99,12 @@ exports.getGroupMembers = async function(roles, user, group, sortBy, pageSize, p
 
   let query = {};
 
-  _.assignIn(query, { '_schemaName': 'Group' });
+  Object.assign(query, { '_schemaName': 'Group' });
 
   let fields = ['_id', 'members', 'name', 'project'];
 
   // Getting a single group
-  _.assignIn(query, { _id: new mongoose.Types.ObjectId(group._id) });
+  Object.assign(query, { _id: new mongoose.Types.ObjectId(group._id) });
 
   let resultData = await Utils.runDataQuery('Group',
     roles,
@@ -126,7 +125,7 @@ exports.getGroupMembers = async function(roles, user, group, sortBy, pageSize, p
     const theUsers = resultData[0].members.map(user => new mongoose.Types.ObjectId(user));
 
     query = { _id: { $in: theUsers } };
-    _.assignIn(query, { '_schemaName': 'User' });
+    Object.assign(query, { '_schemaName': 'User' });
 
     // Sort
     if (sortBy && sortBy.value) {

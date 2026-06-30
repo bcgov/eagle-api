@@ -1,4 +1,3 @@
-var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
@@ -313,7 +312,7 @@ exports.protectedElementItemGet = function (args, res) {
     query = Utils.buildQuery('_id', args.swagger.params.itemId.value, query);
   }
   // Set query type
-  _.assignIn(query, { '_schemaName': 'InspectionItem' });
+  Object.assign(query, { '_schemaName': 'InspectionItem' });
 
   console.log('QE:', query);
 

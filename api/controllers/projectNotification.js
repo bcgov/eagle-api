@@ -1,4 +1,3 @@
-var _ = require('lodash');
 const defaultLog = require('winston').loggers.get('default');
 const mongoose = require('mongoose');
 const Actions = require('../helpers/actions');
@@ -44,7 +43,7 @@ exports.protectedGet = async function (args, res) {
   }
 
   // set query to get project notifications
-  _.assignIn(query, { '_schemaName': 'ProjectNotification'});
+  Object.assign(query, { '_schemaName': 'ProjectNotification'});
 
   try {
     var data = await Utils.runDataQuery('ProjectNotification',

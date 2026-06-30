@@ -6,7 +6,6 @@
   *   - put the database in a state that matches the existing models on leading to more effective development, reporting, maintenance
   */
 
-const _ = require('lodash');
 
 module.exports = {
   async up(db, client) {

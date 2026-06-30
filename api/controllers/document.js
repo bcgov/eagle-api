@@ -1,5 +1,4 @@
 const axios           = require('axios');
-const _               = require('lodash');
 const defaultLog      = require('winston').loggers.get('default');
 const mongoose        = require('mongoose');
 const mime            = require('mime-types');
@@ -14,43 +13,45 @@ const MinioController = require('../helpers/minio');
 const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING ? process.env.ENABLE_VIRUS_SCANNING.toLowerCase() == 'true' : false;
 
 var getSanitizedFields = function (fields) {
-  return _.remove(fields, function (f) {
-    return (_.indexOf(['displayName',
-      '_addedBy',
-      'documentFileName',
-      'internalExt',
-      'internalOriginalName',
-      'displayName',
-      'labels',
-      'documentType',
-      'datePosted',
-      'dateUploaded',
-      'dateReceived',
-      'documentFileSize',
-      'documentSource',
-      'eaoStatus',
-      'internalURL',
-      'internalMime',
-      'internalSize',
-      'checkbox',
-      'project',
-      'type',
-      'documentAuthor',
-      'documentAuthorType',
-      'milestone',
-      'projectPhase',
-      'legislation',
-      'description',
-      'keywords',
-      'isPublished',
-      'internalMime',
-      'isFeatured',
-      'sortOrder',
-      'publicHitCount',
-      'secureHitCount',
-      'contentExtractedAt',
-      'extractionMethod',
-      'contentPageCount'], f) !== -1);
+  if (!Array.isArray(fields)) return [];
+  const allowedList = ['displayName',
+    '_addedBy',
+    'documentFileName',
+    'internalExt',
+    'internalOriginalName',
+    'displayName',
+    'labels',
+    'documentType',
+    'datePosted',
+    'dateUploaded',
+    'dateReceived',
+    'documentFileSize',
+    'documentSource',
+    'eaoStatus',
+    'internalURL',
+    'internalMime',
+    'internalSize',
+    'checkbox',
+    'project',
+    'type',
+    'documentAuthor',
+    'documentAuthorType',
+    'milestone',
+    'projectPhase',
+    'legislation',
+    'description',
+    'keywords',
+    'isPublished',
+    'internalMime',
+    'isFeatured',
+    'sortOrder',
+    'publicHitCount',
+    'secureHitCount',
+    'contentExtractedAt',
+    'extractionMethod',
+    'contentPageCount'];
+  return fields.filter(function (f) {
+    return allowedList.includes(f);
   });
 };
 
@@ -71,7 +72,7 @@ exports.publicGet = async function (args, res,) {
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Document' });
+  Object.assign(query, { '_schemaName': 'Document' });
 
   try {
     var data = await Utils.runDataQuery('Document',
@@ -208,11 +209,11 @@ exports.protectedHead = function (args, res) {
   }
   // Unless they specifically ask for it, hide deleted results.
   if (args.swagger.params.isDeleted && args.swagger.params.isDeleted.value != undefined) {
-    _.assignIn(query, { isDeleted: args.swagger.params.isDeleted.value });
+    Object.assign(query, { isDeleted: args.swagger.params.isDeleted.value });
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Document' });
+  Object.assign(query, { '_schemaName': 'Document' });
 
   Utils.runDataQuery('Document',
     args.swagger.params.auth_payload.realm_access.roles,
@@ -245,7 +246,7 @@ exports.protectedGet = async function (args, res) {
 
   // Build match query if on docId route
   if (args.swagger.params.docId && args.swagger.params.docId.value) {
-    _.assignIn(query, { _id: new mongoose.Types.ObjectId(args.swagger.params.docId.value) });
+    Object.assign(query, { _id: new mongoose.Types.ObjectId(args.swagger.params.docId.value) });
   } else if (args.swagger.params.docIds && args.swagger.params.docIds.value && args.swagger.params.docIds.value.length > 0) {
     query = Utils.buildQuery('_id', args.swagger.params.docIds.value);
   }
@@ -255,7 +256,7 @@ exports.protectedGet = async function (args, res) {
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Document' });
+  Object.assign(query, { '_schemaName': 'Document' });
 
   try {
     var data = await Utils.runDataQuery('Document',
@@ -285,7 +286,7 @@ exports.publicDownload = function (args, res) {
     return Actions.sendResponse(res, 404, {});
   }
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Document' });
+  Object.assign(query, { '_schemaName': 'Document' });
 
   Utils.runDataQuery('Document',
     ['public'],
@@ -377,7 +378,7 @@ exports.protectedDownload = function (args, res) {
     query = Utils.buildQuery('_id', args.swagger.params.docId.value, query);
   }
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Document' });
+  Object.assign(query, { '_schemaName': 'Document' });
 
   Utils.runDataQuery('Document',
     args.swagger.params.auth_payload.realm_access.roles,
@@ -448,7 +449,7 @@ exports.protectedOpen = function (args, res) {
     query = Utils.buildQuery('_id', args.swagger.params.docId.value, query);
   }
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Document' });
+  Object.assign(query, { '_schemaName': 'Document' });
 
   Utils.runDataQuery('Document',
     args.swagger.params.auth_payload.realm_access.roles,

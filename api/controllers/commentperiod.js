@@ -1,59 +1,59 @@
-var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 
 var getSanitizedFields = function (fields) {
-  return _.remove(fields, function (f) {
-    return (_.indexOf([
-      '_schemaName',
-      'addedBy',
-      'additionalText',
-      'ceaaAdditionalText',
-      'ceaaInformationLabel',
-      'ceaaRelatedDocuments',
-      'classificationRoles',
-      'classifiedPercent',
-      'commenterRoles',
-      'dateAdded',
-      'dateCompleted',
-      'dateCompletedEst',
-      'dateStarted',
-      'dateStartedEst',
-      'dateUpdated',
-      'downloadRoles',
-      'informationLabel',
-      'instructions',
-      'commentTip',
-      'isClassified',
-      'isPublished',
-      'isResolved',
-      'isVetted',
-      'isMet',
-      'metURL',
-      'metURLAdmin',
-      'metBannerImageUrl',
-      'milestone',
-      'openHouses',
-      'periodType',
-      'phase',
-      'phaseName',
-      'project',
-      'publishedPercent',
-      'rangeOption',
-      'rangeType',
-      'relatedDocuments',
-      'resolvedPercent',
-      'updatedBy',
-      'userCan',
-      'vettedPercent',
-      'vettingRoles',
-
-      'read',
-      'write',
-      'delete'
-    ], f) !== -1);
+  if (!Array.isArray(fields)) return [];
+  const allowedList = [
+    '_schemaName',
+    'addedBy',
+    'additionalText',
+    'ceaaAdditionalText',
+    'ceaaInformationLabel',
+    'ceaaRelatedDocuments',
+    'classificationRoles',
+    'classifiedPercent',
+    'commenterRoles',
+    'dateAdded',
+    'dateCompleted',
+    'dateCompletedEst',
+    'dateStarted',
+    'dateStartedEst',
+    'dateUpdated',
+    'downloadRoles',
+    'informationLabel',
+    'instructions',
+    'commentTip',
+    'isClassified',
+    'isPublished',
+    'isResolved',
+    'isVetted',
+    'isMet',
+    'metURL',
+    'metURLAdmin',
+    'metBannerImageUrl',
+    'milestone',
+    'openHouses',
+    'periodType',
+    'phase',
+    'phaseName',
+    'project',
+    'publishedPercent',
+    'rangeOption',
+    'rangeType',
+    'relatedDocuments',
+    'resolvedPercent',
+    'updatedBy',
+    'userCan',
+    'vettedPercent',
+    'vettingRoles',
+    'read',
+    'write',
+    'delete'
+  ];
+  return fields.filter(function (f) {
+    return allowedList.includes(f);
   });
 };
 
@@ -91,7 +91,7 @@ exports.publicGet = async function (args, res) {
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'CommentPeriod' });
+  Object.assign(query, { '_schemaName': 'CommentPeriod' });
 
   try {
     var data = await Utils.runDataQuery('CommentPeriod',
@@ -125,11 +125,11 @@ exports.protectedHead = async function (args, res) {
   }
   // Unless they specifically ask for it, hide deleted results.
   if (args.swagger.params.isDeleted && args.swagger.params.isDeleted.value != undefined) {
-    _.assignIn(query, { isDeleted: args.swagger.params.isDeleted.value });
+    Object.assign(query, { isDeleted: args.swagger.params.isDeleted.value });
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'CommentPeriod' });
+  Object.assign(query, { '_schemaName': 'CommentPeriod' });
 
   try {
     var data = await Utils.runDataQuery('CommentPeriod',
@@ -166,15 +166,15 @@ exports.protectedSummary = async function (args, res) {
   // Build match query if on CommentPeriodId route
   var query = {};
   if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value) {
-    _.assignIn(query, { period: new mongoose.Types.ObjectId(args.swagger.params.commentPeriodId.value) });
+    Object.assign(query, { period: new mongoose.Types.ObjectId(args.swagger.params.commentPeriodId.value) });
   }
   // Unless they specifically ask for it, hide deleted results.
   if (args.swagger.params.isDeleted && args.swagger.params.isDeleted.value != undefined) {
-    _.assignIn(query, { isDeleted: args.swagger.params.isDeleted.value });
+    Object.assign(query, { isDeleted: args.swagger.params.isDeleted.value });
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Comment' });
+  Object.assign(query, { '_schemaName': 'Comment' });
 
   Utils.recordAction('summary', 'commentPeriod', args.swagger.params.auth_payload.preferred_username);
 
@@ -188,7 +188,7 @@ exports.protectedSummary = async function (args, res) {
     };
     await Promise.all(options.map(async (item) => {
       var optionQuery = {};
-      _.assignIn(optionQuery, { 'eaoStatus': item, period: new mongoose.Types.ObjectId(args.swagger.params.commentPeriodId.value) });
+      Object.assign(optionQuery, { 'eaoStatus': item, period: new mongoose.Types.ObjectId(args.swagger.params.commentPeriodId.value) });
       console.log('optionQuery:', optionQuery);
       var res = await Utils.runDataQuery('CommentPeriod',
         args.swagger.params.auth_payload.realm_access.roles,
@@ -232,7 +232,7 @@ exports.protectedGet = async function (args, res) {
     if (!mongoose.Types.ObjectId.isValid(args.swagger.params.project.value)) {
       return Actions.sendResponse(res, 400, { });
     }
-    _.assignIn(query, { project: new mongoose.Types.ObjectId(args.swagger.params.project.value) });
+    Object.assign(query, { project: new mongoose.Types.ObjectId(args.swagger.params.project.value) });
   }
 
   // sort
@@ -256,7 +256,7 @@ exports.protectedGet = async function (args, res) {
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'CommentPeriod' });
+  Object.assign(query, { '_schemaName': 'CommentPeriod' });
 
   try {
     var data = await Utils.runDataQuery('CommentPeriod',

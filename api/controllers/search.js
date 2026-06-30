@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const defaultLog = require('winston').loggers.get('default');
 const mongoose = require('mongoose');
 
@@ -304,7 +303,7 @@ const executeQuery = async function (args, res) {
     // TODO: this should be moved into the aggregation.
     if (dataset === constants.COMMENT) {
       // Filter
-      _.each(collectionData[0].searchResults, function (item) {
+      collectionData[0].searchResults.forEach(function (item) {
         if (item.isAnonymous === true) {
           delete item.author;
         }
@@ -328,7 +327,7 @@ const executeQuery = async function (args, res) {
 
     if (schemaNameVal === constants.COMMENT) {
       // Filter
-      _.each(data, function (item) {
+      data.forEach(function (item) {
         if (item.isAnonymous === true) {
           delete item.author;
         }

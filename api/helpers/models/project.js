@@ -137,7 +137,8 @@ nature.get = function () {
 };
 nature.set = function (nature) {
   try {
-    this.set('build', (_.invert(buildToNature))[nature]);
+    const build = Object.keys(buildToNature).find(key => buildToNature[key] === nature);
+    this.set('build', build || null);
   } catch (error) {
     console.log('Failed to parse nature: "' + nature + '" with error: "' + error + '"');
     this.set('build', null);

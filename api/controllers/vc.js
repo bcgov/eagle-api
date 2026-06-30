@@ -1,4 +1,3 @@
-var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
@@ -16,8 +15,9 @@ var tagList = [
 ];
 
 var getSanitizedFields = function (fields) {
-  return _.remove(fields, function (f) {
-    return (_.indexOf(tagList, f) !== -1);
+  if (!Array.isArray(fields)) return [];
+  return fields.filter(function (f) {
+    return tagList.includes(f);
   });
 };
 
@@ -58,7 +58,7 @@ exports.protectedGet = async function (args, res) {
     if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projectId.value)) {
       return Actions.sendResponse(res, 400, { });
     }
-    _.assignIn(query, { project: new mongoose.Types.ObjectId(args.swagger.params.projectId.value) });
+    Object.assign(query, { project: new mongoose.Types.ObjectId(args.swagger.params.projectId.value) });
   }
   if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
     args.swagger.params.sortBy.value.forEach(function (value) {
@@ -72,7 +72,7 @@ exports.protectedGet = async function (args, res) {
   limit = processedParameters.limit;
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Vc' });
+  Object.assign(query, { '_schemaName': 'Vc' });
 
   var data = await Utils.runDataQuery('Vc',
     args.swagger.params.auth_payload.realm_access.roles,

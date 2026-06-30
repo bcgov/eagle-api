@@ -1,6 +1,5 @@
 'use strict';
 
-var _               = require('lodash');
 var mongoose        = require('mongoose');
 var NodeClam        = require('clamscan');
 var MAX_LIMIT       = 1000;
@@ -48,8 +47,8 @@ async function getClamScanner() {
 
 exports.buildQuery = function (property, values, query) {
   var oids = [];
-  if (_.isArray(values)) {
-    _.each(values, function (i) {
+  if (Array.isArray(values)) {
+    values.forEach(function (i) {
       if (mongoose.Types.ObjectId.isValid(i)) {
         oids.push(new mongoose.Types.ObjectId(i));
       }
@@ -59,7 +58,7 @@ exports.buildQuery = function (property, values, query) {
       oids.push(new mongoose.Types.ObjectId(values));
     }
   }
-  return _.assignIn(query, { [property]: {
+  return Object.assign(query, { [property]: {
     $in: oids
   }
   });
@@ -145,16 +144,16 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
       'proponent',
       'tags',
       'read'];
-    _.each(defaultFields, function (f) {
+    defaultFields.forEach(function (f) {
       projection[f] = 1;
     });
 
     // Add requested fields - sanitize first by including only those that we can/want to return
-    _.each(fields, function (f) {
+    fields.forEach(function (f) {
       projection[f] = 1;
     });
 
-    var aggregations = _.compact([
+    var aggregations = [
       {
         '$match': query
       },
@@ -363,7 +362,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
 
       sortWarmUp, // Used to setup the sort if a temporary projection is needed.
 
-      !_.isEmpty(sort) ? { $sort: sort } : null,
+      (sort && Object.keys(sort).length > 0) ? { $sort: sort } : null,
 
       sort ? { $project: projection } : null, // Reset the projection just in case the sortWarmUp changed it.
 
@@ -373,10 +372,10 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
       count && {
         $facet: {
           total_items: [{ $count: 'total_items' }],
-          results: _.compact([
+          results: [
             skip != null ? { $skip: skip } : null,
             { $limit: limit || MAX_LIMIT }
-          ])
+          ].filter(Boolean)
         }
       },
       // Unwrap the count array produced by $facet into a plain number.
@@ -387,7 +386,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
       },
       !count &&{ $skip: skip || 0 },
       !count &&{ $limit: limit || MAX_LIMIT }
-    ]);
+    ].filter(Boolean);
 
     // Pre-pend the aggregation with other pipeline steps if we are joining on another datasource
     if (preQueryPipelineSteps && preQueryPipelineSteps.length > 0) {
@@ -415,7 +414,7 @@ exports.filterData = function (collection, data, roles) {
 
   // We don't return these fields for non-admins.
   if (collection === 'Project') {
-    _.each(data, function (item) {
+    data.forEach(function (item) {
       delete item.review180Start;
       delete item.review45Start;
       delete item.reviewSuspensions;
@@ -423,7 +422,7 @@ exports.filterData = function (collection, data, roles) {
     });
     return data;
   } else if (collection === 'Organization') {
-    _.each(data, function (item) {
+    data.forEach(function (item) {
       if (item.searchResults) {
         for (let organization in item.searchResults){
           delete item.searchResults[organization].description;

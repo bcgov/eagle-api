@@ -1,7 +1,6 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const _ = require('lodash');
 const { argv } = require('yargs');
 const Confirm = require('prompt-confirm');
 const { getKeycloakAdminClient, getGitHubClient } = require('./util');
@@ -312,7 +311,7 @@ main().catch((err)=>console.error('Migration end with error', JSON.stringify(err
 //returns user guid, please modify accordingly if required
 //by default it uses idp specific user attribute to fetch the guid
 const getBaseUserGuid = (baseUser, targetRealmParentIdp) => {
-  return _.get(baseUser, `attributes.${idpGuidKeyMap[targetRealmParentIdp]}.0`, false);
+  return baseUser?.attributes?.[idpGuidKeyMap[targetRealmParentIdp]]?.[0] ?? false;
 };
 
 //returns user display, please modify accordingly if required

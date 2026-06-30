@@ -1,4 +1,3 @@
-var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
@@ -12,8 +11,9 @@ var tagList = [
 ];
 
 var getSanitizedFields = function (fields) {
-  return _.remove(fields, function (f) {
-    return (_.indexOf(tagList, f) !== -1);
+  if (!Array.isArray(fields)) return [];
+  return fields.filter(function (f) {
+    return tagList.includes(f);
   });
 };
 
@@ -29,7 +29,7 @@ exports.publicGet = async function (args, res) {
     query = Utils.buildQuery('_id', args.swagger.params.orgId.value, query);
   }
   if (args.swagger.params.companyType && args.swagger.params.companyType.value) {
-    _.assignIn(query, { companyType: args.swagger.params.companyType.value });
+    Object.assign(query, { companyType: args.swagger.params.companyType.value });
   }
   if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
     args.swagger.params.sortBy.value.forEach(function (value) {
@@ -40,7 +40,7 @@ exports.publicGet = async function (args, res) {
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Organization' });
+  Object.assign(query, { '_schemaName': 'Organization' });
 
   var data = await Utils.runDataQuery('Organization',
     ['public'],
@@ -63,7 +63,7 @@ exports.protectedGet = async function (args, res) {
     query = Utils.buildQuery('_id', args.swagger.params.orgId.value, query);
   }
   if (args.swagger.params.companyType && args.swagger.params.companyType.value) {
-    _.assignIn(query, { companyType: args.swagger.params.companyType.value });
+    Object.assign(query, { companyType: args.swagger.params.companyType.value });
   }
   if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
     args.swagger.params.sortBy.value.forEach(function (value) {
@@ -74,7 +74,7 @@ exports.protectedGet = async function (args, res) {
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Organization' });
+  Object.assign(query, { '_schemaName': 'Organization' });
 
   var data = await Utils.runDataQuery('Organization',
     args.swagger.params.auth_payload.realm_access.roles,

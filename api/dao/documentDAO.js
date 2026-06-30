@@ -6,7 +6,6 @@ const crypto          = require('crypto');
 const uploadDir       = process.env.UPLOAD_DIRECTORY || "./uploads/";
 const MinioController = require('../helpers/minio');
 const constants       = require('../helpers/constants');
-const _               = require('lodash');
 const fs              = require('fs');
 
 const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING ? process.env.ENABLE_VIRUS_SCANNING.toLowerCase() == 'true' : false;
@@ -148,10 +147,7 @@ exports.fetchDocuments = async function(pageNumber, pageSize, sortBy, query, key
 
   // Next, we may have project ID's or Comment ID's that we're filtering on. Apply these as $in aggregates
   if (projects && projects.length > 0) {
-    let objectIds = [];
-    _.each(projects, function (projectId) {
-      objectIds.push(new mongoose.Types.ObjectId(projectId));
-    });
+    const objectIds = projects.map(projectId => new mongoose.Types.ObjectId(projectId));
 
     queryAggregates.$match['documentSource'] = 'PROJECT';
     queryAggregates.$match['projects'] = { $in: objectIds };

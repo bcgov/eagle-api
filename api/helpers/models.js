@@ -1,5 +1,4 @@
 var mongoose = require ('mongoose');
-var _        = require ('lodash');
 
 var genSchema = function (name, definition) {
   //
@@ -98,12 +97,12 @@ var genSchema = function (name, definition) {
       });
     }
   }
-  if (s) _.extend (schema.statics, s);
-  if (m) _.extend (schema.methods, m);
+  if (s) Object.assign (schema.statics, s);
+  if (m) Object.assign (schema.methods, m);
   // if (i) _.each (i, function (d) { schema.index (d); });
   if (virtuals) {
     // http://mongoosejs.com/docs/2.7.x/docs/virtuals.html
-    _.forEach(virtuals, function(virtual){
+    virtuals.forEach(function(virtual){
       var v = schema.virtual(virtual.name);
       if(virtual.get) v.get(virtual.get);
       if(virtual.set) v.set(virtual.set);

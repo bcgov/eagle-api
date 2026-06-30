@@ -1,4 +1,3 @@
-var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
@@ -6,31 +5,33 @@ var Utils = require('../helpers/utils');
 const { DateTime } = require('luxon');
 
 var getSanitizedFields = function (fields) {
-  return _.remove(fields, function (f) {
-    return (_.indexOf([
-      'author',
-      'comment',
-      'commentId',
-      'dateAdded',
-      'datePosted',
-      'dateUpdated',
-      'documents',
-      'eaoNotes',
-      'eaoStatus',
-      'submittedCAC',
-      'isAnonymous',
-      'location',
-      'period',
-      'proponentNotes',
-      'proponentStatus',
-      'publishedNotes',
-      'rejectedNotes',
-      'rejectedReason',
-      'valuedComponents',
-      'read',
-      'write',
-      'delete'
-    ], f) !== -1);
+  if (!Array.isArray(fields)) return [];
+  const allowedList = [
+    'author',
+    'comment',
+    'commentId',
+    'dateAdded',
+    'datePosted',
+    'dateUpdated',
+    'documents',
+    'eaoNotes',
+    'eaoStatus',
+    'submittedCAC',
+    'isAnonymous',
+    'location',
+    'period',
+    'proponentNotes',
+    'proponentStatus',
+    'publishedNotes',
+    'rejectedNotes',
+    'rejectedReason',
+    'valuedComponents',
+    'read',
+    'write',
+    'delete'
+  ];
+  return fields.filter(function (f) {
+    return allowedList.includes(f);
   });
 };
 
@@ -85,7 +86,7 @@ exports.publicHead = async function (args, res) {
   const fields = getSanitizedFields(args.swagger.params.fields.value);
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Comment' });
+  Object.assign(query, { '_schemaName': 'Comment' });
 
   var data = await Utils.runDataQuery('Comment',
     ['public'],
@@ -131,7 +132,7 @@ exports.publicGet = async function (args, res) {
 
   const fields = getSanitizedFields(args.swagger.params.fields.value);
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Comment' });
+  Object.assign(query, { '_schemaName': 'Comment' });
 
   var data = await Utils.runDataQuery('Comment',
     ['public'],
@@ -150,7 +151,7 @@ exports.publicGet = async function (args, res) {
     return Actions.sendResponse(res, 200, data);
   }
 
-  _.each(data[0].results, function (item) {
+  data[0].results.forEach(function (item) {
     if (item.isAnonymous === true) {
       delete item.author;
     }
@@ -175,11 +176,11 @@ exports.protectedHead = async function (args, res) {
   }
   // Unless they specifically ask for it, hide deleted results.
   if (args.swagger.params.isDeleted && args.swagger.params.isDeleted.value != undefined) {
-    _.assignIn(query, { isDeleted: args.swagger.params.isDeleted.value });
+    Object.assign(query, { isDeleted: args.swagger.params.isDeleted.value });
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Comment' });
+  Object.assign(query, { '_schemaName': 'Comment' });
 
   var data = await Utils.runDataQuery('Comment',
     args.swagger.operation['x-security-scopes'],
@@ -215,12 +216,12 @@ exports.protectedGet = async function (args, res) {
 
   // Build match query if on commentId route.
   if (args.swagger.params.commentId && args.swagger.params.commentId.value) {
-    _.assignIn(query, { _id: new mongoose.Types.ObjectId(args.swagger.params.commentId.value) });
+    Object.assign(query, { _id: new mongoose.Types.ObjectId(args.swagger.params.commentId.value) });
   }
 
   // Build match query if on comment period's id
   if (args.swagger.params.period && args.swagger.params.period.value) {
-    _.assignIn(query, { period: new mongoose.Types.ObjectId(args.swagger.params.period.value) });
+    Object.assign(query, { period: new mongoose.Types.ObjectId(args.swagger.params.period.value) });
   }
 
   // Sort
@@ -243,7 +244,7 @@ exports.protectedGet = async function (args, res) {
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Comment' });
+  Object.assign(query, { '_schemaName': 'Comment' });
 
   // Set filter for eaoStatus
   if (args.swagger.params.pending && args.swagger.params.pending.value === true) {
@@ -259,7 +260,7 @@ exports.protectedGet = async function (args, res) {
     filter.push({ 'eaoStatus': 'Rejected' });
   }
   if (filter.length !== 0) {
-    _.assignIn(query, { $or: filter });
+    Object.assign(query, { $or: filter });
   }
 
   try {
@@ -280,9 +281,9 @@ exports.protectedGet = async function (args, res) {
       defaultLog.info('Getting next pending comment information');
       var queryForNextComment = {};
 
-      _.assignIn(queryForNextComment, { _id: { $ne: data[0]._id } });
-      _.assignIn(queryForNextComment, { period: data[0].period });
-      _.assignIn(queryForNextComment, { eaoStatus: 'Pending' });
+      Object.assign(queryForNextComment, { _id: { $ne: data[0]._id } });
+      Object.assign(queryForNextComment, { period: data[0].period });
+      Object.assign(queryForNextComment, { eaoStatus: 'Pending' });
 
       var nextComment = await Utils.runDataQuery('Comment',
         args.swagger.params.auth_payload.realm_access.roles,

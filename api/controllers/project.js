@@ -1,4 +1,3 @@
-var _ = require('lodash');
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var qs = require('qs');
@@ -86,8 +85,9 @@ var tagList = [
 const WORDS_TO_ANALYZE = 3;
 
 var getSanitizedFields = function (fields) {
-  return _.remove(fields, function (f) {
-    return (_.indexOf(tagList, f) !== -1);
+  if (!Array.isArray(fields)) return [];
+  return fields.filter(function (f) {
+    return tagList.includes(f);
   });
 };
 
@@ -123,7 +123,7 @@ exports.publicHead = async function (args, res) {
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Project' });
+  Object.assign(query, { '_schemaName': 'Project' });
 
   try {
     var data = await Utils.runDataQuery('Project',
@@ -187,7 +187,7 @@ exports.publicGet = async function (args, res) {
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Project' });
+  Object.assign(query, { '_schemaName': 'Project' });
 
   try {
     var data = await Utils.runDataQuery('Project',
@@ -206,7 +206,7 @@ exports.publicGet = async function (args, res) {
 
     // TODO: We should do this as a query
     if (commentPeriodPipeline) {
-      _.each(data, function (item) {
+      data.forEach(function (item) {
         if (item.commentPeriodForBanner.length > 0 && !item.commentPeriodForBanner[0].read.includes('public')) {
           delete item.commentPeriodForBanner;
         }
@@ -248,7 +248,7 @@ exports.protectedGet = async function (args, res) {
       return Actions.sendResponse(res, 400, {});
     }
     // Getting a single project
-    _.assignIn(query, { _id: new mongoose.Types.ObjectId(args.swagger.params.projId.value) });
+    Object.assign(query, { _id: new mongoose.Types.ObjectId(args.swagger.params.projId.value) });
     commentPeriodPipeline = handleCommentPeriodForBannerQueryParameters(args, args.swagger.params.projId.value);
     console.log(JSON.stringify(commentPeriodPipeline));
   } else {
@@ -281,7 +281,7 @@ exports.protectedGet = async function (args, res) {
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Project' });
+  Object.assign(query, { '_schemaName': 'Project' });
 
   console.log('*****************************************');
   console.log('query:', query);
@@ -338,11 +338,11 @@ exports.protectedHead = function (args, res) {
 
   // Unless they specifically ask for it, hide deleted results.
   if (args.swagger.params.isDeleted && args.swagger.params.isDeleted.value !== undefined) {
-    _.assignIn(query, { isDeleted: args.swagger.params.isDeleted.value });
+    Object.assign(query, { isDeleted: args.swagger.params.isDeleted.value });
   }
 
   // Set query type
-  _.assignIn(query, { '_schemaName': 'Project' });
+  Object.assign(query, { '_schemaName': 'Project' });
 
   Utils.runDataQuery('Project',
     args.swagger.operation['x-security-scopes'],
@@ -828,7 +828,7 @@ var addStandardQueryFilters = function (query, args) {
     const queryString = qs.parse(args.swagger.params.publishDate.value);
     if (queryString.since && queryString.until) {
       // Combine queries as logical AND for the dataset.
-      _.assignIn(query, {
+      Object.assign(query, {
         $and: [
           {
             publishDate: { $gte: new Date(queryString.since) }
@@ -839,28 +839,28 @@ var addStandardQueryFilters = function (query, args) {
         ]
       });
     } else if (queryString.eq) {
-      _.assignIn(query, {
+      Object.assign(query, {
         publishDate: { $eq: new Date(queryString.eq) }
       });
     } else {
       // Which param was set?
       if (queryString.since) {
-        _.assignIn(query, {
+        Object.assign(query, {
           publishDate: { $gte: new Date(queryString.since) }
         });
       }
       if (queryString.until) {
-        _.assignIn(query, {
+        Object.assign(query, {
           publishDate: { $lte: new Date(queryString.until) }
         });
       }
     }
   }
   if (args.swagger.params.tantalisId && args.swagger.params.tantalisId.value !== undefined) {
-    _.assignIn(query, { tantalisID: args.swagger.params.tantalisId.value });
+    Object.assign(query, { tantalisID: args.swagger.params.tantalisId.value });
   }
   if (args.swagger.params.cl_file && args.swagger.params.cl_file.value !== undefined) {
-    _.assignIn(query, { cl_file: args.swagger.params.cl_file.value });
+    Object.assign(query, { cl_file: args.swagger.params.cl_file.value });
   }
   if (args.swagger.params.purpose && args.swagger.params.purpose.value !== undefined) {
     const queryString = qs.parse(args.swagger.params.purpose.value);
@@ -870,7 +870,7 @@ var addStandardQueryFilters = function (query, args) {
     } else {
       queryArray.push(queryString.eq);
     }
-    _.assignIn(query, { purpose: { $in: queryArray } });
+    Object.assign(query, { purpose: { $in: queryArray } });
   }
   if (args.swagger.params.subpurpose && args.swagger.params.subpurpose.value !== undefined) {
     var queryString = qs.parse(args.swagger.params.subpurpose.value);
@@ -880,13 +880,13 @@ var addStandardQueryFilters = function (query, args) {
     } else {
       queryArray.push(queryString.eq);
     }
-    _.assignIn(query, { subpurpose: { $in: queryArray } });
+    Object.assign(query, { subpurpose: { $in: queryArray } });
   }
   if (args.swagger.params.type && args.swagger.params.type.value !== undefined) {
-    _.assignIn(query, { type: args.swagger.params.type.value });
+    Object.assign(query, { type: args.swagger.params.type.value });
   }
   if (args.swagger.params.subtype && args.swagger.params.subtype.value !== undefined) {
-    _.assignIn(query, { subtype: args.swagger.params.subtype.value });
+    Object.assign(query, { subtype: args.swagger.params.subtype.value });
   }
   if (args.swagger.params.status && args.swagger.params.status.value !== undefined) {
     const queryString = qs.parse(args.swagger.params.status.value);
@@ -896,25 +896,25 @@ var addStandardQueryFilters = function (query, args) {
     } else {
       queryArray.push(queryString.eq);
     }
-    _.assignIn(query, { status: { $in: queryArray } });
+    Object.assign(query, { status: { $in: queryArray } });
   }
   if (args.swagger.params.agency && args.swagger.params.agency.value !== undefined) {
-    _.assignIn(query, { agency: args.swagger.params.agency.value });
+    Object.assign(query, { agency: args.swagger.params.agency.value });
   }
   if (args.swagger.params.businessUnit && args.swagger.params.businessUnit.value !== undefined) {
-    _.assignIn(query, { businessUnit: args.swagger.params.businessUnit.value });
+    Object.assign(query, { businessUnit: args.swagger.params.businessUnit.value });
   }
   if (args.swagger.params.client && args.swagger.params.client.value !== undefined) {
-    _.assignIn(query, { client: args.swagger.params.client.value });
+    Object.assign(query, { client: args.swagger.params.client.value });
   }
   if (args.swagger.params.tenureStage && args.swagger.params.tenureStage.value !== undefined) {
-    _.assignIn(query, { tenureStage: args.swagger.params.tenureStage.value });
+    Object.assign(query, { tenureStage: args.swagger.params.tenureStage.value });
   }
   if (args.swagger.params.areaHectares && args.swagger.params.areaHectares.value !== undefined) {
     const queryString = qs.parse(args.swagger.params.areaHectares.value);
     if (queryString.gte && queryString.lte) {
       // Combine queries as logical AND to compute a Rnage of values.
-      _.assignIn(query, {
+      Object.assign(query, {
         $and: [
           {
             areaHectares: { $gte: parseFloat(queryString.gte, 10) }
@@ -926,18 +926,18 @@ var addStandardQueryFilters = function (query, args) {
       });
     } else if (queryString.eq) {
       // invalid or not specified, treat as equal
-      _.assignIn(query, {
+      Object.assign(query, {
         areaHectares: { $eq: parseFloat(queryString.eq, 10) }
       });
     } else {
       // Which param was set?
       if (queryString.gte) {
-        _.assignIn(query, {
+        Object.assign(query, {
           areaHectares: { $gte: parseFloat(queryString.gte, 10) }
         });
       }
       if (queryString.lte) {
-        _.assignIn(query, {
+        Object.assign(query, {
           areaHectares: { $lte: parseFloat(queryString.lte, 10) }
         });
       }
@@ -946,14 +946,14 @@ var addStandardQueryFilters = function (query, args) {
   if (args.swagger.params.centroid && args.swagger.params.centroid.value !== undefined) {
     // defaultLog.info("Looking up features based on coords:", args.swagger.params.centroid.value);
     // Throws if parsing fails.
-    _.assignIn(query, {
+    Object.assign(query, {
       centroid: { $geoIntersects: { $geometry: { type: 'Polygon', coordinates: JSON.parse(args.swagger.params.centroid.value) } } }
     });
   }
   // Allows filtering of apps that have had their last status change greater than this epoch time.
   if (args.swagger.params.statusHistoryEffectiveDate && args.swagger.params.statusHistoryEffectiveDate !== undefined) {
     const queryString = qs.parse(args.swagger.params.statusHistoryEffectiveDate.value);
-    _.assignIn(query, {
+    Object.assign(query, {
       $or: [{ statusHistoryEffectiveDate: null }, { statusHistoryEffectiveDate: { $gte: parseInt(queryString.gte, 10) } }]
     });
   }
@@ -962,7 +962,7 @@ var addStandardQueryFilters = function (query, args) {
 
 var serializeProjectVirtuals = function (data) {
   var Project = mongoose.model('Project');
-  _.each(data, function (item) {
+  data.forEach(function (item) {
     if (item) {
       var project = new Project(item);
       item.nature = project.get('nature');

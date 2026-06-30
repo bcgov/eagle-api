@@ -1,5 +1,4 @@
 'use strict';
-var _ = require('lodash');
 
 exports.publish = async function (o,save=false) {
   return new Promise(function (resolve) {
@@ -19,8 +18,8 @@ exports.publish = async function (o,save=false) {
 };
 
 exports.isPublished = async function (o) {
-  return _.find(o.tags, function (item) {
-    return _.isEqual(item, ['public']);
+  return o.tags.find(function (item) {
+    return Array.isArray(item) && item.length === 1 && item[0] === 'public';
   });
 };
 
@@ -42,8 +41,8 @@ exports.unPublish = async function (o) {
 
 exports.delete = function (o) {
   return new Promise(function (resolve, reject) {
-    _.remove(o.tags, function (item) {
-      return _.isEqual(item, ['public']);
+    o.tags = o.tags.filter(function (item) {
+      return !(Array.isArray(item) && item.length === 1 && item[0] === 'public');
     });
     o.isDeleted = true;
     o.markModified('tags');

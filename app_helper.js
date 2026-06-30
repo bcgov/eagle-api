@@ -1,5 +1,4 @@
 const mongoose      = require('mongoose');
-const _             = require('lodash');
 const winston       = require('winston');
 const options       = require('./config/mongoose_options').mongooseOptions;
 
@@ -97,7 +96,7 @@ async function loadModels(dbConnection, options, logger) {
 }
 
 function log(logger, msg) {
-  if (!_.isEmpty(logger)) {
+  if (logger && typeof logger.info === 'function') {
     logger.info(msg);
   } else {
     console.log(msg);
@@ -105,7 +104,7 @@ function log(logger, msg) {
 }
 
 async function loadMongoose() {
-  if (!_.isEmpty(credentials)) {
+  if (credentials && (credentials.db_username || credentials.db_password)) {
     options.user = credentials.db_username;
     options.pass = credentials.db_password;
   }

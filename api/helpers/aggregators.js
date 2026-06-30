@@ -1,5 +1,4 @@
 const qs = require('qs');
-const _ = require('lodash');
 const mongoose = require('mongoose');
 
 const constants = require('../helpers/constants').schemaTypes;
@@ -479,7 +478,7 @@ const getPCPValue = async (roles, entry) => {
 
   if (query) {
     const data = await Utils.runDataQuery(constants.COMMENT_PERIOD, roles, query, ['project'], null, null, null, null, false, null);
-    const ids = _.map(data, 'project');
+    const ids = data.map(item => item.project);
     pcp = { _id: { $in: ids } };
   }
 
