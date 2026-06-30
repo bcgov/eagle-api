@@ -1,7 +1,7 @@
 'use strict';
 
-require('dotenv').config();
-var app              = require('express')();
+var express          = require('express');
+var app              = express();
 var fs               = require('fs');
 var path             = require('path');
 var uploadDir        = process.env.UPLOAD_DIRECTORY || './uploads/';
@@ -11,7 +11,6 @@ var swaggerUi        = require('swagger-ui-express');
 var app_helper       = require('./app_helper');
 var createRouter     = require('./api/middleware/swagger-router');
 var swaggerSpec      = YAML.load(fs.readFileSync('./api/swagger/swagger.yaml', 'utf8'));
-var bodyParser       = require('body-parser');
 const rateLimit      = require('express-rate-limit');
 
 var api_default_port = 3000;
@@ -24,8 +23,8 @@ var defaultLog = app_helper.defaultLog;
 // Accept both application/json and text/plain — Typesense SearchClient sends
 // multi_search bodies as text/plain (to avoid CORS preflight), but the body
 // content is always valid JSON.
-app.use(bodyParser.json({ limit: '10mb', type: ['application/json', 'text/plain'] }));
-app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.json({ limit: '10mb', type: ['application/json', 'text/plain'] }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // disable powered by header
 app.disable('x-powered-by');
