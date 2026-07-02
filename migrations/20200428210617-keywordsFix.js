@@ -10,15 +10,12 @@ module.exports = {
 
       console.log('Setting all Documents with empty arrays to empty strings');
 
-      p.updateMany(query, update, options)
-      .then(result => {
+      try {
+        await p.updateMany(query, update, options);
         console.log('Completed successfully');
-      })
-      .catch(err => { 
-        console.error(`Failed to update document resources: ${err}`); 
-      });
-    }).catch(err => {
-      console.error(`Failed to update document resources: ${err}`); 
+      } catch (err) {
+        console.error(`Failed to update document resources: ${err}`);
+      }
   },
 
   async down(db, client) {
