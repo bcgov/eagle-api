@@ -109,8 +109,11 @@ function buildFilterBy(and) {
       const ts = Math.floor(new Date(value).getTime() / 1000);
       if (!isNaN(ts)) filters.push(`datePosted:<=${ts}`);
     } else {
-      // Escape brackets in value for Typesense filter syntax
-      const escaped = String(value).replace(/\[/g, '\\[').replace(/\]/g, '\\]');
+      // Escape backslashes, then brackets in value for Typesense filter syntax
+      const escaped = String(value)
+        .replace(/\\/g, '\\\\')
+        .replace(/\[/g, '\\[')
+        .replace(/\]/g, '\\]');
       filters.push(`${key}:=[${escaped}]`);
     }
   }
