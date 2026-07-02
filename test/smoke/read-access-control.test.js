@@ -15,10 +15,18 @@
  *   SMOKE_TEST_TOKEN=<token> yarn test:smoke  # Full suite including authed tests
  */
 
-const { API, get, authGet, hasToken } = require('./helpers');
+const { API, get, authGet, hasToken, resolveProjectId, resolveDocId } = require('./helpers');
 const { expect } = require('chai');
 
 describe('READ ACCESS CONTROL — search endpoint enforces document.read[] ACL', () => {
+
+  before(async () => {
+    // Ensure database has projects and documents seeded to prevent silent passes
+    await Promise.all([
+      resolveProjectId(),
+      resolveDocId()
+    ]);
+  });
 
   describe('Public (unauthenticated) — should only see read:["public"] documents', () => {
 
@@ -28,6 +36,7 @@ describe('READ ACCESS CONTROL — search endpoint enforces document.read[] ACL',
         .expect(200);
 
       const results = res.body[0]?.searchResults || [];
+      expect(results.length, 'Should return at least one document').to.be.greaterThan(0);
       for (const doc of results) {
         expect(doc.read, `Document ${doc._id} visible to public but read=${JSON.stringify(doc.read)}`)
           .to.include('public');
@@ -40,6 +49,7 @@ describe('READ ACCESS CONTROL — search endpoint enforces document.read[] ACL',
         .expect(200);
 
       const results = res.body[0]?.searchResults || [];
+      expect(results.length, 'Should return at least one project').to.be.greaterThan(0);
       for (const proj of results) {
         expect(proj.read, `Project ${proj._id} visible to public but read=${JSON.stringify(proj.read)}`)
           .to.include('public');
@@ -52,6 +62,7 @@ describe('READ ACCESS CONTROL — search endpoint enforces document.read[] ACL',
         .expect(200);
 
       const results = res.body[0]?.searchResults || [];
+      expect(results.length, 'Should return at least one document').to.be.greaterThan(0);
       for (const doc of results) {
         const hasPublic = doc.read && doc.read.includes('public');
         expect(hasPublic, `Document ${doc._id} leaked to public — read=${JSON.stringify(doc.read)}`)

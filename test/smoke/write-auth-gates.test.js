@@ -12,18 +12,19 @@ const { API } = require('./helpers');
 const request = require('supertest');
 
 // Sends a request without a token and asserts the endpoint is not accessible.
-// Most secured endpoints return 401 or 403, but some V2 routes return 404
-// (route not configured for that method) or 500 (crash before auth).
-// The key assertion: unauthenticated requests must NEVER return 2xx.
+// Unauthenticated requests must return 401 Unauthorized, 403 Forbidden,
+// or 404 Not Found (if the route is not configured or exposed).
 const unauth = (method, path, body) =>
-  request(API)[method](path)
+  request(API)[method.toLowerCase()](path)
     .set('Content-Type', 'application/json')
     .send(body || {})
     .expect(res => {
-      if (res.status >= 200 && res.status < 300) {
-        throw new Error('auth gate: expected non-2xx, got ' + res.status);
+      if (res.status !== 401 && res.status !== 403 && res.status !== 404) {
+        throw new Error(`auth gate: expected 401, 403, or 404, got ${res.status}`);
       }
     });
+
+
 
 describe('WRITE ENDPOINT AUTH GATES (no token — all expect 401 or 403)', () => {
   describe('Project write endpoints', () => {

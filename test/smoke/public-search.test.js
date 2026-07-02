@@ -4,6 +4,19 @@ const { expect } = require('chai');
 const { get, expectSearchEnvelope } = require('./helpers');
 
 describe('PUBLIC /api/public/search', () => {
+  let searchKeyword = 'mine';
+
+  before(async () => {
+    try {
+      const res = await get('/public/project').query({ pageNum: 0, pageSize: 1 });
+      if (res.body && res.body[0] && res.body[0].name) {
+        searchKeyword = res.body[0].name.split(' ')[0];
+      }
+    } catch (err) {
+      // fallback to 'mine'
+    }
+  });
+
   it('GET /public/search?dataset=Project — returns projects', async () => {
     const res = await get('/public/search').query({ dataset: 'Project', pageNum: 0, pageSize: 5 }).expect(200);
     expectSearchEnvelope(res);
@@ -29,14 +42,14 @@ describe('PUBLIC /api/public/search', () => {
     expect(res.body[0].meta[0].searchResultsTotal).to.be.at.least(1);
   });
 
-  it('GET /public/search?keywords=mine — returns keyword results', async () => {
-    const res = await get('/public/search').query({ dataset: 'Project', keywords: 'mine', pageNum: 0, pageSize: 5 }).expect(200);
+  it('GET /public/search?keywords=... — returns keyword results', async () => {
+    const res = await get('/public/search').query({ dataset: 'Project', keywords: searchKeyword, pageNum: 0, pageSize: 5 }).expect(200);
     expectSearchEnvelope(res);
     expect(res.body[0].meta[0].searchResultsTotal).to.be.at.least(1);
   });
 
   it('GET /public/search?fuzzy=true — fuzzy search works', async () => {
-    const res = await get('/public/search').query({ dataset: 'Project', keywords: 'mine', fuzzy: true, pageNum: 0, pageSize: 5 }).expect(200);
+    const res = await get('/public/search').query({ dataset: 'Project', keywords: searchKeyword, fuzzy: true, pageNum: 0, pageSize: 5 }).expect(200);
     expectSearchEnvelope(res);
   });
 

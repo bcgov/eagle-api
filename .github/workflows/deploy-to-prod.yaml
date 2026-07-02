@@ -111,9 +111,50 @@ jobs:
           echo "Deployment successful!"
           oc get pods -n ${{ env.OPENSHIFT_NAMESPACE_PROD }} -l app.kubernetes.io/name=${{ env.APP_NAME }}
 
+  smoke-test:
+    name: Smoke Test Prod
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: "yarn"
+
+      - run: yarn install --immutable
+
+      - name: Wait for API to be ready
+        run: |
+          echo "Waiting 30s for pod to stabilise after rollout..."
+          sleep 30
+          for i in $(seq 1 10); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://projects.eao.gov.bc.ca/api/health || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "API is ready (attempt $i)"
+              break
+            fi
+            echo "Attempt $i: API returned $STATUS, retrying in 15s..."
+            sleep 15
+          done
+
+      - name: Run smoke tests
+        run: yarn test:smoke:public
+        env:
+          SMOKE_TEST_URL: https://projects.eao.gov.bc.ca
+
   publish-release:
     name: Publish GitHub Release
-    needs: deploy
+    needs: [deploy, smoke-test]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -126,5 +167,6 @@ jobs:
           gh release edit "${{ inputs.version }}" \
             --repo ${{ github.repository }} \
             --draft=false
+
 
 
