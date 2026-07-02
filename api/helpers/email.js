@@ -10,17 +10,22 @@ const _GETOK_CLIENT_SECRET = process.env._GETOK_CLIENT_SECRET || null;
 const _commonHostingEmailServiceEndpoint = process.env.CHES_ENDPOINT || 'https://ches-master-9f0fbe-dev.pathfinder.gov.bc.ca/';
 const _CHES_emailMergeAPI = 'api/v1/emailMerge';
 
-// Runtime output
-if (_GETOK_CLIENTID === null) {
-  defaultLog.error('*******************************************************************');
-  defaultLog.error('_GETOK_CLIENTID NOT SET');
-  defaultLog.error('*******************************************************************');
-}
-if (_GETOK_CLIENT_SECRET === null) {
-  defaultLog.error('*******************************************************************');
-  defaultLog.error('_GETOK_CLIENT_SECRET NOT SET');
-  defaultLog.error('*******************************************************************');
-}
+// Configuration check function called after logger transports are registered
+const checkConfig = function () {
+  if (_GETOK_CLIENTID === null) {
+    defaultLog.error('*******************************************************************');
+    defaultLog.error('_GETOK_CLIENTID NOT SET');
+    defaultLog.error('*******************************************************************');
+  }
+  if (_GETOK_CLIENT_SECRET === null) {
+    defaultLog.error('*******************************************************************');
+    defaultLog.error('_GETOK_CLIENT_SECRET NOT SET');
+    defaultLog.error('*******************************************************************');
+  }
+};
+
+exports.checkConfig = checkConfig;
+
 
 exports.sendCACWelcomeEmail = async function (projectId, projectName, email) {
   // Set/Get the template

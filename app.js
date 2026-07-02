@@ -199,6 +199,12 @@ if (process.env.NODE_ENV !== 'test') {
 
     express_server = app.listen(api_default_port, '0.0.0.0', function() {
       defaultLog.info('Started server on port ' + api_default_port);
+      // Run startup configuration checks for email helper
+      try {
+        require('./api/helpers/email').checkConfig();
+      } catch (err) {
+        defaultLog.error('Failed to run email config check:', err.message);
+      }
     });
   }).catch(function (err) {
     // loadMongoose() already retried and exited on exhaustion, but catch any
