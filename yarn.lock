@@ -1916,6 +1916,9 @@ __metadata:
     swagger-ui-express: "npm:^5.0.1"
     typesense: "npm:^3.0.5"
     winston: "npm:^3.19.0"
+  dependenciesMeta:
+    "@scarf/scarf":
+      built: false
   languageName: unknown
   linkType: soft
 

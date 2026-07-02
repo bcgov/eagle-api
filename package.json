@@ -60,5 +60,10 @@
     "mocha": "^11.0.0",
     "sinon": "^17.0.1",
     "supertest": "^7.0.0"
+  },
+  "dependenciesMeta": {
+    "@scarf/scarf": {
+      "built": false
+    }
   }
 }
