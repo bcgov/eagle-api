@@ -9,7 +9,7 @@
     "github-username-regex": "^1.0.0",
     "jws": "^4.0.0",
     "keycloak-admin": "^1.14.22",
-    "octokit": "^2.0.10",
+    "octokit": "^4.0.2",
     "prompt-confirm": "^2.0.4",
     "yargs": "^17.6.2"
   }
