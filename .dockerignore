@@ -27,8 +27,6 @@ README.md
 docs/
 *.md
 
-# OpenShift Templates (not needed in image)
-openshift/
 
 # GitHub Actions
 .github/
