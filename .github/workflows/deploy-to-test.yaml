@@ -194,46 +194,32 @@ jobs:
 
       - run: yarn install --immutable
 
-      - name: Install OpenShift CLI
+      - name: Wait for API to be ready
         run: |
-          curl -LO "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz"
-          tar -xvzf openshift-client-linux.tar.gz
-          sudo mv oc /usr/local/bin/
-          rm -f openshift-client-linux.tar.gz
-
-      - name: Log into OpenShift
-        run: oc login --token=${{ secrets.OPENSHIFT_TOKEN }} --server=${{ secrets.OPENSHIFT_URL }}
-
-      - name: Run smoke tests via port-forward
-        run: |
-          echo "Establishing port-forward to eagle-api service..."
-          oc port-forward service/eagle-api 3000:3000 -n ${{ env.OPENSHIFT_NAMESPACE_TEST }} &
-          PF_PID=$!
-          
-          # Guarantee port-forward process is terminated on script exit
-          trap "kill $PF_PID 2>/dev/null || true" EXIT
-          
-          echo "Waiting for API to respond on port-forward..."
-          for i in $(seq 1 15); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health || true)
+          echo "Waiting 30s for pod to stabilise after rollout..."
+          sleep 30
+          for i in $(seq 1 10); do
+            # Use curl -k to bypass self-signed SSL verification on test cluster
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://eagle-test.apps.silver.devops.gov.bc.ca/api/health || true)
             if [ "$STATUS" = "200" ]; then
-              echo "✓ API is ready (attempt $i)"
+              echo "API is ready (attempt $i)"
               break
             fi
-            echo "Attempt $i: API returned $STATUS, retrying in 10s..."
-            sleep 10
+            echo "Attempt $i: API returned $STATUS, retrying in 15s..."
+            sleep 15
           done
           
           if [ "$STATUS" != "200" ]; then
             echo "Error: API failed to respond with 200 OK"
             exit 1
           fi
-          
-          echo "Running smoke tests..."
-          yarn test:smoke
+
+      - name: Run smoke tests
+        run: yarn test:smoke
         env:
-          SMOKE_TEST_URL: http://localhost:3000
+          SMOKE_TEST_URL: https://eagle-test.apps.silver.devops.gov.bc.ca
           SMOKE_API_KEY: ${{ secrets.SMOKE_API_KEY }}
+          NODE_TLS_REJECT_UNAUTHORIZED: '0'
 
 
 
