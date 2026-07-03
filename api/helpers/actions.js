@@ -1,20 +1,11 @@
 'use strict';
 
-exports.publish = async function (o,save=false) {
-  return new Promise(function (resolve) {
-    // Need project specific logic to handle legislation keys
-    // Object wasn't already published?
-    let newReadArray;
-    if (!o.read.includes('public')) {
-      // Remove publish, save then return.
-      newReadArray = o.read;
-      newReadArray.push('public');
-      o.read = newReadArray;
-      resolve(o.save());
-    } else {
-      resolve(save ? o.save(): o);
-    }
-  });
+exports.publish = async function (o, save = false) {
+  if (!o.read.includes('public')) {
+    o.read.push('public');
+    return o.save();
+  }
+  return save ? o.save() : o;
 };
 
 exports.isPublished = async function (o) {
@@ -24,34 +15,25 @@ exports.isPublished = async function (o) {
 };
 
 exports.unPublish = async function (o) {
-  return new Promise(function (resolve) {
-    // Need project specific logic to handle legislation keys
-    // Object wasn't already published?
-    let newReadArray;
-    if (o.read.includes('public')) {
-      newReadArray = o.read.filter(perms => perms !== 'public');
-      o.read = newReadArray;
-      // Remove publish, save then return.
-      resolve(o.save());
-    } else {
-      resolve(o);
-    }
-  });
+  if (o.read.includes('public')) {
+    o.read = o.read.filter(perms => perms !== 'public');
+    return o.save();
+  }
+  return o;
 };
 
-exports.delete = function (o) {
-  return new Promise(function (resolve, reject) {
-    o.tags = o.tags.filter(function (item) {
-      return !(Array.isArray(item) && item.length === 1 && item[0] === 'public');
-    });
-    o.isDeleted = true;
-    o.markModified('tags');
-    o.markModified('isDeleted');
-    // save then return.
-    o.save().then(resolve, function (err) {
-      reject({ code: 400, message: err.message });
-    });
+exports.delete = async function (o) {
+  o.tags = o.tags.filter(function (item) {
+    return !(Array.isArray(item) && item.length === 1 && item[0] === 'public');
   });
+  o.isDeleted = true;
+  o.markModified('tags');
+  o.markModified('isDeleted');
+  try {
+    return await o.save();
+  } catch (err) {
+    throw { code: 400, message: err.message };
+  }
 };
 
 exports.sendResponse = function (res, code, object) {

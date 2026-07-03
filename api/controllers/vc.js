@@ -2,7 +2,7 @@ var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
-var tagList = [
+const ALLOWED_FIELDS = [
   'code',
   'description',
   'name',
@@ -13,13 +13,6 @@ var tagList = [
   'title',
   'type'
 ];
-
-var getSanitizedFields = function (fields) {
-  if (!Array.isArray(fields)) return [];
-  return fields.filter(function (f) {
-    return tagList.includes(f);
-  });
-};
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
@@ -33,9 +26,6 @@ exports.protectedPost = async function (args, res) {
 
   var Vc = mongoose.model('Vc');
   var vc = new Vc(obj);
-  console.log('***************************************************');
-  console.log(vc);
-  console.log('***************************************************');
   vc._schemaName = 'Vc';
   vc.read = ['public', 'project-system-admin', 'staff'];
   vc.write = ['project-system-admin', 'staff'];
@@ -55,10 +45,13 @@ exports.protectedGet = async function (args, res) {
     query = Utils.buildQuery('_id', args.swagger.params.vcId.value, query);
   }
   if (args.swagger.params.projectId && args.swagger.params.projectId.value) {
-    if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projectId.value)) {
-      return Actions.sendResponse(res, 400, { });
+    let projId;
+    try {
+      projId = Utils.getValidObjectId(args.swagger.params.projectId);
+    } catch (e) {
+      return Actions.sendResponse(res, 400, {});
     }
-    Object.assign(query, { project: new mongoose.Types.ObjectId(args.swagger.params.projectId.value) });
+    Object.assign(query, { project: projId });
   }
   if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
     args.swagger.params.sortBy.value.forEach(function (value) {
@@ -77,7 +70,7 @@ exports.protectedGet = async function (args, res) {
   var data = await Utils.runDataQuery('Vc',
     args.swagger.params.auth_payload.realm_access.roles,
     query,
-    getSanitizedFields(args.swagger.params.fields.value), // Fields
+    Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS), // Fields
     null, // sort warmup
     sort, // sort
     skip, // skip
@@ -88,11 +81,13 @@ exports.protectedGet = async function (args, res) {
 };
 
 exports.protectedPut = async function (args, res) {
-  var objId = args.swagger.params.vcId.value;
-  defaultLog.info('ObjectID:', args.swagger.params.vcId.value);
-  if (args.swagger.params.vcId && args.swagger.params.vcId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.vcId.value)) {
-    return Actions.sendResponse(res, 400, { });
+  var objId;
+  try {
+    objId = Utils.getValidObjectId(args.swagger.params.vcId);
+  } catch (e) {
+    return Actions.sendResponse(res, 400, {});
   }
+  defaultLog.info('ObjectID:', objId);
   var obj = args.swagger.params.cp.value;
 
   // Strip security tags - these will not be updated on this route.
@@ -107,11 +102,13 @@ exports.protectedPut = async function (args, res) {
 };
 
 exports.protectedDelete = async function (args, res) {
-  var objId = args.swagger.params.vcId.value;
-  defaultLog.info('Delete Vc:', objId);
-  if (args.swagger.params.vcId && args.swagger.params.vcId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.vcId.value)) {
-    return Actions.sendResponse(res, 400, { });
+  var objId;
+  try {
+    objId = Utils.getValidObjectId(args.swagger.params.vcId);
+  } catch (e) {
+    return Actions.sendResponse(res, 400, {});
   }
+  defaultLog.info('Delete Vc:', objId);
   var commentperiod = require('mongoose').model('Vc');
   var data = await commentperiod.deleteOne({ _id: objId });
   Utils.recordAction('Delete', 'Vc', args.swagger.params.auth_payload.preferred_username, objId);

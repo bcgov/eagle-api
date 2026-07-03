@@ -2,20 +2,13 @@ var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
-var tagList = [
+const ALLOWED_FIELDS = [
   'description',
   'name',
   'type',
   'pillar',
   'parent',
 ];
-
-var getSanitizedFields = function (fields) {
-  if (!Array.isArray(fields)) return [];
-  return fields.filter(function (f) {
-    return tagList.includes(f);
-  });
-};
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
@@ -64,7 +57,7 @@ exports.protectedGet = async function (args, res) {
   var data = await Utils.runDataQuery('Topic',
     args.swagger.params.auth_payload.realm_access.roles,
     query,
-    getSanitizedFields(args.swagger.params.fields.value), // Fields
+    Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS), // Fields
     null, // sort warmup
     sort, // sort
     skip, // skip
@@ -75,11 +68,13 @@ exports.protectedGet = async function (args, res) {
 };
 
 exports.protectedPut = async function (args, res) {
-  var objId = args.swagger.params.topicId.value;
-  defaultLog.info('ObjectID:', args.swagger.params.topicId.value);
-  if (args.swagger.params.topicId && args.swagger.params.topicId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.topicId.value)) {
-    return Actions.sendResponse(res, 400, { });
+  var objId;
+  try {
+    objId = Utils.getValidObjectId(args.swagger.params.topicId);
+  } catch (e) {
+    return Actions.sendResponse(res, 400, {});
   }
+  defaultLog.info('ObjectID:', objId);
   var obj = args.swagger.params.cp.value;
 
   // Strip security tags - these will not be updated on this route.
@@ -98,11 +93,13 @@ exports.protectedPut = async function (args, res) {
 };
 
 exports.protectedDelete = async function (args, res) {
-  var objId = args.swagger.params.topicId.value;
-  defaultLog.info('Delete Topic:', objId);
-  if (args.swagger.params.topicId && args.swagger.params.topicId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.topicId.value)) {
-    return Actions.sendResponse(res, 400, { });
+  var objId;
+  try {
+    objId = Utils.getValidObjectId(args.swagger.params.topicId);
+  } catch (e) {
+    return Actions.sendResponse(res, 400, {});
   }
+  defaultLog.info('Delete Topic:', objId);
 
   var topic = require('mongoose').model('Topic');
 

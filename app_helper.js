@@ -27,9 +27,13 @@ winston.loggers.add('default', {
       format: format.combine(
         format.errors({ stack: true }),
         format.splat(),
-        format.label({ label: 'default' }),
         format.colorize(),
-        format.simple()
+        format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        format.printf(({ timestamp, level, message, stack }) =>
+          stack
+            ? `${timestamp} ${level}: ${message}\n${stack}`
+            : `${timestamp} ${level}: ${message}`
+        )
       )
     })
   ]

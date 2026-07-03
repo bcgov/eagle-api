@@ -3,59 +3,53 @@ var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 
-var getSanitizedFields = function (fields) {
-  if (!Array.isArray(fields)) return [];
-  const allowedList = [
-    '_schemaName',
-    'addedBy',
-    'additionalText',
-    'ceaaAdditionalText',
-    'ceaaInformationLabel',
-    'ceaaRelatedDocuments',
-    'classificationRoles',
-    'classifiedPercent',
-    'commenterRoles',
-    'dateAdded',
-    'dateCompleted',
-    'dateCompletedEst',
-    'dateStarted',
-    'dateStartedEst',
-    'dateUpdated',
-    'downloadRoles',
-    'informationLabel',
-    'instructions',
-    'commentTip',
-    'isClassified',
-    'isPublished',
-    'isResolved',
-    'isVetted',
-    'isMet',
-    'metURL',
-    'metURLAdmin',
-    'metBannerImageUrl',
-    'milestone',
-    'openHouses',
-    'periodType',
-    'phase',
-    'phaseName',
-    'project',
-    'publishedPercent',
-    'rangeOption',
-    'rangeType',
-    'relatedDocuments',
-    'resolvedPercent',
-    'updatedBy',
-    'userCan',
-    'vettedPercent',
-    'vettingRoles',
-    'read',
-    'write',
-    'delete'
-  ];
-  return fields.filter(function (f) {
-    return allowedList.includes(f);
-  });
-};
+const ALLOWED_FIELDS = [
+  '_schemaName',
+  'addedBy',
+  'additionalText',
+  'ceaaAdditionalText',
+  'ceaaInformationLabel',
+  'ceaaRelatedDocuments',
+  'classificationRoles',
+  'classifiedPercent',
+  'commenterRoles',
+  'dateAdded',
+  'dateCompleted',
+  'dateCompletedEst',
+  'dateStarted',
+  'dateStartedEst',
+  'dateUpdated',
+  'downloadRoles',
+  'informationLabel',
+  'instructions',
+  'commentTip',
+  'isClassified',
+  'isPublished',
+  'isResolved',
+  'isVetted',
+  'isMet',
+  'metURL',
+  'metURLAdmin',
+  'metBannerImageUrl',
+  'milestone',
+  'openHouses',
+  'periodType',
+  'phase',
+  'phaseName',
+  'project',
+  'publishedPercent',
+  'rangeOption',
+  'rangeType',
+  'relatedDocuments',
+  'resolvedPercent',
+  'updatedBy',
+  'userCan',
+  'vettedPercent',
+  'vettingRoles',
+  'read',
+  'write',
+  'delete'
+];
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
@@ -64,7 +58,6 @@ exports.protectedOptions = function (args, res) {
 exports.publicGet = async function (args, res) {
   defaultLog.info('Public get for comment period');
 
-  // Build match query if on CommentPeriodId route
   var query = {}, sort = {};
 
   if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value) {
@@ -74,12 +67,11 @@ exports.publicGet = async function (args, res) {
     query = Utils.buildQuery('project', args.swagger.params.project.value, query);
   }
 
-  // sort
+  // sort — only accepted fields
   if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
     args.swagger.params.sortBy.value.forEach(function (value) {
       var order_by = value.charAt(0) == '-' ? -1 : 1;
       var sort_by = value.slice(1);
-      // only accept certain fields
       switch (sort_by) {
       case 'dateStarted':
       case 'dateCompleted':
@@ -90,14 +82,13 @@ exports.publicGet = async function (args, res) {
     }, this);
   }
 
-  // Set query type
   Object.assign(query, { '_schemaName': 'CommentPeriod' });
 
   try {
     var data = await Utils.runDataQuery('CommentPeriod',
       ['public'],
       query,
-      getSanitizedFields(args.swagger.params.fields.value), // Fields
+      Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS),
       null, // sort warmup
       sort, // sort
       null, // skip
@@ -115,7 +106,6 @@ exports.publicGet = async function (args, res) {
 exports.protectedHead = async function (args, res) {
   defaultLog.info('Head for comment period');
 
-  // Build match query if on CommentPeriodId route
   var query = {};
   if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value) {
     query = Utils.buildQuery('_id', args.swagger.params.commentPeriodId.value, query);
@@ -123,28 +113,22 @@ exports.protectedHead = async function (args, res) {
   if (args.swagger.params.project && args.swagger.params.project.value) {
     query = Utils.buildQuery('project', args.swagger.params.project.value, query);
   }
-  // Unless they specifically ask for it, hide deleted results.
   if (args.swagger.params.isDeleted && args.swagger.params.isDeleted.value != undefined) {
     Object.assign(query, { isDeleted: args.swagger.params.isDeleted.value });
   }
 
-  // Set query type
   Object.assign(query, { '_schemaName': 'CommentPeriod' });
 
   try {
     var data = await Utils.runDataQuery('CommentPeriod',
       args.swagger.params.auth_payload.realm_access.roles,
       query,
-      ['_id', 'read', 'write', 'delete'], // Fields
-      null, // sort warmup
-      null, // sort
-      null, // skip
-      null, // limit
+      ['_id', 'read', 'write', 'delete'],
+      null, null, null, null,
       true); // count
 
     Utils.recordAction('Head', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value ? args.swagger.params.commentPeriodId.value : null);
 
-    // /api/commentperiod/ route, return 200 OK with 0 items if necessary
     if (!(args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value) || (data && data.length > 0)) {
       res.setHeader('x-total-count', data && data.length > 0 ? data[0].total_items : 0);
       return Actions.sendResponse(res, 200, data);
@@ -159,55 +143,43 @@ exports.protectedHead = async function (args, res) {
 
 exports.protectedSummary = async function (args, res) {
   defaultLog.info('Head for comment period summaries');
-  if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.commentPeriodId.value)) {
-    return Actions.sendResponse(res, 400, { });
+
+  let cpId;
+  try {
+    cpId = Utils.getValidObjectId(args.swagger.params.commentPeriodId);
+  } catch (e) {
+    return Actions.sendResponse(res, 400, {});
   }
 
-  // Build match query if on CommentPeriodId route
   var query = {};
-  if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value) {
-    Object.assign(query, { period: new mongoose.Types.ObjectId(args.swagger.params.commentPeriodId.value) });
+  if (cpId) {
+    Object.assign(query, { period: cpId });
   }
-  // Unless they specifically ask for it, hide deleted results.
   if (args.swagger.params.isDeleted && args.swagger.params.isDeleted.value != undefined) {
     Object.assign(query, { isDeleted: args.swagger.params.isDeleted.value });
   }
 
-  // Set query type
   Object.assign(query, { '_schemaName': 'Comment' });
 
   Utils.recordAction('summary', 'commentPeriod', args.swagger.params.auth_payload.preferred_username);
 
   var options = ['Pending', 'Deferred', 'Published', 'Rejected'];
   try {
-    var summary = {
-      'Pending': 0,
-      'Deferred': 0,
-      'Published': 0,
-      'Rejected': 0
-    };
+    var summary = { 'Pending': 0, 'Deferred': 0, 'Published': 0, 'Rejected': 0 };
     await Promise.all(options.map(async (item) => {
-      var optionQuery = {};
-      Object.assign(optionQuery, { 'eaoStatus': item, period: new mongoose.Types.ObjectId(args.swagger.params.commentPeriodId.value) });
-      console.log('optionQuery:', optionQuery);
-      var res = await Utils.runDataQuery('CommentPeriod',
+      var optionQuery = { 'eaoStatus': item, period: cpId };
+      var result = await Utils.runDataQuery('CommentPeriod',
         args.swagger.params.auth_payload.realm_access.roles,
         optionQuery,
-        ['_id', 'read', 'write', 'delete'], // Fields
-        null, // sort warmup
-        null, // sort
-        null, // skip
-        null, // limit
+        ['_id', 'read', 'write', 'delete'],
+        null, null, null, null,
         true); // count
       Utils.recordAction('Summary', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value ? args.swagger.params.commentPeriodId.value : null);
-      console.log('RES:', res);
-      if (res && res[0]) {
-        summary[item] = res[0]['total_items'];
+      if (result && result[0]) {
+        summary[item] = result[0]['total_items'];
       }
-      return summary;
     }));
 
-    console.log('sending summary:', summary);
     return Actions.sendResponse(res, 200, summary);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
@@ -221,21 +193,21 @@ exports.protectedGet = async function (args, res) {
 
   var query = {}, sort = null, skip = null, limit = null, count = false;
 
-  // Build match query if on CommentPeriodId route
   if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value) {
     defaultLog.info('Comment period id:', args.swagger.params.commentPeriodId.value);
     query = Utils.buildQuery('_id', args.swagger.params.commentPeriodId.value, query);
   }
 
-  // Build match query if on project's id
   if (args.swagger.params.project && args.swagger.params.project.value) {
-    if (!mongoose.Types.ObjectId.isValid(args.swagger.params.project.value)) {
-      return Actions.sendResponse(res, 400, { });
+    let projId;
+    try {
+      projId = Utils.getValidObjectId(args.swagger.params.project);
+    } catch (e) {
+      return Actions.sendResponse(res, 400, {});
     }
-    Object.assign(query, { project: new mongoose.Types.ObjectId(args.swagger.params.project.value) });
+    Object.assign(query, { project: projId });
   }
 
-  // sort
   if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
     sort = {};
     args.swagger.params.sortBy.value.forEach(function (value) {
@@ -245,24 +217,21 @@ exports.protectedGet = async function (args, res) {
     }, this);
   }
 
-  // Skip and limit
   var processedParameters = Utils.getSkipLimitParameters(args.swagger.params.pageSize, args.swagger.params.pageNum);
   skip = processedParameters.skip;
   limit = processedParameters.limit;
 
-  // Count
   if (args.swagger.params.count && args.swagger.params.count.value) {
     count = args.swagger.params.count.value;
   }
 
-  // Set query type
   Object.assign(query, { '_schemaName': 'CommentPeriod' });
 
   try {
     var data = await Utils.runDataQuery('CommentPeriod',
       args.swagger.params.auth_payload.realm_access.roles,
       query,
-      getSanitizedFields(args.swagger.params.fields.value), // Fields
+      Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS),
       null,   // sort warmup
       sort,   // sort
       skip,   // skip
@@ -282,12 +251,10 @@ exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.period.value;
 
   defaultLog.info('Incoming new comment period:', obj);
-  console.log("Object:", obj);
 
   var CommentPeriod = mongoose.model('CommentPeriod');
 
-  // TDOO: Make milestone lookup against "Time Limit Imposition" set for all isMet = true based
-  // calls.
+  // TODO: Make milestone lookup against "Time Limit Imposition" set for all isMet = true based calls.
 
   var commentPeriod = new CommentPeriod({
     _schemaName: 'CommentPeriod',
@@ -317,9 +284,7 @@ exports.protectedPost = async function (args, res) {
   }
 
   try {
-    console.log("period:", commentPeriod);
     var cp = await commentPeriod.save();
-    console.log("CP:", cp);
     Utils.recordAction('Put', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, cp._id);
     defaultLog.info('Saved new comment period object:', cp);
     return Actions.sendResponse(res, 200, cp);
@@ -331,10 +296,13 @@ exports.protectedPost = async function (args, res) {
 
 // Update an existing CommentPeriod
 exports.protectedPut = async function (args, res) {
-  var objId = args.swagger.params.commentPeriodId.value;
-  if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.commentPeriodId.value)) {
-    return Actions.sendResponse(res, 400, { });
+  let objId;
+  try {
+    objId = Utils.getValidObjectId(args.swagger.params.commentPeriodId);
+  } catch (e) {
+    return Actions.sendResponse(res, 400, {});
   }
+
   var obj = args.swagger.params.cp.value;
   defaultLog.info('Put comment period:', objId);
 
@@ -356,12 +324,10 @@ exports.protectedPut = async function (args, res) {
     updatedBy: args.swagger.params.auth_payload.preferred_username,
   };
 
-  // TODO: Revise this so we are not explicitly setting permissions
-  if (obj.isPublished) {
-    commentPeriod['read'] = ['public', 'staff', 'sysadmin'];
-  } else {
-    commentPeriod['read'] = ['staff', 'sysadmin'];
-  }
+  // TODO: Revise so we are not explicitly setting permissions
+  commentPeriod['read'] = obj.isPublished
+    ? ['public', 'staff', 'sysadmin']
+    : ['staff', 'sysadmin'];
 
   defaultLog.info('Incoming updated object:', commentPeriod);
 
@@ -376,13 +342,15 @@ exports.protectedPut = async function (args, res) {
   }
 };
 
-//  Delete a new CommentPeriod
+//  Delete a CommentPeriod
 exports.protectedDelete = async function (args, res) {
-  var objId = args.swagger.params.commentPeriodId.value;
-  defaultLog.info('Delete comment period:', objId);
-  if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.commentPeriodId.value)) {
-    return Actions.sendResponse(res, 400, { });
+  let objId;
+  try {
+    objId = Utils.getValidObjectId(args.swagger.params.commentPeriodId);
+  } catch (e) {
+    return Actions.sendResponse(res, 400, {});
   }
+  defaultLog.info('Delete comment period:', objId);
   var CommentPeriod = mongoose.model('CommentPeriod');
   try {
     await CommentPeriod.findOneAndDelete({ _id: objId });
@@ -396,17 +364,18 @@ exports.protectedDelete = async function (args, res) {
 
 // Publish/Unpublish the CommentPeriod
 exports.protectedPublish = async function (args, res) {
-  var objId = args.swagger.params.commentPeriodId.value;
-  defaultLog.info('Publish comment period:', objId);
-  if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.commentPeriodId.value)) {
-    return Actions.sendResponse(res, 400, { });
+  let objId;
+  try {
+    objId = Utils.getValidObjectId(args.swagger.params.commentPeriodId);
+  } catch (e) {
+    return Actions.sendResponse(res, 400, {});
   }
+  defaultLog.info('Publish comment period:', objId);
   var CommentPeriod = mongoose.model('CommentPeriod');
   try {
     var commentPeriod = await CommentPeriod.findOne({ _id: objId });
     delete commentPeriod.__v;
     defaultLog.info('Comment period object:', commentPeriod);
-    // Add public to read array.
     var published = await Actions.publish(commentPeriod);
     Utils.recordAction('Publish', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId);
     return Actions.sendResponse(res, 200, published);
@@ -416,17 +385,18 @@ exports.protectedPublish = async function (args, res) {
 };
 
 exports.protectedUnPublish = async function (args, res) {
-  var objId = args.swagger.params.commentPeriodId.value;
-  defaultLog.info('UnPublish comment period:', objId);
-  if (args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.commentPeriodId.value)) {
-    return Actions.sendResponse(res, 400, { });
+  let objId;
+  try {
+    objId = Utils.getValidObjectId(args.swagger.params.commentPeriodId);
+  } catch (e) {
+    return Actions.sendResponse(res, 400, {});
   }
+  defaultLog.info('UnPublish comment period:', objId);
   var CommentPeriod = mongoose.model('CommentPeriod');
   try {
     var commentPeriod = await CommentPeriod.findOne({ _id: objId });
     delete commentPeriod.__v;
     defaultLog.info('Comment period object:', commentPeriod);
-    // Remove public from read array.
     var unpublished = await Actions.unPublish(commentPeriod);
     Utils.recordAction('Unpublish', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId);
     return Actions.sendResponse(res, 200, unpublished);

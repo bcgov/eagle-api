@@ -154,7 +154,7 @@ exports.unPublishPins = async function (user, project) {
       throw Error('Invalid or non-existant project. Please submit a valid project to un-publish project pins');
     }
   } catch (e) {
-    console.log(e);
+    defaultLog.error('Could not un-publish pins for project: %s', e.message);
     throw Error('Could not un-publish pins for project: ', e);
   }
 };

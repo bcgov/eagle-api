@@ -1,5 +1,6 @@
 const qs = require('qs');
 const mongoose = require('mongoose');
+const defaultLog = require('winston').loggers.get('default');
 
 const constants = require('../helpers/constants').schemaTypes;
 const Utils = require('../helpers/utils');
@@ -226,11 +227,11 @@ const generateExpArray = async (field, roles, schemaName) => {
   const expArray = [];
   if (field) {
     const queryString = qs.parse(field);
-    console.log('queryString:', queryString);
+    defaultLog.debug('generateExpArray queryString: %j', queryString);
 
     await Promise.all(Object.keys(queryString).map(async item => {
       let entry = queryString[item];
-      console.log('item:', item, entry);
+      defaultLog.debug('generateExpArray item: %s entry: %j', item, entry);
       const orArray = [];
 
       if (item === 'pcp') {
@@ -325,7 +326,7 @@ const generateExpArray = async (field, roles, schemaName) => {
     }));
   }
 
-  console.log('expArray:', expArray);
+  defaultLog.debug('generateExpArray result: %j', expArray);
   return expArray;
 };
 
@@ -448,7 +449,7 @@ const getPCPQuery = (entry) => {
     break;
 
   default:
-    console.log('Unknown PCP entry');
+    defaultLog.warn('getPCPQuery received unknown PCP entry: %s', entry);
   }
   return query;
 };
@@ -471,7 +472,7 @@ const handlePCPStatus = (expArray, value) => {
 };
 
 const getPCPValue = async (roles, entry) => {
-  console.log('pcp: ', entry);
+  defaultLog.debug('getPCPValue entry: %s', entry);
 
   const query = getPCPQuery(entry);
   var pcp = {};
@@ -482,7 +483,7 @@ const getPCPValue = async (roles, entry) => {
     pcp = { _id: { $in: ids } };
   }
 
-  console.log('pcp', pcp);
+  defaultLog.debug('getPCPValue result: %j', pcp);
   return pcp;
 };
 

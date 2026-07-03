@@ -4,39 +4,33 @@ var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 const { DateTime } = require('luxon');
 
-var getSanitizedFields = function (fields) {
-  if (!Array.isArray(fields)) return [];
-  const allowedList = [
-    'author',
-    'comment',
-    'commentId',
-    'dateAdded',
-    'datePosted',
-    'dateUpdated',
-    'documents',
-    'eaoNotes',
-    'eaoStatus',
-    'submittedCAC',
-    'isAnonymous',
-    'location',
-    'period',
-    'proponentNotes',
-    'proponentStatus',
-    'publishedNotes',
-    'rejectedNotes',
-    'rejectedReason',
-    'valuedComponents',
-    'read',
-    'write',
-    'delete'
-  ];
-  return fields.filter(function (f) {
-    return allowedList.includes(f);
-  });
-};
+const ALLOWED_FIELDS = [
+  'author',
+  'comment',
+  'commentId',
+  'dateAdded',
+  'datePosted',
+  'dateUpdated',
+  'documents',
+  'eaoNotes',
+  'eaoStatus',
+  'submittedCAC',
+  'isAnonymous',
+  'location',
+  'period',
+  'proponentNotes',
+  'proponentStatus',
+  'publishedNotes',
+  'rejectedNotes',
+  'rejectedReason',
+  'valuedComponents',
+  'read',
+  'write',
+  'delete'
+];
 
 var setPermissionsFromEaoStatus = function (status, comment) {
-  console.log(status);
+  defaultLog.debug('setPermissionsFromEaoStatus: %s', status);
   switch (status) {
   case 'Published':
     defaultLog.info('Publishing Comment');
@@ -83,7 +77,7 @@ exports.publicHead = async function (args, res) {
     query = Utils.buildQuery('period', args.swagger.params.period.value, query);
   }
 
-  const fields = getSanitizedFields(args.swagger.params.fields.value);
+  const fields = Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS);
 
   // Set query type
   Object.assign(query, { '_schemaName': 'Comment' });
@@ -130,7 +124,7 @@ exports.publicGet = async function (args, res) {
     limit = processedParameters.limit;
   }
 
-  const fields = getSanitizedFields(args.swagger.params.fields.value);
+  const fields = Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS);
   // Set query type
   Object.assign(query, { '_schemaName': 'Comment' });
 
@@ -267,7 +261,7 @@ exports.protectedGet = async function (args, res) {
     var data = await Utils.runDataQuery('Comment',
       args.swagger.params.auth_payload.realm_access.roles,
       query,
-      getSanitizedFields(args.swagger.params.fields.value), // Fields
+      Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS), // Fields
       null,
       sort, // sort
       skip, // skip
@@ -403,7 +397,7 @@ exports.unProtectedPost = async function (args, res) {
     // get the next commentID for this period
     const commentIdCount = await getNextCommentIdCount(new mongoose.Types.ObjectId(obj.period));
 
-    console.log('Next comment id:', commentIdCount);
+    defaultLog.info('Next comment id: %d', commentIdCount);
 
     let cmt = new Comment();
     cmt._schemaName = 'Comment';
@@ -424,11 +418,11 @@ exports.unProtectedPost = async function (args, res) {
     cmt.write = ['staff', 'sysadmin'];
     cmt.delete = ['staff', 'sysadmin'];
 
-    console.log('About to save:', cmt);
+    defaultLog.debug('About to save comment for period: %s', obj.period);
 
     const c = await cmt.save();
     Utils.recordAction('Post', 'Comment', 'public', c._id);
-    console.log('Saved new comment object:', c);
+    defaultLog.info('Saved new comment object: %s', c._id);
     return Actions.sendResponse(res, 200, c);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);

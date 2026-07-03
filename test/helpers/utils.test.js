@@ -230,4 +230,50 @@ describe('Utils Helper Functions', () => {
       expect(result).to.be.instanceOf(Promise);
     });
   });
+
+  describe('sanitizeFields', () => {
+    const allowedList = ['name', 'status', 'read', 'write', 'delete'];
+
+    it('should return only fields in the allowlist', () => {
+      const result = utils.sanitizeFields(['name', 'password', 'status'], allowedList);
+      expect(result).to.deep.equal(['name', 'status']);
+    });
+
+    it('should return empty array for non-array input', () => {
+      expect(utils.sanitizeFields(null, allowedList)).to.deep.equal([]);
+      expect(utils.sanitizeFields(undefined, allowedList)).to.deep.equal([]);
+      expect(utils.sanitizeFields('name', allowedList)).to.deep.equal([]);
+    });
+
+    it('should return empty array when no fields match', () => {
+      expect(utils.sanitizeFields(['foo', 'bar'], allowedList)).to.deep.equal([]);
+    });
+
+    it('should return all fields when all are in allowlist', () => {
+      const result = utils.sanitizeFields(['name', 'status'], allowedList);
+      expect(result).to.deep.equal(['name', 'status']);
+    });
+  });
+
+  describe('getValidObjectId', () => {
+    it('should return null when param is null', () => {
+      expect(utils.getValidObjectId(null)).to.be.null;
+    });
+
+    it('should return null when param.value is falsy', () => {
+      expect(utils.getValidObjectId({ value: '' })).to.be.null;
+      expect(utils.getValidObjectId({ value: null })).to.be.null;
+    });
+
+    it('should return a mongoose ObjectId for a valid id string', () => {
+      const id = new mongoose.Types.ObjectId();
+      const result = utils.getValidObjectId({ value: id.toString() });
+      expect(result).to.be.instanceOf(mongoose.Types.ObjectId);
+      expect(result.toString()).to.equal(id.toString());
+    });
+
+    it('should throw with status 400 for an invalid id string', () => {
+      expect(() => utils.getValidObjectId({ value: 'not-an-id' })).to.throw().with.property('status', 400);
+    });
+  });
 });

@@ -49,20 +49,25 @@ describe('Model Schemas', () => {
   });
 
   describe('Common Model Fields', () => {
-    it('should have _updatedBy field for audit trail', () => {
-      // Models should include audit fields
-      const commonFields = ['_updatedBy', '_addedBy', '_deletedBy'];
-      expect(commonFields).to.include('_updatedBy');
+    let TestModel;
+
+    before(() => {
+      const genModelFunction = require('../../api/helpers/models');
+      // Use a unique name to avoid mongoose model re-registration errors
+      const modelName = 'TestAuditFields_' + Date.now();
+      TestModel = genModelFunction(modelName, { testField: { type: String } }, 'test_collection');
     });
 
-    it('should have _addedBy field for audit trail', () => {
-      const commonFields = ['_updatedBy', '_addedBy', '_deletedBy'];
-      expect(commonFields).to.include('_addedBy');
+    it('should have _updatedBy field compiled into the schema', () => {
+      expect(TestModel.schema.paths).to.have.property('_updatedBy');
     });
 
-    it('should have _deletedBy field for soft deletes', () => {
-      const commonFields = ['_updatedBy', '_addedBy', '_deletedBy'];
-      expect(commonFields).to.include('_deletedBy');
+    it('should have _addedBy field compiled into the schema', () => {
+      expect(TestModel.schema.paths).to.have.property('_addedBy');
+    });
+
+    it('should have _deletedBy field compiled into the schema', () => {
+      expect(TestModel.schema.paths).to.have.property('_deletedBy');
     });
   });
 

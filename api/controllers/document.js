@@ -11,48 +11,42 @@ const MinioController = require('../helpers/minio');
 
 const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING ? process.env.ENABLE_VIRUS_SCANNING.toLowerCase() == 'true' : false;
 
-var getSanitizedFields = function (fields) {
-  if (!Array.isArray(fields)) return [];
-  const allowedList = ['displayName',
-    '_addedBy',
-    'documentFileName',
-    'internalExt',
-    'internalOriginalName',
-    'displayName',
-    'labels',
-    'documentType',
-    'datePosted',
-    'dateUploaded',
-    'dateReceived',
-    'documentFileSize',
-    'documentSource',
-    'eaoStatus',
-    'internalURL',
-    'internalMime',
-    'internalSize',
-    'checkbox',
-    'project',
-    'type',
-    'documentAuthor',
-    'documentAuthorType',
-    'milestone',
-    'projectPhase',
-    'legislation',
-    'description',
-    'keywords',
-    'isPublished',
-    'internalMime',
-    'isFeatured',
-    'sortOrder',
-    'publicHitCount',
-    'secureHitCount',
-    'contentExtractedAt',
-    'extractionMethod',
-    'contentPageCount'];
-  return fields.filter(function (f) {
-    return allowedList.includes(f);
-  });
-};
+const ALLOWED_FIELDS = [
+  'displayName',
+  '_addedBy',
+  'documentFileName',
+  'internalExt',
+  'internalOriginalName',
+  'labels',
+  'documentType',
+  'datePosted',
+  'dateUploaded',
+  'dateReceived',
+  'documentFileSize',
+  'documentSource',
+  'eaoStatus',
+  'internalURL',
+  'internalMime',
+  'internalSize',
+  'checkbox',
+  'project',
+  'type',
+  'documentAuthor',
+  'documentAuthorType',
+  'milestone',
+  'projectPhase',
+  'legislation',
+  'description',
+  'keywords',
+  'isPublished',
+  'isFeatured',
+  'sortOrder',
+  'publicHitCount',
+  'secureHitCount',
+  'contentExtractedAt',
+  'extractionMethod',
+  'contentPageCount'
+];
 
 exports.protectedOptions = function (args, res,) {
   res.status(200).send();
@@ -77,7 +71,7 @@ exports.publicGet = async function (args, res,) {
     var data = await Utils.runDataQuery('Document',
       ['public'],
       query,
-      getSanitizedFields(args.swagger.params.fields.value), // Fields
+      Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS), // Fields
       null, // sort warmup
       null, // sort
       null, // skip
@@ -261,7 +255,7 @@ exports.protectedGet = async function (args, res) {
     var data = await Utils.runDataQuery('Document',
       args.swagger.params.auth_payload.realm_access.roles,
       query,
-      getSanitizedFields(args.swagger.params.fields.value), // Fields
+      Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS), // Fields
       null, // sort warmup
       null, // sort
       skip, // skip
@@ -696,7 +690,7 @@ exports.protectedUnPublish = async function (args, res) {
 
 // Update an existing document
 exports.protectedPut = async function (args, res) {
-  console.log('args:', args.swagger.params);
+  defaultLog.debug('protectedPut params: %j', args.swagger.params);
   var objId = args.swagger.params.docId.value;
   if (args.swagger.params.docId && args.swagger.params.docId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.docId.value)) {
     return Actions.sendResponse(res, 400, { });
@@ -818,12 +812,12 @@ exports.protectedDelete = async function (args, res) {
     }
 
     var doc = await Document.findOneAndDelete({ _id: objId });
-    console.log('deleting document', doc);
+    defaultLog.info('Deleting document %s from minio', doc && doc.internalURL);
     await MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
     Utils.recordAction('Delete', 'Document', args.swagger.params.auth_payload.preferred_username, objId);
     return Actions.sendResponse(res, 200, {});
   } catch (e) {
-    console.log('Error:', e);
+    defaultLog.error('Error deleting document %s: %s', objId, e.message);
     return Actions.sendResponse(res, 400, e);
   }
 };

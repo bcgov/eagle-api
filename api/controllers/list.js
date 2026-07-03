@@ -2,17 +2,10 @@ var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
-var tagList = [
+const ALLOWED_FIELDS = [
   'listName',
   'items'
 ];
-
-var getSanitizedFields = function (fields) {
-  if (!Array.isArray(fields)) return [];
-  return fields.filter(function (f) {
-    return tagList.includes(f);
-  });
-};
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
@@ -60,7 +53,7 @@ exports.protectedGet = async function (args, res) {
   var data = await Utils.runDataQuery('Topic',
     args.swagger.params.auth_payload.realm_access.roles,
     query,
-    getSanitizedFields(args.swagger.params.fields.value), // Fields
+    Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS), // Fields
     null, // sort warmup
     sort, // sort
     skip, // skip

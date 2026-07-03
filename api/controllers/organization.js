@@ -2,20 +2,13 @@ var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
-var tagList = [
+const ALLOWED_FIELDS = [
   'code',
   'description',
   'name',
   'companyType',
   'parentCompany'
 ];
-
-var getSanitizedFields = function (fields) {
-  if (!Array.isArray(fields)) return [];
-  return fields.filter(function (f) {
-    return tagList.includes(f);
-  });
-};
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
@@ -45,7 +38,7 @@ exports.publicGet = async function (args, res) {
   var data = await Utils.runDataQuery('Organization',
     ['public'],
     query,
-    getSanitizedFields(args.swagger.params.fields.value), // Fields
+    Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS), // Fields
     null, // sort warmup
     sort, // sort
     null, // skip
@@ -79,7 +72,7 @@ exports.protectedGet = async function (args, res) {
   var data = await Utils.runDataQuery('Organization',
     args.swagger.params.auth_payload.realm_access.roles,
     query,
-    getSanitizedFields(args.swagger.params.fields.value), // Fields
+    Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS), // Fields
     null, // sort warmup
     sort, // sort
     null, // skip
@@ -131,12 +124,14 @@ exports.protectedPost = async function (args, res) {
 
 // Update an existing organization
 exports.protectedPut = async function (args, res) {
-  var objId = args.swagger.params.orgId.value;
-  if (args.swagger.params.orgId && args.swagger.params.orgId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.orgId.value)) {
-    return Actions.sendResponse(res, 400, { });
+  var objId;
+  try {
+    objId = Utils.getValidObjectId(args.swagger.params.orgId);
+  } catch (e) {
+    return Actions.sendResponse(res, 400, {});
   }
   var obj = args.swagger.params.org.value;
-  defaultLog.info('ObjectID:', args.swagger.params.orgId.value);
+  defaultLog.info('ObjectID:', objId);
 
   var Organization = mongoose.model('Organization');
   var User = mongoose.model('User');
@@ -177,11 +172,13 @@ exports.protectedPut = async function (args, res) {
 
 // Publish/Unpublish the organization
 exports.protectedPublish = async function (args, res) {
-  var objId = args.swagger.params.orgId.value;
-  defaultLog.info('Publish Organization:', objId);
-  if (args.swagger.params.orgId && args.swagger.params.orgId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.orgId.value)) {
-    return Actions.sendResponse(res, 400, { });
+  var objId;
+  try {
+    objId = Utils.getValidObjectId(args.swagger.params.orgId);
+  } catch (e) {
+    return Actions.sendResponse(res, 400, {});
   }
+  defaultLog.info('Publish Organization:', objId);
   var Organization = require('mongoose').model('Organization');
   try {
     const o = await Organization.findOne({ _id: objId });
@@ -206,11 +203,13 @@ exports.protectedPublish = async function (args, res) {
   }
 };
 exports.protectedUnPublish = async function (args, res) {
-  var objId = args.swagger.params.orgId.value;
-  defaultLog.info('UnPublish Organization:', objId);
-  if (args.swagger.params.orgId && args.swagger.params.orgId.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.orgId.value)) {
-    return Actions.sendResponse(res, 400, { });
+  var objId;
+  try {
+    objId = Utils.getValidObjectId(args.swagger.params.orgId);
+  } catch (e) {
+    return Actions.sendResponse(res, 400, {});
   }
+  defaultLog.info('UnPublish Organization:', objId);
   var Organization = require('mongoose').model('Organization');
   try {
     const o = await Organization.findOne({ _id: objId });

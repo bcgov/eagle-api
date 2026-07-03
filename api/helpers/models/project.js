@@ -1,5 +1,6 @@
 var mongoose = require('mongoose');
 var Mixed = mongoose.Schema.Types.Mixed;
+const defaultLog = require('winston').loggers.get('default');
 
 // legislation specific data schema
 var projectDataDefinition = {
@@ -140,7 +141,7 @@ nature.set = function (nature) {
     const build = Object.keys(buildToNature).find(key => buildToNature[key] === nature);
     this.set('build', build || null);
   } catch (error) {
-    console.log('Failed to parse nature: "' + nature + '" with error: "' + error + '"');
+    defaultLog.error('Failed to parse nature: "%s" with error: "%s"', nature, error);
     this.set('build', null);
   }
 };

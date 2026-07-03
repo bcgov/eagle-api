@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const defaultLog = require('winston').loggers.get('default');
 const fuzzySearch = require('../helpers/fuzzySearch');
 const aggregateHelper = require('../helpers/aggregators');
 const constants = require('../helpers/constants').schemaTypes;
@@ -115,7 +116,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
  * @returns {array} Aggregation for a match on project.name
  */
 exports.createRegexForProjectLookupAggr = function (keywords, caseSensitive, fuzzy = false) {
-  console.log("keywords ", keywords);
+  defaultLog.debug('createRegexForProjectLookupAggr keywords: %s', keywords);
   const aggregation = [];
   if (keywords) {
     keywords = keywords.replace(/"/g, "").trim();

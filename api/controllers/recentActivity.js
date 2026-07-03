@@ -3,29 +3,7 @@ var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 
-var getSanitizedFields = function (fields) {
-  if (!Array.isArray(fields)) return [];
-  const allowedList = [
-    '_schemaName',
-    'dateUpdated',
-    'dateAdded',
-    'pinned',
-    'documentUrl',
-    'contentUrl',
-    'type',
-    'notificationName',
-    'projectNotification',
-    'pcp',
-    'active',
-    'project',
-    'content',
-    'headline',
-    'complianceAndEnforcement'
-  ];
-  return fields.filter(function (f) {
-    return allowedList.includes(f);
-  });
-};
+
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
 };

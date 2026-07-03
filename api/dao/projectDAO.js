@@ -445,7 +445,7 @@ exports.updateProject = async function(user, sourceProject, updatedProject) {
     filteredData.intake.investmentNotes = updatedProject.intake.notes;
   } catch (e) {
     // Missing info
-    console.log('Missing:', e);
+    defaultLog.warn('updateProject missing intake data: %s', e.message);
     // fall through
   }
   filteredData.proponent = updatedProject.proponent;
@@ -525,7 +525,7 @@ exports.addExtension = async function(user, extension, project) {
 
     return data;
   } catch (e) {
-    console.log(e);
+    defaultLog.error('Project extension could not be added: %s', e.message);
     throw Error('Project extension could not be added: ', e);
   }
 };

@@ -84,12 +84,7 @@ var tagList = [
 
 const WORDS_TO_ANALYZE = 3;
 
-var getSanitizedFields = function (fields) {
-  if (!Array.isArray(fields)) return [];
-  return fields.filter(function (f) {
-    return tagList.includes(f);
-  });
-};
+
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
@@ -106,7 +101,7 @@ exports.publicHead = async function (args, res) {
   tagList.push('dateAdded');
   tagList.push('dateCompleted');
 
-  var requestedFields = getSanitizedFields(args.swagger.params.fields.value);
+  var requestedFields = Utils.sanitizeFields(args.swagger.params.fields.value, tagList);
 
   if (args.swagger.params.projId && args.swagger.params.projId.value) {
     if (!mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
@@ -161,7 +156,7 @@ exports.publicGet = async function (args, res) {
   if (review180start) {
     review180start.push('review180Start');
   }
-  var requestedFields = getSanitizedFields(review180start);
+  var requestedFields = Utils.sanitizeFields(review180start, tagList);
   // Add in the default fields to the projection so that the incoming query will work for any selected fields.
   tagList.push('dateAdded');
   tagList.push('dateCompleted');
@@ -217,7 +212,7 @@ exports.publicGet = async function (args, res) {
     // Sanitize for public.
     let sanitizedData = Utils.filterData('Project', data, ['public']);
 
-    console.log('DA:', JSON.stringify(sanitizedData));
+    defaultLog.debug('publicGet sanitized response: %j', sanitizedData);
     return Actions.sendResponse(res, 200, sanitizedData);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
@@ -236,7 +231,7 @@ exports.protectedGet = async function (args, res) {
   if (args.swagger.params.fields.value) {
     args.swagger.params.fields.value.push('directoryStructure');
   }
-  var fields = getSanitizedFields(args.swagger.params.fields.value);
+  var fields = Utils.sanitizeFields(args.swagger.params.fields.value, tagList);
 
   tagList.push('dateStarted');
   tagList.push('dateCompleted');
@@ -250,7 +245,7 @@ exports.protectedGet = async function (args, res) {
     // Getting a single project
     Object.assign(query, { _id: new mongoose.Types.ObjectId(args.swagger.params.projId.value) });
     commentPeriodPipeline = handleCommentPeriodForBannerQueryParameters(args, args.swagger.params.projId.value);
-    console.log(JSON.stringify(commentPeriodPipeline));
+    defaultLog.debug('protectedGet commentPeriodPipeline: %j', commentPeriodPipeline);
   } else {
     // Getting multiple projects
     try {
@@ -283,11 +278,7 @@ exports.protectedGet = async function (args, res) {
   // Set query type
   Object.assign(query, { '_schemaName': 'Project' });
 
-  console.log('*****************************************');
-  console.log('query:', query);
-  console.log('*****************************************');
-
-  console.log('PIPELINE', commentPeriodPipeline);
+  defaultLog.debug('protectedGet query: %j pipeline: %j', query, commentPeriodPipeline);
 
   try {
     var data = await Utils.runDataQuery('Project',
@@ -477,7 +468,7 @@ exports.protectedPost = function (args, res) {
       return Actions.sendResponse(res, 200, theProject);
     })
     .catch(function (err) {
-      console.log('Error in API:', err);
+      defaultLog.error('Error saving project:', err);
       return Actions.sendResponse(res, 400, err);
     });
 };
@@ -629,8 +620,7 @@ exports.protectedPut = async function (args, res) {
     defaultLog.info('Couldn\'t find that object!');
     return Actions.sendResponse(res, 404, {});
   }
-  // console.log("Incoming updated object:", projectObj);
-  console.log('*****************');
+  defaultLog.debug('protectedPut updating project: %s', objId);
 
   delete projectObj.read;
   delete projectObj.write;
@@ -680,7 +670,7 @@ exports.protectedPut = async function (args, res) {
     filteredData.intake.investmentNotes = projectObj.intake.notes;
   } catch (e) {
     // Missing info
-    console.log('Missing:', e);
+    defaultLog.warn('protectedPut missing intake data for project %s: %s', objId, e.message);
     // fall through
   }
   filteredData.proponent = projectObj.proponent;

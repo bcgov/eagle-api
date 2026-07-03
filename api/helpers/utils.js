@@ -65,6 +65,31 @@ exports.buildQuery = function (property, values, query) {
   });
 };
 
+/**
+ * Filter a fields array against an allowlist.
+ * Replaces the repeated local getSanitizedFields pattern in every controller.
+ */
+exports.sanitizeFields = function (fields, allowedList) {
+  if (!Array.isArray(fields)) return [];
+  return fields.filter(f => allowedList.includes(f));
+};
+
+/**
+ * Extract and validate a Mongoose ObjectId from a swagger param.
+ * Returns a mongoose.Types.ObjectId or null.
+ * Throws { status: 400 } when the value is present but invalid.
+ */
+exports.getValidObjectId = function (param) {
+  const val = param && param.value;
+  if (!val) return null;
+  if (!mongoose.Types.ObjectId.isValid(val)) {
+    const err = new Error('Invalid ObjectId');
+    err.status = 400;
+    throw err;
+  }
+  return new mongoose.Types.ObjectId(val);
+};
+
 exports.getBasePath = function (protocol, host) {
   return protocol + '://' + host;
 };

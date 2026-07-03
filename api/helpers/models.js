@@ -1,3 +1,6 @@
+'use strict';
+
+const defaultLog = require('winston').loggers.get('default');
 var mongoose = require ('mongoose');
 
 var genSchema = function (name, definition) {
@@ -47,6 +50,13 @@ var genSchema = function (name, definition) {
   //
   definition._schemaName = {type:String, default:name, index: true};
 
+  // Add audit fields if it's not the Audit model itself
+  if (name !== 'Audit') {
+    definition._updatedBy = { type: String, default: 'system' };
+    definition._addedBy = { type: String, default: 'system' };
+    definition._deletedBy = { type: String, default: 'system' };
+  }
+
   //
   // create the schema
   //
@@ -80,11 +90,6 @@ var genSchema = function (name, definition) {
   } else {
     // Default - no save hook for audit
     if (name !== 'Audit') {
-      // Add the middle ware info
-      definition._updatedBy = { type:String, default: 'system' };
-      definition._addedBy = { type:String, default: 'system' };
-      definition._deletedBy = { type:String, default: 'system' };
-
       schema.post('save', function (doc) {
         var Audit = mongoose.model('Audit');
         var audit = new Audit({
@@ -119,7 +124,7 @@ var genSchema = function (name, definition) {
 
 module.exports = function (name, definition, collection) {
   if (!name || !definition) {
-    console.error ('No name or definition supplied when building schema');
+    defaultLog.error('No name or definition supplied when building schema');
     return;
   }
   return mongoose.model (name, genSchema  (name, definition), collection);

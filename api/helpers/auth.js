@@ -95,7 +95,7 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
     }
   } else {
     defaultLog.error('Token didn\'t have a bearer.');
-    console.log('current:', currentScopes);
+    defaultLog.debug('current scopes: %j', currentScopes);
     if (!req.swagger.apiPath.startsWith('/public')
         && (req.swagger.operationPath[2] !== 'get' && req.swagger.operationPath[2] !== 'option' && req.swagger.operationPath[2] !== 'head')) {
       return callback(sendError());

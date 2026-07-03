@@ -341,7 +341,7 @@ const executeQuery = async function (args, res) {
 
     return Actions.sendResponse(res, 200, data);
   } else {
-    console.log('Bad Request');
+    defaultLog.warn('search.js executeQuery: bad request — missing schemaName');
     return Actions.sendResponse(res, 400, {});
   }
 };

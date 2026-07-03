@@ -50,12 +50,12 @@ exports.protectedPostInspection = async function (args, res) {
           return Actions.sendResponse(res, 200, doc);
         })
         .catch(function (err) {
-          console.log('Error in API:', err);
+          defaultLog.error('Error saving inspection:', err);
           return Actions.sendResponse(res, 400, err);
         });
     }
   } catch (err) {
-    console.log('Error in API:', err);
+    defaultLog.error('Error saving inspection:', err);
     return Actions.sendResponse(res, 400, err);
   }
 };
@@ -110,7 +110,7 @@ exports.protectedPostElement = async function (args, res) {
         return Actions.sendResponse(res, 200, theDoc);
       })
       .catch(function (err) {
-        console.log('Error in API:', err);
+        defaultLog.error('Error saving inspection element:', err);
         return Actions.sendResponse(res, 400, err);
       });
   }
@@ -148,24 +148,22 @@ exports.protectedPostElementItem = async function (args, res) {
 
     var fs = require('fs');
     fs.writeFileSync(tempFilePath, args.swagger.params.upfile.value.buffer);
-    console.log('wrote file successfully.', tempFilePath);
+    defaultLog.info('Wrote inspection item file: %s', tempFilePath);
 
-    console.log(MinioController.BUCKETS.DOCUMENTS_BUCKET,
-      project,
-      upfile.originalname,
-      tempFilePath);
+    defaultLog.debug('putDocument bucket=%s project=%s filename=%s path=%s',
+      MinioController.BUCKETS.DOCUMENTS_BUCKET, project, upfile.originalname, tempFilePath);
 
     MinioController.putDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET,
       project,
       upfile.originalname,
       tempFilePath)
       .then(async function (minioFile) {
-        console.log('putDocument:', minioFile);
+        defaultLog.debug('putDocument success: %s', minioFile && minioFile.path);
 
         // remove file from temp folder
         fs.unlinkSync(tempFilePath);
 
-        console.log('unlink');
+        defaultLog.debug('putDocument: temp file unlinked');
 
         var InspectionItem = mongoose.model('InspectionItem');
         var doc = new InspectionItem();
@@ -217,13 +215,13 @@ exports.protectedPostElementItem = async function (args, res) {
                 }
               );
             }).then(function (theInspection) {
-              console.log('updated insp:', theInspection);
+              defaultLog.debug('Updated InspectionElement after item push: %j', theInspection);
               return theInspection;
             }).then(function () {
               return Actions.sendResponse(res, 200, savedDocument);
             })
             .catch(function (error) {
-              console.log('error:', error);
+              defaultLog.error('Error saving InspectionItem:', error);
               // the model failed to be created - delete the document from minio so the database and minio remain in sync.
               MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
               return Actions.sendResponse(res, 400, error);
@@ -277,13 +275,13 @@ exports.protectedPostElementItem = async function (args, res) {
             }
           );
         }).then(function (theInspection) {
-          console.log('updated insp:', theInspection);
+          defaultLog.debug('Updated InspectionElement after text item push: %j', theInspection);
           return theInspection;
         }).then(function () {
           return Actions.sendResponse(res, 200, savedDocument);
         })
         .catch(function (error) {
-          console.log('error:', error);
+          defaultLog.error('Error saving InspectionItem (text):', error);
           // the model failed to be created - delete the document from minio so the database and minio remain in sync.
           MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
           return Actions.sendResponse(res, 400, error);
@@ -300,8 +298,7 @@ exports.protectedElementItemGet = function (args, res) {
   if (args.swagger.params.filename && args.swagger.params.filename.value) {
     self.filename = args.swagger.params.filename.value;
   }
-  console.log('self.thumbnail:', self.thumbnail);
-  console.log('self.filename:', self.filename);
+  defaultLog.debug('protectedElementItemGet thumbnail=%s filename=%s', self.thumbnail, self.filename);
 
   defaultLog.info('args.swagger.params:', args.swagger.params.auth_payload.realm_access.roles);
 
@@ -313,7 +310,7 @@ exports.protectedElementItemGet = function (args, res) {
   // Set query type
   Object.assign(query, { '_schemaName': 'InspectionItem' });
 
-  console.log('QE:', query);
+  defaultLog.debug('protectedElementItemGet query: %j', query);
 
   Utils.runDataQuery('InspectionItem',
     args.swagger.params.auth_payload.realm_access.roles,
@@ -355,7 +352,7 @@ exports.protectedElementItemGet = function (args, res) {
             res.setHeader('Content-Disposition', 'attachment;filename="' + self.filename + '"');
 
             if (!self.thumbnail) {
-              console.log('Getting full');
+              defaultLog.debug('Streaming full inspection item file');
               return Utils.getUrlAsStream(docURL)
                 .then(stream => stream.pipe(res));
             } else {
@@ -370,7 +367,7 @@ exports.protectedElementItemGet = function (args, res) {
                   width: parseInt(100, 10),
                 })).pipe(res))
                 .catch(err => {
-                  console.log('ERR:', err);
+                  defaultLog.error('Error streaming inspection item thumbnail:', err);
                   res.status(404).send();
                 });
             }
