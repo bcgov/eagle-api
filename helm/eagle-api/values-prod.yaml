@@ -58,8 +58,9 @@ secrets:
 persistence:
   enabled: false
 
-# Pod Disruption Budget - ensure at least 2 pods during disruptions
+# Pod Disruption Budget - disabled due to Kyverno global_pods cache size limits in prod namespace
 podDisruptionBudget:
+  enabled: false
   minAvailable: 2
 
 autoscaling:

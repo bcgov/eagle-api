@@ -55,6 +55,7 @@ probes:
 
 # Pod Disruption Budget
 podDisruptionBudget:
+  enabled: true
   minAvailable: 1  # Minimum pods available during disruptions
 
 # Persistent Volume Claim for document uploads
