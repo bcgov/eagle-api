@@ -2,7 +2,19 @@ var mongoose = require('mongoose');
 var Mixed = mongoose.Schema.Types.Mixed;
 
 module.exports = require ('../models')('Document', {
-  project         : { type:'ObjectId', ref:'Project', default:null },
+  project         : { 
+    type:'ObjectId', 
+    ref:'Project', 
+    required: [
+      function () {
+        return this.isNew; // only require parent project on new documents to prevent breaking legacy production records during hit count saves
+      },
+      'A document must always belong to a valid project.'
+    ]
+  },
+  region          : { type: String, index: true, default: '' },
+  edrmsRecordNumber: { type: String, unique: true, sparse: true, index: true },
+  orcsClassification: { type: String, index: true, default: '' },
 
   // Tracking
   _comment        : { type:'ObjectId', ref:'CommentPeriod', default:null },

@@ -171,6 +171,10 @@ app.use('/api/public/typesense', searchLimiter);
 app.use('/api/typesense', searchLimiter);
 app.use('/api', globalLimiter);
 
+// Backward-compatible project redirects
+const projectRedirectMiddleware = require('./api/middleware/projectRedirect');
+app.use(projectRedirectMiddleware());
+
 // Auto-wired API router — reads swagger.yaml and registers one Express route per
 // operation, populates req.swagger.params, enforces Bearer auth, and calls the
 // matching controller function.

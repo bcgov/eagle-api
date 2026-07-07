@@ -101,6 +101,8 @@ var projectDefinition = {
   legislation_1996: projectDataDefinition,
   legislation_2002: projectDataDefinition,
   legislation_2018: projectDataDefinition,
+  trackProjectId: { type: Number, unique: true, sparse: true, index: true },
+  region: { type: String, default: '', index: true },
   // Permissions
   read                   : [{ type: String, trim: true, default: '["project-system-admin"]' }],
   write                  : [{ type: String, trim: true, default: '["project-system-admin"]' }],
