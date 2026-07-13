@@ -35,10 +35,6 @@ const { getAgenda } = require('../helpers/jobQueue');
  */
 const JOB_PERMISSIONS = {
   'project-doc-export': ['sysadmin'],
-  // demi-extract is queued via POST /demi/extract (file upload intake),
-  // not via the generic POST /api/jobs. Listed here for documentation and
-  // so canCreateJob() can gate future direct job creation if needed.
-  'demi-extract': ['sysadmin'],
 };
 
 function hasRole(authPayload, role) {
@@ -89,14 +85,6 @@ function formatJob(job) {
     result.projectId  = a.data?.projectId;
     result.includeAll = a.data?.includeAll;
     result.filename   = status === 'completed' ? (a.data?.result?.filename || null) : null;
-  }
-
-  if (a.name === 'demi-extract') {
-    result.docId            = a.data?.docId;
-    result.projectId        = a.data?.project;
-    result.originalFilename = a.data?.originalFilename;
-    result.fileSize         = a.data?.fileSize;
-    result.filename         = status === 'completed' ? (a.data?.result?.filename || null) : null;
   }
 
   return result;
@@ -260,38 +248,7 @@ exports.downloadJobResult = async function (args, res) {
       return res.status(500).json({ message: 'Job result unavailable.' });
     }
 
-    // demi-extract → markdown file on disk
-    if (job.attrs.name === 'demi-extract') {
-      const resultPath = result.resultPath;
-      if (!resultPath) {
-        return res.status(500).json({ message: 'Extraction result unavailable.' });
-      }
 
-      const fs = require('fs');
-      if (!fs.existsSync(resultPath)) {
-        // Pod restarted or result wiped from /tmp — try MinIO backup
-        try {
-          const MinioController = require('../helpers/minio');
-          const fileBuffer = await MinioController.getObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, `extracted/${jobId}.md`);
-          const filename = result.filename || `${jobId}.md`;
-          
-          defaultLog.info(`[job] downloadJobResult: Local file missing, successfully retrieved backup from MinIO for job ${jobId}`);
-
-          res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-          return res.send(fileBuffer);
-        } catch (minioErr) {
-          defaultLog.warn(`[job] downloadJobResult: MinIO fallback failed for job ${jobId}: ${minioErr.message}`);
-          return res.status(404).json({ message: 'Result file not found (pod restarted and no MinIO backup found).' });
-        }
-      }
-
-      const filename = result.filename || `${jobId}.md`;
-      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      // Stream from disk — avoids loading potentially large markdown into RAM
-      return fs.createReadStream(resultPath).pipe(res);
-    }
 
     // project-doc-export → CSV
     if (!result.csv) {
