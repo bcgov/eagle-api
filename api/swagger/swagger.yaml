@@ -7770,57 +7770,31 @@ paths:
 
   # ── DEMI Demo ───────────────────────────────────────────────────────────────
 
-  /demi/extract:
+  /document/sync:
     x-swagger-router-controller: demi
     post:
       tags:
         - demi
-      summary: "DEMI document intake — upload, store, and extract"
-      operationId: extractDocument
-      description: "Accepts a PDF/DOCX/PPTX/XLSX file plus a required project id. Uploads the file to MinIO, creates a staff-only Document record, and queues an extraction job (OCR for scans) that writes DocumentChunks for content search. Returns jobId and docId."
-      security:
-        - Bearer: []
-      x-security-scopes:
-        - sysadmin
-      consumes:
-        - multipart/form-data
+      summary: "Sync document cache from DEMI"
+      operationId: syncDocumentFromDemi
+      description: "Accepts a Document JSON payload from eagle-demi and caches it locally in MongoDB."
       parameters:
-        - name: upfile
-          in: formData
-          description: "The document file to extract text from (PDF, DOCX, PPTX, XLSX)."
+        - name: body
+          in: body
+          description: "The Document object to cache."
           required: true
-          type: file
-        - name: project
-          in: formData
-          description: "The EPIC project ObjectId this document belongs to."
-          required: true
-          type: string
+          schema:
+            type: object
       responses:
-        "202":
-          description: "Accepted — document stored, extraction queued. Poll GET /api/jobs/{jobId}."
+        "200":
+          description: "Cached successfully"
           schema:
             type: object
             properties:
-              jobId:
+              message:
                 type: string
-                description: "MongoDB ObjectId — use with GET /api/jobs/{jobId} and GET /api/jobs/{jobId}/download"
-              docId:
-                type: string
-                description: "ObjectId of the created Document record"
         "400":
-          description: "Bad request (no file uploaded)"
-          schema:
-            $ref: "#/definitions/Error"
-        "413":
-          description: "File too large (max 100 MB)"
-          schema:
-            $ref: "#/definitions/Error"
-        "502":
-          description: "Extraction service unavailable or returned an error"
-          schema:
-            $ref: "#/definitions/Error"
-        "403":
-          description: "Access Denied"
+          description: "Bad request"
           schema:
             $ref: "#/definitions/Error"
 
