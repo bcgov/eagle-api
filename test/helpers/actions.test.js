@@ -68,6 +68,24 @@ describe('Actions Helper Functions', () => {
       expect(mockObject.read).to.include('public');
       expect(mockObject.save.calledOnce).to.be.true;
     });
+
+    it('should update isPublished field if it exists in schema', async () => {
+      const mockObject = {
+        read: ['sysadmin'],
+        isPublished: false,
+        schema: {
+          paths: {
+            isPublished: {}
+          }
+        },
+        save: sinon.stub().resolves()
+      };
+
+      await actions.publish(mockObject);
+
+      expect(mockObject.isPublished).to.be.true;
+      expect(mockObject.save.calledOnce).to.be.true;
+    });
   });
 
   describe('unPublish', () => {
@@ -130,6 +148,24 @@ describe('Actions Helper Functions', () => {
       
       const publicCount = mockObject.read.filter(r => r === 'public').length;
       expect(publicCount).to.equal(0);
+    });
+
+    it('should update isPublished to false if it exists in schema', async () => {
+      const mockObject = {
+        read: ['sysadmin', 'public'],
+        isPublished: true,
+        schema: {
+          paths: {
+            isPublished: {}
+          }
+        },
+        save: sinon.stub().resolves()
+      };
+
+      await actions.unPublish(mockObject);
+
+      expect(mockObject.isPublished).to.be.false;
+      expect(mockObject.save.calledOnce).to.be.true;
     });
   });
 

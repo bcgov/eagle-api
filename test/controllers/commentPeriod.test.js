@@ -137,13 +137,17 @@ describe('CommentPeriod Controller', () => {
   });
 
   describe('protectedPost', () => {
-    it('saves a new comment period', async () => {
-      const args = makeArgs();
+    it('saves a new comment period and sets isPublished', async () => {
+      const args = makeArgs({
+        period: { value: { project: VALID_PROJ_ID, milestone: VALID_MILE_ID, isPublished: true } }
+      });
       const mockSaved = { _id: VALID_CP_ID, read: ['public', 'staff', 'sysadmin'] };
       
+      let instantiatedObj;
       // Mock the Mongoose model constructor instantiation
       function MockCommentPeriod(obj) {
         Object.assign(this, obj);
+        instantiatedObj = this;
         this.save = sinon.stub().resolves(mockSaved);
       }
       mongoose.model.restore();
@@ -154,16 +158,23 @@ describe('CommentPeriod Controller', () => {
 
       await commentPeriod.protectedPost(args, res);
       expect(res.status.calledWith(200)).to.be.true;
+      expect(instantiatedObj.isPublished).to.be.true;
+      expect(instantiatedObj.read).to.include('public');
     });
   });
 
   describe('protectedPut', () => {
-    it('updates comment period', async () => {
-      const args = makeArgs();
+    it('updates comment period and sets isPublished', async () => {
+      const args = makeArgs({
+        cp: { value: { milestone: VALID_MILE_ID, isPublished: true } }
+      });
       cpModel.updateOne.resolves({ nModified: 1 });
 
       await commentPeriod.protectedPut(args, res);
       expect(cpModel.updateOne.calledOnce).to.be.true;
+      const updateDoc = cpModel.updateOne.firstCall.args[1].$set;
+      expect(updateDoc.isPublished).to.be.true;
+      expect(updateDoc.read).to.include('public');
       expect(res.status.calledWith(200)).to.be.true;
     });
   });

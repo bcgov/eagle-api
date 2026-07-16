@@ -1,11 +1,21 @@
 'use strict';
 
 exports.publish = async function (o, save = false) {
+  let isModified = false;
+  if (o.schema && o.schema.paths && o.schema.paths.isPublished) {
+    if (o.isPublished !== true) {
+      o.isPublished = true;
+      isModified = true;
+    }
+  }
   if (!o.read.includes('public')) {
     o.read.push('public');
+    isModified = true;
+  }
+  if (isModified || save) {
     return o.save();
   }
-  return save ? o.save() : o;
+  return o;
 };
 
 exports.isPublished = async function (o) {
@@ -15,8 +25,18 @@ exports.isPublished = async function (o) {
 };
 
 exports.unPublish = async function (o) {
+  let isModified = false;
+  if (o.schema && o.schema.paths && o.schema.paths.isPublished) {
+    if (o.isPublished !== false) {
+      o.isPublished = false;
+      isModified = true;
+    }
+  }
   if (o.read.includes('public')) {
     o.read = o.read.filter(perms => perms !== 'public');
+    isModified = true;
+  }
+  if (isModified) {
     return o.save();
   }
   return o;

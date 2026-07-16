@@ -274,12 +274,15 @@ exports.protectedPost = async function (args, res) {
     openHouses: obj.openHouses,
     relatedDocuments: obj.relatedDocuments,
     project: new mongoose.Types.ObjectId(obj.project),
+    isPublished: obj.isPublished !== undefined
+      ? !!obj.isPublished
+      : (obj.read && obj.read.includes('public')) || false,
     read: ['staff', 'sysadmin'],
     write: ['staff', 'sysadmin'],
     delete: ['staff', 'sysadmin']
   });
 
-  if (obj.isPublished) {
+  if (commentPeriod.isPublished) {
     commentPeriod.read.push('public');
   }
 
@@ -321,11 +324,14 @@ exports.protectedPut = async function (args, res) {
     milestone: new mongoose.Types.ObjectId(obj.milestone),
     openHouses: obj.openHouses,
     relatedDocuments: obj.relatedDocuments,
+    isPublished: obj.isPublished !== undefined
+      ? !!obj.isPublished
+      : (obj.read && obj.read.includes('public')) || false,
     updatedBy: args.swagger.params.auth_payload.preferred_username,
   };
 
   // TODO: Revise so we are not explicitly setting permissions
-  commentPeriod['read'] = obj.isPublished
+  commentPeriod['read'] = commentPeriod.isPublished
     ? ['public', 'staff', 'sysadmin']
     : ['staff', 'sysadmin'];
 
