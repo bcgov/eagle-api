@@ -150,7 +150,7 @@ nature.set = function (nature) {
 
 projectDefinition.virtuals__ = [nature];
 
-projectDefinition.presave__ = function(next) {
+projectDefinition.presave__ = function() {
   const legislations = ['legislation_1996', 'legislation_2002', 'legislation_2018'];
 
   for (const leg of legislations) {
@@ -181,7 +181,6 @@ projectDefinition.presave__ = function(next) {
       }
     }
   }
-  next();
 };
 
 module.exports = require('../models')('Project', projectDefinition, 'epic');
