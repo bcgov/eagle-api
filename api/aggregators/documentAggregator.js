@@ -104,34 +104,16 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   // Authenticated users should still see publicly available content
   const rolesWithPublic = roles.includes('public') ? roles : [...roles, 'public'];
 
-  // Check document permissions
-  aggregation.push(
-    {
-      $redact: {
-        $cond: {
-          if: {
-            // This way, if read isn't present, we assume public no roles array.
-            $and: [
-              { $cond: { if: '$read', then: true, else: false } },
-              {
-                $anyElementTrue: {
-                  $map: {
-                    input: '$read',
-                    as: 'fieldTag',
-                    in: { $setIsSubset: [['$$fieldTag'], rolesWithPublic] }
-                  }
-                }
-              }
-            ]
-          },
-          then: '$$KEEP',
-          else: {
-            $cond: { if: '$read', then: '$$PRUNE', else: '$$DESCEND' }
-          }
-        }
-      }
+  // Check document permissions using a flat $match for performance instead of recursive $redact.
+  aggregation.push({
+    $match: {
+      $or: [
+        { read: { $exists: false } },
+        { read: { $size: 0 } },
+        { read: { $in: rolesWithPublic } }
+      ]
     }
-  );
+  });
 
   // Only add textScore when a $text search is present (MongoDB 4.4+ requirement)
   if (hasTextSearch) {
@@ -162,18 +144,9 @@ exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDire
         'status': {
           $cond: {
             if: {
-              // This way, if read isn't present, we assume public no roles array.
               $and: [
                 { $cond: { if: '$read', then: true, else: false } },
-                {
-                  $anyElementTrue: {
-                    $map: {
-                      input: '$read',
-                      as: 'fieldTag',
-                      in: { $setIsSubset: [['$$fieldTag'], ['public']] }
-                    }
-                  }
-                }
+                { $in: ['public', '$read'] }
               ]
             },
             then: 'published',
