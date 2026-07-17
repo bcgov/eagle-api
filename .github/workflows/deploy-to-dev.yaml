@@ -120,7 +120,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: bcgov/eagle-helper-pods
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          ssh-key: ${{ secrets.GITOPS_DEPLOY_KEY }}
           ref: master
 
       - name: Update Dev Image Tag
