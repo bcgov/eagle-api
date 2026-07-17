@@ -58,7 +58,6 @@ var credentials = {
 // Registering outside the connect callback means models are always available
 // even if the initial connect attempt is retried or delayed.
 require('./api/helpers/models/audit');
-require('./api/helpers/models/list');
 require('./api/helpers/models/user');
 require('./api/helpers/models/group');
 require('./api/helpers/models/pin');
