@@ -147,7 +147,7 @@ jobs:
 
   smoke-test:
     name: Smoke Test Dev
-    needs: [deploy]
+    needs: [deploy, build-and-push]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -171,19 +171,35 @@ jobs:
         run: |
           echo "Waiting 60s for ArgoCD synchronization and rollout to complete..."
           sleep 60
+          EXPECTED_VERSION="${{ needs.build-and-push.outputs.SHORT_SHA }}"
+          echo "Expecting running API version to be: $EXPECTED_VERSION"
+          
+          STATUS=0
           for i in $(seq 1 20); do
-            # Use curl -k to bypass self-signed SSL verification on dev cluster
-            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://eagle-dev.apps.silver.devops.gov.bc.ca/api/health || true)
-            if [ "$STATUS" = "200" ]; then
-              echo "API is ready (attempt $i)"
-              break
+            # Fetch health response and status code
+            RESPONSE=$(curl -k -s https://eagle-dev.apps.silver.devops.gov.bc.ca/api/health || echo "{}")
+            HTTP_CODE=$(curl -k -s -o /dev/null -w "%{http_code}" https://eagle-dev.apps.silver.devops.gov.bc.ca/api/health || echo "500")
+            
+            if [ "$HTTP_CODE" = "200" ]; then
+              # Parse version using jq
+              RUNNING_VERSION=$(echo "$RESPONSE" | jq -r .version 2>/dev/null || echo "unknown")
+              echo "API returned HTTP 200 (attempt $i). Running version: $RUNNING_VERSION"
+              
+              if [ "$RUNNING_VERSION" = "$EXPECTED_VERSION" ]; then
+                echo "Success: Running version matches expected version!"
+                STATUS=200
+                break
+              else
+                echo "Warning: Version mismatch. Expected $EXPECTED_VERSION, but API is still running $RUNNING_VERSION."
+              fi
+            else
+              echo "Attempt $i: API returned HTTP $HTTP_CODE, retrying in 15s..."
             fi
-            echo "Attempt $i: API returned $STATUS, retrying in 15s..."
             sleep 15
           done
           
           if [ "$STATUS" != "200" ]; then
-            echo "Error: API failed to respond with 200 OK"
+            echo "Error: API failed to deploy and verify the correct version within 5 minutes."
             exit 1
           fi
 
