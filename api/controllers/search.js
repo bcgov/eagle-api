@@ -297,6 +297,32 @@ const executeQuery = async function (args, res) {
   defaultLog.info('sortField:', sortField);
   defaultLog.info('sortDirection:', sortDirection);
 
+  if (dataset === constants.LIST) {
+    // List dataset is reference dropdown metadata. Bypass heavy facet/redact aggregation for performance.
+    const ListModel = mongoose.model('List');
+    const rolesWithPublic = roles.includes('public') ? roles : [...roles, 'public'];
+
+    const items = await ListModel.find({
+      _schemaName: 'List',
+      isDeleted: { $ne: true },
+      $or: [
+        { read: { $exists: false } },
+        { read: { $size: 0 } },
+        { read: { $in: rolesWithPublic } }
+      ]
+    })
+    .sort({ listOrder: 1, name: 1 })
+    .collation({ locale: 'en', strength: 2 })
+    .exec();
+
+    const collectionData = [{
+      searchResults: Utils.filterData('List', items, roles),
+      meta: [{ searchResultsTotal: items.length }]
+    }];
+
+    return Actions.sendResponse(res, 200, collectionData);
+  }
+
   if (dataset !== constants.ITEM) {
     const collectionData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue, categorized, fuzzy);
 

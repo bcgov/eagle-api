@@ -60,7 +60,12 @@ describe('Search Controller', () => {
     };
 
     modelStub = {
-      aggregate: sinon.stub().returns(aggregateStub)
+      aggregate: sinon.stub().returns(aggregateStub),
+      find: sinon.stub().returns({
+        sort: sinon.stub().returnsThis(),
+        collation: sinon.stub().returnsThis(),
+        exec: sinon.stub().resolves([{ _id: 'list_1', name: 'List 1' }])
+      })
     };
 
     sinon.stub(mongoose, 'model').callsFake(() => modelStub);
@@ -170,6 +175,18 @@ describe('Search Controller', () => {
 
       await searchController.publicGet(args, res);
       expect(res.status.calledWith(400)).to.be.true;
+    });
+  });
+
+  describe('List Dataset Search', () => {
+    it('returns list items directly when dataset is List', async () => {
+      const args = makeArgs({
+        dataset: { value: 'List' }
+      });
+
+      await searchController.publicGet(args, res);
+      expect(res.status.calledWith(200)).to.be.true;
+      expect(modelStub.find.calledOnce).to.be.true;
     });
   });
 });
