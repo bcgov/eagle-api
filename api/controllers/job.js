@@ -52,6 +52,11 @@ function canCreateJob(authPayload, type) {
   return allowedRoles.some(role => hasRole(authPayload, role));
 }
 
+
+exports.protectedOptions = function (args, res) {
+  res.status(200).send();
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
