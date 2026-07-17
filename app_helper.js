@@ -74,6 +74,8 @@ require('./api/helpers/models/commentperiod');
 require('./api/helpers/models/topic');
 require('./api/helpers/models/projectNotification');
 require('./api/helpers/models/cacUser');
+require('./api/helpers/models/list');
+
 
 async function loadModels(dbConnection, options, logger) {
   const MAX_RETRIES = 10;
