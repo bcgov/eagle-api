@@ -158,10 +158,10 @@ jobs:
       - name: Verify ArgoCD Sync Progress
         run: |
           echo "Waiting for ArgoCD application to reconcile and sync..."
-          oc wait --for=jsonpath='{.status.sync.status}'=Synced application/eagle-api-dev -n 6cdc9e-tools --timeout=300s
+          oc wait --for=jsonpath='{.status.sync.status}'=Synced applications.argoproj.io/eagle-api-dev -n 6cdc9e-tools --timeout=300s
           
           echo "Waiting for ArgoCD application health to be Healthy..."
-          oc wait --for=jsonpath='{.status.health.status}'=Healthy application/eagle-api-dev -n 6cdc9e-tools --timeout=300s
+          oc wait --for=jsonpath='{.status.health.status}'=Healthy applications.argoproj.io/eagle-api-dev -n 6cdc9e-tools --timeout=300s
 
   smoke-test:
     name: Smoke Test Dev
