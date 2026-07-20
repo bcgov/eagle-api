@@ -92,7 +92,7 @@ app.use(function (req, res, next) {
 // Health check — responds immediately without DB dependency.
 // Used by CI smoke-test wait loop and OpenShift readiness probes.
 app.get('/api/health', function (req, res) {
-  res.status(200).json({ status: 'ok', version: process.env.VERSION || 'unknown' });
+  res.status(200).json({ status: 'ok' });
 });
 
 // Analytics proxy — forwards /analytics/* to penguin-analytics service.
