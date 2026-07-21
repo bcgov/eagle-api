@@ -319,6 +319,10 @@ definitions:
       - nature
       - links
       - featuredDocuments
+      - status
+      - eaStatus
+      - projectStatusDate
+      - eaStatusDate
   ProjectSortByFields:
     type: string
     description: "Optional fields to sort by (prefixed with + or - for order)"
