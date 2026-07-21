@@ -21,7 +21,8 @@ concurrency:
   group: deploy-dev
   cancel-in-progress: false
 
-permissions: write-all
+permissions:
+  contents: read
 
 env:
   OPENSHIFT_NAMESPACE_TOOLS: 6cdc9e-tools
@@ -90,12 +91,18 @@ jobs:
         env:
           TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db:2
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_CR_TOKEN }}
+      - name: Login to OpenShift registry
+        run: |
+          for i in {1..5}; do
+            echo "${{ secrets.OPENSHIFT_REPOSITORY_PASSWORD }}" | docker login ${{ secrets.OPENSHIFT_REPOSITORY }} --username ${{ secrets.OPENSHIFT_REPOSITORY_USERNAME }} --password-stdin && break || {
+              echo "Login attempt $i failed. Retrying in 10 seconds..."
+              sleep 10
+            }
+            if [ $i -eq 5 ]; then
+              echo "Login failed after 5 attempts."
+              exit 1
+            fi
+          done
 
       - name: Build and push Docker image
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
@@ -103,9 +110,9 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:dev
-            ghcr.io/${{ github.repository }}:ci-latest
-            ghcr.io/${{ github.repository }}:${{ steps.short-sha.outputs.SHA }}
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:dev
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:ci-latest
+            ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:${{ steps.short-sha.outputs.SHA }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -137,54 +144,6 @@ jobs:
           openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
           insecure_skip_tls_verify: true
           namespace: ${{ env.OPENSHIFT_NAMESPACE_DEV }}
-
-      - name: Import image from GHCR
-        env:
-          GH_CR_TOKEN: ${{ secrets.GH_CR_TOKEN }}
-        run: |
-          # Create pull secret in OpenShift tools namespace
-          oc create secret docker-registry ghcr-pull-secret \
-            --docker-server=ghcr.io \
-            --docker-username=${{ github.actor }} \
-            --docker-password=$GH_CR_TOKEN \
-            --docker-email=noreply@github.com \
-            -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} \
-            --dry-run=client -o yaml | oc apply -f -
-
-          # Link secret to service accounts to allow background controller image imports
-          oc secrets link builder ghcr-pull-secret --for=pull -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} || true
-          oc secrets link default ghcr-pull-secret --for=pull -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} || true
-
-          # Point local ImageStreamTag to GHCR with --scheduled flag to trigger automatic background controller import
-          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag ghcr.io/${{ github.repository }}:dev ${{ env.IMAGE_NAME }}:dev --reference-policy=local --scheduled
-          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag ghcr.io/${{ github.repository }}:ci-latest ${{ env.IMAGE_NAME }}:ci-latest --reference-policy=local --scheduled
-
-          # Synchronously trigger the import to ensure background controllers start processing immediately
-          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} import-image ${{ env.IMAGE_NAME }}:dev || true
-          oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} import-image ${{ env.IMAGE_NAME }}:ci-latest || true
-
-          # Wait and verify that the import succeeded
-          echo "Waiting for ImageStreamTag import to succeed..."
-          for i in {1..24}; do
-            STATUS=$(oc get imagestreamtag ${{ env.IMAGE_NAME }}:dev -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} -o jsonpath='{.conditions[?(@.type=="ImportSuccess")].status}' 2>/dev/null || echo "Unknown")
-            MESSAGE=$(oc get imagestreamtag ${{ env.IMAGE_NAME }}:dev -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} -o jsonpath='{.conditions[?(@.type=="ImportSuccess")].message}' 2>/dev/null || echo "")
-            
-            if [ "$STATUS" = "True" ]; then
-              echo "✓ Image imported successfully!"
-              exit 0
-            elif [ "$STATUS" = "False" ]; then
-              if [ -n "$MESSAGE" ] && [[ "$MESSAGE" == *"unauthorized"* || "$MESSAGE" == *"not found"* || "$MESSAGE" == *"Failed"* || "$MESSAGE" == *"error"* || "$MESSAGE" == *"Error"* ]]; then
-                echo "❌ Image import failed: $MESSAGE"
-                exit 1
-              fi
-            fi
-            echo "Attempt $i: Import status is '$STATUS', retrying in 5s..."
-            sleep 5
-          done
-
-          echo "❌ Timeout waiting for image import to complete."
-          exit 1
-
 
       - name: Deploy with Helm
         run: |
