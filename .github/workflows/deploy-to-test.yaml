@@ -139,8 +139,25 @@ jobs:
         run: |
           if oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} get imagestreamtag ${{ env.IMAGE_NAME }}:${{ inputs.version }} &>/dev/null; then
             echo "Image tag ${{ inputs.version }} already exists - using existing image"
+            
+            # Verify existing tag is healthy
+            STATUS=$(oc get imagestreamtag ${{ env.IMAGE_NAME }}:${{ inputs.version }} -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} -o jsonpath='{.conditions[?(@.type=="ImportSuccess")].status}' 2>/dev/null || echo "Unknown")
+            MESSAGE=$(oc get imagestreamtag ${{ env.IMAGE_NAME }}:${{ inputs.version }} -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} -o jsonpath='{.conditions[?(@.type=="ImportSuccess")].message}' 2>/dev/null || echo "")
+            if [ "$STATUS" = "False" ]; then
+              echo "❌ Image tag ${{ inputs.version }} is in a failed import state: $MESSAGE"
+              exit 1
+            fi
           else
             echo "Image tag ${{ inputs.version }} does not exist - tagging from ci-latest"
+            
+            # Verify ci-latest is healthy before tagging
+            STATUS=$(oc get imagestreamtag ${{ env.IMAGE_NAME }}:ci-latest -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} -o jsonpath='{.conditions[?(@.type=="ImportSuccess")].status}' 2>/dev/null || echo "Unknown")
+            MESSAGE=$(oc get imagestreamtag ${{ env.IMAGE_NAME }}:ci-latest -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} -o jsonpath='{.conditions[?(@.type=="ImportSuccess")].message}' 2>/dev/null || echo "")
+            if [ "$STATUS" = "False" ]; then
+              echo "❌ Cannot tag from ci-latest: import is in a failed state: $MESSAGE"
+              exit 1
+            fi
+
             oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
               ${{ env.IMAGE_NAME }}:ci-latest ${{ env.IMAGE_NAME }}:${{ inputs.version }}
           fi
