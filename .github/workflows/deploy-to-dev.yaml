@@ -21,8 +21,7 @@ concurrency:
   group: deploy-dev
   cancel-in-progress: false
 
-permissions:
-  contents: read
+permissions: write-all
 
 env:
   OPENSHIFT_NAMESPACE_TOOLS: 6cdc9e-tools
