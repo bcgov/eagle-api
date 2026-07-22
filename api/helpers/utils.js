@@ -246,6 +246,20 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
       (modelType === 'Project') && {
         '$lookup': {
           'from': 'epic',
+          'localField': 'currentPhaseName',
+          'foreignField': '_id',
+          'as': 'currentPhaseName'
+        }
+      },
+      (modelType === 'Project') && {
+        '$unwind': {
+          'path': '$currentPhaseName',
+          'preserveNullAndEmptyArrays': true
+        }
+      },
+      (modelType === 'Project') && {
+        '$lookup': {
+          'from': 'epic',
           'localField': 'CEAAInvolvement',
           'foreignField': '_id',
           'as': 'CEAAInvolvement'

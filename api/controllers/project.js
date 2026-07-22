@@ -392,7 +392,7 @@ exports.protectedDelete = async function (args, res) {
 
 
 //  Create a new project
-exports.protectedPost = function (args, res) {
+exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.project.value;
 
   // default project creation is set to 2002 right now for backwards compatibility with other apps that use this api
@@ -440,6 +440,15 @@ exports.protectedPost = function (args, res) {
   // Also need to make sure that the eacDecision and CEAAInvolvement fields are in the project. Hard requirement for public
   projectData.CEAAInvolvement = obj.CEAAInvolvement ? obj.CEAAInvolvement : null;
   projectData.eacDecision = obj.eacDecision ? obj.eacDecision : null;
+
+  projectData.status = '';
+  if (obj.currentPhaseName) {
+    const ListModel = mongoose.model('List');
+    const phaseListDoc = await ListModel.findById(obj.currentPhaseName);
+    if (phaseListDoc) {
+      projectData.status = phaseListDoc.name;
+    }
+  }
 
   // Generate search terms for the name.
   projectData.nameSearchTerms = Utils.generateSearchTerms(obj.name, WORDS_TO_ANALYZE);
@@ -632,7 +641,14 @@ exports.protectedPut = async function (args, res) {
   filteredData.description = projectObj.description;
   filteredData.location = projectObj.location;
   filteredData.region = projectObj.region;
-  filteredData.status = projectObj.status;
+  filteredData.status = '';
+  if (projectObj.currentPhaseName) {
+    const ListModel = mongoose.model('List');
+    const phaseListDoc = await ListModel.findById(projectObj.currentPhaseName);
+    if (phaseListDoc) {
+      filteredData.status = phaseListDoc.name;
+    }
+  }
   filteredData.eaStatus = projectObj.eaStatus;
   filteredData.name = projectObj.name;
   filteredData.substantiallyDate = projectObj.substantiallyDate;
