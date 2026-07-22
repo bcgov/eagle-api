@@ -131,7 +131,7 @@ jobs:
         run: |
           for i in {1..10}; do
             echo "Attempt $i: Logging into OpenShift..."
-            oc login --server=${{ secrets.OPENSHIFT_URL }} --token=${{ secrets.OPENSHIFT_TOKEN }} --insecure-skip-tls-verify=true && oc project ${{ env.OPENSHIFT_NAMESPACE_TEST }} && echo "✓ Successfully logged in!" && exit 0 || {
+            oc login --server=${{ secrets.OPENSHIFT_URL }} --token=${{ secrets.OPENSHIFT_TOKEN }} --insecure-skip-tls-verify=true && (oc project ${{ env.OPENSHIFT_NAMESPACE_TEST }} || true) && echo "✓ Successfully logged in!" && exit 0 || {
               echo "Attempt $i failed. Retrying in 15 seconds..."
               sleep 15
             }
