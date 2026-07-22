@@ -55,7 +55,7 @@ epic/*
 migrations_temp
 
 # Internal AI assistant notes
-.github/copilot-instructions.md
+.github/antigravity.md
 .github/instructions/
 CLAUDE.md
 GEMINI.md
