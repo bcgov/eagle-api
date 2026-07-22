@@ -76,12 +76,17 @@ jobs:
           rm -f openshift-client-linux.tar.gz
 
       - name: Log into OpenShift
-        uses: redhat-actions/oc-login@v1
-        with:
-          openshift_server_url: ${{ secrets.OPENSHIFT_URL }}
-          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
-          insecure_skip_tls_verify: true
-          namespace: ${{ env.OPENSHIFT_NAMESPACE_PROD }}
+        run: |
+          for i in {1..10}; do
+            echo "Attempt $i: Logging into OpenShift..."
+            oc login --server=${{ secrets.OPENSHIFT_URL }} --token=${{ secrets.OPENSHIFT_TOKEN }} --insecure-skip-tls-verify=true && oc project ${{ env.OPENSHIFT_NAMESPACE_PROD }} && echo "✓ Successfully logged in!" && exit 0 || {
+              echo "Attempt $i failed. Retrying in 15 seconds..."
+              sleep 15
+            }
+          done
+          echo "❌ Failed to log into OpenShift after 10 attempts."
+          exit 1
+
 
       - name: Verify image tag exists
         run: |
