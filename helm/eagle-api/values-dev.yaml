@@ -6,7 +6,10 @@ image:
   tag: dev
 
 route:
-  enabled: false  # All traffic goes through eagle-public route -> nginx -> /api paths
+  enabled: true
+  path: /api
+  serviceName: eagle-api
+  targetPort: "3000-tcp"
   host: eagle-dev.apps.silver.devops.gov.bc.ca
 
 resources:
