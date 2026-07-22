@@ -108,6 +108,7 @@ jobs:
     name: Deploying ${{ inputs.version }} to Test
     needs: [validate, release]
     if: |
+      always() &&
       needs.validate.result == 'success' &&
       (needs.release.result == 'success' || needs.release.result == 'skipped')
     runs-on: ubuntu-latest
