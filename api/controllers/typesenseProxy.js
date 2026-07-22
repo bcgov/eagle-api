@@ -43,6 +43,7 @@ const FORBIDDEN_FILTER_KEYS = new Set(['allowed_roles']);
 const ALLOWED_FILTER_KEYS = new Set([
   // projects
   'region', 'type', 'currentPhaseName', 'eacDecision', 'decisionDate',
+  'regionalDistrict', 'electoralDistrict', 'municipality',
   // documents
   'milestone', 'documentAuthorType', 'projectPhase', 'datePosted',
   // activities (no user-filterable facets beyond type)

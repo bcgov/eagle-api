@@ -46,7 +46,7 @@ const QUERY_BY = {
  */
 const FACET_BY = {
   Document:            'type,milestone,documentAuthorType,projectPhase,legislation,documentSource',
-  Project:             'region,status,currentPhaseName,eacDecision,type,sector',
+  Project:             'region,status,currentPhaseName,eacDecision,type,sector,regionalDistrict,electoralDistrict,municipality',
   RecentActivity:      'type',
   ProjectNotification: 'type,region,decision,pcp',
   DocumentChunk:       'documentType,projectId',
@@ -92,6 +92,7 @@ const ALLOWED_FILTER_KEYS = new Set([
   'milestone', 'type', 'documentAuthorType', 'projectPhase', 'legislation',
   'documentSource', 'region', 'status', 'currentPhaseName', 'eacDecision',
   'sector', 'projectId', 'datePostedStart', 'datePostedEnd',
+  'regionalDistrict', 'electoralDistrict', 'municipality',
 ]);
 
 function buildFilterBy(and) {
