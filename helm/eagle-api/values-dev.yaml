@@ -6,11 +6,8 @@ image:
   tag: dev
 
 route:
-  enabled: true
-  path: /api
-  serviceName: eagle-api
-  targetPort: "3000-tcp"
   host: eagle-dev.apps.silver.devops.gov.bc.ca
+  path: /api
 
 resources:
   limits:

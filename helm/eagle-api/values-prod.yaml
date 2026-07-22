@@ -6,8 +6,11 @@ image:
   tag: prod
 
 route:
-  enabled: false  # Production uses prod-external route through rproxy
+  enabled: true
+  serviceName: rproxy
+  targetPort: "8080-tcp"
   host: projects.eao.gov.bc.ca
+  path: "/api"
 
 resources:
   limits:

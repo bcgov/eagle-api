@@ -21,7 +21,7 @@ service:
 route:
   enabled: true
   host: ""  # Set in values-{env}.yaml
-  targetPort: "3000-tcp"
+  targetPort: "8080-tcp"
   serviceName: "rproxy"  # API is proxied through rproxy
   tls:
     termination: edge
