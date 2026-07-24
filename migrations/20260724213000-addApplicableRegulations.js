@@ -20,6 +20,42 @@ const items = [
     listOrder: 0,
     read: ['public', 'staff', 'sysadmin'],
     write: ['staff', 'sysadmin']
+  },
+  {
+    type: 'eaDecisions',
+    _schemaName: 'List',
+    legislation: 2018,
+    name: 'Regulatory Transfer',
+    listOrder: 100,
+    read: ['public', 'staff', 'sysadmin'],
+    write: ['staff', 'sysadmin']
+  },
+  {
+    type: 'eaDecisions',
+    _schemaName: 'List',
+    legislation: 2002,
+    name: 'Regulatory Transfer',
+    listOrder: 100,
+    read: ['public', 'staff', 'sysadmin'],
+    write: ['staff', 'sysadmin']
+  },
+  {
+    type: 'eaDecisions',
+    _schemaName: 'List',
+    legislation: 2018,
+    name: 'Administrative Closure',
+    listOrder: 100,
+    read: ['public', 'staff', 'sysadmin'],
+    write: ['staff', 'sysadmin']
+  },
+  {
+    type: 'eaDecisions',
+    _schemaName: 'List',
+    legislation: 2002,
+    name: 'Administrative Closure',
+    listOrder: 100,
+    read: ['public', 'staff', 'sysadmin'],
+    write: ['staff', 'sysadmin']
   }
 ];
 
@@ -29,13 +65,13 @@ module.exports = {
     for (const item of items) {
       const existing = await epicCollection.findOne({
         _schemaName: 'List',
-        type: 'applicableRegulations',
+        type: item.type,
         legislation: item.legislation,
         name: item.name
       });
       if (!existing) {
         await epicCollection.insertOne(item);
-        console.log(`Inserted applicableRegulation '${item.name}' for legislation ${item.legislation}`);
+        console.log(`Inserted ${item.type} '${item.name}' for legislation ${item.legislation}`);
       }
     }
   },
@@ -45,6 +81,11 @@ module.exports = {
     await epicCollection.deleteMany({
       _schemaName: 'List',
       type: 'applicableRegulations'
+    });
+    await epicCollection.deleteMany({
+      _schemaName: 'List',
+      type: 'eaDecisions',
+      name: { $in: ['Regulatory Transfer', 'Administrative Closure'] }
     });
   }
 };
