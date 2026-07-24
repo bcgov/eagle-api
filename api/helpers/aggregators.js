@@ -217,6 +217,20 @@ const addProjectLookupAggrs = (aggregation, dataKey) => {
         path: `$${proponentField}`,
         preserveNullAndEmptyArrays: true
       }
+    },
+    {
+      '$lookup': {
+        'from': 'epic',
+        'localField': `${dataKey}.applicableRegulation`,
+        'foreignField': '_id',
+        'as': `${dataKey}.applicableRegulation`
+      }
+    },
+    {
+      '$unwind': {
+        path: `$${dataKey}.applicableRegulation`,
+        preserveNullAndEmptyArrays: true
+      }
     }
   );
 

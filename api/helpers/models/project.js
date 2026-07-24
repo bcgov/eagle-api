@@ -72,6 +72,7 @@ var projectDataDefinition = {
   dispute                 : { type: Boolean, default: false },
   activeDate              : { type: Date, default: '' },
   activeStatus            : { type: String, default: '' },
+  applicableRegulation    : { type: 'ObjectId', default: null },
 
   // Project Review Data
   review180Start          : { type: Date, default: null },
