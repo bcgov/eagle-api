@@ -7663,34 +7663,3 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-
-  # ── DEMI Demo ───────────────────────────────────────────────────────────────
-
-  /document/sync:
-    x-swagger-router-controller: demi
-    post:
-      tags:
-        - demi
-      summary: "Sync document cache from DEMI"
-      operationId: syncDocumentFromDemi
-      description: "Accepts a Document JSON payload from eagle-demi and caches it locally in MongoDB."
-      parameters:
-        - name: body
-          in: body
-          description: "The Document object to cache."
-          required: true
-          schema:
-            type: object
-      responses:
-        "200":
-          description: "Cached successfully"
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-        "400":
-          description: "Bad request"
-          schema:
-            $ref: "#/definitions/Error"
-

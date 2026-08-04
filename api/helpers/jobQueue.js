@@ -75,8 +75,6 @@ async function startJobQueue() {
     defaultLockLifetime: 5 * 60 * 1000, // 5 min — restart stuck jobs
   });
 
-  // demi-extract jobs can run up to 60min — override lock lifetime per-job below
-
   // ── Job definitions ────────────────────────────────────────────────────────
 
   /**
