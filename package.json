@@ -22,7 +22,7 @@
     "xml2js": "^0.6.2",
     "qs": "^6.15.2",
     "fast-xml-parser": "^5.10.1",
-    "ip-address": "^10.2.0",
+    "ip-address": "^10.5.0",
     "js-yaml": "^5.2.2"
   },
   "main": "app",
