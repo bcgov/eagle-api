@@ -28,7 +28,7 @@ spec:
         image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
         imagePullPolicy: {{ .Values.mongodb.image.pullPolicy }}
         # Enable replica set mode so MongoDB maintains an oplog.
-        # Required for Change Streams (used by the Typesense sync service).
+        # Required for Change Streams (used by the eagle-search sync worker).
         # This is a single-member replica set — no HA, same resource footprint.
         # keyFile is required by MongoDB when --auth + --replSet are both active.
         # The file is copied from a Secret by the initContainer below (chmod 400).

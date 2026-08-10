@@ -5,15 +5,6 @@ const Actions = require('../helpers/actions');
 const Utils = require('../helpers/utils');
 const constants = require('../helpers/constants').schemaTypes;
 
-// Lazy-loaded: only required when TYPESENSE_ENABLED=true, so a missing package
-// or misconfiguration never prevents the search controller from loading.
-let _typesenseClient = null;
-function getTypesenseClient() {
-  if (!_typesenseClient) {
-    _typesenseClient = require('../helpers/typesenseClient');
-  }
-  return _typesenseClient;
-}
 const documentAggregator = require('../aggregators/documentAggregator');
 const projectAggregator = require('../aggregators/projectAggregator');
 const cacAggregator = require('../aggregators/cacAggregator');
@@ -385,27 +376,3 @@ exports.protectedOptions = function (args, res) {
   res.status(200).send();
 };
 
-/**
- * GET /api/public/search/key
- *
- * Returns a Typesense scoped search key with filter_by: "allowed_roles:=[<roles>]"
- * baked in. The key is safe to expose to browsers — Typesense enforces the embedded
- * filter regardless of what the client sends in the request.
- *
- * Public (unauthenticated) requests receive a key scoped to allowed_roles:=[public].
- * Authenticated requests receive a key scoped to their Keycloak roles + public.
- */
-exports.publicGetSearchKey = function (args, res) {
-  const roles = args.swagger.params.auth_payload
-    ? args.swagger.params.auth_payload.realm_access.roles
-    : ['public'];
-
-  try {
-    const typesense = getTypesenseClient();
-    const { key, expiresAt } = typesense.generateScopedSearchKey(roles);
-    return Actions.sendResponse(res, 200, { key, expiresAt });
-  } catch (err) {
-    defaultLog.error('Failed to generate scoped search key:', err.message);
-    return Actions.sendResponse(res, 500, { error: 'Search key generation failed' });
-  }
-};

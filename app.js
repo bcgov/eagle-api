@@ -25,10 +25,11 @@ var express_server;
 
 var defaultLog = app_helper.defaultLog;
 
-// Increase postbody sizing
-// Accept both application/json and text/plain — Typesense SearchClient sends
-// multi_search bodies as text/plain (to avoid CORS preflight), but the body
-// content is always valid JSON.
+// Increase postbody sizing.
+// `text/plain` is parsed as JSON as well. That was added for Typesense's SearchClient, which sent
+// multi_search bodies as text/plain to dodge a CORS preflight; Typesense is gone, but the parsing
+// stays because it is a request-handling behaviour of the whole API and some other client may rely
+// on it. Narrow it deliberately, with callers checked, rather than as cleanup.
 app.use(express.json({ limit: '10mb', type: ['application/json', 'text/plain'] }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -132,43 +133,17 @@ if (hostname !== 'localhost:3000') {
 swaggerSpec.host = hostname;
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Rate limiters — applied before the auto-wired router so they run on all /api routes.
-// Typesense search is limited tightly (CPU-heavy queries); general API has a generous burst.
+// Rate limiter — applied before the auto-wired router so it runs on all /api routes.
 // NOTE: health check at /api/health is registered above and responds before reaching
-// these limiters, so health probes are not counted against the rate limit.
-const searchLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 60,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  message: { error: 'Search rate limit exceeded. Please try again later.' },
-});
-
+// this limiter, so health probes are not counted against the rate limit.
 const globalLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 200,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  skip: (req) =>
-    req.path.startsWith('/public/typesense') ||
-    req.path.startsWith('/typesense'),
   message: { error: 'Too many requests. Please try again later.' },
 });
 
-// Disable Typesense middleware if TYPESENSE_ENABLED is false
-app.use((req, res, next) => {
-  if (
-    (req.path.startsWith('/api/public/typesense') || req.path.startsWith('/api/typesense')) &&
-    process.env.TYPESENSE_ENABLED === 'false'
-  ) {
-    return res.status(503).json({ error: 'Search is temporarily disabled.' });
-  }
-  next();
-});
-
-// More-specific paths first — Express applies the first matching middleware
-app.use('/api/public/typesense', searchLimiter);
-app.use('/api/typesense', searchLimiter);
 app.use('/api', globalLimiter);
 
 // Backward-compatible project redirects

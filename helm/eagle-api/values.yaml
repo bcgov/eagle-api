@@ -67,7 +67,6 @@ persistence:
 
 # Environment variables
 env:
-  TYPESENSE_ENABLED: "true"
   # MongoDB Configuration
   MONGODB_SERVICE_HOST: eagle-api-mongodb
   MONGODB_DATABASE: epic
@@ -76,9 +75,6 @@ env:
   # Feature Flags
   ENABLE_VIRUS_SCANNING: "true"
 
-  # Typesense Search Service
-  TYPESENSE_HOST: eagle-typesense   # Kubernetes service name set by fullnameOverride in eagle-typesense chart
-  TYPESENSE_PORT: "8108"
   
   # External Services
   CHES_ENDPOINT: ""  # Set in values-{env}.yaml
@@ -103,10 +99,6 @@ secrets:
     clientIdKey: _GETOK_CLIENTID
     clientSecretKey: _GETOK_CLIENT_SECRET
 
-  typesense:
-    name: typesense-api-key     # Created by: oc create secret generic typesense-api-key --from-literal=TYPESENSE_API_KEY=$(openssl rand -hex 32) --from-literal=TYPESENSE_SEARCH_KEY=<search-only-key>
-    apiKeyKey: TYPESENSE_API_KEY
-    searchKeyKey: TYPESENSE_SEARCH_KEY
 
 # Keycloak SSO Configuration
 keycloak:

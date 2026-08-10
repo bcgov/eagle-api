@@ -24,7 +24,6 @@ env:
   GETOK_ENDPOINT: "https://sso-dev.pathfinder.gov.bc.ca"
   ENABLE_VIRUS_SCANNING: "false"
   UPLOAD_DIRECTORY: "/tmp/"
-  TYPESENSE_HOST: eagle-typesense
 
 keycloak:
   url: "https://dev.loginproxy.gov.bc.ca/auth"

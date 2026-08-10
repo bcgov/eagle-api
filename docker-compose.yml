@@ -8,22 +8,9 @@ services:
     environment:
       # No auth — matches local dev defaults (MONGODB_USERNAME/PASSWORD empty in .env)
       MONGO_INITDB_DATABASE: epic
-    # --replSet rs0 enables the oplog required for Change Streams (Typesense sync).
+    # --replSet rs0 enables the oplog required for Change Streams (eagle-search sync).
     # Run rs.initiate() once after first start: docker compose exec mongodb mongosh --eval "rs.initiate()"
     command: ["--replSet", "rs0"]
 
-  typesense:
-    image: typesense/typesense:30.1
-    ports:
-      - "8108:8108"
-    volumes:
-      - typesense-data:/data
-    environment:
-      TYPESENSE_API_KEY: local-dev-key
-    command: ["--data-dir=/data", "--api-key=local-dev-key", "--enable-cors"]
-    # Health check: curl http://localhost:8108/health
-    # Populate data: see eagle-typesense repo (npm run full-sync)
-
 volumes:
   mongodb-data:
-  typesense-data:

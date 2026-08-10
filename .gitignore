@@ -60,3 +60,6 @@ migrations_temp
 CLAUDE.md
 GEMINI.md
 ANTIGRAVITY.md
+
+# Claude Code worktrees and local agent state.
+.claude/

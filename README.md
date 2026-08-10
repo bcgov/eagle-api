@@ -43,19 +43,16 @@ yarn install
 # 2. Configure environment
 cp .env.example .env
 
-# 3. Start MongoDB and Typesense
+# 3. Start MongoDB
 yarn db:up
 
-# 4. First time only: initialise MongoDB replica set (required for Typesense sync)
+# 4. First time only: initialise MongoDB replica set (required for Change Streams)
 docker compose exec mongodb mongosh --eval "rs.initiate()"
 
 # 5. First time only: restore data
 yarn db:restore < epic-prod-dump.archive
 
-# 6. First time only: populate Typesense search index (see eagle-typesense repo)
-# cd ../eagle-typesense && cp .env.example .env && npm run full-sync && cd ../eagle-api
-
-# 7. Start the API
+# 6. Start the API
 yarn start
 ```
 
@@ -161,9 +158,6 @@ Key variables for local development:
 - `KEYCLOAK_ENABLED=false` — disables Keycloak, uses local JWT with `SECRET`
 - `MONGODB_SERVICE_HOST=localhost` — MongoDB host (default: localhost)
 - `MONGODB_DATABASE=epic` — database name
-- `TYPESENSE_HOST=localhost` — Typesense host (matches docker-compose.yml)
-- `TYPESENSE_API_KEY=local-dev-key` — admin key (matches docker-compose.yml)
-- `TYPESENSE_SEARCH_KEY=local-dev-key` — search proxy key (same as admin key for local dev)
 
 Full reference: [Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management) wiki.
 
