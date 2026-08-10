@@ -53,3 +53,7 @@ database.json
 .tool-versions
 COMPLIANCE.yaml
 LICENSE
+
+# Claude Code worktrees — untracked, so CI never sees them, but a local
+# `docker build` would otherwise bake a second copy of the repo into the image.
+.claude
