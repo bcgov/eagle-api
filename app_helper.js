@@ -75,6 +75,7 @@ require('./api/helpers/models/topic');
 require('./api/helpers/models/projectNotification');
 require('./api/helpers/models/cacUser');
 require('./api/helpers/models/list');
+require('./api/helpers/models/config');
 
 
 async function loadModels(dbConnection, options, logger) {

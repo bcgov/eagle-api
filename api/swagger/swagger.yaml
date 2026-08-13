@@ -20,6 +20,11 @@ tags:
   externalDocs:
     description: "Find out more about our API"
     url: "http://github.com/bcgov/eagle-api.git"
+- name: "config"
+  description: "Runtime configuration for the frontends"
+  externalDocs:
+    description: "Find out more about our API"
+    url: "http://github.com/bcgov/eagle-api.git"
 - name: "document"
   description: "Operations about documents"
   externalDocs:
@@ -72,6 +77,56 @@ produces:
   - application/json
 
 definitions:
+  ConfigObject:
+    type: object
+    description: "Runtime configuration served to the frontends. Public — never add secrets."
+    properties:
+      ENVIRONMENT:
+        type: string
+        example: "test"
+      BANNER_COLOUR:
+        type: string
+        example: "orange"
+      LOG_LEVEL:
+        type: integer
+        example: 0
+      API_PATH:
+        type: string
+        example: "/api"
+      SEARCH_API_PATH:
+        type: string
+        example: "/eagle-search"
+      ADMIN_PATH:
+        type: string
+        example: "/admin/"
+      KEYCLOAK_URL:
+        type: string
+        example: "https://test.loginproxy.gov.bc.ca/auth"
+      KEYCLOAK_REALM:
+        type: string
+        example: "eao-epic"
+      KEYCLOAK_ENABLED:
+        type: boolean
+        example: true
+      ANALYTICS_API_URL:
+        type: string
+        example: "/analytics"
+      ANALYTICS_DEBUG:
+        type: boolean
+        example: false
+      ANALYTICS_ENHANCED_TRACKING:
+        type: boolean
+        example: true
+      ANALYTICS_TRAFFIC_TRACKING:
+        type: boolean
+        example: true
+      SURVEY_URL:
+        type: string
+        example: null
+      SHOW_SURVEY_BANNER:
+        type: boolean
+        example: false
+
   Authentication:
     type: object
     properties:
@@ -3261,6 +3316,26 @@ paths:
             $ref: "#/definitions/Error"
 
 ### RecentActivity Routes
+  # No `security` block, and that is what makes this public — see
+  # api/middleware/swagger-security.js. Adding one would break every frontend's boot.
+  /config:
+    x-swagger-router-controller: config
+    get:
+      tags:
+        - config
+      summary: "Get runtime configuration"
+      operationId: publicGet
+      description: "Runtime configuration for the frontends. Unauthenticated; contains no secrets."
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/ConfigObject"
+        "404":
+          description: "Configuration not found"
+          schema:
+            $ref: "#/definitions/Error"
+
   /public/recentActivity:
     x-swagger-router-controller: recentActivity
     options:
