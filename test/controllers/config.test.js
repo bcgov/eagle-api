@@ -17,6 +17,8 @@ function fakeRes() {
   return {
     statusCode: null,
     body: null,
+    headers: {},
+    setHeader(name, value) { this.headers[name] = value; },
     status(code) { this.statusCode = code; return this; },
     json(payload) { this.body = payload; return this; }
   };
@@ -108,6 +110,17 @@ describe('Config Controller', () => {
     expect(res.statusCode).to.equal(404);
   });
 
+  it('does not let the 404 be cached', async () => {
+    // app.js has already stamped max-age=60 on this unauthenticated GET by the time the
+    // controller runs — a missing config must not stick in rproxy for a minute.
+    stubConfigModel(null);
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.headers['Cache-Control']).to.equal('no-store');
+  });
+
   it('500s when the read fails', async () => {
     stubConfigModel(null, new Error('connection lost'));
     const res = fakeRes();
@@ -116,5 +129,14 @@ describe('Config Controller', () => {
 
     expect(res.statusCode).to.equal(500);
     expect(res.body).to.not.have.property('stack');
+  });
+
+  it('does not let the 500 be cached', async () => {
+    stubConfigModel(null, new Error('connection lost'));
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.headers['Cache-Control']).to.equal('no-store');
   });
 });
