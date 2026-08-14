@@ -44,6 +44,10 @@ exports.publicGet = async function (args, res) {
 
     if (!doc) {
       defaultLog.error('GET /api/config: no Config document — has the seed migration run?');
+      // app.js stamps max-age=60 on every unauthenticated GET before routing. A good config
+      // should be cacheable; a failure must not be, or a brief outage sticks in rproxy and in
+      // every browser for a minute after the database comes back.
+      res.setHeader('Cache-Control', 'no-store');
       return Actions.sendResponse(res, 404, { message: 'Configuration not found' });
     }
 
@@ -57,6 +61,7 @@ exports.publicGet = async function (args, res) {
     return Actions.sendResponse(res, 200, payload);
   } catch (err) {
     defaultLog.error('GET /api/config failed:', err);
+    res.setHeader('Cache-Control', 'no-store');
     return Actions.sendResponse(res, 500, { message: 'Could not read configuration' });
   }
 };
