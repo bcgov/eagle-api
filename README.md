@@ -126,25 +126,14 @@ replaces any existing data. The volume (`eagle-api_mongodb-data`) persists acros
 `yarn db:down` / `yarn db:up` restarts.
 
 
-### Database Conversions
+### Database Migrations
 
-In the process of developing this application, we have database conversion scripts that must be run in order to update the db model so that the newest codebase can work properly.  There are currently two methods of doing the database conversion depending on how long-lived and memory intensive the conversion is.
+Migrations live in `migrations/` and are run by `run_migration.js` (`yarn migrate`), which holds the
+migrate-mongo config inline. The bare `migrate-mongo` CLI does not work — there is no
+`migrate-mongo-config.js`.
 
-### Method 1: db-migrate
-
-### Method 2: node scripts named migration* in the root folder
-
-### Method 1
-
-See <https://www.npmjs.com/package/db-migrate> for documentation on running the db migrate command.  General use case for local development at the root folder:
-
-```./node_modules/db-migrate/bin/db-migrate up```
-
-For dev/test/prod environments, you will need to change the database.json file in the root folder accordingly and run with the --env param.  See <https://www.npmjs.com/package/db-migrate> for more information.
-
-### Method 2
-
-In the root folder, there are files named migrateDocuments*.js.  These are large, long-running, memory intensive scripts that operated on the vast majority of the EPIC documents.  As a result, db-migrate was slow and unreliable given the nature of the connection to our database.  As a result, these nodejs scripts operate using the mongodb driver in nodejs and can handle a more complicated, robust approach to doing the database conversion.  They can be run from your local machine as long as there is a ```oc port-forward``` tunnel from your machine to the openshift mongdb database.  Change the user/pass/port/host/authenticationDatabase params and the script will execute against the mongodb pod directly.
+See [migrations/README.md](migrations/README.md) for how to run them locally against a port-forward,
+how to run them in-cluster with `oc exec`, and why that is preferred over the Helm `pre-upgrade` hook.
 
 ## Developing
 

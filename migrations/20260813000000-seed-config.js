@@ -30,9 +30,11 @@ const ENVIRONMENTS = {
     ENVIRONMENT: 'dev',
     BANNER_COLOUR: 'red',
     LOG_LEVEL: 0,
-    // Only dev has a search service; test and prod render this empty, which is the documented
-    // kill switch back to eagle-api.
-    SEARCH_API_PATH: '/eagle-search',
+    // Empty, and dev is the environment that has no search service: eao-nginx removed the dev
+    // search route outright ("The Azure dev search service is gone (2026-08-11 teardown)",
+    // values-dev.yaml), and the live rproxy-config ConfigMap renders "" to match. Seeding
+    // /eagle-search would point dev search at an upstream that no longer exists.
+    SEARCH_API_PATH: '',
     KEYCLOAK_URL: 'https://dev.loginproxy.gov.bc.ca/auth',
     ANALYTICS_DEBUG: true
   }),
@@ -40,6 +42,10 @@ const ENVIRONMENTS = {
     ENVIRONMENT: 'test',
     BANNER_COLOUR: 'orange',
     LOG_LEVEL: 0,
+    // Test is the environment that does have one, but this value is knowingly stale against the
+    // chart: values-test.yaml sets searchApiPath "/eagle-search" while live test's ConfigMap has
+    // no such key, and the seed must match live at the time it runs. It flips to '/eagle-search'
+    // when test's rproxy is next helm-upgraded.
     SEARCH_API_PATH: '',
     KEYCLOAK_URL: 'https://test.loginproxy.gov.bc.ca/auth',
     ANALYTICS_DEBUG: true

@@ -1,42 +1,65 @@
-## How to migrate local database
+## How to run migrations
 
-### Create migration boilerplate
+Migrations are run by `run_migration.js` (`yarn migrate`), which holds the migrate-mongo config
+inline and seeds the `changelog` collection from the legacy db-migrate `migrations` collection on
+first run. There is no `migrate-mongo-config.js`, so the bare `migrate-mongo` CLI does not work.
 
-`./node_modules/db-migrate/bin/db-migrate create myMigrationName`
+### Locally, against a port-forward
 
-This will create a date stamped **boilerplate* migration file for you in the `./migrations` directory, such as  *20190625114200-myMigrationName.js* .
-Modify this file to implement your migration.
+```bash
+oc port-forward -n 6cdc9e-dev svc/eagle-api-mongodb 27017:27017
 
-### Run a migration
+# Credentials are required — the cluster's MongoDB runs with --auth
+export MONGODB_USERNAME=$(oc --context epic-dev get secret eagle-api-mongodb -n 6cdc9e-dev \
+  -o jsonpath='{.data.MONGODB_USER}' | base64 -d)
+export MONGODB_PASSWORD=$(oc --context epic-dev get secret eagle-api-mongodb -n 6cdc9e-dev \
+  -o jsonpath='{.data.MONGODB_PASSWORD}' | base64 -d)
 
-` ./node_modules/db-migrate/bin/db-migrate up`
+API_HOSTNAME=eagle-dev.apps.silver.devops.gov.bc.ca node run_migration.js
+```
 
+`API_HOSTNAME` is required by any migration that has to know which environment it is seeding. The
+host defaults to `mongodb://localhost:27017/epic`, which is what the port-forward gives you, but the
+credentials do not default to anything usable: the cluster runs mongod with `--auth --keyFile`
+(`helm/eagle-api/templates/mongodb-deployment.yaml:33-40`), so without the two exports above the
+first query fails. Other overrides: `MONGODB_SERVICE_HOST`, `MONGODB_PORT`, `MONGODB_DATABASE`,
+`MONGODB_AUTHSOURCE`.
 
-### Load dump into db and run migrations (optional)
+Against a local docker-compose Mongo instead — which runs with no auth — the bare command works:
+`yarn db:up`, then `yarn migrate`.
 
+### In-cluster
 
-1. Move your newly generated migration file out of the migrations folder(ie. *20190625114200-myMigrationName.js*). This is to ensure a
-clean state to test your new migration against.
+```bash
+oc --context epic-dev exec -n 6cdc9e-dev deploy/eagle-api -- node run_migration.js
+```
 
-2. Run the following command to load a dump file and apply all existing migrations:
+Preferred over the Helm pre-upgrade hook. The app pod already has `API_HOSTNAME` and the MongoDB
+host/database via `envFrom` on the `eagle-api` ConfigMap, plus the credentials from the
+`eagle-api-mongodb` secret, and it runs the image that is actually deployed. The hook (`helm/eagle-api/templates/migration-job.yaml`, enabled by
+`migrations.enabled=true`) has two traps:
 
-    1. `cd dumps_folder && mongorestore -d epic some_unzipped_dump/`
-    2. `cd eagle_api_root/ && ./node_modules/db-migrate/bin/db-migrate up`
-    2. `node migrateDocuments.js`
+- the command documented at `helm/eagle-api/values.yaml:132` omits `--values values-{env}.yaml`, so
+  the ConfigMap re-renders without `API_HOSTNAME` and the migration throws;
+- `migrations.image.tag` is pinned to `"v2.10.42"`, so the `| default .Values.image.tag` fallback
+  never fires and the job silently runs an image older than the migration you just wrote.
 
-3. Put your new migration file back into the **/migrations** folder and run:
+### Writing a migration
 
-    * `./node_modules/db-migrate/bin/db-migrate up`
+Add a `YYYYMMDDHHMMSS-name.js` file to this directory exporting `up(db, client)` and
+`down(db, client)`. Nothing generates the boilerplate; copy the newest file.
 
-### Re-run migration (local testing)
+Test it against a dump before it goes anywhere real:
 
-** This won't unclobber data, just allow a rerun of a migration. You may
-need to dump and restore if the last migration attempt mangled data. **
+```bash
+cd dumps_folder && mongorestore -d epic some_unzipped_dump/
+cd eagle_api_root && node run_migration.js
+```
 
-1. View all migrations applied, in mongo shell
+To re-run one locally, delete its `changelog` entry in the mongo shell and run again. This does not
+unclobber data — restore the dump if the last attempt mangled it.
 
-    * `db.migrations.find()`
-
-2. The most recent migration will be at the bottom of the list
-
-    * `db.migrations.deleteOne({ _id: ObjectId(my_most_recent_migrationd_id)})`
+```js
+db.changelog.find()
+db.changelog.deleteOne({ fileName: '20190625114200-myMigrationName.js' })
+```
