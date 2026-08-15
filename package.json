@@ -38,7 +38,7 @@
     "test:watch": "mocha 'test/aggregators/**/*.test.js' 'test/controllers/**/*.test.js' 'test/helpers/**/*.test.js' 'test/models/**/*.test.js' --recursive --watch",
     "test:smoke": "mocha 'test/smoke/**/*.test.js' --recursive --exit --timeout 30000",
     "test:smoke:public": "mocha 'test/smoke/public-*.test.js' --recursive --exit --timeout 30000",
-    "migrate": "migrate-mongo up"
+    "migrate": "node run_migration.js"
   },
   "dependencies": {
     "agenda": "5.0.0",
