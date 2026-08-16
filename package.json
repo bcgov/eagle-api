@@ -16,7 +16,7 @@
   },
   "resolutions": {
     "axios": "^1.18.0",
-    "tar": "^7.5.19",
+    "tar": "^7.5.22",
     "serialize-javascript": "^7.0.5",
     "brace-expansion": "^5.0.6",
     "xml2js": "^0.6.2",
@@ -53,7 +53,7 @@
     "migrate-mongo": "^14.0.7",
     "minio": "~7.0.8",
     "mongodb": "^7.0.0",
-    "mongoose": "^9.3.2",
+    "mongoose": "^9.7.2",
     "multer": "^2.2.0",
     "pdf-lib": "^1.17.1",
     "qs": "^6.15.2",

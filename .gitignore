@@ -63,3 +63,4 @@ ANTIGRAVITY.md
 
 # Claude Code worktrees and local agent state.
 .claude/
+.yarn/install-state.gz
