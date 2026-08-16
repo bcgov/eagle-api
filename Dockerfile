@@ -22,7 +22,6 @@ WORKDIR /opt/app-root/src
 
 # Copy package files and yarn configuration
 COPY package.json yarn.lock .yarnrc.yml ./
-COPY .yarn ./.yarn
 
 # Install production dependencies only (devDependencies are not needed at runtime)
 RUN corepack enable && yarn workspaces focus --production
