@@ -20,8 +20,12 @@ route:
   #
   # Dev and test keep theirs: those hosts are *.apps.silver names the router's wildcard covers, and
   # nothing else claims them.
+  #
+  # `host` is deliberately NOT set here either. Leaving it behind would mean flipping `enabled`
+  # back to true silently re-creates a route for projects.eao.gov.bc.ca with no certificate — the
+  # exact failure this commit removes. Re-enabling must be a deliberate act that also supplies a
+  # host and a cert.
   enabled: false
-  host: projects.eao.gov.bc.ca
 
 resources:
   limits:
