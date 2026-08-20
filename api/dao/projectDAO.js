@@ -433,7 +433,6 @@ exports.updateProject = async function(user, sourceProject, updatedProject) {
   filteredData.CEAAInvolvement   = updatedProject.CEAAInvolvement;
   filteredData.CEAALink          = updatedProject.CEAALink;
   filteredData.eacDecision       = updatedProject.eacDecision;
-  filteredData.applicableRegulation = updatedProject.applicableRegulation ? new mongoose.Types.ObjectId(updatedProject.applicableRegulation) : null;
   filteredData.decisionDate      = updatedProject.decisionDate ? new Date(updatedProject.decisionDate) : null;
   sourceProject.review45Start    = updatedProject.review45Start  ? new Date(updatedProject.review45Start) : null;
   sourceProject.review180Start   = updatedProject.review180Start  ? new Date(updatedProject.review180Start) : null;
