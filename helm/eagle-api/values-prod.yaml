@@ -6,11 +6,26 @@ image:
   tag: prod
 
 route:
-  enabled: true
-  serviceName: rproxy
-  targetPort: "8080-tcp"
-  host: projects.eao.gov.bc.ca
-  path: "/api"
+  # Disabled, and it must stay that way until someone deliberately reconciles route ownership in
+  # production. `6cdc9e-prod` ALREADY HAS a Route named `eagle-api` — host
+  # eagle-prod.apps.silver.devops.gov.bc.ca, carrying the rproxy release's labels — so Helm refuses
+  # to adopt it and `helm upgrade` fails outright with "invalid ownership metadata". That is not
+  # theoretical: it is what happened deploying v2.10.64 on 2026-08-20, and because the Deployment
+  # carries an OpenShift image trigger on `eagle-api:prod`, the image rolled anyway while the chart
+  # did not — a half-applied release that reports as a failure.
+  #
+  # Adopting it would also rewrite that route's host to projects.eao.gov.bc.ca with path /api and
+  # drop its haproxy timeout and rate-limit annotations. Production reaches eagle-api through
+  # rproxy's `prod-external` route regardless, so this chart does not need to own one.
+  #
+  # Dev and test keep theirs: those hosts are *.apps.silver names the router's wildcard covers, and
+  # nothing else claims them.
+  #
+  # `host` is deliberately NOT set here either. Leaving it behind would mean flipping `enabled`
+  # back to true silently re-creates a route for projects.eao.gov.bc.ca with no certificate — the
+  # exact failure this commit removes. Re-enabling must be a deliberate act that also supplies a
+  # host and a cert.
+  enabled: false
 
 resources:
   limits:

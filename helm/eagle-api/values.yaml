@@ -19,7 +19,10 @@ service:
   port: 3000
 
 route:
-  enabled: true
+  # OFF BY DEFAULT, and the default is the safety. Production is the one environment where a route
+  # from this chart is never right — `prod-external` already serves that host through rproxy and
+  # carries its certificate — so prod must not have to remember to opt out. dev and test opt IN.
+  enabled: false
   host: ""  # Set in values-{env}.yaml
   targetPort: "8080-tcp"
   serviceName: "rproxy"  # API is proxied through rproxy
