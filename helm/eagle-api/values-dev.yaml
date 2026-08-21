@@ -6,6 +6,7 @@ image:
   tag: dev
 
 route:
+  enabled: true  # opt in; the chart default is off (see values.yaml)
   host: eagle-dev.apps.silver.devops.gov.bc.ca
   path: /api
 
