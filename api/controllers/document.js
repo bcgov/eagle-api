@@ -8,6 +8,7 @@ const constants       = require('../helpers/constants');
 const Actions         = require('../helpers/actions');
 const Utils           = require('../helpers/utils');
 const MinioController = require('../helpers/minio');
+const demiPush        = require('../helpers/demiPush');
 
 const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING ? process.env.ENABLE_VIRUS_SCANNING.toLowerCase() == 'true' : false;
 
@@ -173,6 +174,7 @@ exports.unProtectedPost = async function (args, res) {
       var Comment = mongoose.model('Comment');
       await Comment.updateOne({ _id: _comment }, { $addToSet: { documents: d._id } });
       Utils.recordAction('Post', 'Document', 'public', d._id);
+      demiPush.document(d);
       return Actions.sendResponse(res, 200, d);
     } catch (saveError) {
       defaultLog.error('Document save failed, rolling back MinIO:', saveError);
@@ -613,6 +615,7 @@ exports.protectedPost = async function (args, res) {
       var d = await doc.save();
       defaultLog.info('Saved new document object:', d._id);
       Utils.recordAction('Post', 'Document', args.swagger.params.auth_payload.preferred_username, d._id);
+      demiPush.document(d);
       return Actions.sendResponse(res, 200, d);
     } catch (saveError) {
       defaultLog.error('Document save failed, rolling back MinIO:', saveError);
@@ -647,6 +650,7 @@ exports.protectedPublish = async function (args, res) {
       document.eaoStatus = 'Published';
       var published = await Actions.publish(await document.save());
       Utils.recordAction('Publish', 'Document', args.swagger.params.auth_payload.preferred_username, objId);
+      demiPush.document(published);
       return Actions.sendResponse(res, 200, published);
     } else {
       defaultLog.info('Couldn\'t find that document!');
@@ -678,6 +682,7 @@ exports.protectedUnPublish = async function (args, res) {
       document.eaoStatus = 'Rejected';
       var unPublished = await Actions.unPublish(await document.save());
       Utils.recordAction('Unpublish', 'Document', args.swagger.params.auth_payload.preferred_username, objId);
+      demiPush.document(unPublished);
       return Actions.sendResponse(res, 200, unPublished);
     } else {
       defaultLog.info('Couldn\'t find that document!');
@@ -780,6 +785,7 @@ exports.protectedPut = async function (args, res) {
     if (doc) {
       Utils.recordAction('put', 'document', args.swagger.params.auth_payload.preferred_username, objId);
       defaultLog.info('Document updated:', doc);
+      demiPush.document(doc);
       return Actions.sendResponse(res, 200, doc);
     } else {
       defaultLog.info('Couldn\'t find that object!');
@@ -849,6 +855,7 @@ exports.featureDocument = async function (args, res) {
           document.isFeatured = true;
           let result = await document.save();
 
+          demiPush.document(result);
           return Actions.sendResponse(res, 200, result);
         } else {
           return Actions.sendResponse(res, 403, { status: 403, message: 'Feature document limit reached', limit: constants.MAX_FEATURE_DOCS});
@@ -882,6 +889,7 @@ exports.unfeatureDocument = async function (args, res) {
       document.isFeatured = false;
       let result = await document.save();
 
+      demiPush.document(result);
       return Actions.sendResponse(res, 200, result);
     }
 
