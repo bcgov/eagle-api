@@ -3,6 +3,7 @@ var mongoose = require('mongoose');
 var qs = require('qs');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
+var demiPush = require('../helpers/demiPush');
 var tagList = [
   'CEAAInvolvement',
   'CELead',
@@ -474,6 +475,7 @@ exports.protectedPost = async function (args, res) {
   project.save()
     .then(function (theProject) {
       Utils.recordAction('Post', 'Project', args.swagger.params.auth_payload.preferred_username, theProject._id);
+      demiPush.project(theProject);
       return Actions.sendResponse(res, 200, theProject);
     })
     .catch(function (err) {
@@ -490,7 +492,7 @@ exports.protectedExtensionAdd = async function (args, res) {
   var extensionObj = args.swagger.params.extension.value;
   var extensionType = extensionObj.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
 
-  if (!mongoose.Types.ObjectId.isValid(projId.value)) {
+  if (!mongoose.Types.ObjectId.isValid(projId)) {
     return Actions.sendResponse(res, 400, { });
   }
 
@@ -505,6 +507,8 @@ exports.protectedExtensionAdd = async function (args, res) {
     }
     // Fall through if successful
     Utils.recordAction('Post', 'Extension', args.swagger.params.auth_payload.preferred_username, projId);
+    const fresh = await Project.findById(projId).catch(() => null);
+    demiPush.project(fresh);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
     defaultLog.info('Couldn\'t find that object!');
@@ -516,7 +520,7 @@ exports.protectedExtensionDelete = async function (args, res) {
   // Delete an object from the extension/suspension array
   try {
     var projId = args.swagger.params.projId.value;
-    if (!mongoose.Types.ObjectId.isValid(projId.value)) {
+    if (!mongoose.Types.ObjectId.isValid(projId)) {
       return Actions.sendResponse(res, 400, { });
     }
     var extensionObj = JSON.parse(args.swagger.params.item.value);
@@ -532,6 +536,8 @@ exports.protectedExtensionDelete = async function (args, res) {
     }
     // Fall through if successful
     Utils.recordAction('Delete', 'Extension', args.swagger.params.auth_payload.preferred_username, projId);
+    const fresh = await Project.findById(projId).catch(() => null);
+    demiPush.project(fresh);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
     defaultLog.info('Couldn\'t find that object!');
@@ -570,6 +576,8 @@ exports.protectedExtensionUpdate = async function (args, res) {
       return Actions.sendResponse(res, 404, {});
     }
     Utils.recordAction('Put', 'Extension', args.swagger.params.auth_payload.preferred_username, projId);
+    const fresh = await Project.findById(projId).catch(() => null);
+    demiPush.project(fresh);
     return Actions.sendResponse(res, 200, dataAdded);
   } catch (e) {
     defaultLog.info('Couldn\'t find that object!');
@@ -718,6 +726,7 @@ exports.protectedPut = async function (args, res) {
   // Project.update({ _id: new mongoose.Types.ObjectId(objId) }, { $set: updateObj }, function (err, o) {
   if (doc) {
     Utils.recordAction('Put', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
+    demiPush.project(doc);
     return Actions.sendResponse(res, 200, doc);
   } else {
     defaultLog.info('Couldn\'t find that object!');
@@ -748,6 +757,7 @@ exports.protectedPublish = async function (args, res) {
       try {
         const published = await Actions.publish(o, true);
         Utils.recordAction('Publish', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
+        demiPush.project(published);
         return Actions.sendResponse(res, 200, published);
       } catch (err) {
         return Actions.sendResponse(res, 500, err);
@@ -775,6 +785,7 @@ exports.protectedUnPublish = async function (args, res) {
       try {
         const unpublished = await Actions.unPublish(o);
         Utils.recordAction('Put', 'Unpublish', args.swagger.params.auth_payload.preferred_username, objId);
+        demiPush.project(unpublished);
         return Actions.sendResponse(res, 200, unpublished);
       } catch (err) {
         return Actions.sendResponse(res, err.code, err);
