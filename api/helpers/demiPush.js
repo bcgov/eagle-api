@@ -67,7 +67,7 @@ async function push(kind, id, body) {
 exports.push = push;
 
 exports.project = function (doc) {
-  return doc && doc._id ? push('project', doc._id, { doc }) : Promise.resolve();
+  return doc && doc._id ? push('projects', doc._id, { doc }) : Promise.resolve();
 };
 
 exports.document = async function (doc) {
@@ -82,7 +82,7 @@ exports.document = async function (doc) {
         labels[field] = names.get(String(doc[field])) || null;
       }
     }
-    await push('document', doc._id, { doc, labels });
+    await push('documents', doc._id, { doc, labels });
   } catch (err) {
     defaultLog.error('[demiPush] document push failed', { error: err.message, stack: err.stack });
   }

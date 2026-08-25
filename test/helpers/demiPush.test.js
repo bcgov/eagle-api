@@ -61,7 +61,7 @@ describe('DemiPush Helper', () => {
 
       expect(fetchStub.calledOnce).to.be.true;
       const [url, options] = fetchStub.firstCall.args;
-      expect(url).to.equal(`${BASE}/api/eagle/project/p1`);
+      expect(url).to.equal(`${BASE}/api/eagle/projects/p1`);
       expect(options.method).to.equal('PUT');
       expect(options.headers['X-Api-Key']).to.equal('test-key');
       expect(JSON.parse(options.body)).to.deep.equal({ doc: { _id: 'p1', name: 'Test' } });
@@ -74,7 +74,7 @@ describe('DemiPush Helper', () => {
 
       expect(errorStub.calledOnce).to.be.true;
       const [message, meta] = errorStub.firstCall.args;
-      expect(message).to.equal('[demiPush] project p1 failed');
+      expect(message).to.equal('[demiPush] projects p1 failed');
       expect(meta.error).to.equal('ECONNREFUSED');
       expect(meta.stack).to.be.a('string');
     });
@@ -84,7 +84,7 @@ describe('DemiPush Helper', () => {
       await demiPush.project({ _id: 'p1' });
 
       expect(fetchStub.callCount).to.equal(2);
-      expect(errorStub.calledOnceWith('[demiPush] project p1 rejected 500')).to.be.true;
+      expect(errorStub.calledOnceWith('[demiPush] projects p1 rejected 500')).to.be.true;
     });
 
     it('should not retry on a 4xx', async () => {
@@ -92,7 +92,7 @@ describe('DemiPush Helper', () => {
       await demiPush.project({ _id: 'p1' });
 
       expect(fetchStub.callCount).to.equal(1);
-      expect(errorStub.calledOnceWith('[demiPush] project p1 rejected 404')).to.be.true;
+      expect(errorStub.calledOnceWith('[demiPush] projects p1 rejected 404')).to.be.true;
     });
 
     it('should carry resolved List labels in the document body', async () => {
@@ -118,7 +118,7 @@ describe('DemiPush Helper', () => {
 
       expect(fetchStub.calledOnce).to.be.true;
       const [url, options] = fetchStub.firstCall.args;
-      expect(url).to.equal(`${BASE}/api/eagle/document/d1`);
+      expect(url).to.equal(`${BASE}/api/eagle/documents/d1`);
       expect(JSON.parse(options.body).labels).to.deep.equal({
         type: 'Letter',
         milestone: 'Application Review',

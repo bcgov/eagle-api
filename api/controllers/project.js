@@ -492,7 +492,7 @@ exports.protectedExtensionAdd = async function (args, res) {
   var extensionObj = args.swagger.params.extension.value;
   var extensionType = extensionObj.type === 'Extension' ? 'reviewExtensions' : 'reviewSuspensions';
 
-  if (!mongoose.Types.ObjectId.isValid(projId.value)) {
+  if (!mongoose.Types.ObjectId.isValid(projId)) {
     return Actions.sendResponse(res, 400, { });
   }
 
@@ -507,7 +507,7 @@ exports.protectedExtensionAdd = async function (args, res) {
     }
     // Fall through if successful
     Utils.recordAction('Post', 'Extension', args.swagger.params.auth_payload.preferred_username, projId);
-    const fresh = await Project.findById(projId);
+    const fresh = await Project.findById(projId).catch(() => null);
     demiPush.project(fresh);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
@@ -520,7 +520,7 @@ exports.protectedExtensionDelete = async function (args, res) {
   // Delete an object from the extension/suspension array
   try {
     var projId = args.swagger.params.projId.value;
-    if (!mongoose.Types.ObjectId.isValid(projId.value)) {
+    if (!mongoose.Types.ObjectId.isValid(projId)) {
       return Actions.sendResponse(res, 400, { });
     }
     var extensionObj = JSON.parse(args.swagger.params.item.value);
@@ -536,7 +536,7 @@ exports.protectedExtensionDelete = async function (args, res) {
     }
     // Fall through if successful
     Utils.recordAction('Delete', 'Extension', args.swagger.params.auth_payload.preferred_username, projId);
-    const fresh = await Project.findById(projId);
+    const fresh = await Project.findById(projId).catch(() => null);
     demiPush.project(fresh);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
@@ -576,7 +576,7 @@ exports.protectedExtensionUpdate = async function (args, res) {
       return Actions.sendResponse(res, 404, {});
     }
     Utils.recordAction('Put', 'Extension', args.swagger.params.auth_payload.preferred_username, projId);
-    const fresh = await Project.findById(projId);
+    const fresh = await Project.findById(projId).catch(() => null);
     demiPush.project(fresh);
     return Actions.sendResponse(res, 200, dataAdded);
   } catch (e) {
