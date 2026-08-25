@@ -12,7 +12,7 @@ let listNamesPromise = null;
 
 function listNames() {
   if (!listNamesPromise) {
-    listNamesPromise = Promise.resolve(mongoose.model('List').find({}, '_id name').lean())
+    listNamesPromise = Promise.resolve(mongoose.model('List').find({ _schemaName: 'List' }, '_id name').lean())
       .then(items => new Map(items.map(i => [String(i._id), i.name])))
       .catch(err => {
         listNamesPromise = null;
@@ -22,9 +22,25 @@ function listNames() {
   return listNamesPromise;
 }
 
+let keyWarned = false;
+
+function configured() {
+  if (!process.env.DEMI_API_BASE) {
+    return false;
+  }
+  if (!process.env.DEMI_API_KEY) {
+    if (!keyWarned) {
+      keyWarned = true;
+      defaultLog.warn('[demiPush] DEMI_API_KEY unset — pushes disabled');
+    }
+    return false;
+  }
+  return true;
+}
+
 // ponytail: last-writer-wins; sequence per id if the reconcile ever reports ordering drift
 async function push(kind, id, body) {
-  if (!process.env.DEMI_API_BASE) {
+  if (!configured()) {
     return;
   }
 
@@ -64,14 +80,12 @@ async function push(kind, id, body) {
   }
 }
 
-exports.push = push;
-
 exports.project = function (doc) {
   return doc && doc._id ? push('projects', doc._id, { doc }) : Promise.resolve();
 };
 
 exports.document = async function (doc) {
-  if (!process.env.DEMI_API_BASE || !doc || !doc._id) {
+  if (!configured() || !doc || !doc._id) {
     return;
   }
   try {

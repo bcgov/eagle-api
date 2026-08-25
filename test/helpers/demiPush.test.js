@@ -19,6 +19,7 @@ const failResponse = status => ({ ok: false, status });
 describe('DemiPush Helper', () => {
   let fetchStub;
   let errorStub;
+  let warnStub;
   let originalBase;
   let originalKey;
 
@@ -27,6 +28,7 @@ describe('DemiPush Helper', () => {
     originalKey = process.env.DEMI_API_KEY;
     fetchStub = sinon.stub(global, 'fetch');
     errorStub = sinon.stub(defaultLog, 'error');
+    warnStub = sinon.stub(defaultLog, 'warn');
   });
 
   afterEach(() => {
@@ -46,6 +48,17 @@ describe('DemiPush Helper', () => {
       delete process.env.DEMI_API_BASE;
       await demiPush.document({ _id: 'd1' });
       expect(fetchStub.called).to.be.false;
+    });
+
+    it('should stay dark and warn once per process when DEMI_API_KEY is unset', async () => {
+      process.env.DEMI_API_BASE = BASE;
+      delete process.env.DEMI_API_KEY;
+
+      await demiPush.project({ _id: 'p1' });
+      await demiPush.project({ _id: 'p2' });
+
+      expect(fetchStub.called).to.be.false;
+      expect(warnStub.calledOnceWith('[demiPush] DEMI_API_KEY unset — pushes disabled')).to.be.true;
     });
   });
 
@@ -96,16 +109,15 @@ describe('DemiPush Helper', () => {
     });
 
     it('should carry resolved List labels in the document body', async () => {
-      sinon.stub(mongoose, 'model').withArgs('List').returns({
-        find: () => ({
-          lean: () => Promise.resolve([
-            { _id: 'list-type', name: 'Letter' },
-            { _id: 'list-milestone', name: 'Application Review' },
-            { _id: 'list-phase', name: 'Effects Assessment' },
-            { _id: 'list-author', name: 'Proponent' }
-          ])
-        })
+      const findStub = sinon.stub().returns({
+        lean: () => Promise.resolve([
+          { _id: 'list-type', name: 'Letter' },
+          { _id: 'list-milestone', name: 'Application Review' },
+          { _id: 'list-phase', name: 'Effects Assessment' },
+          { _id: 'list-author', name: 'Proponent' }
+        ])
       });
+      sinon.stub(mongoose, 'model').withArgs('List').returns({ find: findStub });
       fetchStub.resolves(okResponse());
 
       await demiPush.document({
@@ -116,6 +128,7 @@ describe('DemiPush Helper', () => {
         documentAuthorType: 'list-author'
       });
 
+      expect(findStub.calledOnceWithExactly({ _schemaName: 'List' }, '_id name')).to.be.true;
       expect(fetchStub.calledOnce).to.be.true;
       const [url, options] = fetchStub.firstCall.args;
       expect(url).to.equal(`${BASE}/api/eagle/documents/d1`);
