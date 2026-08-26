@@ -40,6 +40,7 @@ env:
   API_HOSTNAME: projects.eao.gov.bc.ca
   CHES_ENDPOINT: "https://ches.api.gov.bc.ca/api/v1"
   GETOK_ENDPOINT: "https://sso.pathfinder.gov.bc.ca"
+  DEMI_API_BASE: "https://demi-api-prod.azurewebsites.net"
   # ClamAV virus scanning - service runs in separate pod
   CLAMAV_SERVICE_HOST: "clamav"
   CLAMAV_SERVICE_PORT: "3310"
