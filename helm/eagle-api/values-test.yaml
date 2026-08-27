@@ -9,6 +9,10 @@ route:
   enabled: true  # opt in; the chart default is off (see values.yaml)
   host: eagle-test.apps.silver.devops.gov.bc.ca
 
+directRoute:
+  enabled: true
+  host: eagle-api-6cdc9e-test.apps.silver.devops.gov.bc.ca
+
 resources:
   limits:
     cpu: 500m

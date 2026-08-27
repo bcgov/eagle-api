@@ -30,6 +30,12 @@ route:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
 
+# Second Route, straight to this chart's own Service, so Azure Front Door can reach eagle-api
+# without going through rproxy. Off by default for the same reason as route.enabled above.
+directRoute:
+  enabled: false
+  host: ""  # Set in values-{env}.yaml
+
 resources:
   limits:
     cpu: 1000m
