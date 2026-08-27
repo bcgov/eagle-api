@@ -101,6 +101,31 @@ describe('Config Controller', () => {
     expect(res.body).to.have.property('KEYCLOAK_ENABLED', true);
   });
 
+  it('serves CONTENT_SEARCH when the row sets it true', async () => {
+    stubConfigModel({ _schemaName: 'Config', ENVIRONMENT: 'test', CONTENT_SEARCH: true });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.have.property('CONTENT_SEARCH', true);
+  });
+
+  it('does not gain CONTENT_SEARCH when the row has no opinion on it', async () => {
+    // Hydrated through the real schema (like the "fills a key" test above) so this also proves
+    // the model declares no default for CONTENT_SEARCH — a default would leak it into every payload.
+    require('../../api/helpers/models/config');
+    const Config = mongoose.model('Config');
+    const partial = Config.hydrate({ _schemaName: 'Config', ENVIRONMENT: 'test' });
+    sinon.stub(mongoose, 'model').withArgs('Config').returns({
+      findOne: () => Promise.resolve(partial)
+    });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.not.have.property('CONTENT_SEARCH');
+  });
+
   it('404s when the document is missing rather than serving an empty config', async () => {
     stubConfigModel(null);
     const res = fakeRes();

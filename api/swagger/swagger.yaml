@@ -99,6 +99,10 @@ definitions:
       ADMIN_PATH:
         type: string
         example: "/admin/"
+      CONTENT_SEARCH:
+        type: boolean
+        description: "Absent unless explicitly set true. Gates the Document Content search tab."
+        example: true
       KEYCLOAK_URL:
         type: string
         example: "https://test.loginproxy.gov.bc.ca/auth"
