@@ -130,6 +130,10 @@ definitions:
       SHOW_SURVEY_BANNER:
         type: boolean
         example: false
+      ACCESS_GATE:
+        type: boolean
+        description: "True means the frontend shows the access curtain; the password is checked by POST /public/gate."
+        example: false
 
   Authentication:
     type: object
@@ -3337,6 +3341,40 @@ paths:
             $ref: "#/definitions/ConfigObject"
         "404":
           description: "Configuration not found"
+          schema:
+            $ref: "#/definitions/Error"
+
+  # No `security` block, and that is what makes this public — the curtain has to be reachable
+  # before anyone is signed in. Guessing is bounded by the global /api rate limiter in app.js.
+  /public/gate:
+    x-swagger-router-controller: gate
+    post:
+      tags:
+        - gate
+      summary: "Check the access gate password"
+      operationId: publicPost
+      description: "Checks the supplied password against ACCESS_GATE_PASSWORD. 404 when no password is configured."
+      parameters:
+        - name: gate
+          in: body
+          required: true
+          schema:
+            type: object
+            required:
+              - password
+            properties:
+              password:
+                type: string
+                maxLength: 256
+      responses:
+        "204":
+          description: "Password accepted"
+        "401":
+          description: "Invalid password"
+          schema:
+            $ref: "#/definitions/Error"
+        "404":
+          description: "No gate configured on this environment"
           schema:
             $ref: "#/definitions/Error"
 

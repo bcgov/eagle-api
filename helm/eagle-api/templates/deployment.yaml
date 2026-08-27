@@ -183,6 +183,14 @@ spec:
                   name: {{ .Values.secrets.frontDoorId.name }}
                   key: {{ .Values.secrets.frontDoorId.key }}
             {{- end }}
+            {{- if .Values.secrets.accessGatePassword }}
+            # Access curtain password — dev/test only, never set in prod
+            - name: ACCESS_GATE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.accessGatePassword.name }}
+                  key: {{ .Values.secrets.accessGatePassword.key }}
+            {{- end }}
             {{- if .Values.keycloak.enabled }}
             # Keycloak SSO Configuration
             - name: SSO_ISSUER

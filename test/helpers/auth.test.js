@@ -17,7 +17,10 @@ describe('Auth Helper Functions', () => {
     process.env.SECRET = 'testSecret';
     process.env.JWT_SIGN_EXPIRY = '60';
     process.env.KEYCLOAK_ENABLED = 'false';
-    
+
+    // auth.js snapshots SECRET and KEYCLOAK_ENABLED at module load, so it has to be loaded
+    // fresh here — another test file requiring it first would otherwise cache the defaults.
+    delete require.cache[require.resolve('../../api/helpers/auth')];
     auth = require('../../api/helpers/auth');
   });
 

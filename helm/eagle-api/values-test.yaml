@@ -55,6 +55,9 @@ secrets:
   frontDoorId:
     name: eagle-api-front-door
     key: FRONT_DOOR_ID
+  accessGatePassword:
+    name: eagle-api-access-gate
+    key: ACCESS_GATE_PASSWORD
 
 # Disable persistence to avoid PVC attachment issues
 persistence:

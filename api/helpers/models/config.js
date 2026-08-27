@@ -44,5 +44,9 @@ module.exports = require('../models')('Config', {
   ANALYTICS_TRAFFIC_TRACKING  : { type: Boolean, default: true },
 
   SURVEY_URL                  : { type: String, default: null },
-  SHOW_SURVEY_BANNER          : { type: Boolean, default: false }
+  SHOW_SURVEY_BANNER          : { type: Boolean, default: false },
+
+  // Tells the frontends to show the access curtain. The password itself is never served here —
+  // POST /api/public/gate checks it server-side.
+  ACCESS_GATE                 : { type: Boolean, default: false }
 }, 'epic');

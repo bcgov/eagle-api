@@ -108,6 +108,12 @@ secrets:
   #   name: eagle-api-front-door
   #   key: FRONT_DOOR_ID
 
+  # Optional. Set on dev/test only, to a secret holding the access curtain password.
+  # Unset means no gate: POST /api/public/gate 404s. Never set in prod.
+  # accessGatePassword:
+  #   name: eagle-api-access-gate
+  #   key: ACCESS_GATE_PASSWORD
+
 
 # Keycloak SSO Configuration
 keycloak:

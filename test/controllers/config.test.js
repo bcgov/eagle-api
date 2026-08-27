@@ -99,6 +99,17 @@ describe('Config Controller', () => {
 
     expect(res.body).to.have.property('ADMIN_PATH', '/admin/');
     expect(res.body).to.have.property('KEYCLOAK_ENABLED', true);
+    // Off unless an environment turns it on by hand.
+    expect(res.body).to.have.property('ACCESS_GATE', false);
+  });
+
+  it('serves ACCESS_GATE when the row sets it true', async () => {
+    stubConfigModel({ _schemaName: 'Config', ENVIRONMENT: 'test', ACCESS_GATE: true });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.have.property('ACCESS_GATE', true);
   });
 
   it('serves CONTENT_SEARCH when the row sets it true', async () => {
