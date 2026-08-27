@@ -23,6 +23,15 @@ const jwksClientInstance = jwksClient({
   jwksRequestsPerMinute: 5   // Throttle Keycloak JWKS fetches
 });
 
+// Constant-time compare, used by the INTERNAL_API_KEY check below and by rateLimitKey.js's FDID check.
+function safeEqual(a, b) {
+  const crypto = require('crypto');
+  const aBuf = Buffer.from(a || '');
+  const bBuf = Buffer.from(b || '');
+  return aBuf.length === bBuf.length && crypto.timingSafeEqual(aBuf, bBuf);
+}
+exports.safeEqual = safeEqual;
+
 exports.verifyToken = function(req, authOrSecDef, token, callback) {
   // scopes/roles defined for the current endpoint
   var currentScopes = req.swagger.operation['x-security-scopes'];
@@ -36,11 +45,7 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
   if (INTERNAL_API_KEY) {
     const apiKey = req.headers['x-api-key'];
     if (apiKey) {
-      const crypto = require('crypto');
-      const keyBuf = Buffer.from(apiKey);
-      const expectedBuf = Buffer.from(INTERNAL_API_KEY);
-      if (keyBuf.length === expectedBuf.length &&
-          crypto.timingSafeEqual(keyBuf, expectedBuf)) {
+      if (safeEqual(apiKey, INTERNAL_API_KEY)) {
         req.swagger.params.auth_payload = {
           iss: ISSUER,
           preferred_username: 'internal-service',

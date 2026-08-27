@@ -78,12 +78,12 @@ describe('rate limiter caller identity', () => {
   });
 
   // browser -> Front Door -> OpenShift router -> rproxy -> here. req.ip is the POP, so the key
-  // comes from X-Azure-ClientIP.
+  // comes from X-Azure-SocketIP.
   it('keys on the client through Front Door', async () => {
     const body = await probe({
       'X-Forwarded-For': `${CLIENT}, ${AFD_POP}`,
       'X-Azure-FDID': FDID,
-      'X-Azure-ClientIP': CLIENT
+      'X-Azure-SocketIP': CLIENT
     });
     expect(body.ip).to.equal(AFD_POP);
     expect(body.key).to.equal(CLIENT);
@@ -93,7 +93,7 @@ describe('rate limiter caller identity', () => {
     const body = await probe({
       'X-Forwarded-For': CLIENT,
       'X-Azure-FDID': WRONG_FDID,
-      'X-Azure-ClientIP': FORGED
+      'X-Azure-SocketIP': FORGED
     });
     expect(body.key).to.equal(CLIENT);
     expect(body.key).to.not.equal(FORGED);
@@ -103,7 +103,7 @@ describe('rate limiter caller identity', () => {
     delete process.env.FRONT_DOOR_ID;
     const body = await probe({
       'X-Forwarded-For': CLIENT,
-      'X-Azure-ClientIP': FORGED
+      'X-Azure-SocketIP': FORGED
     });
     expect(body.key).to.equal(body.ip);
     expect(body.key).to.not.equal(FORGED);
@@ -115,8 +115,21 @@ describe('rate limiter caller identity', () => {
     const body = await probe({
       'X-Forwarded-For': `${CLIENT}, ${AFD_POP}`,
       'X-Azure-FDID': FDID,
-      'X-Azure-ClientIP': IPV6_CLIENT
+      'X-Azure-SocketIP': IPV6_CLIENT
     });
     expect(body.key).to.equal('2001:db8:1111:2200::/56');
+  });
+
+  // X-Azure-ClientIP is derived from the caller's own X-Forwarded-For, so a caller behind Front
+  // Door can forge both; only X-Azure-SocketIP (the TCP peer Front Door itself saw) must win.
+  it('keys on X-Azure-SocketIP, not the forgeable X-Azure-ClientIP', async () => {
+    const body = await probe({
+      'X-Forwarded-For': `${FORGED}, ${CLIENT}, ${AFD_POP}`,
+      'X-Azure-FDID': FDID,
+      'X-Azure-SocketIP': CLIENT,
+      'X-Azure-ClientIP': FORGED
+    });
+    expect(body.key).to.equal(CLIENT);
+    expect(body.key).to.not.equal(FORGED);
   });
 });
