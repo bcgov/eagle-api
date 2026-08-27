@@ -10,7 +10,7 @@ async function update(defaultLog) {
           $ne: null
         },
         action: {
-          $in: ['Publish', 'publish', 'Unpublish', 'unPublish']
+          $in: ['Publish', 'publish', 'Unpublish', 'unpublish', 'unPublish', 'UnPublish']
         }
       }
     },

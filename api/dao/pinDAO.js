@@ -147,7 +147,7 @@ exports.unPublishPins = async function (user, project) {
         { _id: new mongoose.Types.ObjectId(project._id) },
         { $pull: { 'pinsRead': 'public' } });
 
-      Utils.recordAction('UnPublish', 'PIN', user, project._id);
+      Utils.recordAction('Unpublish', 'PIN', user, project._id);
 
       return projectDAO.projectHateoas(published, ['sysadmin', 'staff']);
     } else {

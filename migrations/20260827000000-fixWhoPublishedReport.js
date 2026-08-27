@@ -20,11 +20,6 @@ exports.up = async function (db) {
   console.log(`Retagged ${r.modifiedCount} project unpublish audit rows`);
 };
 
-exports.down = async function (db) {
-  const audit = db.collection('audit');
-  await audit.updateMany(
-    { action: 'Unpublish', meta: 'Project' },
-    { $set: { action: 'Put', meta: 'Unpublish' } }
-  );
-  await audit.dropIndex('action_1_objId_1').catch(() => {});
-};
+// Retag cannot be undone without corrupting rows the fixed code writes, and
+// prod built the index by hand before this migration. Keep both.
+exports.down = async function () {};
