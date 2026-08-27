@@ -500,7 +500,7 @@ exports.publishProject = async function(user, project) {
 exports.unPublishProject = async function(user, project) {
   return Actions.unPublish(project, true)
     .then(function (unpublished) {
-      Utils.recordAction('Put', 'Unpublish', user, project._id);
+      Utils.recordAction('Unpublish', 'Project', user, project._id);
 
       return unpublished;
     })

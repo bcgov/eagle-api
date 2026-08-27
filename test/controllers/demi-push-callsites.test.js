@@ -89,6 +89,13 @@ describe('DEMI push call sites', () => {
     });
   });
 
+  it('project.protectedUnPublish records action Unpublish on Project (was Put/Unpublish, invisible to the who-published report)', async () => {
+    await projectController.protectedUnPublish(projArgs(), res);
+
+    expect(Utils.recordAction.calledWith('Unpublish', 'Project')).to.be.true;
+    expect(Utils.recordAction.calledWith('Put')).to.be.false;
+  });
+
   it('document.protectedPut does not push when the update finds nothing', async () => {
     models.Document.findOneAndUpdate.resolves(null);
 

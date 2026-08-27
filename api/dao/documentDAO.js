@@ -330,7 +330,7 @@ exports.unPublishDocument = async function(user, document) {
   let updatedDocument = await document.save();
 
   return Actions.unPublish(updatedDocument).then(function (unPublishedDocument) {
-    Utils.recordAction('UnPublish', 'Document', user, unPublishedDocument._id);
+    Utils.recordAction('Unpublish', 'Document', user, unPublishedDocument._id);
     return unPublishedDocument;
   },
   function (error) {
