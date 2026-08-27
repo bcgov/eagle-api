@@ -31,6 +31,8 @@ module.exports = require('../models')('Config', {
   // falls back to getApiPath() when this is blank, reverting search with no redeploy.
   SEARCH_API_PATH             : { type: String, default: '' },
   ADMIN_PATH                  : { type: String, default: '/admin/' },
+  // No default: absent unless a row sets it true. Gates eagle-public's Document Content tab.
+  CONTENT_SEARCH              : { type: Boolean },
 
   KEYCLOAK_URL                : { type: String, default: null },
   KEYCLOAK_REALM              : { type: String, default: null },
