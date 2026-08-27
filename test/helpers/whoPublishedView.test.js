@@ -12,7 +12,7 @@ function spellingsInSource() {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) return walk(p);
     if (!p.endsWith('.js')) return;
-    for (const m of fs.readFileSync(p, 'utf8').matchAll(/recordAction\('([A-Za-z]*[Pp]ublish)'/g)) out.add(m[1]);
+    for (const m of fs.readFileSync(p, 'utf8').matchAll(/recordAction\(\s*'([A-Za-z]*[Pp]ublish)'/g)) out.add(m[1]);
   });
   walk(path.join(__dirname, '../../api'));
   return [...out];
@@ -35,6 +35,7 @@ describe('whoPublishedUnpublishedAllUsers pipeline', () => {
   it('prefilters on every publish/unpublish spelling the code writes, so the index seeks', () => {
     const spellings = spellingsInSource();
     expect(spellings.length).to.be.greaterThan(1);
+    expect(spellings, 'DAOs must write Unpublish, not UnPublish').to.not.include('UnPublish');
     const first = pipeline[0].$match;
     expect(first.objId).to.deep.equal({ $ne: null });
     expect(first.action.$in).to.include.members(spellings);
