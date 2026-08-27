@@ -76,6 +76,7 @@ jobs:
           push: false
           load: true
           tags: ${{ env.IMAGE_NAME }}:scan
+          build-args: CACHEBUST=${{ steps.short-sha.outputs.SHA }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -113,6 +114,7 @@ jobs:
             ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:dev
             ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:ci-latest
             ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:${{ steps.short-sha.outputs.SHA }}
+          build-args: CACHEBUST=${{ steps.short-sha.outputs.SHA }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
