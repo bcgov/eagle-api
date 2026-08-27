@@ -784,7 +784,7 @@ exports.protectedUnPublish = async function (args, res) {
       defaultLog.info('o:', o);
       try {
         const unpublished = await Actions.unPublish(o);
-        Utils.recordAction('Put', 'Unpublish', args.swagger.params.auth_payload.preferred_username, objId);
+        Utils.recordAction('Unpublish', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
         demiPush.project(unpublished);
         return Actions.sendResponse(res, 200, unpublished);
       } catch (err) {
