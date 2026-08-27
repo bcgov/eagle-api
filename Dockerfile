@@ -9,8 +9,11 @@
 
 FROM node:24-alpine
 
-# Update Alpine packages to latest security patches
-RUN apk upgrade --no-cache
+# CACHEBUST forces this layer to re-run every build; without it Docker/BuildKit
+# reuses the cached apk-upgrade result forever, so newer Alpine security
+# patches never get pulled in even though the command itself is unchanged.
+ARG CACHEBUST=0
+RUN echo "cachebust=${CACHEBUST}" && apk upgrade --no-cache
 
 # Remove npm (we use yarn) — eliminates Trivy findings from npm's bundled deps
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
