@@ -23,3 +23,24 @@ spec:
     weight: 100
   wildcardPolicy: None
 {{- end }}
+{{- if .Values.directRoute.enabled }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "eagle-api.fullname" . }}-direct
+  labels:
+    {{- include "eagle-api.labels" . | nindent 4 }}
+spec:
+  host: {{ .Values.directRoute.host }}
+  port:
+    targetPort: 3000-tcp
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  to:
+    kind: Service
+    name: {{ include "eagle-api.fullname" . }}
+    weight: 100
+  wildcardPolicy: None
+{{- end }}

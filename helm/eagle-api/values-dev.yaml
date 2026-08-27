@@ -10,6 +10,10 @@ route:
   host: eagle-dev.apps.silver.devops.gov.bc.ca
   path: /api
 
+directRoute:
+  enabled: true
+  host: eagle-api-6cdc9e-dev.apps.silver.devops.gov.bc.ca
+
 resources:
   limits:
     cpu: 500m
