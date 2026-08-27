@@ -14,6 +14,8 @@ const CLIENT = '203.0.113.9';   // the real browser
 const FORGED = '198.51.100.7';  // whatever an attacker puts in X-Forwarded-For
 const AFD_POP = '147.243.1.1';  // an Azure Front Door edge
 const ROUTER = '10.1.1.1';      // the OpenShift router, i.e. our socket peer
+const RPROXY = '10.9.9.9';      // a second in-cluster hop (rproxy), still private
+const IPV6_CLIENT = '2001:db8:1111:2222:3333:4444:5555:6666';
 const FDID = '4216f7df-2a03-4830-9ed1-59ddd0f3d7b5';
 const WRONG_FDID = '4216f7df-2a03-4830-9ed1-59ddd0f3d7b6'; // shares FDID's prefix, differs only in the last char
 
@@ -68,6 +70,13 @@ describe('rate limiter caller identity', () => {
     expect(body.key).to.not.equal(FORGED);
   });
 
+  // router -> rproxy, both in-cluster: two trusted hops. Only 'loopback, linklocal, uniquelocal'
+  // walks past both; a numeric trust proxy count of 1 would stop at rproxy and leak it as the key.
+  it('keys on the client behind two in-cluster hops', async () => {
+    const body = await probe({ 'X-Forwarded-For': `${CLIENT}, ${RPROXY}` });
+    expect(body.key).to.equal(CLIENT);
+  });
+
   // browser -> Front Door -> OpenShift router -> rproxy -> here. req.ip is the POP, so the key
   // comes from X-Azure-ClientIP.
   it('keys on the client through Front Door', async () => {
@@ -93,10 +102,21 @@ describe('rate limiter caller identity', () => {
   it('falls back to req.ip when FRONT_DOOR_ID is unset', async () => {
     delete process.env.FRONT_DOOR_ID;
     const body = await probe({
+      'X-Forwarded-For': CLIENT,
+      'X-Azure-ClientIP': FORGED
+    });
+    expect(body.key).to.equal(body.ip);
+    expect(body.key).to.not.equal(FORGED);
+  });
+
+  // ipKeyGenerator's sole job: mask an IPv6 client to a /56 so rotating within one's own prefix
+  // doesn't dodge the limiter.
+  it('masks an IPv6 client through Front Door to a /56', async () => {
+    const body = await probe({
       'X-Forwarded-For': `${CLIENT}, ${AFD_POP}`,
       'X-Azure-FDID': FDID,
-      'X-Azure-ClientIP': CLIENT
+      'X-Azure-ClientIP': IPV6_CLIENT
     });
-    expect(body.key).to.equal(AFD_POP);
+    expect(body.key).to.equal('2001:db8:1111:2200::/56');
   });
 });
