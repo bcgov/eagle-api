@@ -102,6 +102,12 @@ secrets:
     clientIdKey: _GETOK_CLIENTID
     clientSecretKey: _GETOK_CLIENT_SECRET
 
+  # Optional. Set per-env (like smokeApiKey) to a secret holding the Azure Front Door profile GUID.
+  # Unset means the rate limiter keys on req.ip, which is correct wherever Front Door is not in front.
+  # frontDoorId:
+  #   name: eagle-api-front-door
+  #   key: FRONT_DOOR_ID
+
 
 # Keycloak SSO Configuration
 keycloak:

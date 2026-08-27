@@ -175,6 +175,14 @@ spec:
                   name: {{ .Values.secrets.smokeApiKey.name }}
                   key: {{ .Values.secrets.smokeApiKey.key }}
             {{- end }}
+            {{- if .Values.secrets.frontDoorId }}
+            # Azure Front Door profile id — proves a request reached us through our edge
+            - name: FRONT_DOOR_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.frontDoorId.name }}
+                  key: {{ .Values.secrets.frontDoorId.key }}
+            {{- end }}
             {{- if .Values.keycloak.enabled }}
             # Keycloak SSO Configuration
             - name: SSO_ISSUER

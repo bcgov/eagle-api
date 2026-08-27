@@ -1,74 +1,101 @@
 /**
- * Unit Tests for the `trust proxy` setting
- *
- * This is a rate-limiting correctness test, not a style check. express-rate-limit keys its buckets
- * on `req.ip`, and `req.ip` is whatever proxy-addr returns for the configured number of trusted
- * hops. Get the number wrong and every request arriving through Azure Front Door keys on a handful
- * of AFD POP addresses instead of on real clients, so the entire site shares one bucket and trips
- * 429 under normal load.
- *
- * The value is READ OUT OF app.js rather than restated here. That is deliberate: a test that
- * declares its own expected value would pass no matter what the application is actually configured
- * to do. Change app.js back to 1 and the "through Front Door" case below goes red.
+ * Guards how the global rate limiter identifies a caller: `trust proxy` in app.js plus the
+ * Front Door key generator. Both must survive a forged X-Forwarded-For. See commit message.
  */
 
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
+const request = require('supertest');
 const { expect } = require('chai');
-const proxyaddr = require('proxy-addr');
+const rateLimitKey = require('../../api/helpers/rateLimitKey');
 
-// Two hosts we can assert on by identity. The values are arbitrary documentation IPs; what matters
-// is only that they are distinguishable from each other.
 const CLIENT = '203.0.113.9';   // the real browser
-const AFD_EDGE = '147.243.1.1'; // an Azure Front Door POP
+const FORGED = '198.51.100.7';  // whatever an attacker puts in X-Forwarded-For
+const AFD_POP = '147.243.1.1';  // an Azure Front Door edge
 const ROUTER = '10.1.1.1';      // the OpenShift router, i.e. our socket peer
+const FDID = '11111111-2222-3333-4444-555555555555';
 
-/** The `trust proxy` value the application actually sets, parsed from source. */
+/** The `trust proxy` value app.js actually sets, so these cases cannot pass against a config the app does not use. */
 function configuredTrustProxy() {
   const source = fs.readFileSync(path.join(__dirname, '../../app.js'), 'utf8');
-  const match = source.match(/app\.set\(\s*['"]trust proxy['"]\s*,\s*(\d+)\s*\)/);
-  expect(match, 'app.js must configure a numeric `trust proxy`').to.not.be.null;
-  return parseInt(match[1], 10);
+  const match = source.match(/app\.set\(\s*['"]trust proxy['"]\s*,\s*(.+?)\s*\)\s*;/);
+  expect(match, 'app.js must configure `trust proxy`').to.not.be.null;
+  const raw = match[1];
+  return /^['"]/.test(raw) ? raw.slice(1, -1) : Number(raw);
 }
 
-/**
- * express's own numeric-trust compiler: trust the first `n` hops back from the socket.
- * Mirrors lib/utils.js compileTrust(number).
- */
-const trustFn = n => (addr, i) => i < n;
-
-/** Resolve req.ip the way express would, for a given X-Forwarded-For chain. */
-function resolveClientIp(forwardedFor, trust) {
-  const req = {
-    connection: { remoteAddress: ROUTER },
-    headers: forwardedFor ? { 'x-forwarded-for': forwardedFor } : {}
-  };
-  return proxyaddr(req, trustFn(trust));
+function buildApp() {
+  const app = express();
+  app.set('trust proxy', configuredTrustProxy());
+  // supertest connects over loopback; pretend the peer is the in-cluster router, as in production.
+  app.use((req, res, next) => {
+    Object.defineProperty(req.socket, 'remoteAddress', { value: ROUTER, configurable: true });
+    next();
+  });
+  app.get('/probe', (req, res) => res.json({ ip: req.ip, key: rateLimitKey(req) }));
+  return app;
 }
 
-describe('trust proxy', () => {
-  it('is configured as a number', () => {
-    expect(configuredTrustProxy()).to.be.a('number').and.be.at.least(1);
+const probe = headers => request(buildApp()).get('/probe').set(headers).expect(200).then(res => res.body);
+
+describe('rate limiter caller identity', () => {
+  let previous;
+
+  beforeEach(() => {
+    previous = process.env.FRONT_DOOR_ID;
+    process.env.FRONT_DOOR_ID = FDID;
   });
 
-  // browser -> OpenShift router -> rproxy -> here.  XFF carries one address.
-  it('resolves the real client IP on the direct OpenShift path', () => {
-    expect(resolveClientIp(CLIENT, configuredTrustProxy())).to.equal(CLIENT);
+  afterEach(() => {
+    if (previous === undefined) {
+      delete process.env.FRONT_DOOR_ID;
+    } else {
+      process.env.FRONT_DOOR_ID = previous;
+    }
   });
 
-  // browser -> Azure Front Door -> OpenShift router -> rproxy -> here.  XFF carries two.
-  // This is the case that fails at `trust proxy` 1, and it fails by returning the AFD edge.
-  it('resolves the real client IP when the request comes through Front Door', () => {
-    const ip = resolveClientIp(`${CLIENT}, ${AFD_EDGE}`, configuredTrustProxy());
-    expect(ip).to.equal(CLIENT);
-    expect(ip).to.not.equal(AFD_EDGE);
+  // browser -> OpenShift router -> rproxy -> here. The router appends the one and only XFF entry.
+  it('keys on the client on the direct path', async () => {
+    const body = await probe({ 'X-Forwarded-For': CLIENT });
+    expect(body.key).to.equal(CLIENT);
   });
 
-  // Guards the other direction: trusting more hops than exist lets a client forge its own source
-  // address by sending an X-Forwarded-For header, which would let anyone evade the rate limiter.
-  it('does not trust an address a client can forge', () => {
-    const spoofed = '198.51.100.7';
-    const ip = resolveClientIp(`${spoofed}, ${CLIENT}, ${AFD_EDGE}`, configuredTrustProxy());
-    expect(ip).to.not.equal(spoofed);
+  it('ignores an X-Forwarded-For entry the client prepended on the direct path', async () => {
+    const body = await probe({ 'X-Forwarded-For': `${FORGED}, ${CLIENT}` });
+    expect(body.key).to.equal(CLIENT);
+    expect(body.key).to.not.equal(FORGED);
+  });
+
+  // browser -> Front Door -> OpenShift router -> rproxy -> here. req.ip is the POP, so the key
+  // comes from X-Azure-ClientIP.
+  it('keys on the client through Front Door', async () => {
+    const body = await probe({
+      'X-Forwarded-For': `${CLIENT}, ${AFD_POP}`,
+      'X-Azure-FDID': FDID,
+      'X-Azure-ClientIP': CLIENT
+    });
+    expect(body.ip).to.equal(AFD_POP);
+    expect(body.key).to.equal(CLIENT);
+  });
+
+  it('ignores Front Door headers when X-Azure-FDID is not our profile', async () => {
+    const body = await probe({
+      'X-Forwarded-For': CLIENT,
+      'X-Azure-FDID': 'not-our-profile',
+      'X-Azure-ClientIP': FORGED
+    });
+    expect(body.key).to.equal(CLIENT);
+    expect(body.key).to.not.equal(FORGED);
+  });
+
+  it('falls back to req.ip when FRONT_DOOR_ID is unset', async () => {
+    delete process.env.FRONT_DOOR_ID;
+    const body = await probe({
+      'X-Forwarded-For': `${CLIENT}, ${AFD_POP}`,
+      'X-Azure-FDID': FDID,
+      'X-Azure-ClientIP': CLIENT
+    });
+    expect(body.key).to.equal(AFD_POP);
   });
 });

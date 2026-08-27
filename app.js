@@ -18,6 +18,7 @@ var app_helper       = require('./app_helper');
 var createRouter     = require('./api/middleware/swagger-router');
 var swaggerSpec      = YAML.load(fs.readFileSync('./api/swagger/swagger.yaml', 'utf8'));
 const rateLimit      = require('express-rate-limit');
+const rateLimitKey   = require('./api/helpers/rateLimitKey');
 
 var api_default_port = 3000;
 
@@ -36,25 +37,9 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // disable powered by header
 app.disable('x-powered-by');
 
-// Trust TWO proxy hops so req.ip reflects the real client IP. Required for
-// express-rate-limit to key on the correct remote IP.
-//
-// WHY 2 AND NOT 1. There are two ways a request reaches this process:
-//   direct  — browser -> OpenShift router -> rproxy -> here        (X-Forwarded-For: client)
-//   via AFD — browser -> Azure Front Door -> OpenShift router -> rproxy -> here
-//                                                                 (X-Forwarded-For: client, afd-edge)
-// A numeric `trust proxy` means "trust N hops back from the socket", so 2 covers the longer chain
-// while remaining correct on the shorter one — proxy-addr returns the left-most address once it runs
-// out of trusted hops. Verified against this repo's own proxy-addr:
-//
-//   trust=1 | direct -> 203.0.113.9    | via AFD -> 147.243.1.1   <-- the AFD edge, WRONG
-//   trust=2 | direct -> 203.0.113.9    | via AFD -> 203.0.113.9
-//
-// At 1, every request arriving through Front Door keys the rate limiter on a handful of AFD POP
-// addresses instead of on real clients, so the whole site shares one bucket and trips 429 almost
-// immediately. That failure appears at cutover, under full production load, which is why this ships
-// ahead of it — it is inert until Front Door is actually in the path.
-app.set('trust proxy', 2);
+// Trust only in-cluster hops (OpenShift router, rproxy). A public hop is never trusted, so a
+// forged X-Forwarded-For cannot set req.ip on either the direct or the Front Door chain.
+app.set('trust proxy', 'loopback, linklocal, uniquelocal');
 
 // Enable CORS
 // Reflect the requesting origin instead of '*' so that credentialed requests
@@ -158,6 +143,7 @@ const globalLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { error: 'Too many requests. Please try again later.' },
+  keyGenerator: rateLimitKey,
 });
 
 app.use('/api', globalLimiter);
