@@ -8,6 +8,5 @@ module.exports = function rateLimitKey(req) {
   const frontDoorId = process.env.FRONT_DOOR_ID;
   const viaFrontDoor = frontDoorId && req.get('X-Azure-FDID') === frontDoorId;
   const ip = (viaFrontDoor && req.get('X-Azure-ClientIP')) || req.ip || '';
-  const parts = ip.split(':');
-  return ipKeyGenerator(parts.length === 2 ? parts[0] : ip); // one colon means IPv4:port
+  return ipKeyGenerator(ip);
 };

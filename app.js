@@ -37,8 +37,8 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // disable powered by header
 app.disable('x-powered-by');
 
-// Trust only in-cluster hops (OpenShift router, rproxy). A public hop is never trusted, so a
-// forged X-Forwarded-For cannot set req.ip on either the direct or the Front Door chain.
+// Trust only in-cluster hops (router, rproxy). External callers cannot forge req.ip via X-Forwarded-For;
+// an in-cluster caller could, and nothing here guards that.
 app.set('trust proxy', 'loopback, linklocal, uniquelocal');
 
 // Enable CORS

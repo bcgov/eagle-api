@@ -14,7 +14,8 @@ const CLIENT = '203.0.113.9';   // the real browser
 const FORGED = '198.51.100.7';  // whatever an attacker puts in X-Forwarded-For
 const AFD_POP = '147.243.1.1';  // an Azure Front Door edge
 const ROUTER = '10.1.1.1';      // the OpenShift router, i.e. our socket peer
-const FDID = '11111111-2222-3333-4444-555555555555';
+const FDID = '4216f7df-2a03-4830-9ed1-59ddd0f3d7b5';
+const WRONG_FDID = '4216f7df-2a03-4830-9ed1-59ddd0f3d7b6'; // shares FDID's prefix, differs only in the last char
 
 /** The `trust proxy` value app.js actually sets, so these cases cannot pass against a config the app does not use. */
 function configuredTrustProxy() {
@@ -82,7 +83,7 @@ describe('rate limiter caller identity', () => {
   it('ignores Front Door headers when X-Azure-FDID is not our profile', async () => {
     const body = await probe({
       'X-Forwarded-For': CLIENT,
-      'X-Azure-FDID': 'not-our-profile',
+      'X-Azure-FDID': WRONG_FDID,
       'X-Azure-ClientIP': FORGED
     });
     expect(body.key).to.equal(CLIENT);

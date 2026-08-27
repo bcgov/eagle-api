@@ -66,6 +66,7 @@ secrets:
     name: getok-secret
     clientIdKey: CLIENTID
     clientSecretKey: CLIENT_SECRET
+  # frontDoorId: set once Secret eagle-api-front-door exists in 6cdc9e-prod (see values-test.yaml)
 
 # Disable persistence - current production doesn't use uploads PVC
 persistence:

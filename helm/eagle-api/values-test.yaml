@@ -52,6 +52,9 @@ secrets:
   smokeApiKey:
     name: eagle-api-smoke-key
     key: SMOKE_API_KEY
+  frontDoorId:
+    name: eagle-api-front-door
+    key: FRONT_DOOR_ID
 
 # Disable persistence to avoid PVC attachment issues
 persistence:
