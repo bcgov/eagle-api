@@ -7152,9 +7152,6 @@ paths:
       x-anonymous-read: true
       security:
         - Bearer: []
-      x-security-scopes:
-        - sysadmin
-        - staff
       responses:
         '200':
           description: 'Success'
