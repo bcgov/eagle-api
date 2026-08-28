@@ -21,11 +21,6 @@ describe('PROTECTED /api/comment & /api/commentperiod (requires token)', () => {
     expect(res.body).to.be.an('array').with.lengthOf.at.least(1);
   });
 
-  it('GET /commentperiod without token — accessible as public', async () => {
-    const req = require('supertest')(require('./helpers').API).get('/commentperiod').query({ pageNum: 0, pageSize: 1 });
-    await req.expect(200);
-  });
-
   it('GET /commentperiod/:commentPeriodId — returns specific comment period', async function () {
     if (!hasToken()) return this.skip();
     const res = await authGet(`/commentperiod/${commentPeriodId}`).expect(200);
@@ -49,11 +44,6 @@ describe('PROTECTED /api/comment & /api/commentperiod (requires token)', () => {
     expect(res.body).to.be.an('array');
   });
 
-  it('GET /comment without token — refused', async () => {
-    const req = require('supertest')(require('./helpers').API).get('/comment').query({ period: '000000000000000000000000', pageNum: 0, pageSize: 1 });
-    await req.expect(403);
-  });
-
   it('GET /comment/:commentId — returns specific comment (if any exist)', async function () {
     if (!hasToken() || !commentId) return this.skip();
     const res = await authGet(`/comment/${commentId}`).expect(200);
@@ -66,5 +56,20 @@ describe('PROTECTED /api/comment & /api/commentperiod (requires token)', () => {
     const res = await authGet(`/comment/export/${commentPeriodId}`).query({ format: 'csv' });
     // May be empty if period has no comments, but must not 500
     expect(res.status).to.be.oneOf([200, 204]);
+  });
+});
+
+// No credential needed, and none required to reach them: these assert what an
+// unauthenticated caller gets. Gating them behind a token is what kept them from ever
+// running, and the anonymous-GET leak they cover survived because of it.
+describe('UNAUTHENTICATED comments endpoints', () => {
+  it('GET /commentperiod without token — accessible as public', async () => {
+    const req = require('supertest')(require('./helpers').API).get('/commentperiod').query({ pageNum: 0, pageSize: 1 });
+    await req.expect(200);
+  });
+
+  it('GET /comment without token — refused', async () => {
+    const req = require('supertest')(require('./helpers').API).get('/comment').query({ period: '000000000000000000000000', pageNum: 0, pageSize: 1 });
+    await req.expect(403);
   });
 });

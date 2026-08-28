@@ -17,11 +17,6 @@ describe('PROTECTED /api/project (requires token)', () => {
     expect(res.body).to.be.an('array').with.lengthOf.at.least(1);
   });
 
-  it('GET /project without token — accessible as public', async () => {
-    const req = require('supertest')(require('./helpers').API).get('/project').query({ pageNum: 0, pageSize: 1 });
-    await req.expect(200);
-  });
-
   it('GET /project/:projId — returns specific project (staff/sysadmin)', async function () {
     if (!hasToken()) return this.skip();
     const res = await authGet(`/project/${projId}`).expect(200);
@@ -56,4 +51,14 @@ describe('PROTECTED /api/project (requires token)', () => {
     }
   });
 
+});
+
+// No credential needed, and none required to reach them: these assert what an
+// unauthenticated caller gets. Gating them behind a token is what kept them from ever
+// running, and the anonymous-GET leak they cover survived because of it.
+describe('UNAUTHENTICATED projects endpoints', () => {
+  it('GET /project without token — accessible as public', async () => {
+    const req = require('supertest')(require('./helpers').API).get('/project').query({ pageNum: 0, pageSize: 1 });
+    await req.expect(200);
+  });
 });

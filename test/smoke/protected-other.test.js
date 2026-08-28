@@ -21,13 +21,6 @@ describe('PROTECTED misc endpoints (requires token)', () => {
     expect(res.body).to.be.an('array').with.lengthOf.at.least(1);
   });
 
-  // Open by declaration (x-anonymous-read in swagger), not by accident: eagle-public calls it
-  // with no token.
-  it('GET /organization without token — accessible as public', async () => {
-    const req = require('supertest')(require('./helpers').API).get('/organization').query({ pageNum: 0, pageSize: 1 });
-    await req.expect(200);
-  });
-
   it('GET /organization/:orgId — returns specific organization', async function () {
     if (!hasToken()) return this.skip();
     const res = await authGet(`/organization/${orgId}`);
@@ -47,11 +40,6 @@ describe('PROTECTED misc endpoints (requires token)', () => {
     if (res.status === 200) expect(res.body).to.be.an('array');
   });
 
-  it('GET /topic without token — refused', async () => {
-    const req = require('supertest')(require('./helpers').API).get('/topic').query({ pageNum: 0, pageSize: 1 });
-    await req.expect(403);
-  });
-
   // — Valued Components ——
 
   it('GET /vc?projectId=:id — lists valued components', async function () {
@@ -59,11 +47,6 @@ describe('PROTECTED misc endpoints (requires token)', () => {
     const res = await authGet('/vc').query({ projectId: projId, pageNum: 0, pageSize: 5 });
     expect(res.status).to.be.oneOf([200, 403]);
     if (res.status === 200) expect(res.body).to.be.an('array');
-  });
-
-  it('GET /vc without token — refused', async () => {
-    const req = require('supertest')(require('./helpers').API).get('/vc').query({ pageNum: 0, pageSize: 1 });
-    await req.expect(403);
   });
 
   // — Project Notifications ——
@@ -74,12 +57,39 @@ describe('PROTECTED misc endpoints (requires token)', () => {
     expect(res.body).to.be.an('array');
   });
 
+  // — Recent Activity (protected write, read via public; just verify 401 without token) ——
+
+  // — Search (protected) ——
+
+  // — V2 Project Groups ——
+
+});
+
+// No credential needed, and none required to reach them: these assert what an
+// unauthenticated caller gets. Gating them behind a token is what kept them from ever
+// running, and the anonymous-GET leak they cover survived because of it.
+describe('UNAUTHENTICATED other endpoints', () => {
+  // Open by declaration (x-anonymous-read in swagger), not by accident: eagle-public calls it
+  // with no token.
+  it('GET /organization without token — accessible as public', async () => {
+    const req = require('supertest')(require('./helpers').API).get('/organization').query({ pageNum: 0, pageSize: 1 });
+    await req.expect(200);
+  });
+
+  it('GET /topic without token — refused', async () => {
+    const req = require('supertest')(require('./helpers').API).get('/topic').query({ pageNum: 0, pageSize: 1 });
+    await req.expect(403);
+  });
+
+  it('GET /vc without token — refused', async () => {
+    const req = require('supertest')(require('./helpers').API).get('/vc').query({ pageNum: 0, pageSize: 1 });
+    await req.expect(403);
+  });
+
   it('GET /projectNotification without token — refused', async () => {
     const req = require('supertest')(require('./helpers').API).get('/projectNotification').query({ pageNum: 0, pageSize: 1 });
     await req.expect(403);
   });
-
-  // — Recent Activity (protected write, read via public; just verify 401 without token) ——
 
   it('DELETE /recentActivity without token — blocked (non-2xx)', async () => {
     const req = require('supertest')(require('./helpers').API)
@@ -90,19 +100,15 @@ describe('PROTECTED misc endpoints (requires token)', () => {
     expect(res.status).to.not.be.within(200, 299);
   });
 
-  // — Search (protected) ——
-
   // Open by declaration — eagle-public's list and search screens call this with no token.
   it('GET /search without token — accessible as public', async () => {
     const req = require('supertest')(require('./helpers').API).get('/search').query({ dataset: 'Project', pageNum: 0, pageSize: 1 });
     await req.expect(200);
   });
 
-  // — V2 Project Groups ——
-
   it('GET /v2/projects/:projId/groups/:groupId/members without token — non-2xx', async () => {
     const req = require('supertest')(require('./helpers').API)
-      .get(`/v2/projects/${projId}/groups/000000000000000000000000/members`);
+      .get('/v2/projects/000000000000000000000000/groups/000000000000000000000000/members');
     const res = await req;
     expect(res.status).to.not.be.within(200, 299);
   });
