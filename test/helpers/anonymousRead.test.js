@@ -1,9 +1,6 @@
 /**
- * The allow-list itself, read off the real swagger rather than a fixture.
- *
- * Anonymous GETs on Bearer-declared routes used to be granted the 'public' role instead of 403.
- * eagle-public depends on a handful of them, so the fix is a per-operation declaration; this pins
- * exactly which operations carry it. Adding one is a deliberate act and has to fail here first.
+ * The allow-list itself, read off the real swagger rather than a fixture, so widening it has to fail
+ * here first. Why each entry is on it: wiki, API-Architecture, "Anonymous reads on protected routes".
  */
 const { expect } = require('chai');
 const fs = require('fs');
@@ -18,6 +15,8 @@ const EXPECTED_ANONYMOUS = [
   '/document',
   '/document/{docId}',
   '/document/{docId}/download',
+  '/document/{docId}/fetch',
+  '/document/{docId}/fetch/{filename}',
   '/materialized-views/status',
   '/organization',
   '/project',

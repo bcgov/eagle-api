@@ -154,8 +154,6 @@ describe('Auth Helper Functions', () => {
       });
     });
 
-    // The bug these pin: every GET on a Bearer-declared route used to fall through to the 'public'
-    // role instead of 403, so /vc served its read[] ACLs to anyone.
     describe('no bearer', () => {
       const noBearer = (apiPath, method, operation) => {
         mockReq.swagger.apiPath = apiPath;

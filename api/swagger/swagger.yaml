@@ -992,8 +992,6 @@ paths:
       summary: "Get a list of projects"
       operationId: protectedGet
       description: "Authenticated access to retreiving projects."
-      # eagle-public calls this without a token; a bearer, when sent, is still
-      # verified and scope-checked. See api/helpers/auth.js.
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -1186,8 +1184,6 @@ paths:
       summary: "Get a project"
       operationId: protectedGet
       description: "Authenticated access to retreiving projects."
-      # eagle-public calls this without a token; a bearer, when sent, is still
-      # verified and scope-checked. See api/helpers/auth.js.
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -1484,8 +1480,6 @@ paths:
       summary: "Get pins on a project"
       operationId: protectedPinGet
       description: "Authenticated access to retreiving pins on a project."
-      # eagle-public calls this without a token; a bearer, when sent, is still
-      # verified and scope-checked. See api/helpers/auth.js.
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -3722,8 +3716,6 @@ paths:
       summary: "Get a list of documents"
       operationId: protectedGet
       description: "Authenticated access to retreiving a document."
-      # eagle-public calls this without a token; a bearer, when sent, is still
-      # verified and scope-checked. See api/helpers/auth.js.
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -3807,8 +3799,6 @@ paths:
       summary: "Get a document"
       operationId: protectedGet
       description: "Authenticated access to retreiving a document."
-      # eagle-public calls this without a token; a bearer, when sent, is still
-      # verified and scope-checked. See api/helpers/auth.js.
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -4217,8 +4207,6 @@ paths:
       summary: "Download a document"
       operationId: protectedDownload
       description: "Authenticated access to retreiving a document binary."
-      # eagle-public calls this without a token; a bearer, when sent, is still
-      # verified and scope-checked. See api/helpers/auth.js.
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -4266,6 +4254,7 @@ paths:
       summary: "Download a document"
       operationId: protectedDownload
       description: "Authenticated access to retreiving a document binary."
+      x-anonymous-read: true
       security:
         - Bearer: []
       parameters:
@@ -4317,6 +4306,7 @@ paths:
       summary: "Download a document"
       operationId: protectedOpen
       description: "Authenticated access to retreiving a document binary."
+      x-anonymous-read: true
       security:
         - Bearer: []
       parameters:
@@ -4636,8 +4626,6 @@ paths:
       summary: "Get a list of documents"
       operationId: protectedGet
       description: "Authenticated access to retreiving organizations."
-      # eagle-public calls this without a token; a bearer, when sent, is still
-      # verified and scope-checked. See api/helpers/auth.js.
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -5855,8 +5843,6 @@ paths:
       summary: "Get a list of comment periods"
       operationId: protectedGet
       description: "Authenticated access to retreiving a commentperiod."
-      # eagle-public calls this without a token; a bearer, when sent, is still
-      # verified and scope-checked. See api/helpers/auth.js.
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -6045,8 +6031,6 @@ paths:
       summary: "Get a commentperiod"
       operationId: protectedGet
       description: "Authenticated access to retreiving a commentperiod."
-      # eagle-public calls this without a token; a bearer, when sent, is still
-      # verified and scope-checked. See api/helpers/auth.js.
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -6379,8 +6363,6 @@ paths:
       summary: "Get a list of things related to these keywords"
       operationId: protectedGet
       description: "Retreiving items relating to the given keywords."
-      # eagle-public calls this without a token; a bearer, when sent, is still
-      # verified and scope-checked. See api/helpers/auth.js.
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -7167,8 +7149,6 @@ paths:
       summary: 'Get materialized view lock status'
       operationId: protectedGetStatus
       description: 'Authenticated access to check current run-lock status for mat views'
-      # eagle-public calls this without a token; a bearer, when sent, is still
-      # verified and scope-checked. See api/helpers/auth.js.
       x-anonymous-read: true
       security:
         - Bearer: []
