@@ -21,6 +21,8 @@ describe('PROTECTED misc endpoints (requires token)', () => {
     expect(res.body).to.be.an('array').with.lengthOf.at.least(1);
   });
 
+  // Open by declaration (x-anonymous-read in swagger), not by accident: eagle-public calls it
+  // with no token.
   it('GET /organization without token — accessible as public', async () => {
     const req = require('supertest')(require('./helpers').API).get('/organization').query({ pageNum: 0, pageSize: 1 });
     await req.expect(200);
@@ -45,9 +47,9 @@ describe('PROTECTED misc endpoints (requires token)', () => {
     if (res.status === 200) expect(res.body).to.be.an('array');
   });
 
-  it('GET /topic without token — accessible as public', async () => {
+  it('GET /topic without token — refused', async () => {
     const req = require('supertest')(require('./helpers').API).get('/topic').query({ pageNum: 0, pageSize: 1 });
-    await req.expect(200);
+    await req.expect(403);
   });
 
   // — Valued Components ——
@@ -59,9 +61,9 @@ describe('PROTECTED misc endpoints (requires token)', () => {
     if (res.status === 200) expect(res.body).to.be.an('array');
   });
 
-  it('GET /vc without token — accessible as public', async () => {
+  it('GET /vc without token — refused', async () => {
     const req = require('supertest')(require('./helpers').API).get('/vc').query({ pageNum: 0, pageSize: 1 });
-    await req.expect(200);
+    await req.expect(403);
   });
 
   // — Project Notifications ——
@@ -72,9 +74,9 @@ describe('PROTECTED misc endpoints (requires token)', () => {
     expect(res.body).to.be.an('array');
   });
 
-  it('GET /projectNotification without token — accessible as public', async () => {
+  it('GET /projectNotification without token — refused', async () => {
     const req = require('supertest')(require('./helpers').API).get('/projectNotification').query({ pageNum: 0, pageSize: 1 });
-    await req.expect(200);
+    await req.expect(403);
   });
 
   // — Recent Activity (protected write, read via public; just verify 401 without token) ——
@@ -90,6 +92,7 @@ describe('PROTECTED misc endpoints (requires token)', () => {
 
   // — Search (protected) ——
 
+  // Open by declaration — eagle-public's list and search screens call this with no token.
   it('GET /search without token — accessible as public', async () => {
     const req = require('supertest')(require('./helpers').API).get('/search').query({ dataset: 'Project', pageNum: 0, pageSize: 1 });
     await req.expect(200);

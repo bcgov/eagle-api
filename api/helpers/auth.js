@@ -99,10 +99,18 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
       _verifySecret(currentScopes, tokenString, SECRET, req, callback, sendError);
     }
   } else {
-    defaultLog.error('Token didn\'t have a bearer.');
-    defaultLog.debug('current scopes: %j', currentScopes);
-    if (!req.swagger.apiPath.startsWith('/public')
-        && (req.swagger.operationPath[2] !== 'get' && req.swagger.operationPath[2] !== 'option' && req.swagger.operationPath[2] !== 'head')) {
+    // No bearer. Anonymous access is granted where the operation declares it, not to every GET:
+    // the method test this replaced handed the 'public' role to any GET on any protected route,
+    // so /vc answered anonymously with its read[] ACLs. Controllers that filter on the role were
+    // unaffected; the ones that do not were the leak.
+    //
+    // eagle-public is the reason this is not simply a 403 — it calls /search, /project, /document,
+    // /commentperiod and /organization with no token, and those carry x-anonymous-read.
+    const anonymousRead = req.swagger.apiPath.startsWith('/public')
+      || req.swagger.operation['x-anonymous-read'] === true;
+
+    if (!anonymousRead) {
+      defaultLog.warn('anonymous request refused: %s %s', req.swagger.operationPath[2], req.swagger.apiPath);
       return callback(sendError());
     }
 

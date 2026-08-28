@@ -154,6 +154,52 @@ describe('Auth Helper Functions', () => {
       });
     });
 
+    // The bug these pin: every GET on a Bearer-declared route used to fall through to the 'public'
+    // role instead of 403, so /vc served its read[] ACLs to anyone.
+    describe('no bearer', () => {
+      const noBearer = (apiPath, method, operation) => {
+        mockReq.swagger.apiPath = apiPath;
+        mockReq.swagger.operationPath = ['paths', apiPath, method];
+        mockReq.swagger.operation = { 'x-security-scopes': [], ...operation };
+      };
+
+      it('refuses a GET on a route that does not declare anonymous read', (done) => {
+        noBearer('/vc', 'get', {});
+        auth.verifyToken(mockReq, {}, '', () => {
+          expect(resStatus.calledWith(403)).to.be.true;
+          expect(mockReq.swagger.params.auth_payload).to.be.undefined;
+          done();
+        });
+      });
+
+      it('allows a GET that declares anonymous read', (done) => {
+        noBearer('/search', 'get', { 'x-anonymous-read': true });
+        auth.verifyToken(mockReq, {}, '', (err) => {
+          expect(err).to.be.null;
+          expect(resStatus.called).to.be.false;
+          expect(mockReq.swagger.params.auth_payload.realm_access.roles).to.eql(['public']);
+          done();
+        });
+      });
+
+      it('allows anything under /public', (done) => {
+        noBearer('/public/comment', 'get', {});
+        auth.verifyToken(mockReq, {}, '', (err) => {
+          expect(err).to.be.null;
+          expect(mockReq.swagger.params.auth_payload.preferred_username).to.equal('public');
+          done();
+        });
+      });
+
+      it('refuses a write on a protected route', (done) => {
+        noBearer('/search', 'post', {});
+        auth.verifyToken(mockReq, {}, '', () => {
+          expect(resStatus.calledWith(403)).to.be.true;
+          done();
+        });
+      });
+    });
+
     it('should handle malformed token without crashing', (done) => {
       auth.verifyToken(mockReq, {}, 'Bearer invalid-token-string', (err) => {
         expect(err).to.not.be.null;
