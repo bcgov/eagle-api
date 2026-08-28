@@ -17,6 +17,15 @@ describe('PROTECTED /api/document (requires token)', () => {
     expect(res.body).to.be.an('array').with.lengthOf.at.least(1);
   });
 
+  // window.open from eagle-admin cannot attach a bearer, so these two must answer anonymously.
+  it('GET /document/:docId/fetch without token — accessible as public', async () => {
+    const req = require('supertest')(require('./helpers').API)
+      .get('/document/000000000000000000000000/fetch');
+    const res = await req;
+    // 404 when the id does not exist; the point is that it is not refused.
+    expect(res.status).to.not.equal(403);
+  });
+
   it('GET /document without token — accessible as public', async () => {
     const req = require('supertest')(require('./helpers').API).get('/document').query({ pageNum: 0, pageSize: 1 });
     await req.expect(200);

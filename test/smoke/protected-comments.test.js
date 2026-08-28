@@ -49,9 +49,9 @@ describe('PROTECTED /api/comment & /api/commentperiod (requires token)', () => {
     expect(res.body).to.be.an('array');
   });
 
-  it('GET /comment without token — accessible as public', async () => {
+  it('GET /comment without token — refused', async () => {
     const req = require('supertest')(require('./helpers').API).get('/comment').query({ period: '000000000000000000000000', pageNum: 0, pageSize: 1 });
-    await req.expect(200);
+    await req.expect(403);
   });
 
   it('GET /comment/:commentId — returns specific comment (if any exist)', async function () {

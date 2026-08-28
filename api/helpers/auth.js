@@ -99,10 +99,13 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
       _verifySecret(currentScopes, tokenString, SECRET, req, callback, sendError);
     }
   } else {
-    defaultLog.error('Token didn\'t have a bearer.');
-    defaultLog.debug('current scopes: %j', currentScopes);
-    if (!req.swagger.apiPath.startsWith('/public')
-        && (req.swagger.operationPath[2] !== 'get' && req.swagger.operationPath[2] !== 'option' && req.swagger.operationPath[2] !== 'head')) {
+    // No bearer. Granted where the operation declares it, never by method — see the wiki,
+    // API-Architecture, "Anonymous reads on protected routes".
+    const anonymousRead = req.swagger.apiPath.startsWith('/public')
+      || req.swagger.operation['x-anonymous-read'] === true;
+
+    if (!anonymousRead) {
+      defaultLog.warn('anonymous request refused: %s %s', req.swagger.operationPath[2], req.swagger.apiPath);
       return callback(sendError());
     }
 
