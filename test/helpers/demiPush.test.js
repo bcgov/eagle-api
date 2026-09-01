@@ -12,7 +12,7 @@ const winston = require('winston');
 const demiPush = require('../../api/helpers/demiPush');
 const defaultLog = winston.loggers.get('default');
 
-const BASE = 'https://demi-api-test.example';
+const BASE = 'https://demi-apim-test.example/machine';
 const okResponse = () => ({ ok: true, status: 200 });
 const failResponse = status => ({ ok: false, status });
 
@@ -68,15 +68,19 @@ describe('DemiPush Helper', () => {
       process.env.DEMI_API_KEY = 'test-key';
     });
 
-    it('should PUT to the eagle project route with the api key', async () => {
+    it('should PUT to the APIM eagle project route with the subscription key', async () => {
       fetchStub.resolves(okResponse());
       await demiPush.project({ _id: 'p1', name: 'Test' });
 
       expect(fetchStub.calledOnce).to.be.true;
       const [url, options] = fetchStub.firstCall.args;
-      expect(url).to.equal(`${BASE}/api/eagle/projects/p1`);
+      // APIM's backend supplies /api, so a second one here would 404
+      expect(url).to.equal(`${BASE}/eagle/projects/p1`);
       expect(options.method).to.equal('PUT');
-      expect(options.headers['X-Api-Key']).to.equal('test-key');
+      expect(options.headers).to.deep.equal({
+        'Content-Type': 'application/json',
+        'Ocp-Apim-Subscription-Key': 'test-key'
+      });
       expect(JSON.parse(options.body)).to.deep.equal({ doc: { _id: 'p1', name: 'Test' } });
       expect(errorStub.called).to.be.false;
     });
@@ -131,7 +135,7 @@ describe('DemiPush Helper', () => {
       expect(findStub.calledOnceWithExactly({ _schemaName: 'List' }, '_id name')).to.be.true;
       expect(fetchStub.calledOnce).to.be.true;
       const [url, options] = fetchStub.firstCall.args;
-      expect(url).to.equal(`${BASE}/api/eagle/documents/d1`);
+      expect(url).to.equal(`${BASE}/eagle/documents/d1`);
       expect(JSON.parse(options.body).labels).to.deep.equal({
         type: 'Letter',
         milestone: 'Application Review',

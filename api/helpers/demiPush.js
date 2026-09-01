@@ -44,7 +44,8 @@ async function push(kind, id, body) {
     return;
   }
 
-  const url = `${process.env.DEMI_API_BASE}/api/eagle/${kind}/${id}`;
+  // No /api segment: the APIM machine API's backend already carries it
+  const url = `${process.env.DEMI_API_BASE}/eagle/${kind}/${id}`;
   let lastErr = null;
   let lastStatus = null;
 
@@ -55,7 +56,7 @@ async function push(kind, id, body) {
         body: JSON.stringify(body),
         headers: {
           'Content-Type': 'application/json',
-          'X-Api-Key': process.env.DEMI_API_KEY
+          'Ocp-Apim-Subscription-Key': process.env.DEMI_API_KEY
         },
         signal: AbortSignal.timeout(TIMEOUT_MS)
       });
