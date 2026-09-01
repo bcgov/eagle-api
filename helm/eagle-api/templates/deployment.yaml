@@ -160,7 +160,7 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secrets.ches.name }}
                   key: {{ .Values.secrets.ches.clientSecretKey }}
-            # DEMI push key — optional; pods start without the secret
+            # DEMI push APIM subscription key — optional; pods start without the secret
             - name: DEMI_API_KEY
               valueFrom:
                 secretKeyRef:
