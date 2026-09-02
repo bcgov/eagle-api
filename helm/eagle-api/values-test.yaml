@@ -32,7 +32,6 @@ env:
   CLAMAV_SERVICE_PORT: "3310"
   ENABLE_VIRUS_SCANNING: "true"
   UPLOAD_DIRECTORY: "/tmp/"
-  APPLICATIONINSIGHTS_CONNECTION_STRING: "InstrumentationKey=4f680e64-a6a8-4aad-a2e8-10b5eeb2c5f2;IngestionEndpoint=https://canadacentral-1.in.applicationinsights.azure.com/;LiveEndpoint=https://canadacentral.livediagnostics.monitor.azure.com/;ApplicationId=ebbd966a-b401-4cd0-83c3-b6602cb75297"
   OTEL_SERVICE_NAME: "eagle-api"
 
 keycloak:

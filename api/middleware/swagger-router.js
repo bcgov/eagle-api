@@ -217,7 +217,9 @@ function createSwaggerRouter(spec, controllerDirs) {
       middlewares.push(buildSecurityMiddleware(operation));
 
       // --- Controller ---
-      middlewares.push(controller[operationId].bind(controller));
+      // Express 4 ignores a returned promise, so a rejected async controller must be forwarded by hand.
+      const handler = controller[operationId].bind(controller);
+      middlewares.push((req, res, next) => Promise.resolve(handler(req, res, next)).catch(next));
 
       router[method](expressPath, ...middlewares);
     }

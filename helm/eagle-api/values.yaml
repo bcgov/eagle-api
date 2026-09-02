@@ -91,6 +91,10 @@ env:
 
 
 # Secret references (existing OpenShift secrets)
+# Not listed here, hardcoded in deployment.yaml because they are the same in every environment
+# and optional: demi-push-secret/DEMI_APIM_KEY, and
+# eagle-api-appinsights/APPLICATIONINSIGHTS_CONNECTION_STRING (created by hand per environment;
+# unset means Azure Monitor stays off).
 secrets:
   mongodb:
     name: eagle-api-mongodb

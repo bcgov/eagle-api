@@ -3,11 +3,25 @@
 const defaultLog = require('winston').loggers.get('default');
 
 // Last-resort handler: anything a route throws is logged with its stack (format.errors in
-// app_helper) so Application Insights sees it, and the caller gets a generic 500.
+// app_helper) so Application Insights sees it. Errors carrying their own status — body-parser's
+// 400 on malformed JSON, 413 on an oversized body — keep it and their message; everything else
+// is ours to hide behind a generic 500.
 module.exports = function errorHandler(err, req, res, next) {
-  defaultLog.error(err);
+  const status = err.status || err.statusCode || 500;
+
+  if (status < 500) {
+    defaultLog.warn(err);
+  } else {
+    defaultLog.error(err);
+  }
+
   if (res.headersSent) {
     return next(err);
   }
-  res.status(500).json({ message: 'Internal server error' });
+
+  res.status(status).json(
+    status < 500
+      ? { message: err.message || 'Bad request' }
+      : { message: 'Internal server error' }
+  );
 };
