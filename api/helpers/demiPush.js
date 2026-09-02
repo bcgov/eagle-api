@@ -3,9 +3,15 @@
 const mongoose = require('mongoose');
 const defaultLog = require('winston').loggers.get('default');
 
+const client = require('./pushClient')({
+  name: 'demiPush',
+  baseEnv: 'DEMI_API_BASE',
+  keyEnv: 'DEMI_API_KEY',
+  keyHeader: 'Ocp-Apim-Subscription-Key',
+  method: 'PUT'
+});
+
 const LABEL_FIELDS = ['type', 'milestone', 'projectPhase', 'documentAuthorType'];
-const TIMEOUT_MS = 10000;
-const ATTEMPTS = 2;
 
 // ponytail: memoized for process lifetime; add a TTL if List items start changing while pods are up
 let listNamesPromise = null;
@@ -22,63 +28,10 @@ function listNames() {
   return listNamesPromise;
 }
 
-let keyWarned = false;
-
-function configured() {
-  if (!process.env.DEMI_API_BASE) {
-    return false;
-  }
-  if (!process.env.DEMI_API_KEY) {
-    if (!keyWarned) {
-      keyWarned = true;
-      defaultLog.warn('[demiPush] DEMI_API_KEY unset — pushes disabled');
-    }
-    return false;
-  }
-  return true;
-}
-
 // ponytail: last-writer-wins; sequence per id if the reconcile ever reports ordering drift
-async function push(kind, id, body) {
-  if (!configured()) {
-    return;
-  }
-
+function push(kind, id, body) {
   // No /api segment: the APIM machine API's backend already carries it
-  const url = `${process.env.DEMI_API_BASE}/eagle/${kind}/${id}`;
-  let lastErr = null;
-  let lastStatus = null;
-
-  for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
-    try {
-      const res = await fetch(url, {
-        method: 'PUT',
-        body: JSON.stringify(body),
-        headers: {
-          'Content-Type': 'application/json',
-          'Ocp-Apim-Subscription-Key': process.env.DEMI_API_KEY
-        },
-        signal: AbortSignal.timeout(TIMEOUT_MS)
-      });
-      if (res.ok) {
-        return;
-      }
-      lastErr = null;
-      lastStatus = res.status;
-      if (res.status < 500) {
-        break;
-      }
-    } catch (err) {
-      lastErr = err;
-      lastStatus = null;
-    }
-  }
-
-  if (lastErr) {
-    defaultLog.error(`[demiPush] ${kind} ${id} failed`, { error: lastErr.message, stack: lastErr.stack });
-  } else {
-    defaultLog.error(`[demiPush] ${kind} ${id} rejected ${lastStatus}`);
-  }
+  return client.push(`/eagle/${kind}/${id}`, body, `${kind} ${id}`);
 }
 
 exports.project = function (doc) {
@@ -86,7 +39,7 @@ exports.project = function (doc) {
 };
 
 exports.document = async function (doc) {
-  if (!configured() || !doc || !doc._id) {
+  if (!client.configured() || !doc || !doc._id) {
     return;
   }
   try {
