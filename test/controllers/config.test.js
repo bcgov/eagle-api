@@ -31,6 +31,17 @@ function stubConfigModel(doc, err) {
   });
 }
 
+// Hydrates `fields` through the real schema (so unset paths pick up their declared defaults),
+// then stubs findOne() to resolve the hydrated doc.
+function stubHydratedConfig(fields) {
+  require('../../api/helpers/models/config');
+  const Config = mongoose.model('Config');
+  const partial = Config.hydrate(fields);
+  return sinon.stub(mongoose, 'model').withArgs('Config').returns({
+    findOne: () => Promise.resolve(partial)
+  });
+}
+
 describe('Config Controller', () => {
   afterEach(() => sinon.restore());
 
@@ -87,12 +98,7 @@ describe('Config Controller', () => {
   it('fills a key the stored document is missing from the schema default', async () => {
     // The reason this controller does not use .lean(): a key added to the model later must answer
     // with its declared default rather than disappear from the payload until someone backfills it.
-    require('../../api/helpers/models/config');
-    const Config = mongoose.model('Config');
-    const partial = Config.hydrate({ _schemaName: 'Config', ENVIRONMENT: 'test' });
-    sinon.stub(mongoose, 'model').withArgs('Config').returns({
-      findOne: () => Promise.resolve(partial)
-    });
+    stubHydratedConfig({ _schemaName: 'Config', ENVIRONMENT: 'test' });
     const res = fakeRes();
 
     await configController.publicGet({}, res);
@@ -128,12 +134,7 @@ describe('Config Controller', () => {
   it('serves an empty APPINSIGHTS_CONNECTION_STRING when the row has no opinion on it', async () => {
     // Empty is the off switch: the SPAs skip loading the browser SDK, so the default must reach
     // the payload as '' rather than going missing.
-    require('../../api/helpers/models/config');
-    const Config = mongoose.model('Config');
-    const partial = Config.hydrate({ _schemaName: 'Config', ENVIRONMENT: 'test' });
-    sinon.stub(mongoose, 'model').withArgs('Config').returns({
-      findOne: () => Promise.resolve(partial)
-    });
+    stubHydratedConfig({ _schemaName: 'Config', ENVIRONMENT: 'test' });
     const res = fakeRes();
 
     await configController.publicGet({}, res);
@@ -153,12 +154,7 @@ describe('Config Controller', () => {
   it('does not gain CONTENT_SEARCH when the row has no opinion on it', async () => {
     // Hydrated through the real schema (like the "fills a key" test above) so this also proves
     // the model declares no default for CONTENT_SEARCH — a default would leak it into every payload.
-    require('../../api/helpers/models/config');
-    const Config = mongoose.model('Config');
-    const partial = Config.hydrate({ _schemaName: 'Config', ENVIRONMENT: 'test' });
-    sinon.stub(mongoose, 'model').withArgs('Config').returns({
-      findOne: () => Promise.resolve(partial)
-    });
+    stubHydratedConfig({ _schemaName: 'Config', ENVIRONMENT: 'test' });
     const res = fakeRes();
 
     await configController.publicGet({}, res);

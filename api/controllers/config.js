@@ -31,7 +31,8 @@ var PUBLIC_KEYS = [
  *
  * UNAUTHENTICATED — the swagger path carries no `security` block, which is what makes it public
  * (see api/middleware/swagger-security.js). Everything returned here is world-readable. Never add
- * a secret, key, or connection string to the Config model.
+ * a secret, key, or connection string to the Config model. Sole exception: APPINSIGHTS_CONNECTION_STRING —
+ * an ingestion connection string, public by design (ships in the SPA bundle), bounded by the workspace daily cap.
  *
  * Replaces the rproxy ConfigMap that answered this path before. Note that nginx's
  * `location = /api/config` is an exact match and beats the /api proxy, so this controller is
