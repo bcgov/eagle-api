@@ -27,6 +27,7 @@ env:
   CHES_ENDPOINT: "https://ches-test.api.gov.bc.ca/api/v1"
   GETOK_ENDPOINT: "https://sso-test.pathfinder.gov.bc.ca"
   DEMI_API_BASE: "https://demi-apim-test.azure-api.net/machine"
+  NOTIFY_API_BASE: "https://notify-api-test.azurewebsites.net"
   # ClamAV virus scanning - service runs in separate pod
   CLAMAV_SERVICE_HOST: "clamav"
   CLAMAV_SERVICE_PORT: "3310"
