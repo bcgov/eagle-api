@@ -61,6 +61,6 @@ CLAUDE.md
 GEMINI.md
 ANTIGRAVITY.md
 
-# Claude Code worktrees and local agent state.
+# Local worktrees and tool state.
 .claude/
 .yarn/install-state.gz
