@@ -1,5 +1,19 @@
 'use strict';
 
+// Azure Monitor must start before any other require: the distro instruments modules by hooking
+// `require`, so anything loaded earlier (http, winston) reports nothing. Guarded on the connection
+// string so tests stay silent. Performance counters duplicate free platform metrics; winston
+// instrumentation is off by default and is what carries defaultLog into Application Insights.
+if (process.env.APPLICATIONINSIGHTS_CONNECTION_STRING) {
+  const { useAzureMonitor } = require('@azure/monitor-opentelemetry');
+  useAzureMonitor({
+    enablePerformanceCounters: false,
+    instrumentationOptions: {
+      winston: { enabled: true }
+    }
+  });
+}
+
 try {
   process.loadEnvFile();
 } catch (err) {
@@ -160,6 +174,8 @@ var controllerDirs = [
   path.join(__dirname, 'api/tasks')
 ];
 app.use('/api', createRouter(swaggerSpec, controllerDirs));
+
+app.use(require('./api/middleware/errorHandler'));
 
 // Make sure uploads directory exists
 try {

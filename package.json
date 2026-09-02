@@ -41,6 +41,7 @@
     "migrate": "node run_migration.js"
   },
   "dependencies": {
+    "@azure/monitor-opentelemetry": "^1.19.0",
     "agenda": "5.0.0",
     "clamscan": "^2.4.0",
     "csv": "~5.1.1",
