@@ -25,7 +25,7 @@ describe('DemiPush Helper', () => {
 
   beforeEach(() => {
     originalBase = process.env.DEMI_API_BASE;
-    originalKey = process.env.DEMI_API_KEY;
+    originalKey = process.env.DEMI_APIM_KEY;
     fetchStub = sinon.stub(global, 'fetch');
     errorStub = sinon.stub(defaultLog, 'error');
     warnStub = sinon.stub(defaultLog, 'warn');
@@ -34,7 +34,7 @@ describe('DemiPush Helper', () => {
   afterEach(() => {
     sinon.restore();
     if (originalBase === undefined) { delete process.env.DEMI_API_BASE; } else { process.env.DEMI_API_BASE = originalBase; }
-    if (originalKey === undefined) { delete process.env.DEMI_API_KEY; } else { process.env.DEMI_API_KEY = originalKey; }
+    if (originalKey === undefined) { delete process.env.DEMI_APIM_KEY; } else { process.env.DEMI_APIM_KEY = originalKey; }
   });
 
   describe('dark by default', () => {
@@ -56,22 +56,22 @@ describe('DemiPush Helper', () => {
       expect(fetchStub.called).to.be.false;
     });
 
-    it('should stay dark and warn once per process when DEMI_API_KEY is unset', async () => {
+    it('should stay dark and warn once per process when DEMI_APIM_KEY is unset', async () => {
       process.env.DEMI_API_BASE = BASE;
-      delete process.env.DEMI_API_KEY;
+      delete process.env.DEMI_APIM_KEY;
 
       await demiPush.project({ _id: 'p1' });
       await demiPush.project({ _id: 'p2' });
 
       expect(fetchStub.called).to.be.false;
-      expect(warnStub.calledOnceWith('[demiPush] DEMI_API_KEY unset — pushes disabled')).to.be.true;
+      expect(warnStub.calledOnceWith('[demiPush] DEMI_APIM_KEY unset — pushes disabled')).to.be.true;
     });
   });
 
   describe('when DEMI_API_BASE is set', () => {
     beforeEach(() => {
       process.env.DEMI_API_BASE = BASE;
-      process.env.DEMI_API_KEY = 'test-key';
+      process.env.DEMI_APIM_KEY = 'test-key';
     });
 
     it('should PUT to the APIM eagle project route with the subscription key', async () => {

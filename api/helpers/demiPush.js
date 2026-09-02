@@ -6,7 +6,7 @@ const defaultLog = require('winston').loggers.get('default');
 const client = require('./pushClient')({
   name: 'demiPush',
   baseEnv: 'DEMI_API_BASE',
-  keyEnv: 'DEMI_API_KEY',
+  keyEnv: 'DEMI_APIM_KEY',
   keyHeader: 'Ocp-Apim-Subscription-Key',
   method: 'PUT'
 });
