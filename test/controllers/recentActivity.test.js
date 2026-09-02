@@ -26,6 +26,8 @@ describe('RecentActivity Controller - notify', () => {
   let model;
   let publishedStub;
   let cancelledStub;
+  let originalBase;
+  let originalKey;
 
   // Enough of a Mongoose filter to exercise the claim: equality plus $ne.
   function matches(doc, filter) {
@@ -110,6 +112,11 @@ describe('RecentActivity Controller - notify', () => {
   }
 
   beforeEach(() => {
+    originalBase = process.env.NOTIFY_API_BASE;
+    originalKey = process.env.NOTIFY_API_KEY;
+    process.env.NOTIFY_API_BASE = 'https://eagle-notify-test.example';
+    process.env.NOTIFY_API_KEY = 'test-key';
+
     res = { status: sinon.stub().returnsThis(), json: sinon.stub() };
     model = createModel();
 
@@ -127,7 +134,26 @@ describe('RecentActivity Controller - notify', () => {
     sinon.stub(defaultLog, 'error');
   });
 
-  afterEach(() => sinon.restore());
+  afterEach(() => {
+    sinon.restore();
+    if (originalBase === undefined) { delete process.env.NOTIFY_API_BASE; } else { process.env.NOTIFY_API_BASE = originalBase; }
+    if (originalKey === undefined) { delete process.env.NOTIFY_API_KEY; } else { process.env.NOTIFY_API_KEY = originalKey; }
+  });
+
+  // Dark must not claim: an Update published before the integration is switched on stays mailable.
+  describe('when NOTIFY_API_BASE is unset', () => {
+    it('neither pushes nor stamps notifiedAt on an active Update', async () => {
+      publishedStub.restore();
+      delete process.env.NOTIFY_API_BASE;
+      const fetchStub = sinon.stub(global, 'fetch');
+
+      await recentActivity.protectedPut(putArgs(true), res);
+
+      expect(fetchStub.called).to.be.false;
+      expect(stored.notifiedAt).to.be.null;
+      expect(res.status.calledWith(200)).to.be.true;
+    });
+  });
 
   describe('protectedPut', () => {
     it('pushes once when two PUTs leave the same Update active', async () => {
@@ -185,23 +211,12 @@ describe('RecentActivity Controller - notify', () => {
   // Real notifyPush over a stubbed fetch: the claim must survive a send and not a failure.
   describe('claim release on a failed push', () => {
     let fetchStub;
-    let originalBase;
-    let originalKey;
 
     const flush = () => new Promise(resolve => setImmediate(resolve));
 
     beforeEach(() => {
       publishedStub.restore();
-      originalBase = process.env.NOTIFY_API_BASE;
-      originalKey = process.env.NOTIFY_API_KEY;
-      process.env.NOTIFY_API_BASE = 'https://eagle-notify-test.example';
-      process.env.NOTIFY_API_KEY = 'test-key';
       fetchStub = sinon.stub(global, 'fetch');
-    });
-
-    afterEach(() => {
-      if (originalBase === undefined) { delete process.env.NOTIFY_API_BASE; } else { process.env.NOTIFY_API_BASE = originalBase; }
-      if (originalKey === undefined) { delete process.env.NOTIFY_API_KEY; } else { process.env.NOTIFY_API_KEY = originalKey; }
     });
 
     it('releases the claim when both push attempts fail', async () => {

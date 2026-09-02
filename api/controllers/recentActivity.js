@@ -12,7 +12,8 @@ exports.protectedOptions = function (args, res) {
 // Claims the Update for one mailout, or releases the claim when it is unpublished.
 // Never rethrows: a notify failure must not fail the write that triggered it.
 async function notifyForUpdate(RecentActivity, rec) {
-  if (!rec || !rec._id) {
+  // Never claim while dark, or Updates published before the integration is switched on could never be pushed
+  if (!notifyPush.configured() || !rec || !rec._id) {
     return;
   }
   try {
