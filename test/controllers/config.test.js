@@ -69,6 +69,7 @@ describe('Config Controller', () => {
       _id: 'abc123',
       ENVIRONMENT: 'test',
       MONGODB_PASSWORD: 'hunter2',   // an operator pasting a secret into the collection
+      NOTIFY_API_KEY: 'sekrit',      // a near-miss on an allowlisted key is still not allowlisted
       API_LOCATION: 'https://example.com',
       KEYCLOAK_CLIENT_ID: 'eagle-api-console'
     });
@@ -77,6 +78,7 @@ describe('Config Controller', () => {
     await configController.publicGet({}, res);
 
     expect(res.body).to.not.have.property('MONGODB_PASSWORD');
+    expect(res.body).to.not.have.property('NOTIFY_API_KEY');
     expect(res.body).to.not.have.property('_id');
     expect(res.body).to.not.have.property('_schemaName');
     // Both are ConfigMap keys we deliberately stopped serving.
@@ -135,6 +137,36 @@ describe('Config Controller', () => {
     await configController.publicGet({}, res);
 
     expect(res.body).to.not.have.property('CONTENT_SEARCH');
+  });
+
+  it('serves NOTIFY_URL when the row sets it', async () => {
+    stubConfigModel({
+      _schemaName: 'Config',
+      ENVIRONMENT: 'test',
+      NOTIFY_URL: 'https://notifywebtestvymaysch2ag.z9.web.core.windows.net'
+    });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.have.property(
+      'NOTIFY_URL', 'https://notifywebtestvymaysch2ag.z9.web.core.windows.net');
+  });
+
+  it('serves NOTIFY_URL as empty when the row has none', async () => {
+    // Empty is the off switch in eagle-public, so an un-migrated environment must answer with ''
+    // rather than omit the key.
+    require('../../api/helpers/models/config');
+    const Config = mongoose.model('Config');
+    const partial = Config.hydrate({ _schemaName: 'Config', ENVIRONMENT: 'test' });
+    sinon.stub(mongoose, 'model').withArgs('Config').returns({
+      findOne: () => Promise.resolve(partial)
+    });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.have.property('NOTIFY_URL', '');
   });
 
   it('404s when the document is missing rather than serving an empty config', async () => {

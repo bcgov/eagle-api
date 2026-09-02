@@ -46,6 +46,9 @@ module.exports = require('../models')('Config', {
   SURVEY_URL                  : { type: String, default: null },
   SHOW_SURVEY_BANNER          : { type: Boolean, default: false },
 
+  // Base URL of the eagle-notify subscription site. Empty means the feature is off in eagle-public.
+  NOTIFY_URL                  : { type: String, default: '' },
+
   // Tells the frontends to show the access curtain. The password itself is never served here —
   // POST /api/public/gate checks it server-side.
   ACCESS_GATE                 : { type: Boolean, default: false }
