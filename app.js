@@ -1,5 +1,14 @@
 'use strict';
 
+// loadEnvFile is a Node builtin, not a require, so it runs before the Azure Monitor guard below
+// without breaking the require-hook order that guard depends on. Must run first so a connection
+// string set only in a local .env is visible to that guard.
+try {
+  process.loadEnvFile();
+} catch (err) {
+  // Silent fallback: use system environment variables (e.g. in container environments)
+}
+
 // Azure Monitor must start before any other require: the distro instruments modules by hooking
 // `require`, so anything loaded earlier (http, winston) reports nothing. Guarded on the connection
 // string so tests stay silent. Performance counters duplicate free platform metrics; winston
@@ -12,12 +21,6 @@ if (process.env.APPLICATIONINSIGHTS_CONNECTION_STRING) {
       winston: { enabled: true }
     }
   });
-}
-
-try {
-  process.loadEnvFile();
-} catch (err) {
-  // Silent fallback: use system environment variables (e.g. in container environments)
 }
 
 var express          = require('express');

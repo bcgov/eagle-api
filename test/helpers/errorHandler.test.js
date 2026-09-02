@@ -41,7 +41,8 @@ describe('app error handler', () => {
     expect(res.status).to.equal(500);
     expect(res.body).to.deep.equal({ message: 'Internal server error' });
     expect(errorStub.calledOnce).to.be.true;
-    expect(errorStub.firstCall.args[0].message).to.equal('kaboom');
+    expect(errorStub.firstCall.args[0]).to.equal('GET /boom');
+    expect(errorStub.firstCall.args[1].message).to.equal('kaboom');
   });
 
   it('keeps a 400 from err.status and answers with the error message, logged at warn', async () => {
@@ -53,6 +54,8 @@ describe('app error handler', () => {
     expect(res.status).to.equal(400);
     expect(res.body).to.deep.equal({ message: 'Unexpected end of JSON input' });
     expect(warnStub.calledOnce).to.be.true;
+    expect(warnStub.firstCall.args[0]).to.equal('GET /boom 400');
+    expect(warnStub.firstCall.args[1]).to.equal(err);
     expect(errorStub.called).to.be.false;
   });
 
@@ -65,19 +68,24 @@ describe('app error handler', () => {
     expect(res.status).to.equal(413);
     expect(res.body).to.deep.equal({ message: 'request entity too large' });
     expect(warnStub.calledOnce).to.be.true;
+    expect(warnStub.firstCall.args[0]).to.equal('GET /boom 413');
+    expect(warnStub.firstCall.args[1]).to.equal(err);
     expect(errorStub.called).to.be.false;
   });
 
   it('delegates instead of writing a second response once headers are sent', () => {
     const err = new Error('too late');
+    const req = { method: 'GET', originalUrl: '/boom' };
     const res = { headersSent: true, status: sinon.spy(), json: sinon.spy() };
     const next = sinon.spy();
 
-    errorHandler(err, {}, res, next);
+    errorHandler(err, req, res, next);
 
     expect(next.calledOnceWithExactly(err)).to.be.true;
     expect(res.status.called).to.be.false;
     expect(errorStub.calledOnce).to.be.true;
+    expect(errorStub.firstCall.args[0]).to.equal('GET /boom');
+    expect(errorStub.firstCall.args[1]).to.equal(err);
   });
 });
 

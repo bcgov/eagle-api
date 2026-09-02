@@ -10,9 +10,9 @@ module.exports = function errorHandler(err, req, res, next) {
   const status = err.status || err.statusCode || 500;
 
   if (status < 500) {
-    defaultLog.warn(err);
+    defaultLog.warn(`${req.method} ${req.originalUrl} ${status}`, err);
   } else {
-    defaultLog.error(err);
+    defaultLog.error(`${req.method} ${req.originalUrl}`, err);
   }
 
   if (res.headersSent) {
