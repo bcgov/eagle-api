@@ -161,11 +161,11 @@ spec:
                   name: {{ .Values.secrets.ches.name }}
                   key: {{ .Values.secrets.ches.clientSecretKey }}
             # DEMI push APIM subscription key — optional; pods start without the secret
-            - name: DEMI_API_KEY
+            - name: DEMI_APIM_KEY
               valueFrom:
                 secretKeyRef:
                   name: demi-push-secret
-                  key: DEMI_API_KEY
+                  key: DEMI_APIM_KEY
                   optional: true
             # eagle-notify push function key — optional; pods start without the secret
             - name: NOTIFY_API_KEY
