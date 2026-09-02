@@ -73,9 +73,6 @@ jobs:
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
-          # Re-pull the base tag every build: with the GHA layer cache alone, `apk upgrade` is
-          # reused indefinitely and fixed CVEs never reach the image.
-          pull: true
           push: false
           load: true
           tags: ${{ env.IMAGE_NAME }}:scan
@@ -112,9 +109,6 @@ jobs:
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
-          # Re-pull the base tag every build: with the GHA layer cache alone, `apk upgrade` is
-          # reused indefinitely and fixed CVEs never reach the image.
-          pull: true
           push: true
           tags: |
             ${{ secrets.OPENSHIFT_REPOSITORY }}/${{ env.OPENSHIFT_NAMESPACE_TOOLS }}/${{ env.IMAGE_NAME }}:dev
