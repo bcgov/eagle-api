@@ -124,6 +124,10 @@ definitions:
       ANALYTICS_TRAFFIC_TRACKING:
         type: boolean
         example: true
+      APPINSIGHTS_CONNECTION_STRING:
+        type: string
+        description: "Application Insights ingestion connection string for the browser SDK. Empty turns browser telemetry off."
+        example: ""
       SURVEY_URL:
         type: string
         example: null

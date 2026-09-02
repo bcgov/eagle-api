@@ -112,6 +112,35 @@ describe('Config Controller', () => {
     expect(res.body).to.have.property('ACCESS_GATE', true);
   });
 
+  it('serves APPINSIGHTS_CONNECTION_STRING when the row sets it', async () => {
+    stubConfigModel({
+      _schemaName: 'Config',
+      ENVIRONMENT: 'test',
+      APPINSIGHTS_CONNECTION_STRING: 'InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://example.in.applicationinsights.azure.com/'
+    });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body.APPINSIGHTS_CONNECTION_STRING).to.contain('IngestionEndpoint=');
+  });
+
+  it('serves an empty APPINSIGHTS_CONNECTION_STRING when the row has no opinion on it', async () => {
+    // Empty is the off switch: the SPAs skip loading the browser SDK, so the default must reach
+    // the payload as '' rather than going missing.
+    require('../../api/helpers/models/config');
+    const Config = mongoose.model('Config');
+    const partial = Config.hydrate({ _schemaName: 'Config', ENVIRONMENT: 'test' });
+    sinon.stub(mongoose, 'model').withArgs('Config').returns({
+      findOne: () => Promise.resolve(partial)
+    });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.have.property('APPINSIGHTS_CONNECTION_STRING', '');
+  });
+
   it('serves CONTENT_SEARCH when the row sets it true', async () => {
     stubConfigModel({ _schemaName: 'Config', ENVIRONMENT: 'test', CONTENT_SEARCH: true });
     const res = fakeRes();
