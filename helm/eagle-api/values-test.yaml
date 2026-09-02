@@ -32,7 +32,6 @@ env:
   CLAMAV_SERVICE_PORT: "3310"
   ENABLE_VIRUS_SCANNING: "true"
   UPLOAD_DIRECTORY: "/tmp/"
-  OTEL_SERVICE_NAME: "eagle-api"
 
 keycloak:
   url: "https://test.loginproxy.gov.bc.ca/auth"

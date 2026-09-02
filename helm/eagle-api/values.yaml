@@ -84,6 +84,10 @@ env:
   # Feature Flags
   ENABLE_VIRUS_SCANNING: "true"
 
+  # Application Insights role name; secretKeyRef for the connection string is wired in
+  # deployment.yaml for every environment, so this default must be too.
+  OTEL_SERVICE_NAME: "eagle-api"
+
   
   # External Services
   CHES_ENDPOINT: ""  # Set in values-{env}.yaml

@@ -43,6 +43,20 @@ describe('app error handler', () => {
     expect(errorStub.calledOnce).to.be.true;
     expect(errorStub.firstCall.args[0]).to.equal('GET /boom');
     expect(errorStub.firstCall.args[1].message).to.equal('kaboom');
+    expect(errorStub.firstCall.args[1]).to.not.have.property('body');
+  });
+
+  it('logs only message and stack, never the raw error (body-parser sets err.body)', async () => {
+    const err = new Error('Unexpected end of JSON input');
+    err.status = 400;
+    err.body = '{"password":"x"}';
+
+    await request(buildApp(err)).get('/boom');
+
+    expect(warnStub.calledOnce).to.be.true;
+    const meta = warnStub.firstCall.args[1];
+    expect(meta).to.deep.equal({ message: err.message, stack: err.stack });
+    expect(meta).to.not.have.property('body');
   });
 
   it('keeps a 400 from err.status and answers with the error message, logged at warn', async () => {
@@ -55,7 +69,7 @@ describe('app error handler', () => {
     expect(res.body).to.deep.equal({ message: 'Unexpected end of JSON input' });
     expect(warnStub.calledOnce).to.be.true;
     expect(warnStub.firstCall.args[0]).to.equal('GET /boom 400');
-    expect(warnStub.firstCall.args[1]).to.equal(err);
+    expect(warnStub.firstCall.args[1]).to.deep.equal({ message: err.message, stack: err.stack });
     expect(errorStub.called).to.be.false;
   });
 
@@ -69,7 +83,7 @@ describe('app error handler', () => {
     expect(res.body).to.deep.equal({ message: 'request entity too large' });
     expect(warnStub.calledOnce).to.be.true;
     expect(warnStub.firstCall.args[0]).to.equal('GET /boom 413');
-    expect(warnStub.firstCall.args[1]).to.equal(err);
+    expect(warnStub.firstCall.args[1]).to.deep.equal({ message: err.message, stack: err.stack });
     expect(errorStub.called).to.be.false;
   });
 
@@ -85,7 +99,7 @@ describe('app error handler', () => {
     expect(res.status.called).to.be.false;
     expect(errorStub.calledOnce).to.be.true;
     expect(errorStub.firstCall.args[0]).to.equal('GET /boom');
-    expect(errorStub.firstCall.args[1]).to.equal(err);
+    expect(errorStub.firstCall.args[1]).to.deep.equal({ message: err.message, stack: err.stack });
   });
 });
 
