@@ -12,8 +12,6 @@ on:
   push:
     branches:
       - develop
-    paths-ignore:
-      - "helm/eagle-api/README.md"
   workflow_dispatch:
 
 concurrency:
@@ -63,7 +61,7 @@ jobs:
 
       - name: Get short SHA
         id: short-sha
-        run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        run: echo "SHA=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0

@@ -146,7 +146,7 @@ jobs:
           if oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} get imagestreamtag ${{ env.IMAGE_NAME }}:${{ inputs.version }} &>/dev/null; then
             echo "Image tag ${{ inputs.version }} already exists - using existing image"
           else
-            SHA=$(git rev-parse --short HEAD)
+            SHA=$(git rev-parse --short=7 HEAD)
             if oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} get imagestreamtag ${{ env.IMAGE_NAME }}:$SHA &>/dev/null; then
               echo "Image tag ${{ inputs.version }} does not exist - tagging from commit $SHA"
               oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
