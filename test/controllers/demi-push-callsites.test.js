@@ -13,6 +13,7 @@ const MinioController = require('../../api/helpers/minio');
 const demiPush = require('../../api/helpers/demiPush');
 const documentController = require('../../api/controllers/document');
 const projectController = require('../../api/controllers/project');
+const recentActivityController = require('../../api/controllers/recentActivity');
 
 const OID = '5f4c7d1e2b3a4c5d6e7f8091';
 const p = value => ({ value });
@@ -34,6 +35,15 @@ const projArgs = () => {
   return { swagger: { params: { projId: p(OID), project: p(obj), ProjObject: p(obj), auth_payload: auth } } };
 };
 
+const raObj = () => ({ active: true, headline: 'Decision issued', type: 'News', project: OID });
+
+const raArgs = () => ({
+  swagger: {
+    operation: { 'x-security-scopes': ['sysadmin'] },
+    params: { recentActivityId: p(OID), recentActivity: p(raObj()), RecentActivityObject: p(raObj()), auth_payload: auth }
+  }
+});
+
 describe('DEMI push call sites', () => {
   let res, saved, models;
 
@@ -46,13 +56,15 @@ describe('DEMI push call sites', () => {
     M.findOneAndUpdate = sinon.stub().resolves(saved);
     M.countDocuments = sinon.stub().resolves(0);
     M.updateOne = sinon.stub().resolves({});
+    M.find = sinon.stub().returns({ lean: () => Promise.resolve([{ _id: OID, active: true }]) });
+    M.deleteMany = sinon.stub().resolves({ deletedCount: 1 });
     return M;
   }
 
   beforeEach(() => {
     res = { status: sinon.stub().returnsThis(), json: sinon.stub() };
     saved = { _id: OID, name: 'saved' };
-    models = { Document: model(), Project: model(), Comment: model(), List: model() };
+    models = { Document: model(), Project: model(), Comment: model(), List: model(), RecentActivity: model() };
 
     sinon.stub(mongoose, 'model').callsFake(name => models[name] || model());
     sinon.stub(Utils, 'recordAction').resolves();
@@ -64,6 +76,7 @@ describe('DEMI push call sites', () => {
     sinon.stub(fs, 'unlinkSync');
     sinon.stub(demiPush, 'document').resolves();
     sinon.stub(demiPush, 'project').resolves();
+    sinon.stub(demiPush, 'recentActivity').resolves();
   });
 
   afterEach(() => sinon.restore());
@@ -79,7 +92,9 @@ describe('DEMI push call sites', () => {
     ['project', projectController, 'protectedPost', projArgs],
     ['project', projectController, 'protectedPut', projArgs],
     ['project', projectController, 'protectedPublish', projArgs],
-    ['project', projectController, 'protectedUnPublish', projArgs]
+    ['project', projectController, 'protectedUnPublish', projArgs],
+    ['recentActivity', recentActivityController, 'protectedPost', raArgs],
+    ['recentActivity', recentActivityController, 'protectedPut', raArgs]
   ].forEach(([kind, ctrl, handler, args]) => {
     it(`${kind}.${handler} pushes the saved ${kind} to DEMI and returns 200`, async () => {
       await ctrl[handler](args(), res);
@@ -103,6 +118,13 @@ describe('DEMI push call sites', () => {
 
     expect(res.status.calledWith(404)).to.be.true;
     expect(demiPush.document.called).to.be.false;
+  });
+
+  it('recentActivity.protectedDelete mirrors each doomed Update as inactive', async () => {
+    await recentActivityController.protectedDelete(raArgs(), res);
+
+    expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+    expect(demiPush.recentActivity.calledOnceWithExactly({ _id: OID, active: false })).to.be.true;
   });
 
   it('project.protectedPublish does not push when the project is missing', async () => {
