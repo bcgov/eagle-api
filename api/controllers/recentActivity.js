@@ -2,11 +2,50 @@ var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
+var notifyPush = require('../helpers/notifyPush');
 
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
 };
+
+// Claims the Update for one mailout, or releases the claim when it is unpublished.
+// Never rethrows: a notify failure must not fail the write that triggered it.
+async function notifyForUpdate(RecentActivity, rec) {
+  if (!rec || !rec._id) {
+    return;
+  }
+  try {
+    if (rec.active === true) {
+      const claimed = await RecentActivity.findOneAndUpdate(
+        { _id: rec._id, active: true, notifiedAt: null },
+        { $set: { notifiedAt: new Date() } },
+        { new: true });
+      if (claimed) {
+        const project = claimed.project
+          ? await mongoose.model('Project').findOne({ _id: claimed.project }, 'name').lean()
+          : null;
+        // Not awaited: releasing a failed claim lets the next edit or republish mail it
+        notifyPush.updatePublished(claimed, project)
+          .then(ok => ok ? null : RecentActivity.findOneAndUpdate(
+            { _id: claimed._id, notifiedAt: { $ne: null } },
+            { $set: { notifiedAt: null } }))
+          .catch(e => defaultLog.error(`Error releasing notify claim on RecentActivity ${claimed._id}: ${e.message}`));
+      }
+      return;
+    }
+
+    const cleared = await RecentActivity.findOneAndUpdate(
+      { _id: rec._id, notifiedAt: { $ne: null } },
+      { $set: { notifiedAt: null } },
+      { new: true });
+    if (cleared) {
+      notifyPush.updateCancelled(cleared);
+    }
+  } catch (e) {
+    defaultLog.error(`Error notifying on RecentActivity ${rec._id}: ${e.message}`);
+  }
+}
 
 exports.publicGet = async function (args, res) {
   try {
@@ -115,7 +154,9 @@ exports.protectedDelete = async function (args, res) {
 
   // Straight delete, don't isDelete=true them.
   try {
+    const doomed = await RecentActivity.find(query, '_id project headline active notifiedAt').lean();
     const data = await RecentActivity.deleteMany(query);
+    (doomed || []).filter(d => d.active === true).forEach(d => notifyPush.updateCancelled(d));
     Utils.recordAction('Delete', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, args.swagger.params.recentActivityId ? args.swagger.params.recentActivityId.value : null);
     return Actions.sendResponse(res, 200, data);
   } catch (err) {
@@ -130,6 +171,7 @@ exports.protectedPost = async function (args, res) {
 
   var RecentActivity = mongoose.model('RecentActivity');
   delete obj._id;
+  delete obj.notifiedAt;
   var recentActivity = new RecentActivity(obj);
   // Define security tag defaults.  Default public and sysadmin.
 
@@ -151,6 +193,7 @@ exports.protectedPost = async function (args, res) {
   try {
     var rec = await recentActivity.save();
     Utils.recordAction('Post', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, rec._id);
+    await notifyForUpdate(RecentActivity, rec);
     defaultLog.info('Saved new RecentActivity object:', rec);
     return Actions.sendResponse(res, 200, rec);
   } catch (e) {
@@ -167,6 +210,8 @@ exports.protectedPut = async function (args, res) {
   var obj = args.swagger.params.RecentActivityObject.value;
   // Strip security tags - these will not be updated on this route.
   defaultLog.info('Incoming updated object:', obj);
+  // Server-owned: a client echoing a stale value would release the mailout claim
+  delete obj.notifiedAt;
   // Normalize active — defend against frontend boolean coercion bugs (false → null)
   obj.active = obj.active === true;
   if (obj.active) {
@@ -189,6 +234,7 @@ exports.protectedPut = async function (args, res) {
 
     var rec = await RecentActivity.findOneAndUpdate({ _id: objId }, obj, { upsert: false, returnDocument: 'after' });
     Utils.recordAction('Put', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, rec._id);
+    await notifyForUpdate(RecentActivity, rec);
     defaultLog.info('Updated RecentActivity object:', rec._id);
     return Actions.sendResponse(res, 200, rec);
   } catch (e) {

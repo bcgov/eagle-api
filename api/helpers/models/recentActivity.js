@@ -16,6 +16,7 @@ module.exports = require ('../models')('RecentActivity', {
   content                   : { type: String, default: null },
   headline                  : { type: String, default: null },
   complianceAndEnforcement  : { type: Boolean, default: false },
+  notifiedAt                : { type: Date, default: null },
 
 
   // Permissions
