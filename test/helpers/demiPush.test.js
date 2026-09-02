@@ -50,6 +50,12 @@ describe('DemiPush Helper', () => {
       expect(fetchStub.called).to.be.false;
     });
 
+    it('should not call fetch for Updates when DEMI_API_BASE is unset', async () => {
+      delete process.env.DEMI_API_BASE;
+      await demiPush.recentActivity({ _id: 'u1' });
+      expect(fetchStub.called).to.be.false;
+    });
+
     it('should stay dark and warn once per process when DEMI_API_KEY is unset', async () => {
       process.env.DEMI_API_BASE = BASE;
       delete process.env.DEMI_API_KEY;
@@ -110,6 +116,18 @@ describe('DemiPush Helper', () => {
 
       expect(fetchStub.callCount).to.equal(1);
       expect(errorStub.calledOnceWith('[demiPush] projects p1 rejected 404')).to.be.true;
+    });
+
+    it('should PUT an Update to the APIM eagle updates route', async () => {
+      fetchStub.resolves(okResponse());
+      await demiPush.recentActivity({ _id: 'u1', headline: 'Decision issued', active: true });
+
+      expect(fetchStub.calledOnce).to.be.true;
+      const [url, options] = fetchStub.firstCall.args;
+      expect(url).to.equal(`${BASE}/eagle/updates/u1`);
+      expect(options.method).to.equal('PUT');
+      expect(JSON.parse(options.body)).to.deep.equal({ doc: { _id: 'u1', headline: 'Decision issued', active: true } });
+      expect(errorStub.called).to.be.false;
     });
 
     it('should carry resolved List labels in the document body', async () => {

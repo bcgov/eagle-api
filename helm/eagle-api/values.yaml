@@ -89,8 +89,6 @@ env:
   CHES_ENDPOINT: ""  # Set in values-{env}.yaml
   GETOK_ENDPOINT: ""  # Set in values-{env}.yaml
 
-  # eagle-notify push. Empty keeps it dark; set per-env with the notify-push-secret secret.
-  NOTIFY_API_BASE: ""
 
 # Secret references (existing OpenShift secrets)
 secrets:

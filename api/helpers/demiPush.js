@@ -55,3 +55,7 @@ exports.document = async function (doc) {
     defaultLog.error('[demiPush] document push failed', { error: err.message, stack: err.stack });
   }
 };
+
+exports.recentActivity = function (doc) {
+  return doc && doc._id ? push('updates', doc._id, { doc }) : Promise.resolve();
+};
