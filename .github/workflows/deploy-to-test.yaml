@@ -146,9 +146,15 @@ jobs:
           if oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} get imagestreamtag ${{ env.IMAGE_NAME }}:${{ inputs.version }} &>/dev/null; then
             echo "Image tag ${{ inputs.version }} already exists - using existing image"
           else
-            echo "Image tag ${{ inputs.version }} does not exist - tagging from ci-latest"
-            oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
-              ${{ env.IMAGE_NAME }}:ci-latest ${{ env.IMAGE_NAME }}:${{ inputs.version }}
+            SHA=$(git rev-parse --short=7 HEAD)
+            if oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} get imagestreamtag ${{ env.IMAGE_NAME }}:$SHA &>/dev/null; then
+              echo "Image tag ${{ inputs.version }} does not exist - tagging from commit $SHA"
+              oc -n ${{ env.OPENSHIFT_NAMESPACE_TOOLS }} tag \
+                ${{ env.IMAGE_NAME }}:$SHA ${{ env.IMAGE_NAME }}:${{ inputs.version }}
+            else
+              echo "Image for ${{ inputs.version }} (${{ env.IMAGE_NAME }}:$SHA) not built yet — wait for the Deploy to Dev run of that commit, then re-run"
+              exit 1
+            fi
           fi
 
       - name: Tag version as test
