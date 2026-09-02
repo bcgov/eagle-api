@@ -94,10 +94,7 @@ env:
   GETOK_ENDPOINT: ""  # Set in values-{env}.yaml
 
 
-# Secret references (existing OpenShift secrets)
-# Not listed here, hardcoded in deployment.yaml because they are the same in every environment
-# and optional: demi-push-secret/DEMI_APIM_KEY, and
-# eagle-api-appinsights/APPLICATIONINSIGHTS_CONNECTION_STRING (created by hand per environment;
+# Optional per-environment secrets (eagle-api-appinsights, demi-push-secret) are wired in deployment.yaml.
 # unset means Azure Monitor stays off).
 secrets:
   mongodb:
