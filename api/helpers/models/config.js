@@ -42,6 +42,9 @@ module.exports = require('../models')('Config', {
   ANALYTICS_DEBUG             : { type: Boolean, default: false },
   ANALYTICS_ENHANCED_TRACKING : { type: Boolean, default: true },
   ANALYTICS_TRAFFIC_TRACKING  : { type: Boolean, default: true },
+  // The exception to the secret rule above: an Application Insights ingestion connection string is
+  // public by design (it ships in the SPA bundle), and junk telemetry is capped by the daily limit.
+  APPINSIGHTS_CONNECTION_STRING: { type: String, default: '' },
 
   SURVEY_URL                  : { type: String, default: null },
   SHOW_SURVEY_BANNER          : { type: Boolean, default: false },
