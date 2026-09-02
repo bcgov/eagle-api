@@ -134,6 +134,10 @@ definitions:
         type: boolean
         description: "True means the frontend shows the access curtain; the password is checked by POST /public/gate."
         example: false
+      NOTIFY_URL:
+        type: string
+        description: "Base URL of the eagle-notify subscription site. Empty hides the subscribe links in eagle-public."
+        example: ""
 
   Authentication:
     type: object
