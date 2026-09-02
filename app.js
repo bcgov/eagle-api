@@ -1,9 +1,21 @@
 'use strict';
 
+// Node builtin (not a require) so it runs before the Azure Monitor require-hook guard below.
 try {
   process.loadEnvFile();
 } catch (err) {
   // Silent fallback: use system environment variables (e.g. in container environments)
+}
+
+// Must start before any other require (it instruments via require hooks); guarded so tests stay silent.
+if (process.env.APPLICATIONINSIGHTS_CONNECTION_STRING) {
+  const { useAzureMonitor } = require('@azure/monitor-opentelemetry');
+  useAzureMonitor({
+    enablePerformanceCounters: false,
+    instrumentationOptions: {
+      winston: { enabled: true }
+    }
+  });
 }
 
 var express          = require('express');
@@ -160,6 +172,8 @@ var controllerDirs = [
   path.join(__dirname, 'api/tasks')
 ];
 app.use('/api', createRouter(swaggerSpec, controllerDirs));
+
+app.use(require('./api/middleware/errorHandler'));
 
 // Make sure uploads directory exists
 try {

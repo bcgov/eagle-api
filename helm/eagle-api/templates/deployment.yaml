@@ -167,6 +167,13 @@ spec:
                   name: demi-push-secret
                   key: DEMI_APIM_KEY
                   optional: true
+            # Application Insights connection string — optional; pods start without the secret
+            - name: APPLICATIONINSIGHTS_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: eagle-api-appinsights
+                  key: APPLICATIONINSIGHTS_CONNECTION_STRING
+                  optional: true
             {{- if .Values.secrets.smokeApiKey }}
             # Smoke test API key — dev/test only, never set in prod
             - name: SMOKE_API_KEY

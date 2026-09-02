@@ -84,13 +84,18 @@ env:
   # Feature Flags
   ENABLE_VIRUS_SCANNING: "true"
 
+  # Application Insights role name; secretKeyRef for the connection string is wired in
+  # deployment.yaml for every environment, so this default must be too.
+  OTEL_SERVICE_NAME: "eagle-api"
+
   
   # External Services
   CHES_ENDPOINT: ""  # Set in values-{env}.yaml
   GETOK_ENDPOINT: ""  # Set in values-{env}.yaml
 
 
-# Secret references (existing OpenShift secrets)
+# Optional per-environment secrets (eagle-api-appinsights, demi-push-secret) are wired in deployment.yaml.
+# unset means Azure Monitor stays off).
 secrets:
   mongodb:
     name: eagle-api-mongodb
