@@ -74,6 +74,24 @@ describe('Config Controller', () => {
     expect(res.body).to.have.property('SURVEY_URL', null);
   });
 
+  it('serves DEMI_PROJECTS_PATH when the row sets it', async () => {
+    stubConfigModel({ _schemaName: 'Config', ENVIRONMENT: 'test', DEMI_PROJECTS_PATH: '/demi-projects' });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.have.property('DEMI_PROJECTS_PATH', '/demi-projects');
+  });
+
+  it('defaults DEMI_PROJECTS_PATH to an empty string when the row has no opinion on it', async () => {
+    stubHydratedConfig({ _schemaName: 'Config', ENVIRONMENT: 'test' });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.have.property('DEMI_PROJECTS_PATH', '');
+  });
+
   it('serves no key outside the public allowlist', async () => {
     stubConfigModel({
       _schemaName: 'Config',
