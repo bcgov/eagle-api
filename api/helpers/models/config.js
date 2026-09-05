@@ -30,6 +30,8 @@ module.exports = require('../models')('Config', {
   // Empty means "use eagle-api", and that is the kill switch — eagle-public's getSearchApiPath()
   // falls back to getApiPath() when this is blank, reverting search with no redeploy.
   SEARCH_API_PATH             : { type: String, default: '' },
+  // Same pattern as SEARCH_API_PATH: empty means "not configured", frontend falls back accordingly.
+  DEMI_PROJECTS_PATH          : { type: String, default: '' },
   ADMIN_PATH                  : { type: String, default: '/admin/' },
   // No default: absent unless a row sets it true. Gates eagle-public's Document Content tab.
   CONTENT_SEARCH              : { type: Boolean },

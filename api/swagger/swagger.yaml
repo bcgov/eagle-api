@@ -96,6 +96,9 @@ definitions:
       SEARCH_API_PATH:
         type: string
         example: "/eagle-search"
+      DEMI_PROJECTS_PATH:
+        type: string
+        example: ""
       ADMIN_PATH:
         type: string
         example: "/admin/"
