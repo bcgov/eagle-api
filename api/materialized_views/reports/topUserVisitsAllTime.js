@@ -20,38 +20,9 @@ async function update(defaultLog, afterTimestamp) {
             }
           },
           {
-            $or: [
-              {
-                action: {
-                  $eq: 'get'
-                }
-              },
-              {
-                action: {
-                  $eq: 'search'
-                }
-              },
-              {
-                action: {
-                  $eq: 'summary'
-                }
-              },
-              {
-                action: {
-                  $eq: 'Get'
-                }
-              },
-              {
-                action: {
-                  $eq: 'Search'
-                }
-              },
-              {
-                action: {
-                  $eq: 'Summary'
-                }
-              }
-            ]
+            action: {
+              $in: ['get', 'search', 'summary']
+            }
           }
         ]
       }

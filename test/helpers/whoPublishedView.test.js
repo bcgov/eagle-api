@@ -35,15 +35,20 @@ describe('whoPublishedUnpublishedAllUsers pipeline', () => {
   it('prefilters on every publish/unpublish spelling the code writes, so the index seeks', () => {
     const spellings = spellingsInSource();
     expect(spellings.length).to.be.greaterThan(1);
-    expect(spellings, 'DAOs must write Unpublish, not UnPublish').to.not.include('UnPublish');
     const first = pipeline[0].$match;
     expect(first.objId).to.deep.equal({ $ne: null });
-    expect(first.action.$in).to.include.members(spellings);
+    // Call sites may spell it Publish, publish or UnPublish; recordAction lowercases before the row
+    // is written, so what the prefilter must cover is the lowercased form of each.
+    expect(first.action.$in).to.include.members(spellings.map(s => s.toLowerCase()));
   });
 
-  it('keeps every spelling ever written, so old audit rows stay in the report', () => {
-    // documentDAO/pinDAO wrote UnPublish until this fix; prod data holds unPublish.
-    expect(pipeline[0].$match.action.$in).to.include.members(
-      ['Publish', 'publish', 'Unpublish', 'unpublish', 'unPublish', 'UnPublish']);
+  it('matches lowercase only, because recordAction lowercases action on write', () => {
+    expect(pipeline[0].$match.action.$in).to.deep.equal(['publish', 'unpublish']);
+  });
+
+  it('never lowercases at query time, so the {action, objId} index can seek', () => {
+    // A $toLower on action is not indexable and scanned 22M audit rows in prod. The invariant lives
+    // at the write point now; reintroducing it here would silently drop the index back to a scan.
+    expect(JSON.stringify(pipeline)).to.not.include('$toLower');
   });
 });

@@ -53,32 +53,7 @@ async function update(defaultLog) {
           },
           {
             action: {
-              $ne: 'get'
-            }
-          },
-          {
-            action: {
-              $ne: 'search'
-            }
-          },
-          {
-            action: {
-              $ne: 'summary'
-            }
-          },
-          {
-            action: {
-              $ne: 'Get'
-            }
-          },
-          {
-            action: {
-              $ne: 'Search'
-            }
-          },
-          {
-            action: {
-              $ne: 'Summary'
+              $nin: ['get', 'search', 'summary']
             }
           },
           {

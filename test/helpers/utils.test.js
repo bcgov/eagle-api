@@ -158,14 +158,23 @@ describe('Utils Helper Functions', () => {
   describe('recordAction', () => {
     let auditSaveStub;
     let AuditModel;
+    let auditDocs;
+
+    /** The doc recordAction handed the Audit constructor. */
+    const storedAudit = () => {
+      expect(auditDocs.length, 'expected exactly one audit doc').to.equal(1);
+      return auditDocs[0];
+    };
 
     beforeEach(() => {
+      auditDocs = [];
       // Create a mock Audit model
       AuditModel = function(data) {
+        auditDocs.push(data);
         this.data = data;
         this.save = auditSaveStub;
       };
-      
+
       auditSaveStub = sinon.stub().resolves({ _id: 'saved-audit-id' });
       sinon.stub(mongoose, 'model').returns(AuditModel);
       sinon.stub(analytics, 'auditEvent');
@@ -221,13 +230,46 @@ describe('Utils Helper Functions', () => {
 
       expect(analytics.auditEvent.calledOnce).to.be.true;
       expect(analytics.auditEvent.firstCall.args[0]).to.include({
-        action: 'Publish',
+        action: 'publish',
         targetType: 'Project',
         targetId: 'obj-123',
         actorId: 'kc-1',
         actorName: 'tester',
         actorType: 'staff'
       });
+    });
+
+    it('should store the action lowercased, so report buckets do not split on casing', async () => {
+      await utils.recordAction('Put', 'Document', 'tester', 'obj-123');
+
+      expect(storedAudit().action).to.equal('put');
+    });
+
+    it('should lowercase every casing a call site uses into one stored value', async () => {
+      // documentDAO writes 'put', every other document call site writes 'Put'; both must land as one
+      // bucket. UnPublish is the spelling pinDAO used to write.
+      for (const spelling of ['Put', 'put', 'UnPublish', 'Unpublish', 'SEARCH']) {
+        auditDocs = [];
+        await utils.recordAction(spelling, 'Document', 'tester', 'obj-123');
+        expect(storedAudit().action, `${spelling} should store lowercased`).to.equal(spelling.toLowerCase());
+      }
+    });
+
+    it('should send the analytics trail the same lowercased action as Mongo', async () => {
+      const args = { swagger: { params: { auth_payload: { preferred_username: 'tester', realm_access: { roles: ['sysadmin'] } } } } };
+
+      await utils.recordAction('Unpublish', 'Project', 'tester', 'obj-123', args);
+
+      expect(storedAudit().action).to.equal('unpublish');
+      expect(analytics.auditEvent.firstCall.args[0].action).to.equal('unpublish');
+    });
+
+    it('should leave a non-string action alone rather than throw', async () => {
+      // The post-save hook in helpers/models.js writes audit rows with no action at all.
+      await utils.recordAction(undefined, 'Document', 'tester', 'obj-123');
+
+      expect(storedAudit().action).to.equal(undefined);
+      expect(auditSaveStub.calledOnce).to.be.true;
     });
 
     it('should pass a projectId through to the analytics row when given one', async () => {

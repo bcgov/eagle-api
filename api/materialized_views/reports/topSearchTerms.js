@@ -5,7 +5,7 @@ async function update(defaultLog, afterTimestamp) {
   const queryAggregates = [
     {
       $match: {
-        "action": { $eq: "Search" },
+        "action": { $eq: "search" },
         "timestamp": { $gt: new Date(afterTimestamp) }
       }
     },

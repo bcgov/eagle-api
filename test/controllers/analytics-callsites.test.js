@@ -148,7 +148,8 @@ describe('Analytics call sites', () => {
       expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
       const row = auditRow();
       expect(row).to.include({
-        action: action,
+        // The table names the verb the handler performs; recordAction lowercases it on the way out.
+        action: action.toLowerCase(),
         targetType: targetType,
         targetId: OID,
         actorId: 'kc-1',
