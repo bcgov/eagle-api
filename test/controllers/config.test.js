@@ -92,6 +92,32 @@ describe('Config Controller', () => {
     expect(res.body).to.have.property('DEMI_PROJECTS_PATH', '');
   });
 
+  it('serves EAGLE_ANALYTICS_URL alongside ANALYTICS_API_URL', async () => {
+    // Both are served at once during the dual-write week; neither may displace the other.
+    stubConfigModel({
+      _schemaName: 'Config',
+      ENVIRONMENT: 'test',
+      ANALYTICS_API_URL: '/analytics',
+      EAGLE_ANALYTICS_URL: 'https://demi-apim-test.azure-api.net/analytics'
+    });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.have.property('ANALYTICS_API_URL', '/analytics');
+    expect(res.body).to.have.property('EAGLE_ANALYTICS_URL', 'https://demi-apim-test.azure-api.net/analytics');
+  });
+
+  it('defaults EAGLE_ANALYTICS_URL to an empty string when the row has no opinion on it', async () => {
+    // Empty is the off switch for the new client, so it must reach the payload rather than go missing.
+    stubHydratedConfig({ _schemaName: 'Config', ENVIRONMENT: 'test' });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.have.property('EAGLE_ANALYTICS_URL', '');
+  });
+
   it('serves no key outside the public allowlist', async () => {
     stubConfigModel({
       _schemaName: 'Config',

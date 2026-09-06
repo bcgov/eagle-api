@@ -118,6 +118,10 @@ definitions:
       ANALYTICS_API_URL:
         type: string
         example: "/analytics"
+      EAGLE_ANALYTICS_URL:
+        type: string
+        description: "Base URL of the eagle-analytics ingest gateway for browser clients. Empty turns the client off."
+        example: "https://demi-apim-test.azure-api.net/analytics"
       ANALYTICS_DEBUG:
         type: boolean
         example: false
