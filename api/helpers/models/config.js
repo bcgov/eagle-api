@@ -41,6 +41,9 @@ module.exports = require('../models')('Config', {
   KEYCLOAK_ENABLED            : { type: Boolean, default: true },
 
   ANALYTICS_API_URL           : { type: String, default: '/analytics' },
+  // Absolute base URL of the eagle-analytics ingest gateway for browser clients. Empty keeps the
+  // new client off, so it runs beside ANALYTICS_API_URL (penguin) during the dual-write week.
+  EAGLE_ANALYTICS_URL         : { type: String, default: '' },
   ANALYTICS_DEBUG             : { type: Boolean, default: false },
   ANALYTICS_ENHANCED_TRACKING : { type: Boolean, default: true },
   ANALYTICS_TRAFFIC_TRACKING  : { type: Boolean, default: true },
