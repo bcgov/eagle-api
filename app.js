@@ -31,6 +31,7 @@ var createRouter     = require('./api/middleware/swagger-router');
 var swaggerSpec      = YAML.load(fs.readFileSync('./api/swagger/swagger.yaml', 'utf8'));
 const rateLimit      = require('express-rate-limit');
 const rateLimitKey   = require('./api/helpers/rateLimitKey');
+const analytics      = require('./api/helpers/analytics');
 
 var api_default_port = 3000;
 
@@ -216,15 +217,26 @@ process.on('unhandledRejection', function(reason) {
   defaultLog.error('Unhandled Rejection:', reason);
 });
 
-function shutdown() {
+// How long shutdown waits on the buffered analytics rows. Short: losing them costs a few rows, and
+// the wait is also the head start jobQueue's own SIGTERM listener gets before this exits.
+const ANALYTICS_DRAIN_MS = 3000;
+
+async function shutdown() {
+  const drained = analytics.flush().catch(err => defaultLog.error('[analytics] shutdown flush failed', { error: err.message }));
+  await Promise.race([drained, new Promise(resolve => setTimeout(resolve, ANALYTICS_DRAIN_MS).unref())]);
+
   if (express_server) {
-    console.log('Shutting down gracefully');
+    defaultLog.info('Shutting down gracefully');
     express_server.close(() => {
-      console.log('Closed out remaining connections');
+      defaultLog.info('Closed out remaining connections');
       process.exit(0);
     });
   }
 }
+
+// Nothing else called shutdown(). jobQueue registers a SIGTERM listener of its own and Node runs
+// both; the drain above is what keeps this from exiting out from under it.
+process.once('SIGTERM', shutdown);
 
 module.exports = app;
 exports.shutdown = shutdown;

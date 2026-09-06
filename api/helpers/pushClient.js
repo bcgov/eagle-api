@@ -5,15 +5,18 @@ const defaultLog = require('winston').loggers.get('default');
 const TIMEOUT_MS = 10000;
 const ATTEMPTS = 2;
 
-// One outbound JSON push client per downstream service, gated on its own env pair.
+// One outbound JSON push client per downstream service, gated on the env vars it needs: baseEnv
+// names the base URL, and keyEnv the API key, which is left out for an endpoint that takes none.
 module.exports = function pushClient({ name, baseEnv, keyEnv, keyHeader, method }) {
   let keyWarned = false;
 
+  const base = () => process.env[baseEnv];
+
   function configured() {
-    if (!process.env[baseEnv]) {
+    if (!base()) {
       return false;
     }
-    if (!process.env[keyEnv]) {
+    if (keyEnv && !process.env[keyEnv]) {
       if (!keyWarned) {
         keyWarned = true;
         defaultLog.warn(`[${name}] ${keyEnv} unset — pushes disabled`);
@@ -29,7 +32,11 @@ module.exports = function pushClient({ name, baseEnv, keyEnv, keyHeader, method 
       return true;
     }
 
-    const url = `${process.env[baseEnv]}${path}`;
+    const url = `${base()}${path}`;
+    const headers = { 'Content-Type': 'application/json' };
+    if (keyEnv) {
+      headers[keyHeader] = process.env[keyEnv];
+    }
     let lastErr = null;
     let lastStatus = null;
 
@@ -38,10 +45,7 @@ module.exports = function pushClient({ name, baseEnv, keyEnv, keyHeader, method 
         const res = await fetch(url, {
           method: method,
           body: JSON.stringify(body),
-          headers: {
-            'Content-Type': 'application/json',
-            [keyHeader]: process.env[keyEnv]
-          },
+          headers: headers,
           signal: AbortSignal.timeout(TIMEOUT_MS)
         });
         if (res.ok) {

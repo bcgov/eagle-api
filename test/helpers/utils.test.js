@@ -8,6 +8,7 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 const mongoose = require('mongoose');
 const utils = require('../../api/helpers/utils');
+const analytics = require('../../api/helpers/analytics');
 
 describe('Utils Helper Functions', () => {
   
@@ -167,6 +168,7 @@ describe('Utils Helper Functions', () => {
       
       auditSaveStub = sinon.stub().resolves({ _id: 'saved-audit-id' });
       sinon.stub(mongoose, 'model').returns(AuditModel);
+      sinon.stub(analytics, 'auditEvent');
     });
 
     afterEach(() => {
@@ -201,6 +203,54 @@ describe('Utils Helper Functions', () => {
       
       await utils.recordAction(action, meta, payload, null);
       
+      expect(auditSaveStub.calledOnce).to.be.true;
+    });
+
+    it('should not reach the analytics audit trail when no args are passed', async () => {
+      // Read paths call recordAction without args; this is what keeps them out of the trail.
+      await utils.recordAction('Get', 'Project', 'tester', 'obj-123');
+
+      expect(auditSaveStub.calledOnce).to.be.true;
+      expect(analytics.auditEvent.called).to.be.false;
+    });
+
+    it('should emit an analytics audit row when args are passed', async () => {
+      const args = { swagger: { params: { auth_payload: { sub: 'kc-1', preferred_username: 'tester', realm_access: { roles: ['sysadmin'] } } } } };
+
+      await utils.recordAction('Publish', 'Project', 'tester', 'obj-123', args);
+
+      expect(analytics.auditEvent.calledOnce).to.be.true;
+      expect(analytics.auditEvent.firstCall.args[0]).to.include({
+        action: 'Publish',
+        targetType: 'Project',
+        targetId: 'obj-123',
+        actorId: 'kc-1',
+        actorName: 'tester',
+        actorType: 'staff'
+      });
+    });
+
+    it('should pass a projectId through to the analytics row when given one', async () => {
+      const args = { swagger: { params: { auth_payload: { preferred_username: 'tester', realm_access: { roles: ['sysadmin'] } } } } };
+
+      await utils.recordAction('Publish', 'Document', 'tester', 'doc-1', args, 'proj-1');
+
+      expect(analytics.auditEvent.firstCall.args[0].projectId).to.equal('proj-1');
+    });
+
+    it('should leave projectId off the row when none is given', async () => {
+      const args = { swagger: { params: { auth_payload: { preferred_username: 'tester', realm_access: { roles: ['sysadmin'] } } } } };
+
+      await utils.recordAction('Publish', 'Project', 'tester', 'proj-1', args);
+
+      expect(analytics.auditEvent.firstCall.args[0].projectId).to.equal(undefined);
+    });
+
+    it('should still record the Mongo audit when the analytics row cannot be built', async () => {
+      analytics.auditEvent.throws(new Error('boom'));
+
+      await utils.recordAction('Publish', 'Project', 'tester', 'obj-123', {});
+
       expect(auditSaveStub.calledOnce).to.be.true;
     });
   });

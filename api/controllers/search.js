@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 
 const Actions = require('../helpers/actions');
 const Utils = require('../helpers/utils');
+const analytics = require('../helpers/analytics');
 const constants = require('../helpers/constants').schemaTypes;
 
 const documentAggregator = require('../aggregators/documentAggregator');
@@ -316,6 +317,16 @@ const executeQuery = async function (args, res) {
 
   if (dataset !== constants.ITEM) {
     const collectionData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue, categorized, fuzzy);
+
+    // Only a keyword search counts: this endpoint also serves plain browse and filter requests, and
+    // those would drown the searches someone actually typed.
+    if (keywords) {
+      analytics.trackEvent(
+        'Search Executed',
+        { dataset: dataset, keywords: keywords, project_id: project ? String(project) : undefined },
+        { userId: isAuthenticated ? args.swagger.params.auth_payload.sub : undefined }
+      );
+    }
 
     // TODO: this should be moved into the aggregation.
     if (dataset === constants.COMMENT) {

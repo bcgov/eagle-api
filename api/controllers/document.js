@@ -9,6 +9,7 @@ const Actions         = require('../helpers/actions');
 const Utils           = require('../helpers/utils');
 const MinioController = require('../helpers/minio');
 const demiPush        = require('../helpers/demiPush');
+const analytics       = require('../helpers/analytics');
 
 const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING ? process.env.ENABLE_VIRUS_SCANNING.toLowerCase() == 'true' : false;
 
@@ -339,6 +340,7 @@ exports.publicDownload = function (args, res) {
               return Actions.sendResponse(res, 404, {});
             }
             Utils.recordAction('Download', 'Document', 'public', args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
+            analytics.trackEvent('Document Downloaded', { document_id: String(blob._id) });
             
             const allowedInlineMimes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
             let contentType = fileMeta.metaData['content-type'] || 'application/octet-stream';
@@ -419,6 +421,7 @@ exports.protectedDownload = function (args, res) {
               return Actions.sendResponse(res, 404, {});
             }
             Utils.recordAction('Download', 'Document', args.swagger.params.auth_payload.preferred_username, args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
+            analytics.trackEvent('Document Downloaded', { document_id: String(blob._id) }, { userId: args.swagger.params.auth_payload.sub });
             // stream file from Minio to client
             res.setHeader('Content-Length', fileMeta.size);
             res.setHeader('Content-Type', fileMeta.metaData['content-type']);
@@ -614,7 +617,7 @@ exports.protectedPost = async function (args, res) {
     try {
       var d = await doc.save();
       defaultLog.info('Saved new document object:', d._id);
-      Utils.recordAction('Post', 'Document', args.swagger.params.auth_payload.preferred_username, d._id);
+      Utils.recordAction('Post', 'Document', args.swagger.params.auth_payload.preferred_username, d._id, args, d.project);
       demiPush.document(d);
       return Actions.sendResponse(res, 200, d);
     } catch (saveError) {
@@ -649,7 +652,7 @@ exports.protectedPublish = async function (args, res) {
       defaultLog.info('Document:', document);
       document.eaoStatus = 'Published';
       var published = await Actions.publish(await document.save());
-      Utils.recordAction('Publish', 'Document', args.swagger.params.auth_payload.preferred_username, objId);
+      Utils.recordAction('Publish', 'Document', args.swagger.params.auth_payload.preferred_username, objId, args, document.project);
       demiPush.document(published);
       return Actions.sendResponse(res, 200, published);
     } else {
@@ -681,7 +684,7 @@ exports.protectedUnPublish = async function (args, res) {
       defaultLog.info('Document:', document);
       document.eaoStatus = 'Rejected';
       var unPublished = await Actions.unPublish(await document.save());
-      Utils.recordAction('Unpublish', 'Document', args.swagger.params.auth_payload.preferred_username, objId);
+      Utils.recordAction('Unpublish', 'Document', args.swagger.params.auth_payload.preferred_username, objId, args, document.project);
       demiPush.document(unPublished);
       return Actions.sendResponse(res, 200, unPublished);
     } else {
@@ -783,7 +786,7 @@ exports.protectedPut = async function (args, res) {
 
     var doc = await Document.findOneAndUpdate({ _id: objId }, obj, { upsert: false, returnDocument: 'after' });
     if (doc) {
-      Utils.recordAction('put', 'document', args.swagger.params.auth_payload.preferred_username, objId);
+      Utils.recordAction('Put', 'Document', args.swagger.params.auth_payload.preferred_username, objId, args, doc.project);
       defaultLog.info('Document updated:', doc);
       demiPush.document(doc);
       return Actions.sendResponse(res, 200, doc);
@@ -820,7 +823,7 @@ exports.protectedDelete = async function (args, res) {
     var doc = await Document.findOneAndDelete({ _id: objId });
     defaultLog.info('Deleting document %s from minio', doc && doc.internalURL);
     await MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
-    Utils.recordAction('Delete', 'Document', args.swagger.params.auth_payload.preferred_username, objId);
+    Utils.recordAction('Delete', 'Document', args.swagger.params.auth_payload.preferred_username, objId, args, doc.project);
     return Actions.sendResponse(res, 200, {});
   } catch (e) {
     defaultLog.error('Error deleting document %s: %s', objId, e.message);
