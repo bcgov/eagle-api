@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 async function update(defaultLog) {
   const queryAggregates = [
     {
-      // recordAction lowercases action on write, so this seeks {action:1, objId:1} directly. The
-      // $toLower stage this replaced was not indexable and scanned 22M audit rows in prod.
+      // recordAction lowercases on write, so this seeks {action:1, objId:1} instead of scanning
+      // every audit row under a $toLower.
       $match: {
         objId: {
           $ne: null
