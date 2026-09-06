@@ -374,7 +374,7 @@ exports.protectedDelete = async function (args, res) {
       // Set the deleted flag.
       try {
         const deleted = await Actions.delete(o);
-        Utils.recordAction('Delete', 'Project', args.swagger.params.auth_payload.preferred_username, projId);
+        Utils.recordAction('Delete', 'Project', args.swagger.params.auth_payload.preferred_username, projId, args);
         // Deleted successfully
         return Actions.sendResponse(res, 200, deleted);
       } catch (err) {
@@ -474,7 +474,7 @@ exports.protectedPost = async function (args, res) {
   // The other two keys will be full of null values, as well as any other fields that are in the project model and are not explicitly defined above.
   project.save()
     .then(function (theProject) {
-      Utils.recordAction('Post', 'Project', args.swagger.params.auth_payload.preferred_username, theProject._id);
+      Utils.recordAction('Post', 'Project', args.swagger.params.auth_payload.preferred_username, theProject._id, args);
       demiPush.project(theProject);
       return Actions.sendResponse(res, 200, theProject);
     })
@@ -725,7 +725,7 @@ exports.protectedPut = async function (args, res) {
   var doc = await Project.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(objId) }, fullProjectObject, { upsert: false, returnDocument: 'after' });
   // Project.update({ _id: new mongoose.Types.ObjectId(objId) }, { $set: updateObj }, function (err, o) {
   if (doc) {
-    Utils.recordAction('Put', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
+    Utils.recordAction('Put', 'Project', args.swagger.params.auth_payload.preferred_username, objId, args);
     demiPush.project(doc);
     return Actions.sendResponse(res, 200, doc);
   } else {
@@ -756,7 +756,7 @@ exports.protectedPublish = async function (args, res) {
 
       try {
         const published = await Actions.publish(o, true);
-        Utils.recordAction('Publish', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
+        Utils.recordAction('Publish', 'Project', args.swagger.params.auth_payload.preferred_username, objId, args);
         demiPush.project(published);
         return Actions.sendResponse(res, 200, published);
       } catch (err) {
@@ -784,7 +784,7 @@ exports.protectedUnPublish = async function (args, res) {
       defaultLog.info('o:', o);
       try {
         const unpublished = await Actions.unPublish(o);
-        Utils.recordAction('Unpublish', 'Project', args.swagger.params.auth_payload.preferred_username, objId);
+        Utils.recordAction('Unpublish', 'Project', args.swagger.params.auth_payload.preferred_username, objId, args);
         demiPush.project(unpublished);
         return Actions.sendResponse(res, 200, unpublished);
       } catch (err) {

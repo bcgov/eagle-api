@@ -2,6 +2,7 @@
 
 var mongoose        = require('mongoose');
 var NodeClam        = require('clamscan');
+const analytics     = require('./analytics');
 var MAX_LIMIT       = 1000;
 const defaultLog      = require('winston').loggers.get('default');
 var DEFAULT_PAGESIZE  = 25;
@@ -146,7 +147,21 @@ exports.getSkipLimitParameters = function (pageSize, pageNum) {
   return params;
 };
 
-exports.recordAction = async function (action, meta, payload, objId = null){
+/**
+ * `args` is what separates a staff write from a read: pass the handler's args and the action also
+ * reaches the analytics audit trail, with the actor read off the Keycloak token. Read paths never
+ * pass it, so they stay out of that trail.
+ *
+ * `projectId` is for a target that belongs to a project, so dashboards can group by it. A Project
+ * target does not pass one — its objId already is the project.
+ */
+exports.recordAction = async function (action, meta, payload, objId = null, args = null, projectId = null){
+  // Fired before the save so a Mongo failure does not also lose the remote row; the two sinks are
+  // independent.
+  if (args) {
+    analytics.auditFromRequest(args, action, { type: meta, id: objId, projectId: projectId });
+  }
+
   var Audit = mongoose.model('Audit');
   var audit = new Audit({
     _objectSchema: 'Query',

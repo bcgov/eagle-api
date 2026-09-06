@@ -288,7 +288,7 @@ exports.protectedPost = async function (args, res) {
 
   try {
     var cp = await commentPeriod.save();
-    Utils.recordAction('Put', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, cp._id);
+    Utils.recordAction('Post', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, cp._id, args, cp.project);
     defaultLog.info('Saved new comment period object:', cp);
     return Actions.sendResponse(res, 200, cp);
   } catch (e) {
@@ -339,7 +339,9 @@ exports.protectedPut = async function (args, res) {
 
   try {
     var cp = await CommentPeriod.updateOne({ _id: objId }, { $set: commentPeriod });
-    Utils.recordAction('Put', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId);
+    // No projectId: the update deliberately never touches project, and obj.project is raw client
+    // input, which an audit row must not present as fact.
+    Utils.recordAction('Put', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId, args);
     defaultLog.info('Comment period updated:', cp);
     return Actions.sendResponse(res, 200, cp);
   } catch (e) {
@@ -359,8 +361,8 @@ exports.protectedDelete = async function (args, res) {
   defaultLog.info('Delete comment period:', objId);
   var CommentPeriod = mongoose.model('CommentPeriod');
   try {
-    await CommentPeriod.findOneAndDelete({ _id: objId });
-    Utils.recordAction('Delete', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId);
+    const deleted = await CommentPeriod.findOneAndDelete({ _id: objId });
+    Utils.recordAction('Delete', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId, args, deleted && deleted.project);
     return Actions.sendResponse(res, 200, {});
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
@@ -383,7 +385,7 @@ exports.protectedPublish = async function (args, res) {
     delete commentPeriod.__v;
     defaultLog.info('Comment period object:', commentPeriod);
     var published = await Actions.publish(commentPeriod);
-    Utils.recordAction('Publish', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId);
+    Utils.recordAction('Publish', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId, args, commentPeriod.project);
     return Actions.sendResponse(res, 200, published);
   } catch (e) {
     return Actions.sendResponse(res, 400, e);
@@ -404,7 +406,7 @@ exports.protectedUnPublish = async function (args, res) {
     delete commentPeriod.__v;
     defaultLog.info('Comment period object:', commentPeriod);
     var unpublished = await Actions.unPublish(commentPeriod);
-    Utils.recordAction('Unpublish', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId);
+    Utils.recordAction('Unpublish', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId, args, commentPeriod.project);
     return Actions.sendResponse(res, 200, unpublished);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);

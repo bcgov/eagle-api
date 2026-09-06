@@ -167,6 +167,14 @@ spec:
                   name: demi-push-secret
                   key: DEMI_APIM_KEY
                   optional: true
+            # Analytics APIM subscription key — optional; without it audit rows stay dark, and the
+            # events endpoint, which takes no key, keeps sending
+            - name: ANALYTICS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: eagle-api-analytics
+                  key: ANALYTICS_API_KEY
+                  optional: true
             # Application Insights connection string — optional; pods start without the secret
             - name: APPLICATIONINSIGHTS_CONNECTION_STRING
               valueFrom:
