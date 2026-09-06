@@ -13,17 +13,7 @@ async function update(defaultLog, afterTimestamp) {
           },
           {
             action: {
-              $ne: 'Get'
-            }
-          },
-          {
-            action: {
-              $ne: 'Search'
-            }
-          },
-          {
-            action: {
-              $ne: 'Summary'
+              $nin: ['get', 'search', 'summary']
             }
           },
           {

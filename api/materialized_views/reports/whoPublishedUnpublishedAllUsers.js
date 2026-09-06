@@ -3,31 +3,14 @@ const mongoose = require('mongoose');
 async function update(defaultLog) {
   const queryAggregates = [
     {
-      // Raw-value prefilter so {action:1, objId:1} can seek; the $toLower
-      // stage below is not indexable and scanned 22M audit rows in prod.
+      // recordAction lowercases on write, so this seeks {action:1, objId:1} instead of scanning
+      // every audit row under a $toLower.
       $match: {
         objId: {
           $ne: null
         },
         action: {
-          $in: ['Publish', 'publish', 'Unpublish', 'unpublish', 'unPublish', 'UnPublish']
-        }
-      }
-    },
-    {
-      $addFields: {
-        lcaseAction: {
-          $toLower: "$action"
-        }
-      }
-    },
-    {
-      $match: {
-        lcaseAction: {
-          $in: [
-            "publish",
-            "unpublish"
-          ]
+          $in: ['publish', 'unpublish']
         }
       }
     },
@@ -78,7 +61,7 @@ async function update(defaultLog) {
         _schemaName: "$_schemaName",
         timestamp: "$timestamp",
         read: "$read",
-        action: "$lcaseAction",
+        action: "$action",
         deletedBy: "$deletedBy",
         objectId: "$objId",
         objectType: "$epicObjects.objectType",

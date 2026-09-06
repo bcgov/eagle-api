@@ -63,3 +63,23 @@ unclobber data — restore the dump if the last attempt mangled it.
 db.changelog.find()
 db.changelog.deleteOne({ fileName: '20190625114200-myMigrationName.js' })
 ```
+
+## One-off scripts outside this directory
+
+`scripts/` holds data fixes too slow for the pre-upgrade hook, where a long update would stall the
+deploy — `audit` alone is ~22M rows in prod. They read the same `MONGODB_*` env vars as
+`run_migration.js`, are safe to re-run, and each has `--help`.
+
+`scripts/normalise-audit-action.js` lowercases `action` on audit rows. The report pipelines under
+`api/materialized_views/reports/` match lowercase only, so run it on an environment as the API that
+writes lowercase goes out; until it has, those reports omit rows written earlier. The 14-day change
+counts go the other way and over-report, counting pre-deploy `Get`/`Search`/`Summary` reads as
+changes, so run the script right after the deploy — the next rolling recompute then settles both.
+`--dry-run` reports which values and how many rows would change, and writes nothing.
+
+```bash
+oc --context epic-dev exec -n 6cdc9e-dev deploy/eagle-api -- node scripts/normalise-audit-action.js --dry-run
+oc --context epic-dev exec -n 6cdc9e-dev deploy/eagle-api -- node scripts/normalise-audit-action.js
+```
+
+Swap context and namespace for test. Prod takes the same command under your own login.

@@ -50,38 +50,9 @@ async function update(defaultLog) {
             }
           },
           {
-            $or: [
-              {
-                action: {
-                  $eq: "search"
-                }
-              },
-              {
-                action: {
-                  $eq: "summary"
-                }
-              },
-              {
-                action: {
-                  $eq: "get"
-                }
-              },
-              {
-                action: {
-                  $eq: "Search"
-                }
-              },
-              {
-                action: {
-                  $eq: "Summary"
-                }
-              },
-              {
-                action: {
-                  $eq: "Get"
-                }
-              }
-            ]
+            action: {
+              $in: ["get", "search", "summary"]
+            }
           },
           {
             timestampDay: {

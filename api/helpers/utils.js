@@ -156,16 +156,20 @@ exports.getSkipLimitParameters = function (pageSize, pageNum) {
  * target does not pass one — its objId already is the project.
  */
 exports.recordAction = async function (action, meta, payload, objId = null, args = null, projectId = null){
+  // Call sites spell the same verb 'Put' and 'put', which split every report bucket that groups on
+  // action. Lowercased here, once, so both sinks agree and the readers can match one casing.
+  const lowerAction = typeof action === 'string' ? action.toLowerCase() : action;
+
   // Fired before the save so a Mongo failure does not also lose the remote row; the two sinks are
   // independent.
   if (args) {
-    analytics.auditFromRequest(args, action, { type: meta, id: objId, projectId: projectId });
+    analytics.auditFromRequest(args, lowerAction, { type: meta, id: objId, projectId: projectId });
   }
 
   var Audit = mongoose.model('Audit');
   var audit = new Audit({
     _objectSchema: 'Query',
-    action: action,
+    action: lowerAction,
     meta: meta,
     objId: objId,
     performedBy: payload,
