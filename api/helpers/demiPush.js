@@ -152,3 +152,24 @@ exports.document = async function (doc) {
 exports.recentActivity = function (doc) {
   return doc && doc._id ? push('updates', doc._id, { doc }) : Promise.resolve();
 };
+
+// Kinds that need no lookup: the stored document is the whole payload, read[] included, and DEMI
+// derives visibility from it. `extra` carries what the stored document cannot say, e.g. a hard
+// delete, which leaves nothing to re-read. Callers never await, so nothing may reject.
+function mirror(kind, label) {
+  return async function (doc, extra) {
+    if (!client.configured() || !doc || !doc._id) {
+      return;
+    }
+    try {
+      await push(kind, doc._id, { doc: Object.assign(toPushBody(doc), extra) });
+    } catch (err) {
+      defaultLog.error(`[demiPush] ${label} push failed`, { error: err.message, stack: err.stack });
+    }
+  };
+}
+
+exports.commentPeriod = mirror('commentperiods', 'commentPeriod');
+exports.comment = mirror('comments', 'comment');
+exports.organization = mirror('organizations', 'organization');
+exports.projectNotification = mirror('notifications', 'projectNotification');

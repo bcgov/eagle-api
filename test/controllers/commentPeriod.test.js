@@ -52,6 +52,8 @@ describe('CommentPeriod Controller', () => {
 
     cpModel = {
       findOne: sinon.stub(),
+      // the DEMI mirror re-reads the period after an update
+      findById: sinon.stub().resolves(null),
       updateOne: sinon.stub(),
       findOneAndDelete: sinon.stub(),
       save: sinon.stub()
