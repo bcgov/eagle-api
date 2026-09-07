@@ -117,20 +117,12 @@ definitions:
         example: true
       ANALYTICS_API_URL:
         type: string
-        example: "/analytics"
+        description: "Always empty. Retirement shim that switches the retired penguin-analytics client off in frontends whose env.js still bakes '/analytics'."
+        example: ""
       EAGLE_ANALYTICS_URL:
         type: string
         description: "Base URL of the eagle-analytics ingest gateway for browser clients. Empty turns the client off."
         example: "https://demi-apim-test.azure-api.net/analytics"
-      ANALYTICS_DEBUG:
-        type: boolean
-        example: false
-      ANALYTICS_ENHANCED_TRACKING:
-        type: boolean
-        example: true
-      ANALYTICS_TRAFFIC_TRACKING:
-        type: boolean
-        example: true
       APPINSIGHTS_CONNECTION_STRING:
         type: string
         description: "Application Insights ingestion connection string for the browser SDK. Empty turns browser telemetry off."

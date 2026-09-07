@@ -17,11 +17,7 @@ var PUBLIC_KEYS = [
   'KEYCLOAK_URL',
   'KEYCLOAK_REALM',
   'KEYCLOAK_ENABLED',
-  'ANALYTICS_API_URL',
   'EAGLE_ANALYTICS_URL',
-  'ANALYTICS_DEBUG',
-  'ANALYTICS_ENHANCED_TRACKING',
-  'ANALYTICS_TRAFFIC_TRACKING',
   'APPINSIGHTS_CONNECTION_STRING',
   'SURVEY_URL',
   'SHOW_SURVEY_BANNER',
@@ -63,6 +59,12 @@ exports.publicGet = async function (args, res) {
         payload[key] = doc[key];
       }
     });
+
+    // Retirement shim, not a config key: both frontends merge this payload over env.js with a
+    // shallow spread, and env.js bakes ANALYTICS_API_URL: '/analytics'. Omitting it would turn the
+    // retired penguin client back on in every deployed browser. Constant, so Mongo cannot set it.
+    // Remove once the eagle-public Angular line (v2.7.x) is retired at v3.0.0.
+    payload.ANALYTICS_API_URL = '';
 
     return Actions.sendResponse(res, 200, payload);
   } catch (err) {

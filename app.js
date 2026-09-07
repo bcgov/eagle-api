@@ -110,7 +110,7 @@ app.get('/api/health', function (req, res) {
   res.status(200).json({ status: 'ok' });
 });
 
-// Analytics proxy — forwards /analytics/* to penguin-analytics service.
+// Analytics proxy — forwards /analytics/* to a local eagle-analytics service.
 // In production, nginx routes /analytics directly. This route serves local dev
 // where proxy.conf.js sends /analytics to eagle-api.
 var analyticsTarget = process.env.ANALYTICS_SERVICE_URL || 'http://localhost:3001';
