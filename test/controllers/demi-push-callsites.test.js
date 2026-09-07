@@ -5,6 +5,7 @@
 const { expect } = require('chai');
 const sinon = require('sinon');
 const mongoose = require('mongoose');
+const winston = require('winston');
 const fs = require('fs');
 
 const Actions = require('../../api/helpers/actions');
@@ -91,8 +92,9 @@ const pnArgs = () => ({
 describe('DEMI push call sites', () => {
   let res, saved, models;
 
-  function model() {
+  function model(modelName) {
     const M = function (init) { Object.assign(this, init || {}); this.legislationYearList = []; };
+    M.modelName = modelName;
     M.prototype.save = () => Promise.resolve(saved);
     // dateCompleted keeps comment.unProtectedPost inside the period; read[] is what publish toggles
     const stored = () => new M({
@@ -119,12 +121,11 @@ describe('DEMI push call sites', () => {
   beforeEach(() => {
     res = { status: sinon.stub().returnsThis(), json: sinon.stub() };
     saved = { _id: OID, name: 'saved' };
-    models = {
-      Document: model(), Project: model(), Comment: model(), List: model(), RecentActivity: model(),
-      CommentPeriod: model(), Organization: model(), ProjectNotification: model(), User: model()
-    };
+    models = {};
+    ['Document', 'Project', 'Comment', 'List', 'RecentActivity',
+      'CommentPeriod', 'Organization', 'ProjectNotification', 'User'].forEach(n => { models[n] = model(n); });
 
-    sinon.stub(mongoose, 'model').callsFake(name => models[name] || model());
+    sinon.stub(mongoose, 'model').callsFake(name => models[name] || model(name));
     sinon.stub(Utils, 'recordAction').resolves();
     sinon.stub(Actions, 'sendResponse').callsFake((r, code, data) => r.status(code).json(data));
     sinon.stub(Actions, 'publish').resolves(saved);
@@ -302,6 +303,46 @@ describe('DEMI push call sites', () => {
 
       expect(res.status.calledWith(404)).to.be.true;
       expect(demiPush.organization.called).to.be.false;
+    });
+  });
+
+  // A lost re-read leaves DEMI on the pre-write state. The write itself stands, so the only way to
+  // notice is the log line.
+  describe('re-read failures before a DEMI push', () => {
+    let warn;
+
+    beforeEach(() => {
+      warn = sinon.stub(winston.loggers.get('default'), 'warn');
+      models.Project.findOne.resolves({ _id: OID, pins: [OID] });
+    });
+
+    [
+      ['comment', commentController, 'protectedPut', commentArgs, 'Comment'],
+      ['comment', commentController, 'protectedStatus', commentArgs, 'Comment'],
+      ['commentPeriod', commentPeriodController, 'protectedPut', cpArgs, 'CommentPeriod'],
+      ['project', pinsController, 'protectedPublishPin', pinArgs, 'Project'],
+      ['project', pinsController, 'protectedUnPublishPin', pinArgs, 'Project'],
+      ['project', pinsController, 'protectedPinDelete', pinArgs, 'Project']
+    ].forEach(([kind, ctrl, handler, args, modelName]) => {
+      it(`${modelName}.${handler} logs a failed re-read, pushes nothing and still returns 200`, async () => {
+        models[modelName].findById.rejects(new Error('mongo unreachable'));
+
+        await ctrl[handler](args(), res);
+
+        expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+        expect(demiPush[kind].calledOnceWithExactly(null)).to.be.true;
+        expect(warn.calledWithMatch(`${modelName} ${OID} re-read failed`)).to.be.true;
+      });
+    });
+
+    it('comment.protectedPut logs a re-read that finds nothing', async () => {
+      models.Comment.findById.resolves(null);
+
+      await commentController.protectedPut(commentArgs(), res);
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(demiPush.comment.calledOnceWithExactly(null)).to.be.true;
+      expect(warn.calledWithMatch(`Comment ${OID} not found on re-read`)).to.be.true;
     });
   });
 

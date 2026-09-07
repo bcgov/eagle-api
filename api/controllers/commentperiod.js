@@ -345,7 +345,7 @@ exports.protectedPut = async function (args, res) {
     // input, which an audit row must not present as fact.
     Utils.recordAction('Put', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId, args);
     defaultLog.info('Comment period updated:', cp);
-    const fresh = await CommentPeriod.findById(objId).catch(() => null);
+    const fresh = await demiPush.freshDoc(CommentPeriod, objId);
     demiPush.commentPeriod(fresh);
     return Actions.sendResponse(res, 200, cp);
   } catch (e) {

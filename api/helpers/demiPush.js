@@ -29,12 +29,9 @@ function listEntries() {
   return listEntriesPromise;
 }
 
-// An ObjectId, a hex string or an already-populated subdocument, as a plain id string.
+// An ObjectId or a hex string, as a plain id string. No caller populates these refs.
 function idOf(value) {
-  if (!value) {
-    return null;
-  }
-  return typeof value === 'object' && value._id ? String(value._id) : String(value);
+  return value ? String(value) : null;
 }
 
 async function orgsById(ids) {
@@ -110,6 +107,21 @@ async function enrichProject(project) {
     project.featuredDocuments = project.featuredDocuments.map(idOf).filter(Boolean);
   }
 }
+
+// A mirror push re-reads the stored document after the write. A miss or a failed read leaves DEMI
+// on the pre-write state, so it is logged; the caller's own HTTP response is unaffected.
+exports.freshDoc = async function (model, id) {
+  try {
+    const doc = await model.findById(id);
+    if (!doc) {
+      defaultLog.warn(`[demiPush] skipping push: ${model.modelName} ${id} not found on re-read`);
+    }
+    return doc;
+  } catch (err) {
+    defaultLog.warn(`[demiPush] skipping push: ${model.modelName} ${id} re-read failed`, { error: err.message });
+    return null;
+  }
+};
 
 // ponytail: last-writer-wins; sequence per id if the reconcile ever reports ordering drift
 function push(kind, id, body) {

@@ -169,7 +169,7 @@ exports.protectedPublishPin = async function (args, res) {
       );
       Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, projId);
       defaultLog.info('Published pins for project:', projId);
-      const fresh = await Project.findById(projId).catch(() => null);
+      const fresh = await demiPush.freshDoc(Project, projId);
       demiPush.project(fresh);
       return Actions.sendResponse(res, 200, published);
     } else {
@@ -198,7 +198,7 @@ exports.protectedUnPublishPin = async function (args, res) {
       );
       Utils.recordAction('Unpublish', 'PIN', args.swagger.params.auth_payload.preferred_username, projId);
       defaultLog.info('Unpublished pins for project:', projId);
-      const fresh = await Project.findById(projId).catch(() => null);
+      const fresh = await demiPush.freshDoc(Project, projId);
       demiPush.project(fresh);
       return Actions.sendResponse(res, 200, updated);
     } else {
@@ -228,7 +228,7 @@ exports.protectedPinDelete = async function (args, res) {
     );
     Utils.recordAction('Delete', 'Pin', args.swagger.params.auth_payload.preferred_username, pinId);
     defaultLog.info('Deleted pin:', pinId, 'from project:', projId);
-    const fresh = await Project.findById(projId).catch(() => null);
+    const fresh = await demiPush.freshDoc(Project, projId);
     demiPush.project(fresh);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
