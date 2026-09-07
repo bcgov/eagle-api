@@ -92,20 +92,39 @@ describe('Config Controller', () => {
     expect(res.body).to.have.property('DEMI_PROJECTS_PATH', '');
   });
 
-  it('serves EAGLE_ANALYTICS_URL alongside ANALYTICS_API_URL', async () => {
-    // Both are served at once during the dual-write week; neither may displace the other.
+  it('serves EAGLE_ANALYTICS_URL', async () => {
     stubConfigModel({
       _schemaName: 'Config',
       ENVIRONMENT: 'test',
-      ANALYTICS_API_URL: '/analytics',
       EAGLE_ANALYTICS_URL: 'https://demi-apim-test.azure-api.net/analytics'
     });
     const res = fakeRes();
 
     await configController.publicGet({}, res);
 
-    expect(res.body).to.have.property('ANALYTICS_API_URL', '/analytics');
     expect(res.body).to.have.property('EAGLE_ANALYTICS_URL', 'https://demi-apim-test.azure-api.net/analytics');
+  });
+
+  it('serves no penguin-analytics key, even when the stored document still carries one', async () => {
+    // penguin-analytics was uninstalled on 2026-09-07 and its keys dropped from the model.
+    // 20260907000000-drop-penguin-config unsets them, but an environment that has not run it yet
+    // must not have them served back to browsers.
+    stubConfigModel({
+      _schemaName: 'Config',
+      ENVIRONMENT: 'test',
+      ANALYTICS_API_URL: '/analytics',
+      ANALYTICS_DEBUG: true,
+      ANALYTICS_ENHANCED_TRACKING: true,
+      ANALYTICS_TRAFFIC_TRACKING: true
+    });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.not.have.property('ANALYTICS_API_URL');
+    expect(res.body).to.not.have.property('ANALYTICS_DEBUG');
+    expect(res.body).to.not.have.property('ANALYTICS_ENHANCED_TRACKING');
+    expect(res.body).to.not.have.property('ANALYTICS_TRAFFIC_TRACKING');
   });
 
   it('defaults EAGLE_ANALYTICS_URL to an empty string when the row has no opinion on it', async () => {

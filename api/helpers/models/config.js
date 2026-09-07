@@ -40,13 +40,8 @@ module.exports = require('../models')('Config', {
   KEYCLOAK_REALM              : { type: String, default: null },
   KEYCLOAK_ENABLED            : { type: Boolean, default: true },
 
-  ANALYTICS_API_URL           : { type: String, default: '/analytics' },
-  // Absolute base URL of the eagle-analytics ingest gateway for browser clients. Empty keeps the
-  // new client off, so it runs beside ANALYTICS_API_URL (penguin) during the dual-write week.
+  // Base URL of the eagle-analytics ingest gateway for browsers. Empty keeps the client off.
   EAGLE_ANALYTICS_URL         : { type: String, default: '' },
-  ANALYTICS_DEBUG             : { type: Boolean, default: false },
-  ANALYTICS_ENHANCED_TRACKING : { type: Boolean, default: true },
-  ANALYTICS_TRAFFIC_TRACKING  : { type: Boolean, default: true },
   // The exception to the secret rule above: an Application Insights ingestion connection string is
   // public by design (it ships in the SPA bundle), and junk telemetry is capped by the daily limit.
   APPINSIGHTS_CONNECTION_STRING: { type: String, default: '' },

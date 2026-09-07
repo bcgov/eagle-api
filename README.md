@@ -10,7 +10,7 @@ All documentation has been consolidated in the [Eagle Documentation Wiki](https:
 
 * **[API Architecture](https://github.com/bcgov/eagle-dev-guides/wiki/API-Architecture)** - Service map, routing patterns, and request flow
 * **[Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management)** - ConfigService pattern and environment variables
-* **[Analytics Architecture](https://github.com/bcgov/eagle-dev-guides/wiki/Analytics-Architecture)** - Penguin Analytics integration
+* **[Analytics Architecture](https://github.com/bcgov/eagle-dev-guides/wiki/Analytics-Architecture)** - eagle-analytics integration
 * **[API Deployment](https://github.com/bcgov/eagle-dev-guides/wiki/API-Deployment)** - Deployment workflows and procedures
 * **[Deployment Pipeline](https://github.com/bcgov/eagle-dev-guides/wiki/Deployment-Pipeline)** - CI/CD workflows and image tagging
 * **[Rollback Procedures](https://github.com/bcgov/eagle-dev-guides/wiki/Rollback-Procedures)** - How to rollback deployments
@@ -30,7 +30,7 @@ These projects comprise EAO EPIC:
 * <https://github.com/bcgov/eagle-helper-pods>
 * <https://github.com/bcgov/eagle-dev-guides>
 * <https://github.com/bcgov/eao-nginx> (rproxy reverse proxy)
-* <https://github.com/bcgov/penguin-analytics> (analytics service)
+* <https://github.com/digitalspace/eagle-analytics> (analytics service)
 
 ## Quick Start
 
