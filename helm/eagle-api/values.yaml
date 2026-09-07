@@ -154,14 +154,15 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
 
 # Database migrations job
-# Note: All migrations are from 2019-2020 and have been applied in production.
-# Only enable this when adding NEW migrations to the codebase.
-# To run migrations: helm upgrade --set migrations.enabled=true
+# Runs `node run_migration.js` as a pre-upgrade hook, before the new pods roll. On by default: a
+# deploy that skips it leaves the database behind the code it serves. Re-running is safe —
+# migrate-mongo only applies files missing from the `changelog` collection.
+# `image.tag` is deliberately unset, so the job falls back to the app's tag (see migration-job.yaml)
+# and runs the migrations directory that ships with the code being deployed.
 migrations:
-  enabled: false
+  enabled: true
   image:
     repository: image-registry.openshift-image-registry.svc:5000/6cdc9e-tools/eagle-api
-    tag: "v2.10.42"
   resources:
     limits:
       cpu: 500m
