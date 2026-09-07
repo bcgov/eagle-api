@@ -2,6 +2,7 @@ const defaultLog = require('winston').loggers.get('default');
 const mongoose = require('mongoose');
 const Actions = require('../helpers/actions');
 const Utils = require('../helpers/utils');
+const demiPush = require('../helpers/demiPush');
 const constants = require('../helpers/constants');
 
 
@@ -89,6 +90,7 @@ exports.protectedPost = async function (args, res) {
     Utils.recordAction('Post', 'ProjectNotification', args.swagger.params.auth_payload.preferred_username, saveProjectNotification._id);
 
     defaultLog.info('Saved new project notification object:', saveProjectNotification);
+    demiPush.projectNotification(saveProjectNotification);
     return Actions.sendResponse(res, 201, saveProjectNotification);
   } catch (e) {
     defaultLog.error(`Error:: ${e.message}`);
@@ -145,6 +147,7 @@ exports.protectedPut = async function (args, res) {
     const updatedRecord = await projectNotification.save();
     Utils.recordAction('Put', 'ProjectNotification', args.swagger.params.auth_payload.preferred_username, projectNotificationId);
     defaultLog.info('Project Notification updated:', updatedRecord);
+    demiPush.projectNotification(updatedRecord);
     return Actions.sendResponse(res, 200, updatedRecord);
   } catch (e) {
     defaultLog.error(`Error:: ${e.message}`);

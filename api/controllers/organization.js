@@ -2,6 +2,7 @@ var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
+const demiPush = require('../helpers/demiPush');
 const ALLOWED_FIELDS = [
   'code',
   'description',
@@ -115,6 +116,7 @@ exports.protectedPost = async function (args, res) {
     var org = await organization.save();
     Utils.recordAction('Post', 'Organization', args.swagger.params.auth_payload.preferred_username, org._id);
     defaultLog.info('Saved new organization object:', org);
+    demiPush.organization(org);
     return Actions.sendResponse(res, 200, org);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
@@ -163,6 +165,7 @@ exports.protectedPut = async function (args, res) {
 
     Utils.recordAction('Put', 'Organization', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Organization updated:', org);
+    demiPush.organization(org);
     return Actions.sendResponse(res, 200, org);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
@@ -189,6 +192,7 @@ exports.protectedPublish = async function (args, res) {
       try {
         const published = await Actions.publish(o);
         // Published successfully
+        demiPush.organization(published);
         return Actions.sendResponse(res, 200, published);
       } catch (err) {
         // Error
@@ -221,6 +225,7 @@ exports.protectedUnPublish = async function (args, res) {
         const unpublished = await Actions.unPublish(o);
         Utils.recordAction('Unpublish', 'Organization', args.swagger.params.auth_payload.preferred_username, objId);
         // UnPublished successfully
+        demiPush.organization(unpublished);
         return Actions.sendResponse(res, 200, unpublished);
       } catch (err) {
         // Error

@@ -2,6 +2,7 @@ var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
+const demiPush = require('../helpers/demiPush');
 const { DateTime } = require('luxon');
 
 const ALLOWED_FIELDS = [
@@ -353,6 +354,7 @@ exports.protectedPost = async function (args, res) {
     var c = await comment.save();
     Utils.recordAction('Post', 'Comment', args.swagger.params.auth_payload.preferred_username, c._id);
     defaultLog.info('Saved new comment object:', c);
+    demiPush.comment(c);
     return Actions.sendResponse(res, 200, c);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
@@ -423,6 +425,7 @@ exports.unProtectedPost = async function (args, res) {
     const c = await cmt.save();
     Utils.recordAction('Post', 'Comment', 'public', c._id);
     defaultLog.info('Saved new comment object: %s', c._id);
+    demiPush.comment(c);
     return Actions.sendResponse(res, 200, c);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
@@ -464,6 +467,8 @@ exports.protectedPut = async function (args, res) {
     var c = await Comment.updateOne({ _id: objId }, { $set: comment });
     Utils.recordAction('Put', 'Comment', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Comment updated:', c);
+    const fresh = await Comment.findById(objId).catch(() => null);
+    demiPush.comment(fresh);
     return Actions.sendResponse(res, 200, c);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
@@ -491,6 +496,8 @@ exports.protectedStatus = async function (args, res) {
     var c = await Comment.updateOne({ _id: objId }, { $set: comment });
     Utils.recordAction('Status', 'Comment', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Comment updated:', c);
+    const fresh = await Comment.findById(objId).catch(() => null);
+    demiPush.comment(fresh);
     return Actions.sendResponse(res, 200, c);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);

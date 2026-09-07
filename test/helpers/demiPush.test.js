@@ -28,6 +28,31 @@ const ORGS = [
   { _id: PIN_B, name: 'First Nation B', province: 'AB' }
 ];
 
+// Kinds that push the stored document as it stands: [export name, DEMI route segment]
+const MIRRORED = [
+  ['commentPeriod', 'commentperiods'],
+  ['comment', 'comments'],
+  ['organization', 'organizations'],
+  ['projectNotification', 'notifications']
+];
+
+const PERIOD = '5f4c7d1e2b3a4c5d6e7f0005';
+
+// Every field eagle-public reads off a published comment. No email: the Comment model has none.
+const commentDoc = () => ({
+  _id: 'c1',
+  _schemaName: 'Comment',
+  author: 'Jane Public',
+  comment: 'Body text',
+  commentId: 7,
+  dateAdded: '2026-09-01T00:00:00.000Z',
+  documents: ['doc-1'],
+  eaoStatus: 'Published',
+  isAnonymous: false,
+  period: PERIOD,
+  read: ['public', 'staff', 'sysadmin']
+});
+
 const projectDoc = () => ({
   _id: 'p1',
   currentLegislationYear: 'legislation_2002',
@@ -90,6 +115,14 @@ describe('DemiPush Helper', () => {
       delete process.env.DEMI_API_BASE;
       await demiPush.recentActivity({ _id: 'u1' });
       expect(fetchStub.called).to.be.false;
+    });
+
+    MIRRORED.forEach(([kind]) => {
+      it(`should not call fetch for ${kind} when DEMI_API_BASE is unset`, async () => {
+        delete process.env.DEMI_API_BASE;
+        await demiPush[kind]({ _id: 'x1' });
+        expect(fetchStub.called).to.be.false;
+      });
     });
 
     it('should stay dark and warn once per process when DEMI_APIM_KEY is unset', async () => {
@@ -259,6 +292,60 @@ describe('DemiPush Helper', () => {
       expect(options.method).to.equal('PUT');
       expect(JSON.parse(options.body)).to.deep.equal({ doc: { _id: 'u1', headline: 'Decision issued', active: true } });
       expect(errorStub.called).to.be.false;
+    });
+
+    MIRRORED.forEach(([kind, segment]) => {
+      it(`should PUT a ${kind} to the APIM eagle ${segment} route`, async () => {
+        fetchStub.resolves(okResponse());
+        await demiPush[kind]({ _id: 'x1', name: 'Thing', read: ['public'] });
+
+        expect(fetchStub.calledOnce).to.be.true;
+        const [url, options] = fetchStub.firstCall.args;
+        expect(url).to.equal(`${BASE}/eagle/${segment}/x1`);
+        expect(options.method).to.equal('PUT');
+        expect(options.headers['Ocp-Apim-Subscription-Key']).to.equal('test-key');
+        expect(JSON.parse(options.body)).to.deep.equal({ doc: { _id: 'x1', name: 'Thing', read: ['public'] } });
+        expect(errorStub.called).to.be.false;
+      });
+
+      it(`should not push a ${kind} without an _id`, async () => {
+        await demiPush[kind]({ name: 'No id' });
+        await demiPush[kind](null);
+        expect(fetchStub.called).to.be.false;
+      });
+
+      it(`should push the plain object off a mongoose ${kind} document`, async () => {
+        fetchStub.resolves(okResponse());
+        await demiPush[kind]({ _id: 'x1', toObject: () => ({ _id: 'x1', fromDoc: true }) });
+
+        expect(pushedDoc()).to.deep.equal({ _id: 'x1', fromDoc: true });
+      });
+    });
+
+    it('should push every field the public comment read needs, and no email', async () => {
+      fetchStub.resolves(okResponse());
+      await demiPush.comment(commentDoc());
+
+      expect(fetchStub.firstCall.args[0]).to.equal(`${BASE}/eagle/comments/c1`);
+      const doc = pushedDoc();
+      ['isAnonymous', 'eaoStatus', 'read', 'period', 'documents', 'commentId', 'author', 'comment', 'dateAdded']
+        .forEach(field => expect(doc, field).to.have.property(field));
+      expect(doc.read).to.deep.equal(['public', 'staff', 'sysadmin']);
+      expect(doc.isAnonymous).to.be.false;
+      expect(doc.period).to.equal(PERIOD);
+      expect(Object.keys(doc)).to.not.include('email');
+    });
+
+    it('should flag a deleted comment period so the mirror can drop it', async () => {
+      fetchStub.resolves(okResponse());
+      const period = { _id: 'cp1', project: 'p1', read: ['public'] };
+
+      await demiPush.commentPeriod(period, { isDeleted: true });
+
+      expect(fetchStub.firstCall.args[0]).to.equal(`${BASE}/eagle/commentperiods/cp1`);
+      expect(pushedDoc()).to.deep.equal({ _id: 'cp1', project: 'p1', read: ['public'], isDeleted: true });
+      // the caller's document is left alone
+      expect(period).to.not.have.property('isDeleted');
     });
 
     it('should carry resolved List labels in the document body', async () => {

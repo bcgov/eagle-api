@@ -91,6 +91,8 @@ describe('Comment Controller', () => {
 
     commentModel = {
       findOne: sinon.stub(),
+      // the DEMI mirror re-reads the comment after an update
+      findById: sinon.stub().resolves(null),
       updateOne: sinon.stub(),
       aggregate: sinon.stub(),
       save: sinon.stub()
