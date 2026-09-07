@@ -9,12 +9,33 @@ const sinon = require('sinon');
 const mongoose = require('mongoose');
 const winston = require('winston');
 
-const demiPush = require('../../api/helpers/demiPush');
+const DEMI_PUSH_PATH = require.resolve('../../api/helpers/demiPush');
 const defaultLog = winston.loggers.get('default');
 
 const BASE = 'https://demi-apim-test.example/machine';
 const okResponse = () => ({ ok: true, status: 200 });
 const failResponse = status => ({ ok: false, status });
+
+const REGULATION = '5f4c7d1e2b3a4c5d6e7f0001';
+const PROPONENT = '5f4c7d1e2b3a4c5d6e7f0002';
+const PIN_A = '5f4c7d1e2b3a4c5d6e7f0003';
+const PIN_B = '5f4c7d1e2b3a4c5d6e7f0004';
+
+const LISTS = [{ _id: REGULATION, name: 'Reviewable Projects Regulation', item: 'https://www.bclaws.ca/rpr' }];
+const ORGS = [
+  { _id: PROPONENT, name: 'Acme Mining', province: 'BC' },
+  { _id: PIN_A, name: 'First Nation A', province: 'BC' },
+  { _id: PIN_B, name: 'First Nation B', province: 'AB' }
+];
+
+const projectDoc = () => ({
+  _id: 'p1',
+  currentLegislationYear: 'legislation_2002',
+  pinsRead: ['public'],
+  pins: [PIN_A, PIN_B],
+  featuredDocuments: ['doc-1', 'doc-2'],
+  legislation_2002: { name: 'Test', proponent: PROPONENT, applicableRegulation: REGULATION }
+});
 
 describe('DemiPush Helper', () => {
   let fetchStub;
@@ -22,14 +43,29 @@ describe('DemiPush Helper', () => {
   let warnStub;
   let originalBase;
   let originalKey;
+  let demiPush;
 
+  // The List map is memoized for the life of the module, so each test gets a fresh copy of it.
   beforeEach(() => {
+    delete require.cache[DEMI_PUSH_PATH];
+    demiPush = require(DEMI_PUSH_PATH);
     originalBase = process.env.DEMI_API_BASE;
     originalKey = process.env.DEMI_APIM_KEY;
     fetchStub = sinon.stub(global, 'fetch');
     errorStub = sinon.stub(defaultLog, 'error');
     warnStub = sinon.stub(defaultLog, 'warn');
   });
+
+  function stubModels(lists, orgs) {
+    const listFind = sinon.stub().returns({ lean: () => Promise.resolve(lists) });
+    const orgFind = sinon.stub().returns({ lean: () => Promise.resolve(orgs) });
+    const model = sinon.stub(mongoose, 'model');
+    model.withArgs('List').returns({ find: listFind });
+    model.withArgs('Organization').returns({ find: orgFind });
+    return { listFind, orgFind };
+  }
+
+  const pushedDoc = () => JSON.parse(fetchStub.firstCall.args[1].body).doc;
 
   afterEach(() => {
     sinon.restore();
@@ -118,6 +154,101 @@ describe('DemiPush Helper', () => {
       expect(errorStub.calledOnceWith('[demiPush] projects p1 rejected 404')).to.be.true;
     });
 
+
+    it('should resolve regulation, proponent and pins into the project body', async () => {
+      const { listFind, orgFind } = stubModels(LISTS, ORGS);
+      fetchStub.resolves(okResponse());
+
+      await demiPush.project(projectDoc());
+
+      expect(fetchStub.calledOnce).to.be.true;
+      expect(fetchStub.firstCall.args[0]).to.equal(`${BASE}/eagle/projects/p1`);
+      expect(listFind.calledOnceWithExactly({ _schemaName: 'List' }, '_id name item')).to.be.true;
+      // pins and proponent resolve in one Organization read
+      expect(orgFind.calledOnceWithExactly(
+        { _id: { $in: [PIN_A, PIN_B, PROPONENT] } },
+        '_id name province'
+      )).to.be.true;
+
+      const doc = pushedDoc();
+      expect(doc.legislation_2002.applicableRegulation).to.deep.equal({
+        _id: REGULATION,
+        name: 'Reviewable Projects Regulation',
+        item: 'https://www.bclaws.ca/rpr'
+      });
+      expect(doc.legislation_2002.proponentId).to.equal(PROPONENT);
+      expect(doc.legislation_2002.proponentName).to.equal('Acme Mining');
+      expect(doc.pins).to.deep.equal([
+        { _id: PIN_A, name: 'First Nation A', province: 'BC' },
+        { _id: PIN_B, name: 'First Nation B', province: 'AB' }
+      ]);
+      expect(doc.featuredDocuments).to.deep.equal(['doc-1', 'doc-2']);
+      // untouched fields survive
+      expect(doc.pinsRead).to.deep.equal(['public']);
+      expect(doc.legislation_2002.name).to.equal('Test');
+      expect(errorStub.called).to.be.false;
+    });
+
+    it('should keep an already-populated applicableRegulation as it stands', async () => {
+      stubModels([], ORGS);
+      fetchStub.resolves(okResponse());
+      const populated = { _id: REGULATION, name: 'Already Here', item: 'https://example.test/reg' };
+      const project = projectDoc();
+      project.legislation_2002.applicableRegulation = populated;
+
+      await demiPush.project(project);
+
+      expect(pushedDoc().legislation_2002.applicableRegulation).to.deep.equal(populated);
+    });
+
+    it('should drop a pin whose organization is gone and null a missing regulation', async () => {
+      stubModels([], [{ _id: PIN_B, name: 'First Nation B', province: 'AB' }]);
+      fetchStub.resolves(okResponse());
+
+      await demiPush.project(projectDoc());
+
+      const doc = pushedDoc();
+      expect(doc.pins).to.deep.equal([{ _id: PIN_B, name: 'First Nation B', province: 'AB' }]);
+      expect(doc.legislation_2002.applicableRegulation).to.deep.equal({ _id: REGULATION, name: null, item: null });
+      expect(doc.legislation_2002.proponentName).to.be.null;
+      expect(doc.legislation_2002.proponentId).to.equal(PROPONENT);
+    });
+
+    it('should not mutate the project it was handed', async () => {
+      stubModels(LISTS, ORGS);
+      fetchStub.resolves(okResponse());
+      const project = projectDoc();
+
+      await demiPush.project(project);
+
+      expect(project.pins).to.deep.equal([PIN_A, PIN_B]);
+      expect(project.legislation_2002.applicableRegulation).to.equal(REGULATION);
+      expect(project.legislation_2002).to.not.have.property('proponentId');
+    });
+
+    it('should enrich the plain object off a mongoose document', async () => {
+      stubModels(LISTS, ORGS);
+      fetchStub.resolves(okResponse());
+      const plain = projectDoc();
+
+      await demiPush.project({ _id: 'p1', toObject: () => plain });
+
+      expect(pushedDoc().legislation_2002.proponentName).to.equal('Acme Mining');
+    });
+
+    it('should log once and swallow a failed Organization read', async () => {
+      const model = sinon.stub(mongoose, 'model');
+      model.withArgs('List').returns({ find: sinon.stub().returns({ lean: () => Promise.resolve(LISTS) }) });
+      model.withArgs('Organization').returns({ find: sinon.stub().returns({ lean: () => Promise.reject(new Error('mongo down')) }) });
+
+      await demiPush.project(projectDoc());
+
+      expect(fetchStub.called).to.be.false;
+      expect(errorStub.calledOnce).to.be.true;
+      expect(errorStub.firstCall.args[0]).to.equal('[demiPush] project push failed');
+      expect(errorStub.firstCall.args[1].error).to.equal('mongo down');
+    });
+
     it('should PUT an Update to the APIM eagle updates route', async () => {
       fetchStub.resolves(okResponse());
       await demiPush.recentActivity({ _id: 'u1', headline: 'Decision issued', active: true });
@@ -131,15 +262,12 @@ describe('DemiPush Helper', () => {
     });
 
     it('should carry resolved List labels in the document body', async () => {
-      const findStub = sinon.stub().returns({
-        lean: () => Promise.resolve([
-          { _id: 'list-type', name: 'Letter' },
-          { _id: 'list-milestone', name: 'Application Review' },
-          { _id: 'list-phase', name: 'Effects Assessment' },
-          { _id: 'list-author', name: 'Proponent' }
-        ])
-      });
-      sinon.stub(mongoose, 'model').withArgs('List').returns({ find: findStub });
+      const { listFind } = stubModels([
+        { _id: 'list-type', name: 'Letter' },
+        { _id: 'list-milestone', name: 'Application Review' },
+        { _id: 'list-phase', name: 'Effects Assessment' },
+        { _id: 'list-author', name: 'Proponent' }
+      ], []);
       fetchStub.resolves(okResponse());
 
       await demiPush.document({
@@ -150,7 +278,7 @@ describe('DemiPush Helper', () => {
         documentAuthorType: 'list-author'
       });
 
-      expect(findStub.calledOnceWithExactly({ _schemaName: 'List' }, '_id name')).to.be.true;
+      expect(listFind.calledOnceWithExactly({ _schemaName: 'List' }, '_id name item')).to.be.true;
       expect(fetchStub.calledOnce).to.be.true;
       const [url, options] = fetchStub.firstCall.args;
       expect(url).to.equal(`${BASE}/eagle/documents/d1`);
