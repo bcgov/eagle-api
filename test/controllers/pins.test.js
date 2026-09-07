@@ -52,7 +52,9 @@ describe('Pins Controller', () => {
     projectModel = {
       findOne:          sinon.stub(),
       updateOne:        sinon.stub(),
-      findOneAndUpdate: sinon.stub()
+      findOneAndUpdate: sinon.stub(),
+      // the write handlers re-read the project to mirror it to DEMI
+      findById:         sinon.stub().resolves(null)
     };
 
     // projectModel.findOne returns a lean-able query by default

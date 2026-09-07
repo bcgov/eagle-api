@@ -14,6 +14,7 @@ const demiPush = require('../../api/helpers/demiPush');
 const documentController = require('../../api/controllers/document');
 const projectController = require('../../api/controllers/project');
 const recentActivityController = require('../../api/controllers/recentActivity');
+const pinsController = require('../../api/controllers/pins');
 
 const OID = '5f4c7d1e2b3a4c5d6e7f8091';
 const p = value => ({ value });
@@ -34,6 +35,10 @@ const projArgs = () => {
   const obj = { legislationYear: 2002, name: 'X', proponent: OID, responsibleEPDId: OID, projectLeadId: OID, intake: {} };
   return { swagger: { params: { projId: p(OID), project: p(obj), ProjObject: p(obj), auth_payload: auth } } };
 };
+
+const pinArgs = () => ({
+  swagger: { params: { projId: p(OID), pins: p([OID]), pinId: p(OID), auth_payload: auth } }
+});
 
 const raObj = () => ({ active: true, headline: 'Decision issued', type: 'News', project: OID });
 
@@ -125,6 +130,49 @@ describe('DEMI push call sites', () => {
 
     expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
     expect(demiPush.recentActivity.calledOnceWithExactly({ _id: OID, active: false })).to.be.true;
+  });
+
+  describe('pins handlers', () => {
+    it('pins.protectedAddPins pushes the updated project to DEMI and returns 200', async () => {
+      await pinsController.protectedAddPins(pinArgs(), res);
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(demiPush.project.calledOnceWithExactly(saved)).to.be.true;
+    });
+
+    it('pins.protectedAddPins does not push when the project is missing', async () => {
+      models.Project.findOneAndUpdate.resolves(null);
+
+      await pinsController.protectedAddPins(pinArgs(), res);
+
+      expect(res.status.calledWith(404)).to.be.true;
+      expect(demiPush.project.called).to.be.false;
+    });
+
+    ['protectedPublishPin', 'protectedUnPublishPin', 'protectedPinDelete'].forEach(handler => {
+      it(`pins.${handler} pushes the re-read project to DEMI and returns 200`, async () => {
+        const fresh = { _id: OID, name: 'fresh', pins: [OID] };
+        models.Project.findOne.resolves({ _id: OID, pins: [OID] });
+        models.Project.findById.resolves(fresh);
+
+        await pinsController[handler](pinArgs(), res);
+
+        expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+        expect(models.Project.findById.calledOnceWith(OID)).to.be.true;
+        expect(demiPush.project.calledOnceWithExactly(fresh)).to.be.true;
+      });
+    });
+
+    ['protectedPublishPin', 'protectedUnPublishPin'].forEach(handler => {
+      it(`pins.${handler} does not push when the project has no pins`, async () => {
+        models.Project.findOne.resolves(null);
+
+        await pinsController[handler](pinArgs(), res);
+
+        expect(res.status.calledWith(404)).to.be.true;
+        expect(demiPush.project.called).to.be.false;
+      });
+    });
   });
 
   it('project.protectedPublish does not push when the project is missing', async () => {

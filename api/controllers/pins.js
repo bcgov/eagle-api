@@ -2,6 +2,7 @@ var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
+const demiPush = require('../helpers/demiPush');
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
@@ -138,6 +139,8 @@ exports.protectedAddPins = async function (args, res) {
     if (doc) {
       Utils.recordAction('Add', 'Pin', args.swagger.params.auth_payload.preferred_username, objId);
       defaultLog.info('Added', pinsArr.length, 'pin(s) to project:', objId);
+      // returnDocument: 'after' above already gives the post-update project, so no re-read
+      demiPush.project(doc);
       return Actions.sendResponse(res, 200, { pins: doc.pins });
     } else {
       defaultLog.info('Project not found:', objId);
@@ -166,6 +169,8 @@ exports.protectedPublishPin = async function (args, res) {
       );
       Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, projId);
       defaultLog.info('Published pins for project:', projId);
+      const fresh = await Project.findById(projId).catch(() => null);
+      demiPush.project(fresh);
       return Actions.sendResponse(res, 200, published);
     } else {
       defaultLog.info('Project not found or has no pins:', projId);
@@ -193,6 +198,8 @@ exports.protectedUnPublishPin = async function (args, res) {
       );
       Utils.recordAction('Unpublish', 'PIN', args.swagger.params.auth_payload.preferred_username, projId);
       defaultLog.info('Unpublished pins for project:', projId);
+      const fresh = await Project.findById(projId).catch(() => null);
+      demiPush.project(fresh);
       return Actions.sendResponse(res, 200, updated);
     } else {
       defaultLog.info('Project not found or has no pins:', projId);
@@ -221,6 +228,8 @@ exports.protectedPinDelete = async function (args, res) {
     );
     Utils.recordAction('Delete', 'Pin', args.swagger.params.auth_payload.preferred_username, pinId);
     defaultLog.info('Deleted pin:', pinId, 'from project:', projId);
+    const fresh = await Project.findById(projId).catch(() => null);
+    demiPush.project(fresh);
     return Actions.sendResponse(res, 200, data);
   } catch (e) {
     defaultLog.error(`Error deleting pin: ${pinId} from project: ${projId}: ${e.message}`);
