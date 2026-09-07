@@ -60,6 +60,12 @@ exports.publicGet = async function (args, res) {
       }
     });
 
+    // Retirement shim, not a config key: both frontends merge this payload over env.js with a
+    // shallow spread, and env.js bakes ANALYTICS_API_URL: '/analytics'. Omitting it would turn the
+    // retired penguin client back on in every deployed browser. Constant, so Mongo cannot set it.
+    // Remove once the eagle-public Angular line (v2.7.x) is retired at v3.0.0.
+    payload.ANALYTICS_API_URL = '';
+
     return Actions.sendResponse(res, 200, payload);
   } catch (err) {
     defaultLog.error('GET /api/config failed:', err);

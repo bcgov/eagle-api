@@ -115,6 +115,10 @@ definitions:
       KEYCLOAK_ENABLED:
         type: boolean
         example: true
+      ANALYTICS_API_URL:
+        type: string
+        description: "Always empty. Retirement shim that switches the retired penguin-analytics client off in frontends whose env.js still bakes '/analytics'."
+        example: ""
       EAGLE_ANALYTICS_URL:
         type: string
         description: "Base URL of the eagle-analytics ingest gateway for browser clients. Empty turns the client off."

@@ -105,14 +105,13 @@ describe('Config Controller', () => {
     expect(res.body).to.have.property('EAGLE_ANALYTICS_URL', 'https://demi-apim-test.azure-api.net/analytics');
   });
 
-  it('serves no penguin-analytics key, even when the stored document still carries one', async () => {
-    // penguin-analytics was uninstalled on 2026-09-07 and its keys dropped from the model.
+  it('serves the three penguin tracking keys nowhere, even when the stored document carries them', async () => {
+    // penguin-analytics was uninstalled on 2026-09-07 and these keys dropped from the model.
     // 20260907000000-drop-penguin-config unsets them, but an environment that has not run it yet
     // must not have them served back to browsers.
     stubConfigModel({
       _schemaName: 'Config',
       ENVIRONMENT: 'test',
-      ANALYTICS_API_URL: '/analytics',
       ANALYTICS_DEBUG: true,
       ANALYTICS_ENHANCED_TRACKING: true,
       ANALYTICS_TRAFFIC_TRACKING: true
@@ -121,10 +120,31 @@ describe('Config Controller', () => {
 
     await configController.publicGet({}, res);
 
-    expect(res.body).to.not.have.property('ANALYTICS_API_URL');
     expect(res.body).to.not.have.property('ANALYTICS_DEBUG');
     expect(res.body).to.not.have.property('ANALYTICS_ENHANCED_TRACKING');
     expect(res.body).to.not.have.property('ANALYTICS_TRAFFIC_TRACKING');
+  });
+
+  it('serves ANALYTICS_API_URL as an empty string when the document has no such field', async () => {
+    // The frontends merge this payload over env.js with a shallow spread and env.js bakes
+    // '/analytics'. An absent key leaves the retired penguin client switched on in the browser,
+    // so '' has to be present, not merely unset.
+    stubHydratedConfig({ _schemaName: 'Config', ENVIRONMENT: 'test' });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.have.property('ANALYTICS_API_URL', '');
+  });
+
+  it('serves ANALYTICS_API_URL as empty even when the document sets a value', async () => {
+    // It is a constant in the controller, not a config key — no Mongo row can switch penguin on.
+    stubConfigModel({ _schemaName: 'Config', ENVIRONMENT: 'test', ANALYTICS_API_URL: '/analytics' });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.have.property('ANALYTICS_API_URL', '');
   });
 
   it('defaults EAGLE_ANALYTICS_URL to an empty string when the row has no opinion on it', async () => {
