@@ -467,7 +467,7 @@ exports.protectedPut = async function (args, res) {
     var c = await Comment.updateOne({ _id: objId }, { $set: comment });
     Utils.recordAction('Put', 'Comment', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Comment updated:', c);
-    const fresh = await Comment.findById(objId).catch(() => null);
+    const fresh = await demiPush.freshDoc(Comment, objId);
     demiPush.comment(fresh);
     return Actions.sendResponse(res, 200, c);
   } catch (e) {
@@ -496,7 +496,7 @@ exports.protectedStatus = async function (args, res) {
     var c = await Comment.updateOne({ _id: objId }, { $set: comment });
     Utils.recordAction('Status', 'Comment', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Comment updated:', c);
-    const fresh = await Comment.findById(objId).catch(() => null);
+    const fresh = await demiPush.freshDoc(Comment, objId);
     demiPush.comment(fresh);
     return Actions.sendResponse(res, 200, c);
   } catch (e) {

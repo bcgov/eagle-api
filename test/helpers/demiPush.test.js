@@ -234,6 +234,28 @@ describe('DemiPush Helper', () => {
       expect(pushedDoc().legislation_2002.applicableRegulation).to.deep.equal(populated);
     });
 
+    it('should leave a null proponent, regulation and pin out of the lookups', async () => {
+      const { listFind, orgFind } = stubModels(LISTS, ORGS);
+      fetchStub.resolves(okResponse());
+      const project = projectDoc();
+      project.legislation_2002.proponent = null;
+      project.legislation_2002.applicableRegulation = null;
+      project.pins = [null, PIN_A];
+
+      await demiPush.project(project);
+
+      // a null id must not reach Mongo as the string 'null', which casts to an error
+      expect(listFind.called).to.be.false;
+      expect(orgFind.calledOnceWithExactly({ _id: { $in: [PIN_A] } }, '_id name province')).to.be.true;
+
+      const doc = pushedDoc();
+      expect(doc.legislation_2002.applicableRegulation).to.equal(null);
+      expect(doc.legislation_2002.proponentId).to.equal(null);
+      expect(doc.legislation_2002.proponentName).to.equal(null);
+      expect(doc.pins).to.deep.equal([{ _id: PIN_A, name: 'First Nation A', province: 'BC' }]);
+      expect(errorStub.called).to.be.false;
+    });
+
     it('should drop a pin whose organization is gone and null a missing regulation', async () => {
       stubModels([], [{ _id: PIN_B, name: 'First Nation B', province: 'AB' }]);
       fetchStub.resolves(okResponse());
