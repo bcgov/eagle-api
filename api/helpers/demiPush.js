@@ -193,21 +193,13 @@ exports.comment = mirror('comments', 'comment');
 exports.organization = mirror('organizations', 'organization');
 exports.projectNotification = mirror('notifications', 'projectNotification');
 
-// The served /api/config payload carries none of these, but a caller handing over the stored
-// document would; DEMI keys the mirror on its own item id, not on an Eagle _id.
-const CONFIG_INTERNALS = ['_id', '__v', '_schemaName'];
-
-// One config document, one id. The body is the payload as it stands rather than the `{ doc }`
-// envelope the id-keyed mirrors use: there is no _id here for DEMI to match the path against.
-exports.config = async function (doc) {
-  if (!client.configured() || !doc) {
+// One config document, one id, and `body` is already the payload GET /api/config served — no
+// `{ doc }` envelope, because there is no _id here for DEMI to match the path against.
+exports.config = async function (body) {
+  if (!client.configured() || !body) {
     return true;
   }
   try {
-    const body = toPushBody(doc);
-    for (const key of CONFIG_INTERNALS) {
-      delete body[key];
-    }
     return await push('config', 'public', body);
   } catch (err) {
     defaultLog.error('[demiPush] config push failed', { error: err.message, stack: err.stack });

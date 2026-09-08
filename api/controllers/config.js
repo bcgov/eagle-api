@@ -4,14 +4,22 @@ var Actions = require('../helpers/actions');
 const crypto = require('crypto');
 const demiPush = require('../helpers/demiPush');
 
-// Hash of the payload this pod last mirrored to DEMI: the push fires once per boot, then only
-// when the served value changes.
+// Hash of the payload this pod has DEMI holding. Only a push that landed sets it, so a rejected
+// one is retried by the next read instead of leaving DEMI stale for the life of the pod.
 let lastPushedHash = null;
+let pushInFlight = false;
 
-// Sorted keys, or the digest moves with insertion order and every request pushes. The payload is
-// flat, so an array replacer is enough to fix the order.
 function payloadHash(payload) {
-  return crypto.createHash('sha1').update(JSON.stringify(payload, Object.keys(payload).sort())).digest('hex');
+  return crypto.createHash('sha1').update(JSON.stringify(payload)).digest('hex');
+}
+
+// Detached on purpose: the caller's 200 must not wait on DEMI. The in-flight flag is what keeps
+// concurrent reads from each firing their own push while the first is still out.
+function mirrorToDemi(payload, hash) {
+  pushInFlight = true;
+  demiPush.config(payload)
+    .then(landed => { if (landed) { lastPushedHash = hash; } })
+    .finally(() => { pushInFlight = false; });
 }
 
 // The keys this endpoint will serve, and the only ones. The schema already drops undeclared
@@ -81,9 +89,8 @@ exports.publicGet = async function (args, res) {
     // The mirror push lives on the read path because Config has no write controller — hand edits
     // in Mongo are the only writes, so the served payload is the only place a change surfaces.
     const hash = payloadHash(payload);
-    if (hash !== lastPushedHash) {
-      lastPushedHash = hash;
-      demiPush.config(payload);
+    if (hash !== lastPushedHash && !pushInFlight) {
+      mirrorToDemi(payload, hash);
     }
 
     return Actions.sendResponse(res, 200, payload);

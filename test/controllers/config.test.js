@@ -306,9 +306,19 @@ describe('Config Controller', () => {
       });
     });
 
+    // The push is detached from the response, so let its bookkeeping drain before asking what
+    // happened. `get` skips the drain for the tests that want reads overlapping a pending push.
+    const drain = () => new Promise(setImmediate);
+
     const get = async () => {
       const res = fakeRes();
       await controller.publicGet({}, res);
+      return res;
+    };
+
+    const getAndDrain = async () => {
+      const res = await get();
+      await drain();
       return res;
     };
 
@@ -323,17 +333,17 @@ describe('Config Controller', () => {
     });
 
     it('does not push again when the next read serves the same payload', async () => {
-      await get();
-      await get();
-      await get();
+      await getAndDrain();
+      await getAndDrain();
+      await getAndDrain();
 
       expect(demiPush.config.callCount).to.equal(1);
     });
 
     it('pushes again once the stored configuration changes', async () => {
-      await get();
+      await getAndDrain();
       stored.BANNER_COLOUR = 'red';
-      const res = await get();
+      const res = await getAndDrain();
 
       expect(demiPush.config.callCount).to.equal(2);
       expect(demiPush.config.secondCall.args[0]).to.have.property('BANNER_COLOUR', 'red');
@@ -341,12 +351,44 @@ describe('Config Controller', () => {
     });
 
     it('pushes again when a key is removed rather than changed', async () => {
-      await get();
+      await getAndDrain();
       delete stored.BANNER_COLOUR;
-      await get();
+      await getAndDrain();
 
       expect(demiPush.config.callCount).to.equal(2);
       expect(demiPush.config.secondCall.args[0]).to.not.have.property('BANNER_COLOUR');
+    });
+
+    it('retries on the next read when the push did not land', async () => {
+      // Nothing else resets the pod's idea of what DEMI holds, so an unchanged payload has to be
+      // offered again or DEMI keeps a stale copy until the pod restarts.
+      demiPush.config.resolves(false);
+
+      await getAndDrain();
+      await getAndDrain();
+      await getAndDrain();
+
+      expect(demiPush.config.callCount).to.equal(3);
+    });
+
+    it('stops retrying once a push lands', async () => {
+      demiPush.config.onFirstCall().resolves(false);
+
+      await getAndDrain();
+      await getAndDrain();
+      await getAndDrain();
+
+      expect(demiPush.config.callCount).to.equal(2);
+    });
+
+    it('fires one push when reads overlap a push that has not landed yet', async () => {
+      let land;
+      demiPush.config.returns(new Promise(resolve => { land = resolve; }));
+
+      await Promise.all([get(), get(), get()]);
+
+      expect(demiPush.config.callCount).to.equal(1);
+      land(true);
     });
 
     it('still serves 200 when the push reports it did not land', async () => {
