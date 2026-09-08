@@ -28,7 +28,7 @@ const Utils = require('../../api/helpers/utils');
 const searchController = require('../../api/controllers/search');
 const commentPeriodController = require('../../api/controllers/commentperiod');
 
-const TEST_URI = process.env.MONGODB_TEST_URI || 'mongodb://127.0.0.1:27017/epic-parent-read-test';
+const TEST_URI = process.env.MONGODB_TEST_URI || 'mongodb://127.0.0.1:27017/epic-parent-read-test?directConnection=true';
 
 const id = (hex) => new mongoose.Types.ObjectId(hex);
 

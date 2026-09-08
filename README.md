@@ -135,6 +135,10 @@ migrate-mongo config inline. The bare `migrate-mongo` CLI does not work — ther
 See [migrations/README.md](migrations/README.md) for how to run them locally against a port-forward,
 how to run them in-cluster with `oc exec`, and why that is preferred over the Helm `pre-upgrade` hook.
 
+One-off data scripts live in `scripts/` and are described in the same file, including
+`yarn demi:repush` (`scripts/demi-repush.js`), which re-sends existing records to DEMI through
+`api/helpers/demiPush.js` so rows seeded without the push-only enrichment get it.
+
 ## Developing
 
 See [Code Reuse Strategy](https://github.com/bcgov/eagle-dev-guides/dev_guides/code_reuse_strategy.md)

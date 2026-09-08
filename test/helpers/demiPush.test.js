@@ -101,19 +101,20 @@ describe('DemiPush Helper', () => {
   describe('dark by default', () => {
     it('should not call fetch when DEMI_API_BASE is unset', async () => {
       delete process.env.DEMI_API_BASE;
-      await demiPush.project({ _id: 'p1', name: 'Test' });
+      // Nothing to send is not a failure: a caller that counts results must not see this as one.
+      expect(await demiPush.project({ _id: 'p1', name: 'Test' })).to.be.true;
       expect(fetchStub.called).to.be.false;
     });
 
     it('should not call fetch for documents when DEMI_API_BASE is unset', async () => {
       delete process.env.DEMI_API_BASE;
-      await demiPush.document({ _id: 'd1' });
+      expect(await demiPush.document({ _id: 'd1' })).to.be.true;
       expect(fetchStub.called).to.be.false;
     });
 
     it('should not call fetch for Updates when DEMI_API_BASE is unset', async () => {
       delete process.env.DEMI_API_BASE;
-      await demiPush.recentActivity({ _id: 'u1' });
+      expect(await demiPush.recentActivity({ _id: 'u1' })).to.be.true;
       expect(fetchStub.called).to.be.false;
     });
 
@@ -145,8 +146,9 @@ describe('DemiPush Helper', () => {
 
     it('should PUT to the APIM eagle project route with the subscription key', async () => {
       fetchStub.resolves(okResponse());
-      await demiPush.project({ _id: 'p1', name: 'Test' });
+      const landed = await demiPush.project({ _id: 'p1', name: 'Test' });
 
+      expect(landed).to.be.true;
       expect(fetchStub.calledOnce).to.be.true;
       const [url, options] = fetchStub.firstCall.args;
       // APIM's backend supplies /api, so a second one here would 404
@@ -160,10 +162,11 @@ describe('DemiPush Helper', () => {
       expect(errorStub.called).to.be.false;
     });
 
-    it('should resolve and log once when fetch throws', async () => {
+    it('should resolve false and log once when fetch throws', async () => {
       fetchStub.rejects(new Error('ECONNREFUSED'));
-      await demiPush.project({ _id: 'p1' });
+      const landed = await demiPush.project({ _id: 'p1' });
 
+      expect(landed).to.be.false;
       expect(errorStub.calledOnce).to.be.true;
       const [message, meta] = errorStub.firstCall.args;
       expect(message).to.equal('[demiPush] projects p1 failed');
@@ -173,16 +176,18 @@ describe('DemiPush Helper', () => {
 
     it('should retry once on a 5xx', async () => {
       fetchStub.resolves(failResponse(500));
-      await demiPush.project({ _id: 'p1' });
+      const landed = await demiPush.project({ _id: 'p1' });
 
+      expect(landed).to.be.false;
       expect(fetchStub.callCount).to.equal(2);
       expect(errorStub.calledOnceWith('[demiPush] projects p1 rejected 500')).to.be.true;
     });
 
     it('should not retry on a 4xx', async () => {
       fetchStub.resolves(failResponse(404));
-      await demiPush.project({ _id: 'p1' });
+      const landed = await demiPush.project({ _id: 'p1' });
 
+      expect(landed).to.be.false;
       expect(fetchStub.callCount).to.equal(1);
       expect(errorStub.calledOnceWith('[demiPush] projects p1 rejected 404')).to.be.true;
     });
@@ -291,17 +296,24 @@ describe('DemiPush Helper', () => {
       expect(pushedDoc().legislation_2002.proponentName).to.equal('Acme Mining');
     });
 
-    it('should log once and swallow a failed Organization read', async () => {
+    it('should resolve false, log once and swallow a failed Organization read', async () => {
       const model = sinon.stub(mongoose, 'model');
       model.withArgs('List').returns({ find: sinon.stub().returns({ lean: () => Promise.resolve(LISTS) }) });
       model.withArgs('Organization').returns({ find: sinon.stub().returns({ lean: () => Promise.reject(new Error('mongo down')) }) });
 
-      await demiPush.project(projectDoc());
+      const landed = await demiPush.project(projectDoc());
 
+      expect(landed).to.be.false;
       expect(fetchStub.called).to.be.false;
       expect(errorStub.calledOnce).to.be.true;
       expect(errorStub.firstCall.args[0]).to.equal('[demiPush] project push failed');
       expect(errorStub.firstCall.args[1].error).to.equal('mongo down');
+    });
+
+    it('should not push an Update without a document or an _id', async () => {
+      expect(await demiPush.recentActivity(null)).to.be.true;
+      expect(await demiPush.recentActivity({ headline: 'No id' })).to.be.true;
+      expect(fetchStub.called).to.be.false;
     });
 
     it('should PUT an Update to the APIM eagle updates route', async () => {
@@ -319,8 +331,9 @@ describe('DemiPush Helper', () => {
     MIRRORED.forEach(([kind, segment]) => {
       it(`should PUT a ${kind} to the APIM eagle ${segment} route`, async () => {
         fetchStub.resolves(okResponse());
-        await demiPush[kind]({ _id: 'x1', name: 'Thing', read: ['public'] });
+        const landed = await demiPush[kind]({ _id: 'x1', name: 'Thing', read: ['public'] });
 
+        expect(landed).to.be.true;
         expect(fetchStub.calledOnce).to.be.true;
         const [url, options] = fetchStub.firstCall.args;
         expect(url).to.equal(`${BASE}/eagle/${segment}/x1`);
@@ -330,9 +343,15 @@ describe('DemiPush Helper', () => {
         expect(errorStub.called).to.be.false;
       });
 
+      it(`should resolve false when a ${kind} PUT is rejected`, async () => {
+        fetchStub.resolves(failResponse(404));
+
+        expect(await demiPush[kind]({ _id: 'x1' })).to.be.false;
+      });
+
       it(`should not push a ${kind} without an _id`, async () => {
-        await demiPush[kind]({ name: 'No id' });
-        await demiPush[kind](null);
+        expect(await demiPush[kind]({ name: 'No id' })).to.be.true;
+        expect(await demiPush[kind](null)).to.be.true;
         expect(fetchStub.called).to.be.false;
       });
 
@@ -379,7 +398,7 @@ describe('DemiPush Helper', () => {
       ], []);
       fetchStub.resolves(okResponse());
 
-      await demiPush.document({
+      const landed = await demiPush.document({
         _id: 'd1',
         type: 'list-type',
         milestone: 'list-milestone',
@@ -387,6 +406,7 @@ describe('DemiPush Helper', () => {
         documentAuthorType: 'list-author'
       });
 
+      expect(landed).to.be.true;
       expect(listFind.calledOnceWithExactly({ _schemaName: 'List' }, '_id name item')).to.be.true;
       expect(fetchStub.calledOnce).to.be.true;
       const [url, options] = fetchStub.firstCall.args;
@@ -397,6 +417,13 @@ describe('DemiPush Helper', () => {
         projectPhase: 'Effects Assessment',
         documentAuthorType: 'Proponent'
       });
+    });
+
+    it('should resolve false when a document PUT is rejected', async () => {
+      stubModels([], []);
+      fetchStub.resolves(failResponse(404));
+
+      expect(await demiPush.document({ _id: 'd1' })).to.be.false;
     });
   });
 });

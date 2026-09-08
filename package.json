@@ -39,7 +39,8 @@
     "test:db": "mocha 'test/db/**/*.test.js' --recursive --exit --timeout 30000",
     "test:smoke": "mocha 'test/smoke/**/*.test.js' --recursive --exit --timeout 30000",
     "test:smoke:public": "mocha 'test/smoke/public-*.test.js' --recursive --exit --timeout 30000",
-    "migrate": "node run_migration.js"
+    "migrate": "node run_migration.js",
+    "demi:repush": "node scripts/demi-repush.js"
   },
   "dependencies": {
     "@azure/monitor-opentelemetry": "^1.19.0",
