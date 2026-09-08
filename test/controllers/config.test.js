@@ -323,12 +323,20 @@ describe('Config Controller', () => {
     };
 
     it('pushes the served payload to DEMI on the first read after boot', async () => {
-      const res = await get();
+      // Snapshot at call time. The controller hands DEMI the very object it serves, so reading the
+      // argument back off the spy afterwards would compare that object with itself.
+      let pushed;
+      demiPush.config.callsFake(body => {
+        pushed = JSON.parse(JSON.stringify(body));
+        return Promise.resolve(true);
+      });
+
+      const res = await getAndDrain();
 
       expect(res.statusCode).to.equal(200);
       expect(demiPush.config.calledOnce).to.be.true;
       // exactly what the caller got, shim included
-      expect(demiPush.config.firstCall.args).to.deep.equal([res.body]);
+      expect(pushed).to.deep.equal(res.body);
       expect(res.body).to.have.property('ANALYTICS_API_URL', '');
     });
 
@@ -359,23 +367,38 @@ describe('Config Controller', () => {
       expect(demiPush.config.secondCall.args[0]).to.not.have.property('BANNER_COLOUR');
     });
 
-    it('retries on the next read when the push did not land', async () => {
-      // Nothing else resets the pod's idea of what DEMI holds, so an unchanged payload has to be
-      // offered again or DEMI keeps a stale copy until the pod restarts.
+    it('does not retry straight away when the push did not land', async () => {
+      // A DEMI outage must not turn every read into a PUT and an error line.
       demiPush.config.resolves(false);
 
       await getAndDrain();
       await getAndDrain();
       await getAndDrain();
 
-      expect(demiPush.config.callCount).to.equal(3);
+      expect(demiPush.config.callCount).to.equal(1);
+    });
+
+    it('retries once the backoff window has passed', async () => {
+      // Nothing else resets the pod's idea of what DEMI holds, so an unchanged payload has to be
+      // offered again or DEMI keeps a stale copy until the pod restarts.
+      const clock = sinon.useFakeTimers({ toFake: ['Date'] });
+      demiPush.config.resolves(false);
+
+      await getAndDrain();
+      clock.tick(60000);
+      await getAndDrain();
+
+      expect(demiPush.config.callCount).to.equal(2);
     });
 
     it('stops retrying once a push lands', async () => {
+      const clock = sinon.useFakeTimers({ toFake: ['Date'] });
       demiPush.config.onFirstCall().resolves(false);
 
       await getAndDrain();
+      clock.tick(60000);
       await getAndDrain();
+      clock.tick(60000);
       await getAndDrain();
 
       expect(demiPush.config.callCount).to.equal(2);

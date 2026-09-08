@@ -1,24 +1,29 @@
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
-const crypto = require('crypto');
 const demiPush = require('../helpers/demiPush');
 
-// Hash of the payload this pod has DEMI holding. Only a push that landed sets it, so a rejected
-// one is retried by the next read instead of leaving DEMI stale for the life of the pod.
-let lastPushedHash = null;
-let pushInFlight = false;
+// While DEMI is rejecting, back off instead of spending a PUT and an error line on every read.
+const RETRY_AFTER_MS = 60000;
 
-function payloadHash(payload) {
-  return crypto.createHash('sha1').update(JSON.stringify(payload)).digest('hex');
-}
+// The serialized payload this pod has DEMI holding. Only a push that landed sets it, so a rejected
+// one is retried instead of leaving DEMI stale for the life of the pod.
+let lastPushed = null;
+let pushInFlight = false;
+let retryAfter = 0;
 
 // Detached on purpose: the caller's 200 must not wait on DEMI. The in-flight flag is what keeps
 // concurrent reads from each firing their own push while the first is still out.
-function mirrorToDemi(payload, hash) {
+function mirrorToDemi(payload, serialized) {
   pushInFlight = true;
   demiPush.config(payload)
-    .then(landed => { if (landed) { lastPushedHash = hash; } })
+    .then(landed => {
+      if (landed) {
+        lastPushed = serialized;
+      } else {
+        retryAfter = Date.now() + RETRY_AFTER_MS;
+      }
+    })
     .finally(() => { pushInFlight = false; });
 }
 
@@ -88,9 +93,9 @@ exports.publicGet = async function (args, res) {
 
     // The mirror push lives on the read path because Config has no write controller — hand edits
     // in Mongo are the only writes, so the served payload is the only place a change surfaces.
-    const hash = payloadHash(payload);
-    if (hash !== lastPushedHash && !pushInFlight) {
-      mirrorToDemi(payload, hash);
+    const serialized = JSON.stringify(payload);
+    if (serialized !== lastPushed && !pushInFlight && Date.now() >= retryAfter) {
+      mirrorToDemi(payload, serialized);
     }
 
     return Actions.sendResponse(res, 200, payload);
