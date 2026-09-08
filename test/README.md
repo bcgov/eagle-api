@@ -15,8 +15,15 @@ npm run test:watch
 npm run db:up && npm run test:db
 ```
 
-`db:up` publishes the docker-compose.yml MongoDB on 27017, which is what `test:db` defaults to.
-Set `MONGODB_TEST_URI` to point it at a different server.
+`db:up` publishes the docker-compose.yml MongoDB on 27017 as a single-member replica set, so
+`test:db` defaults to a direct connection (`?directConnection=true`) rather than replica-set
+discovery. Set `MONGODB_TEST_URI` to point it at a different server.
+
+A plain standalone MongoDB also works, with no replica set needed:
+
+```bash
+docker run -d --rm -p 27017:27017 mongo:8.2
+```
 
 CI runs `test:db` as its own step against a MongoDB service container.
 
