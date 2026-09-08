@@ -20,12 +20,14 @@
 const fs = require('fs');
 const mongoose = require('mongoose');
 
-// app_helper registers the 'default' logger, requires every model, and connects mongoose. Unlike
-// normalise-audit-action.js this script needs all three: demiPush resolves List and Organization
-// through mongoose models.
+// Requiring app_helper registers the 'default' logger and every mongoose model, which demiPush
+// needs to resolve List and Organization. Its connect is not used: it builds a URI with no port, so
+// MONGODB_PORT would be ignored, and it logs that URI with the password in it.
 const appHelper = require('../app_helper');
 const demiPush = require('../api/helpers/demiPush');
 const pushClient = require('../api/helpers/pushClient');
+const { buildMongoUri } = require('../config/mongo_uri');
+const { mongooseOptions } = require('../config/mongoose_options');
 
 const defaultLog = appHelper.defaultLog;
 
@@ -77,7 +79,10 @@ Usage: node scripts/demi-repush.js [options]
 
 Connection comes from the same env vars run_migration.js uses: MONGODB_SERVICE_HOST, MONGODB_PORT,
 MONGODB_DATABASE, MONGODB_USERNAME, MONGODB_PASSWORD, MONGODB_AUTHSOURCE. Pushes need DEMI_API_BASE
-and DEMI_APIM_KEY; without them the run exits 2 rather than reporting a silent success.`;
+and DEMI_APIM_KEY; without them the run exits 2 rather than reporting a silent success.
+
+Exit codes: 0 everything pushed, 1 the run itself failed, 2 bad arguments or DEMI not configured,
+3 the run finished with records DEMI did not accept.`;
 
 // Only a Date path can be compared to a Date; a String path would match on text order.
 function dateFields(model, names) {
@@ -282,7 +287,10 @@ function validate(args) {
 async function run(args) {
   const kind = KINDS[args.kind];
 
-  await appHelper.loadMongoose();
+  const uri = buildMongoUri();
+  // Naming the target guards against backfilling from the wrong database; the password stays out.
+  defaultLog.info(`[demi-repush] connecting to ${uri.replace(/\/\/[^@]+@/, '//')}`);
+  await mongoose.connect(uri, mongooseOptions);
 
   const model = mongoose.model(kind.model);
   const previous = readState(args.state);
@@ -347,7 +355,12 @@ if (require.main === module) {
     process.exit(2);
   }
 
-  run(args).catch(err => {
+  run(args).then(counts => {
+    // exitCode rather than exit(), so the summary lines flush first.
+    if (counts.failed > 0) {
+      process.exitCode = 3;
+    }
+  }).catch(err => {
     defaultLog.error(`[demi-repush] run failed: ${err.message}`, { stack: err.stack });
     process.exit(1);
   });

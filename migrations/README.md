@@ -129,3 +129,7 @@ the state file. The checkpoint then stops advancing: it holds at the last record
 behind it, so a rerun starts before the gap rather than past it, re-pushing the records after it.
 That is safe — every DEMI write is a PUT on the record id — and it means the run summary,
 `N seen, N pushed, N failed`, is the whole story.
+
+Exit codes, so a wrapper can tell a partial backfill from a clean one: 0 everything pushed, 1 the run
+itself failed, 2 bad arguments or DEMI not configured, 3 the run finished with records DEMI did not
+accept. The first log line names the database it connected to, without the password.

@@ -132,6 +132,17 @@ describe('demi-repush', () => {
       expect(onCheckpoint.args.map(call => call[0])).to.deep.equal(['id-2', 'id-2', 'id-2']);
     });
 
+    it('checkpoints the record before the failed one when the failure lands mid-batch', async () => {
+      const onCheckpoint = sinon.stub().resolves();
+      const push = sinon.stub().resolves(true);
+      push.withArgs(sinon.match({ _id: 'id-2' })).resolves(false);
+
+      await repush({ cursor: fakeCursor(docs(6)), push, onCheckpoint, log: quietLog(), dryRun: false, concurrency: 3 });
+
+      // Batches are [1,2,3] [4,5,6]: id-2 fails at index 1, so the checkpoint stops at id-1.
+      expect(onCheckpoint.args.map(call => call[0])).to.deep.equal(['id-1', 'id-1']);
+    });
+
     it('keeps the previous run\'s checkpoint when the first record of a resumed run fails', async () => {
       const onCheckpoint = sinon.stub().resolves();
       const push = sinon.stub().resolves(false);

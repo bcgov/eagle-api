@@ -108,13 +108,13 @@ describe('DemiPush Helper', () => {
 
     it('should not call fetch for documents when DEMI_API_BASE is unset', async () => {
       delete process.env.DEMI_API_BASE;
-      await demiPush.document({ _id: 'd1' });
+      expect(await demiPush.document({ _id: 'd1' })).to.be.true;
       expect(fetchStub.called).to.be.false;
     });
 
     it('should not call fetch for Updates when DEMI_API_BASE is unset', async () => {
       delete process.env.DEMI_API_BASE;
-      await demiPush.recentActivity({ _id: 'u1' });
+      expect(await demiPush.recentActivity({ _id: 'u1' })).to.be.true;
       expect(fetchStub.called).to.be.false;
     });
 
@@ -308,6 +308,12 @@ describe('DemiPush Helper', () => {
       expect(errorStub.calledOnce).to.be.true;
       expect(errorStub.firstCall.args[0]).to.equal('[demiPush] project push failed');
       expect(errorStub.firstCall.args[1].error).to.equal('mongo down');
+    });
+
+    it('should not push an Update without a document or an _id', async () => {
+      expect(await demiPush.recentActivity(null)).to.be.true;
+      expect(await demiPush.recentActivity({ headline: 'No id' })).to.be.true;
+      expect(fetchStub.called).to.be.false;
     });
 
     it('should PUT an Update to the APIM eagle updates route', async () => {
