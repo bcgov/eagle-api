@@ -6394,12 +6394,12 @@ paths:
           required: false
         - in: query
           name: dataset
-          description: "Dataset to search on"
+          description: "Dataset to search on. 'Item' returns the single record named by _id and _schemaName."
           type: string
           required: false
         - in: query
           name: _schemaName
-          description: "Schema to search on"
+          description: "Schema of the record to return with dataset=Item. Documents, comment periods, comments and valued components are withheld when the caller cannot read their parent."
           type: string
           required: false
         - in: query
@@ -6495,7 +6495,7 @@ paths:
             type: string
         - in: query
           name: _schemaName
-          description: "Schema to search on"
+          description: "Schema of the record to return with dataset=Item. Documents, comment periods, comments and valued components are withheld when the caller cannot read their parent."
           type: string
           required: false
         - in: query
@@ -6508,7 +6508,7 @@ paths:
             type: string
         - in: query
           name: dataset
-          description: "Dataset to search on"
+          description: "Dataset to search on. 'Item' returns the single record named by _id and _schemaName."
           type: string
           required: false
         - in: query

@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 
 const constants = require('../helpers/constants').schemaTypes;
+const parentReadAggr = require('../helpers/parentReadAggr');
+
+// Schemas that can be published in their own right while their parent is not, so the parent's
+// `read[]` decides. Everything else reachable here is either a parent itself (Project,
+// ProjectNotification), unowned (List, Organization), or staff-only by its own `read[]`.
+const PROJECT_GATED_SCHEMAS = [constants.DOCUMENT, constants.COMMENT_PERIOD, constants.VC];
 
 /**
  * Creates an aggregate for an item.
@@ -47,6 +53,32 @@ exports.createItemAggr = (itemId, schemaName, roles) => {
       }
     }
   );
+
+  if (PROJECT_GATED_SCHEMAS.includes(schemaName)) {
+    aggregation.push(...parentReadAggr(roles));
+  } else if (schemaName === constants.COMMENT) {
+    // A comment hangs off a comment period, which hangs off a project, so both levels gate it.
+    aggregation.push(
+      ...parentReadAggr(roles, 'period'),
+      {
+        '$lookup': {
+          'from': 'epic',
+          'localField': 'period',
+          'foreignField': '_id',
+          'as': 'periodParentCheck'
+        }
+      },
+      {
+        '$addFields': {
+          periodProject: { $arrayElemAt: ['$periodParentCheck.project', 0] }
+        }
+      },
+      ...parentReadAggr(roles, 'periodProject'),
+      {
+        '$project': { periodParentCheck: 0, periodProject: 0 }
+      }
+    );
+  }
 
   if (schemaName === constants.INSPECTION) {
     // pop elements and their items.

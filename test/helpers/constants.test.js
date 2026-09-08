@@ -70,9 +70,13 @@ describe('Constants Validation', () => {
       expect(constants.schemaTypes).to.have.property('ORGANIZATION', 'Organization');
     });
 
-    it('should have exactly 14 schema types defined', () => {
+    it('should have VC schema type', () => {
+      expect(constants.schemaTypes).to.have.property('VC', 'Vc');
+    });
+
+    it('should have exactly 15 schema types defined', () => {
       const keys = Object.keys(constants.schemaTypes);
-      expect(keys).to.have.lengthOf(14);
+      expect(keys).to.have.lengthOf(15);
     });
 
     it('should not allow modification of schema types', () => {
