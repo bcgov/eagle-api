@@ -28,21 +28,23 @@ const Utils = require('../../api/helpers/utils');
 const searchController = require('../../api/controllers/search');
 const commentPeriodController = require('../../api/controllers/commentperiod');
 
-const TEST_URI = process.env.MONGODB_TEST_URI || 'mongodb://127.0.0.1:27017/epic-parent-read-test?directConnection=true';
+const {
+  TEST_URI,
+  id,
+  STAFF_ONLY,
+  PUBLIC_READ,
+  PUBLIC_PROJECT,
+  PRIVATE_PROJECT,
+  PUBLIC_NOTIFICATION,
+  PRIVATE_NOTIFICATION,
+  PUBLIC_ONLY_PROJECT,
+  EMPTY_READ_PROJECT,
+  PARENT_FIXTURES,
+  capture,
+  idsIn
+} = require('./parentReadFixtures');
 
-const id = (hex) => new mongoose.Types.ObjectId(hex);
-
-// Two parents the public may read, two it may not. Periods below are all published themselves.
-const PUBLIC_PROJECT = id('58990017d334ee001d608b01');
-const PRIVATE_PROJECT = id('58990017d334ee001d608bbd');
-const PUBLIC_NOTIFICATION = id('6a288dc06452d0c8edd7c32b');
-const PRIVATE_NOTIFICATION = id('6a288dc06452d0c8edd7c99b');
-// Real Keycloak tokens never carry 'public', so a project readable only by the public is the one
-// shape that tells the role-augmentation apart from the caller's raw roles.
-const PUBLIC_ONLY_PROJECT = id('58990017d334ee001d608b02');
-// A project that never had its read[] set. Empty means public, same as a missing read[].
-const EMPTY_READ_PROJECT = id('58990017d334ee001d608b03');
-
+// Periods below are all published themselves; only their parent differs.
 const CP_UNDER_PUBLIC_PROJECT = id('58990017d334ee001d608c01');
 const CP_UNDER_PRIVATE_PROJECT = id('58990017d334ee001d608c02');
 const CP_UNDER_PUBLIC_NOTIFICATION = id('6a288e6d6452d0c8edd7c33a');
@@ -50,27 +52,6 @@ const CP_UNDER_PRIVATE_NOTIFICATION = id('6a288e6d6452d0c8edd7c44a');
 const CP_WITH_NO_PARENT = id('58990017d334ee001d608c03');
 const CP_UNDER_PUBLIC_ONLY_PROJECT = id('58990017d334ee001d608c04');
 const CP_UNDER_EMPTY_READ_PROJECT = id('58990017d334ee001d608c05');
-
-const STAFF_ONLY = ['sysadmin', 'staff'];
-const PUBLIC_READ = ['public', 'staff', 'sysadmin'];
-const PUBLIC_ONLY = ['public'];
-
-const project = (_id, read, name) => ({
-  _id,
-  _schemaName: 'Project',
-  read,
-  currentLegislationYear: 'legislation_2018',
-  legislation_2018: { name, type: 'Mine' },
-  legislation_2002: { name, type: 'Mine' }
-});
-
-const notification = (_id, read, name) => ({
-  _id,
-  _schemaName: 'ProjectNotification',
-  read,
-  name,
-  type: 'Notification'
-});
 
 const period = (_id, parent, name) => ({
   _id,
@@ -86,17 +67,12 @@ const period = (_id, parent, name) => ({
 });
 
 const FIXTURES = [
-  project(PUBLIC_PROJECT, PUBLIC_READ, 'Public Project'),
-  project(PRIVATE_PROJECT, STAFF_ONLY, 'Unpublished Project'),
-  notification(PUBLIC_NOTIFICATION, PUBLIC_READ, 'Public Notification'),
-  notification(PRIVATE_NOTIFICATION, STAFF_ONLY, 'Unpublished Notification'),
+  ...PARENT_FIXTURES,
   period(CP_UNDER_PUBLIC_PROJECT, PUBLIC_PROJECT, 'under public project'),
   period(CP_UNDER_PRIVATE_PROJECT, PRIVATE_PROJECT, 'under unpublished project'),
   period(CP_UNDER_PUBLIC_NOTIFICATION, PUBLIC_NOTIFICATION, 'under public notification'),
   period(CP_UNDER_PRIVATE_NOTIFICATION, PRIVATE_NOTIFICATION, 'under unpublished notification'),
   period(CP_WITH_NO_PARENT, null, 'orphan'),
-  project(PUBLIC_ONLY_PROJECT, PUBLIC_ONLY, 'Public Only Project'),
-  project(EMPTY_READ_PROJECT, [], 'Unset Read Project'),
   period(CP_UNDER_PUBLIC_ONLY_PROJECT, PUBLIC_ONLY_PROJECT, 'under public only project'),
   period(CP_UNDER_EMPTY_READ_PROJECT, EMPTY_READ_PROJECT, 'under unset read project')
 ];
@@ -141,24 +117,6 @@ function listArgs(roles) {
     }
   };
 }
-
-// Controllers answer through Actions.sendResponse, which writes to the express response.
-function capture() {
-  const body = {};
-  const res = {
-    status(code) { body.code = code; return this; },
-    json(data) { body.data = data; return this; },
-    send(data) { body.data = data; return this; },
-    setHeader() { }
-  };
-  return { res, body };
-}
-
-const idsIn = (payload) => {
-  const rows = Array.isArray(payload) ? payload : [];
-  const results = rows.length && rows[0].searchResults ? rows[0].searchResults : rows;
-  return results.map(r => String(r._id));
-};
 
 describe('comment period parent visibility (requires MongoDB)', function () {
   this.timeout(20000);

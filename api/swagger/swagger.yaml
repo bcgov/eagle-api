@@ -3718,7 +3718,7 @@ paths:
         - document
       summary: "Get a list of documents"
       operationId: protectedGet
-      description: "Authenticated access to retreiving a document."
+      description: "Authenticated access to retreiving a document. A document is returned only when the caller's roles can read both the document and its parent project or notification."
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -3801,7 +3801,7 @@ paths:
         - document
       summary: "Get a document"
       operationId: protectedGet
-      description: "Authenticated access to retreiving a document."
+      description: "Authenticated access to retreiving a document. A document is returned only when the caller's roles can read both the document and its parent project or notification."
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -4209,7 +4209,7 @@ paths:
         - document
       summary: "Download a document"
       operationId: protectedDownload
-      description: "Authenticated access to retreiving a document binary."
+      description: "Authenticated access to retreiving a document binary. Served only when the caller's roles can read both the document and its parent project or notification."
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -4256,7 +4256,7 @@ paths:
         - document
       summary: "Download a document"
       operationId: protectedDownload
-      description: "Authenticated access to retreiving a document binary."
+      description: "Authenticated access to retreiving a document binary. Served only when the caller's roles can read both the document and its parent project or notification."
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -4308,7 +4308,7 @@ paths:
         - document
       summary: "Download a document"
       operationId: protectedOpen
-      description: "Authenticated access to retreiving a document binary."
+      description: "Authenticated access to retreiving a document binary. Served only when the caller's roles can read both the document and its parent project or notification."
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -4392,7 +4392,7 @@ paths:
         - document
       summary: "Get a list of documents"
       operationId: publicGet
-      description: "Retreiving public documents."
+      description: "Retreiving public documents. A document is returned only when both the document and its parent project or notification are public."
       parameters:
         - in: query
           name: docIds
@@ -4456,7 +4456,7 @@ paths:
         - document
       summary: "Get a document"
       operationId: publicGet
-      description: "Public access to retreiving documents."
+      description: "Public access to retreiving documents. A document is returned only when both the document and its parent project or notification are public."
       parameters:
         - name: docId
           in: path
@@ -4509,7 +4509,7 @@ paths:
         - document
       summary: "Download a document"
       operationId: publicDownload
-      description: "Authenticated access to retreiving a document binary."
+      description: "Public access to retreiving a document binary. Served only when both the document and its parent project or notification are public."
       parameters:
         - name: docId
           in: path
@@ -4558,7 +4558,7 @@ paths:
         - document
       summary: "Download a document"
       operationId: publicDownload
-      description: "Authenticated access to retreiving a document binary."
+      description: "Public access to retreiving a document binary. Served only when both the document and its parent project or notification are public."
       parameters:
         - name: docId
           in: path
