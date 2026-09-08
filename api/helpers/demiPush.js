@@ -145,7 +145,9 @@ exports.project = async function (doc) {
   }
 };
 
-exports.document = async function (doc) {
+// `extra` says what the stored document cannot, as it does for the mirrors below: a hard delete
+// leaves nothing to re-read. Without it the body stays the caller's own document, untouched.
+exports.document = async function (doc, extra) {
   if (!client.configured() || !doc || !doc._id) {
     return true;
   }
@@ -158,7 +160,7 @@ exports.document = async function (doc) {
         labels[field] = (entry && entry.name) || null;
       }
     }
-    return await push('documents', doc._id, { doc, labels });
+    return await push('documents', doc._id, { doc: extra ? Object.assign(toPushBody(doc), extra) : doc, labels });
   } catch (err) {
     defaultLog.error('[demiPush] document push failed', { error: err.message, stack: err.stack });
     return false;
