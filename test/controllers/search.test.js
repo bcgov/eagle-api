@@ -119,6 +119,14 @@ describe('Search Controller', () => {
       await searchController.publicGet(args, res);
       expect(res.status.calledWith(400)).to.be.true;
     });
+
+    // Item accepts Vc as a _schemaName, but there is no Vc dataset pipeline, so it must not
+    // reach searchCollection and throw 'Search missing match aggregation'.
+    it('rejects Vc as a dataset', async () => {
+      const args = makeArgs({ dataset: { value: 'Vc' }, _schemaName: { value: 'Vc' } });
+      await searchController.publicGet(args, res);
+      expect(res.status.calledWith(400)).to.be.true;
+    });
   });
 
   describe('executeQuery Pagination Limits', () => {
