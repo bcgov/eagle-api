@@ -37,7 +37,12 @@ exports.resolveParentGate = async (schemaName, roles) => {
  * @param {object} gate Parent ids from resolveParentGate
  * @returns {array} Aggregate for items
  */
-exports.createItemAggr = (itemId, schemaName, roles, gate = {}) => {
+exports.createItemAggr = (itemId, schemaName, roles, gate) => {
+  // Fails closed: without the gate a caller would silently get an ungated pipeline.
+  if (!gate || typeof gate !== 'object' || Array.isArray(gate)) {
+    throw new TypeError('createItemAggr needs the gate object from resolveParentGate; the parent gate is not optional');
+  }
+
   const aggregation = [];
 
   // Ensure 'public' is always included in roles for permission checks

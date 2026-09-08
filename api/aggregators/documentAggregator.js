@@ -136,7 +136,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
  * @param {array} unreadableParentIds Parents the caller cannot read, from helpers/parentRead
  * @returns {array} Aggregate for documents.
  */
-exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize, unreadableParentIds = []) => {
+exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize, unreadableParentIds) => {
   // Runs whether or not the caller asked to populate, and before the project lookup below
   // overwrites the `project` reference the gate reads.
   let aggregation = [...parentReadMatch(unreadableParentIds)];

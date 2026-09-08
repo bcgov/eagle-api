@@ -70,7 +70,12 @@ exports.unreadablePeriodIds = async (roles) => {
  * read every parent.
  */
 exports.parentReadMatch = (unreadableIds, parentField = 'project') => {
-  if (!Array.isArray(unreadableIds) || unreadableIds.length === 0) {
+  // Fails closed: an omitted argument would otherwise build a pipeline with no gate at all.
+  if (!Array.isArray(unreadableIds)) {
+    throw new TypeError('parent read gate needs an array of unreadable ids from helpers/parentRead; pass [] only when a resolver returned none');
+  }
+
+  if (unreadableIds.length === 0) {
     return [];
   }
 

@@ -8,7 +8,7 @@ const { parentReadMatch } = require('../helpers/parentRead');
  * @param {array} unreadableParentIds Parents the caller cannot read, from helpers/parentRead
  * @returns {array} Aggregate for comment periods
  */
-exports.createCommentPeriodAggr = (populate, unreadableParentIds = []) => {
+exports.createCommentPeriodAggr = (populate, unreadableParentIds) => {
   // Runs whether or not the caller asked to populate, so `populate=false` is not a way around it.
   let aggregation = [...parentReadMatch(unreadableParentIds)];
 
