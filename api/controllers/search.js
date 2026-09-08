@@ -42,6 +42,9 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   let schemaAggregation;
   let matchAggregation;
   let regexKeywordAggregation = [];
+  // RecentActivity paginates inside a $facet below, so its gate is kept here to be hoisted ahead
+  // of the $skip/$limit. Every other dataset gates inside its own schema pipeline.
+  let parentGateAggregation = [];
   switch (schemaName) {
   case constants.DOCUMENT: {
     matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, categorized, roles, fuzzy);
@@ -66,16 +69,21 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
     schemaAggregation = userAggregator.createUserAggr(populate);
     break;
-  case constants.RECENT_ACTIVITY:
+  case constants.RECENT_ACTIVITY: {
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = recentActivityAggregator.createRecentActivityAggr(populate);
+    const unreadableParentIds = await parentRead.unreadableParentIds(roles);
+    parentGateAggregation = parentRead.parentReadMatch(unreadableParentIds);
+    schemaAggregation = recentActivityAggregator.createRecentActivityAggr(populate, unreadableParentIds);
     break;
+  }
   // NOTE: RecentActivity with populate uses an optimized pipeline (see below)
   // that paginates BEFORE $lookup to avoid N×$lookup on the entire collection.
-  case constants.INSPECTION:
+  case constants.INSPECTION: {
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
-    schemaAggregation = inspectionAggregator.createInspectionAggr(populate);
+    const unreadableParentIds = await parentRead.unreadableParentIds(roles);
+    schemaAggregation = inspectionAggregator.createInspectionAggr(populate, unreadableParentIds);
     break;
+  }
   case constants.INSPECTION_ELEMENT:
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
     schemaAggregation = inspectionAggregator.createInspectionElementAggr(populate);
@@ -128,8 +136,12 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     if (sortField && sortDirection) {
       sortStages.push({ $sort: sortingValue });
     }
+    // The gate leads schemaAggregation; run it before the page is cut so a hidden row neither
+    // takes a slot on the page nor counts towards the total.
+    const populateStages = schemaAggregation.slice(parentGateAggregation.length);
     aggregation = [
       ...matchAggregation,
+      ...parentGateAggregation,
       ...keywordRegexFilter,
       {
         $facet: {
@@ -137,7 +149,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
             ...sortStages,
             { $skip: pageNum * pageSize },
             { $limit: pageSize },
-            ...schemaAggregation
+            ...populateStages
           ],
           meta: [{ $count: 'searchResultsTotal' }]
         }

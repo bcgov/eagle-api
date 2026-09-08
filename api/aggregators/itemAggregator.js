@@ -7,10 +7,15 @@ const parentRead = require('../helpers/parentRead');
 // Vc dataset pipeline. Item reaches a Vc by _schemaName only.
 const VC_SCHEMA = 'Vc';
 
-// Gated on the parent's `read[]`. Project and ProjectNotification are parents themselves; List and
-// Organization have none. RecentActivity and Inspection do hang off a project but are out of scope
-// here: they leak the same way through their own list aggregators, so both paths get fixed together.
-const PROJECT_GATED_SCHEMAS = [constants.DOCUMENT, constants.COMMENT_PERIOD, VC_SCHEMA];
+// Gated on the parent's `read[]`. Project and ProjectNotification are parents themselves; List,
+// Organization and InspectionElement carry no project reference to gate on.
+const PROJECT_GATED_SCHEMAS = [
+  constants.DOCUMENT,
+  constants.COMMENT_PERIOD,
+  VC_SCHEMA,
+  constants.RECENT_ACTIVITY,
+  constants.INSPECTION
+];
 
 /**
  * Reads the parent sets this schema's gate needs, for createItemAggr's `gate` argument. A schema

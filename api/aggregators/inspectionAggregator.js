@@ -1,11 +1,16 @@
+const { parentReadMatch } = require('../helpers/parentRead');
+
 /**
  * Creates an aggregate for an inspection.
  *
  * @param {boolean} populate Flag indicating if fields need a look up
+ * @param {array} unreadableParentIds Parents the caller cannot read, from helpers/parentRead
  * @returns {array} Aggregate for inspections
  */
-exports.createInspectionAggr = (populate) => {
-  const aggregation = [];
+exports.createInspectionAggr = (populate, unreadableParentIds) => {
+  // Runs whether or not the caller asked to populate, and before the project lookup below
+  // overwrites the `project` reference the gate reads.
+  const aggregation = [...parentReadMatch(unreadableParentIds)];
 
   if (populate) {
     aggregation.push(
