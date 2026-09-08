@@ -6,11 +6,13 @@
  * /api/public/commentperiod and /api/commentperiod. These specs drive the real controllers so the
  * assertions are about what a caller gets back, not about pipeline shape.
  *
- * Needs a MongoDB the aggregation framework actually runs on, so it is not part of `npm test`:
+ * Needs a MongoDB the aggregation framework actually runs on, so it is not part of `npm test`.
+ * CI runs it in its own step against a service container.
  *
- *   docker compose up -d
+ *   npm run db:up
  *   npm run test:db
  *
+ * `db:up` publishes docker-compose.yml's MongoDB on 27017, which is what this defaults to.
  * Point it elsewhere with MONGODB_TEST_URI.
  */
 
@@ -26,7 +28,7 @@ const Utils = require('../../api/helpers/utils');
 const searchController = require('../../api/controllers/search');
 const commentPeriodController = require('../../api/controllers/commentperiod');
 
-const TEST_URI = process.env.MONGODB_TEST_URI || 'mongodb://127.0.0.1:27018/epic-parent-read-test';
+const TEST_URI = process.env.MONGODB_TEST_URI || 'mongodb://127.0.0.1:27017/epic-parent-read-test';
 
 const id = (hex) => new mongoose.Types.ObjectId(hex);
 
@@ -35,15 +37,23 @@ const PUBLIC_PROJECT = id('58990017d334ee001d608b01');
 const PRIVATE_PROJECT = id('58990017d334ee001d608bbd');
 const PUBLIC_NOTIFICATION = id('6a288dc06452d0c8edd7c32b');
 const PRIVATE_NOTIFICATION = id('6a288dc06452d0c8edd7c99b');
+// Real Keycloak tokens never carry 'public', so a project readable only by the public is the one
+// shape that tells the role-augmentation apart from the caller's raw roles.
+const PUBLIC_ONLY_PROJECT = id('58990017d334ee001d608b02');
+// A project that never had its read[] set. Empty means public, same as a missing read[].
+const EMPTY_READ_PROJECT = id('58990017d334ee001d608b03');
 
 const CP_UNDER_PUBLIC_PROJECT = id('58990017d334ee001d608c01');
 const CP_UNDER_PRIVATE_PROJECT = id('58990017d334ee001d608c02');
 const CP_UNDER_PUBLIC_NOTIFICATION = id('6a288e6d6452d0c8edd7c33a');
 const CP_UNDER_PRIVATE_NOTIFICATION = id('6a288e6d6452d0c8edd7c44a');
 const CP_WITH_NO_PARENT = id('58990017d334ee001d608c03');
+const CP_UNDER_PUBLIC_ONLY_PROJECT = id('58990017d334ee001d608c04');
+const CP_UNDER_EMPTY_READ_PROJECT = id('58990017d334ee001d608c05');
 
 const STAFF_ONLY = ['sysadmin', 'staff'];
 const PUBLIC_READ = ['public', 'staff', 'sysadmin'];
+const PUBLIC_ONLY = ['public'];
 
 const project = (_id, read, name) => ({
   _id,
@@ -84,7 +94,11 @@ const FIXTURES = [
   period(CP_UNDER_PRIVATE_PROJECT, PRIVATE_PROJECT, 'under unpublished project'),
   period(CP_UNDER_PUBLIC_NOTIFICATION, PUBLIC_NOTIFICATION, 'under public notification'),
   period(CP_UNDER_PRIVATE_NOTIFICATION, PRIVATE_NOTIFICATION, 'under unpublished notification'),
-  period(CP_WITH_NO_PARENT, null, 'orphan')
+  period(CP_WITH_NO_PARENT, null, 'orphan'),
+  project(PUBLIC_ONLY_PROJECT, PUBLIC_ONLY, 'Public Only Project'),
+  project(EMPTY_READ_PROJECT, [], 'Unset Read Project'),
+  period(CP_UNDER_PUBLIC_ONLY_PROJECT, PUBLIC_ONLY_PROJECT, 'under public only project'),
+  period(CP_UNDER_EMPTY_READ_PROJECT, EMPTY_READ_PROJECT, 'under unset read project')
 ];
 
 function searchArgs(roles) {
@@ -210,6 +224,21 @@ describe('comment period parent visibility (requires MongoDB)', function () {
       await searchController.publicGet(searchArgs(['public']), res);
 
       expect(idsIn(body.data)).to.include(String(CP_WITH_NO_PARENT));
+    });
+
+    it('returns a period under a public-only project to a staff caller who has no public role', async () => {
+      const { res, body } = capture();
+      await searchController.protectedGet(searchArgs(['staff']), res);
+
+      expect(body.code).to.equal(200);
+      expect(idsIn(body.data)).to.include(String(CP_UNDER_PUBLIC_ONLY_PROJECT));
+    });
+
+    it('treats a parent with an empty read[] as public', async () => {
+      const { res, body } = capture();
+      await searchController.publicGet(searchArgs(['public']), res);
+
+      expect(idsIn(body.data)).to.include(String(CP_UNDER_EMPTY_READ_PROJECT));
     });
   });
 
