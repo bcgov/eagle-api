@@ -3339,7 +3339,7 @@ paths:
         - config
       summary: "Get runtime configuration"
       operationId: publicGet
-      description: "Runtime configuration for the frontends. Unauthenticated; contains no secrets."
+      description: "Runtime configuration for the frontends. Unauthenticated; contains no secrets. When the served payload differs from the last one this pod sent, it is also mirrored to DEMI so its copy tracks hand edits to the Config document."
       responses:
         "200":
           description: "Success"

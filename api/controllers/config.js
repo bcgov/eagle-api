@@ -1,6 +1,31 @@
 var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
+const demiPush = require('../helpers/demiPush');
+
+// While DEMI is rejecting, back off instead of spending a PUT and an error line on every read.
+const RETRY_AFTER_MS = 60000;
+
+// The serialized payload this pod has DEMI holding. Only a push that landed sets it, so a rejected
+// one is retried instead of leaving DEMI stale for the life of the pod.
+let lastPushed = null;
+let pushInFlight = false;
+let retryAfter = 0;
+
+// Detached on purpose: the caller's 200 must not wait on DEMI. The in-flight flag is what keeps
+// concurrent reads from each firing their own push while the first is still out.
+function mirrorToDemi(payload, serialized) {
+  pushInFlight = true;
+  demiPush.config(payload)
+    .then(landed => {
+      if (landed) {
+        lastPushed = serialized;
+      } else {
+        retryAfter = Date.now() + RETRY_AFTER_MS;
+      }
+    })
+    .finally(() => { pushInFlight = false; });
+}
 
 // The keys this endpoint will serve, and the only ones. The schema already drops undeclared
 // fields on write; this is the second half of the same guard, on read — so a key added to the
@@ -65,6 +90,13 @@ exports.publicGet = async function (args, res) {
     // retired penguin client back on in every deployed browser. Constant, so Mongo cannot set it.
     // Remove once the eagle-public Angular line (v2.7.x) is retired at v3.0.0.
     payload.ANALYTICS_API_URL = '';
+
+    // The mirror push lives on the read path because Config has no write controller — hand edits
+    // in Mongo are the only writes, so the served payload is the only place a change surfaces.
+    const serialized = JSON.stringify(payload);
+    if (serialized !== lastPushed && !pushInFlight && Date.now() >= retryAfter) {
+      mirrorToDemi(payload, serialized);
+    }
 
     return Actions.sendResponse(res, 200, payload);
   } catch (err) {

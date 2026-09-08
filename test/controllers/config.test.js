@@ -10,7 +10,10 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 const mongoose = require('mongoose');
 
-const configController = require('../../api/controllers/config');
+const demiPush = require('../../api/helpers/demiPush');
+
+const CONFIG_CONTROLLER_PATH = require.resolve('../../api/controllers/config');
+const configController = require(CONFIG_CONTROLLER_PATH);
 
 // Minimal stand-in for the Express response the controller is handed.
 function fakeRes() {
@@ -43,6 +46,10 @@ function stubHydratedConfig(fields) {
 }
 
 describe('Config Controller', () => {
+  // Every GET can mirror to DEMI, so the push is stubbed for the whole file rather than left to
+  // reach the network on whichever environment variables the runner happens to carry.
+  beforeEach(() => sinon.stub(demiPush, 'config').resolves(true));
+
   afterEach(() => sinon.restore());
 
   it('serves the stored configuration', async () => {
@@ -282,5 +289,153 @@ describe('Config Controller', () => {
     await configController.publicGet({}, res);
 
     expect(res.headers['Cache-Control']).to.equal('no-store');
+  });
+
+  // Config has no write controller, so the read path is the only place a hand edit in Mongo can be
+  // noticed. The pushed-hash lives in module scope, so each test gets its own copy of the module.
+  describe('DEMI mirror', () => {
+    let controller;
+    let stored;
+
+    beforeEach(() => {
+      delete require.cache[CONFIG_CONTROLLER_PATH];
+      controller = require(CONFIG_CONTROLLER_PATH);
+      stored = { _schemaName: 'Config', ENVIRONMENT: 'test', BANNER_COLOUR: 'orange' };
+      sinon.stub(mongoose, 'model').withArgs('Config').returns({
+        findOne: () => Promise.resolve(stored)
+      });
+    });
+
+    // The push is detached from the response, so let its bookkeeping drain before asking what
+    // happened. `get` skips the drain for the tests that want reads overlapping a pending push.
+    const drain = () => new Promise(setImmediate);
+
+    const get = async () => {
+      const res = fakeRes();
+      await controller.publicGet({}, res);
+      return res;
+    };
+
+    const getAndDrain = async () => {
+      const res = await get();
+      await drain();
+      return res;
+    };
+
+    it('pushes the served payload to DEMI on the first read after boot', async () => {
+      // Snapshot at call time. The controller hands DEMI the very object it serves, so reading the
+      // argument back off the spy afterwards would compare that object with itself.
+      let pushed;
+      demiPush.config.callsFake(body => {
+        pushed = JSON.parse(JSON.stringify(body));
+        return Promise.resolve(true);
+      });
+
+      const res = await getAndDrain();
+
+      expect(res.statusCode).to.equal(200);
+      expect(demiPush.config.calledOnce).to.be.true;
+      // exactly what the caller got, shim included
+      expect(pushed).to.deep.equal(res.body);
+      expect(res.body).to.have.property('ANALYTICS_API_URL', '');
+    });
+
+    it('does not push again when the next read serves the same payload', async () => {
+      await getAndDrain();
+      await getAndDrain();
+      await getAndDrain();
+
+      expect(demiPush.config.callCount).to.equal(1);
+    });
+
+    it('pushes again once the stored configuration changes', async () => {
+      await getAndDrain();
+      stored.BANNER_COLOUR = 'red';
+      const res = await getAndDrain();
+
+      expect(demiPush.config.callCount).to.equal(2);
+      expect(demiPush.config.secondCall.args[0]).to.have.property('BANNER_COLOUR', 'red');
+      expect(res.body).to.have.property('BANNER_COLOUR', 'red');
+    });
+
+    it('pushes again when a key is removed rather than changed', async () => {
+      await getAndDrain();
+      delete stored.BANNER_COLOUR;
+      await getAndDrain();
+
+      expect(demiPush.config.callCount).to.equal(2);
+      expect(demiPush.config.secondCall.args[0]).to.not.have.property('BANNER_COLOUR');
+    });
+
+    it('does not retry straight away when the push did not land', async () => {
+      // A DEMI outage must not turn every read into a PUT and an error line.
+      demiPush.config.resolves(false);
+
+      await getAndDrain();
+      await getAndDrain();
+      await getAndDrain();
+
+      expect(demiPush.config.callCount).to.equal(1);
+    });
+
+    it('retries once the backoff window has passed', async () => {
+      // Nothing else resets the pod's idea of what DEMI holds, so an unchanged payload has to be
+      // offered again or DEMI keeps a stale copy until the pod restarts.
+      const clock = sinon.useFakeTimers({ toFake: ['Date'] });
+      demiPush.config.resolves(false);
+
+      await getAndDrain();
+      clock.tick(60000);
+      await getAndDrain();
+
+      expect(demiPush.config.callCount).to.equal(2);
+    });
+
+    it('stops retrying once a push lands', async () => {
+      const clock = sinon.useFakeTimers({ toFake: ['Date'] });
+      demiPush.config.onFirstCall().resolves(false);
+
+      await getAndDrain();
+      clock.tick(60000);
+      await getAndDrain();
+      clock.tick(60000);
+      await getAndDrain();
+
+      expect(demiPush.config.callCount).to.equal(2);
+    });
+
+    it('fires one push when reads overlap a push that has not landed yet', async () => {
+      let land;
+      demiPush.config.returns(new Promise(resolve => { land = resolve; }));
+
+      await Promise.all([get(), get(), get()]);
+
+      expect(demiPush.config.callCount).to.equal(1);
+      land(true);
+    });
+
+    it('still serves 200 when the push reports it did not land', async () => {
+      demiPush.config.resolves(false);
+      const res = await get();
+
+      expect(res.statusCode).to.equal(200);
+      expect(res.body).to.have.property('ENVIRONMENT', 'test');
+    });
+
+    it('answers without waiting for the push to finish', async () => {
+      // A push that never settles: an awaited call would hang this test out to the mocha timeout.
+      demiPush.config.returns(new Promise(() => {}));
+      const res = await get();
+
+      expect(res.statusCode).to.equal(200);
+    });
+
+    it('pushes nothing when there is no Config document to serve', async () => {
+      stored = null;
+      const res = await get();
+
+      expect(res.statusCode).to.equal(404);
+      expect(demiPush.config.called).to.be.false;
+    });
   });
 });

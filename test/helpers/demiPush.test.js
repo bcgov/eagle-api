@@ -112,6 +112,12 @@ describe('DemiPush Helper', () => {
       expect(fetchStub.called).to.be.false;
     });
 
+    it('should not call fetch for the config when DEMI_API_BASE is unset', async () => {
+      delete process.env.DEMI_API_BASE;
+      expect(await demiPush.config({ ENVIRONMENT: 'test' })).to.be.true;
+      expect(fetchStub.called).to.be.false;
+    });
+
     it('should not call fetch for Updates when DEMI_API_BASE is unset', async () => {
       delete process.env.DEMI_API_BASE;
       expect(await demiPush.recentActivity({ _id: 'u1' })).to.be.true;
@@ -430,6 +436,34 @@ describe('DemiPush Helper', () => {
       expect(pushedDoc()).to.deep.equal({ _id: 'd1', project: 'p1', read: ['public'], isDeleted: true });
       // the caller's document is left alone
       expect(doc).to.not.have.property('isDeleted');
+    });
+
+    it('should PUT the config to the fixed eagle config route', async () => {
+      fetchStub.resolves(okResponse());
+      const landed = await demiPush.config({ ENVIRONMENT: 'test', SEARCH_API_PATH: '', LOG_LEVEL: 0 });
+
+      expect(landed).to.be.true;
+      expect(fetchStub.calledOnce).to.be.true;
+      const [url, options] = fetchStub.firstCall.args;
+      // One config document, so the id is a fixed literal rather than anything off the payload
+      expect(url).to.equal(`${BASE}/eagle/config/public`);
+      expect(options.method).to.equal('PUT');
+      expect(options.headers['Ocp-Apim-Subscription-Key']).to.equal('test-key');
+      // The payload as it stands: no `{ doc }` envelope, and the kill switch survives
+      expect(JSON.parse(options.body)).to.deep.equal({ ENVIRONMENT: 'test', SEARCH_API_PATH: '', LOG_LEVEL: 0 });
+      expect(errorStub.called).to.be.false;
+    });
+
+    it('should not push a config without a body', async () => {
+      expect(await demiPush.config(null)).to.be.true;
+      expect(fetchStub.called).to.be.false;
+    });
+
+    it('should resolve false when a config PUT is rejected', async () => {
+      fetchStub.resolves(failResponse(404));
+
+      expect(await demiPush.config({ ENVIRONMENT: 'test' })).to.be.false;
+      expect(errorStub.calledOnceWith('[demiPush] config public rejected 404')).to.be.true;
     });
 
     it('should resolve false when a document PUT is rejected', async () => {

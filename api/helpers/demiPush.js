@@ -192,3 +192,17 @@ exports.commentPeriod = mirror('commentperiods', 'commentPeriod');
 exports.comment = mirror('comments', 'comment');
 exports.organization = mirror('organizations', 'organization');
 exports.projectNotification = mirror('notifications', 'projectNotification');
+
+// One config document, one id, and `body` is already the payload GET /api/config served — no
+// `{ doc }` envelope, because there is no _id here for DEMI to match the path against.
+exports.config = async function (body) {
+  if (!client.configured() || !body) {
+    return true;
+  }
+  try {
+    return await push('config', 'public', body);
+  } catch (err) {
+    defaultLog.error('[demiPush] config push failed', { error: err.message, stack: err.stack });
+    return false;
+  }
+};
