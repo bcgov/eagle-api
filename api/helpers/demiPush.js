@@ -129,22 +129,25 @@ function push(kind, id, body) {
   return client.push(`/eagle/${kind}/${id}`, body, `${kind} ${id}`);
 }
 
+// Every export resolves true when the body landed or there was nothing to send, false when it did
+// not. Controllers ignore it — they never await — but a backfill has to know what to retry.
 exports.project = async function (doc) {
   if (!client.configured() || !doc || !doc._id) {
-    return;
+    return true;
   }
   try {
     const body = toPushBody(doc);
     await enrichProject(body);
-    await push('projects', doc._id, { doc: body });
+    return await push('projects', doc._id, { doc: body });
   } catch (err) {
     defaultLog.error('[demiPush] project push failed', { error: err.message, stack: err.stack });
+    return false;
   }
 };
 
 exports.document = async function (doc) {
   if (!client.configured() || !doc || !doc._id) {
-    return;
+    return true;
   }
   try {
     const lists = await listEntries();
@@ -155,14 +158,15 @@ exports.document = async function (doc) {
         labels[field] = (entry && entry.name) || null;
       }
     }
-    await push('documents', doc._id, { doc, labels });
+    return await push('documents', doc._id, { doc, labels });
   } catch (err) {
     defaultLog.error('[demiPush] document push failed', { error: err.message, stack: err.stack });
+    return false;
   }
 };
 
 exports.recentActivity = function (doc) {
-  return doc && doc._id ? push('updates', doc._id, { doc }) : Promise.resolve();
+  return doc && doc._id ? push('updates', doc._id, { doc }) : Promise.resolve(true);
 };
 
 // Kinds that need no lookup: the stored document is the whole payload, read[] included, and DEMI
@@ -171,12 +175,13 @@ exports.recentActivity = function (doc) {
 function mirror(kind, label) {
   return async function (doc, extra) {
     if (!client.configured() || !doc || !doc._id) {
-      return;
+      return true;
     }
     try {
-      await push(kind, doc._id, { doc: Object.assign(toPushBody(doc), extra) });
+      return await push(kind, doc._id, { doc: Object.assign(toPushBody(doc), extra) });
     } catch (err) {
       defaultLog.error(`[demiPush] ${label} push failed`, { error: err.message, stack: err.stack });
+      return false;
     }
   };
 }

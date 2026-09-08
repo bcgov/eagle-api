@@ -83,3 +83,49 @@ oc --context epic-dev exec -n 6cdc9e-dev deploy/eagle-api -- node scripts/normal
 ```
 
 Swap context and namespace for test. Prod takes the same command under your own login.
+
+### scripts/demi-repush.js — re-push records to DEMI
+
+`api/helpers/demiPush.js` mirrors a record to DEMI every time a controller writes one. The push body
+is not what Mongo stores: for a project the helper resolves `applicableRegulation` to its List entry,
+turns `pins` into `{_id, name, province}` objects, flattens `featuredDocuments` to ids, and adds
+`proponentId` / `proponentName` inside each legislation block. A DEMI row that was seeded some other
+way, or written before the mirror existed, has none of that, and nothing re-sends a record that
+nobody has edited since.
+
+`scripts/demi-repush.js` walks a collection in `_id` order and pushes each record through the same
+helper, so the enrichment is identical to a controller write. It is a dry run by default: it reports
+how many records match and sends nothing until `--live`.
+
+```bash
+# what would be sent
+oc --context epic-test -n 6cdc9e-test exec deploy/eagle-api -- node scripts/demi-repush.js --kind project
+
+# send it
+oc --context epic-test -n 6cdc9e-test exec deploy/eagle-api -- node scripts/demi-repush.js --kind project --live
+```
+
+`yarn demi:repush` is the same entry point for a local run against a port-forwarded database.
+
+Options, in full under `--help`:
+
+- `--kind` — `project` (default), `document`, `commentPeriod`, `comment`, `organization`,
+  `projectNotification`.
+- `--since <ISO>` — only records stamped at or after the date. A project keeps its timestamps inside
+  the legislation blocks, so the filter is on `legislation_*.dateUpdated`; a projectNotification has
+  no update stamp and the script refuses `--since` for it rather than quietly matching everything.
+- `--limit N` — stop after N records. Good for a first `--live` pass on a handful.
+- `--state <path>` — checkpoint file, written after every settled batch. A rerun with the same path
+  starts after the last `_id` it holds, so an `oc exec` session that drops can be resumed instead of
+  restarted. Write it somewhere the pod can keep, e.g. `/tmp/demi-repush-project.json`; a pod
+  restart loses it and the next run starts from the top, which is harmless.
+- `--concurrency N` — pushes in flight, default 4.
+
+Pushes need `DEMI_API_BASE` and `DEMI_APIM_KEY`, the same pair `demiPush` runs on. Without them the
+script exits 2 instead of reporting a run that sent nothing.
+
+A record DEMI does not accept is counted as failed, named in the log and listed under `failedIds` in
+the state file. The checkpoint then stops advancing: it holds at the last record with nothing failed
+behind it, so a rerun starts before the gap rather than past it, re-pushing the records after it.
+That is safe — every DEMI write is a PUT on the record id — and it means the run summary,
+`N seen, N pushed, N failed`, is the whole story.
