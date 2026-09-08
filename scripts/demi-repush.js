@@ -22,7 +22,7 @@ const mongoose = require('mongoose');
 
 // Requiring app_helper registers the 'default' logger and every mongoose model, which demiPush
 // needs to resolve List and Organization. Its connect is not used: it builds a URI with no port, so
-// MONGODB_PORT would be ignored, and it logs that URI with the password in it.
+// MONGODB_PORT would be ignored.
 const appHelper = require('../app_helper');
 const demiPush = require('../api/helpers/demiPush');
 const pushClient = require('../api/helpers/pushClient');
@@ -92,6 +92,8 @@ function dateFields(model, names) {
   });
 }
 
+const noSinceField = kind => `${kind.model} has no date field --since can filter on; drop --since for this kind`;
+
 function buildQuery(kind, options) {
   const query = { _schemaName: kind.schemaName };
 
@@ -102,7 +104,7 @@ function buildQuery(kind, options) {
   if (options.since) {
     const fields = dateFields(options.model, kind.sinceFields);
     if (fields.length === 0) {
-      throw new Error(`${kind.model} has no date field --since can filter on; drop --since for this kind`);
+      throw new Error(noSinceField(kind));
     }
     query.$or = fields.map(field => ({ [field]: { $gte: options.since } }));
   }
@@ -280,6 +282,11 @@ function validate(args) {
   }
   if (args.since && Number.isNaN(args.since.getTime())) {
     return '--since takes an ISO date, e.g. 2026-01-01';
+  }
+  // Schema paths are registered by the app_helper require, so this needs no connection.
+  const kind = KINDS[args.kind];
+  if (args.since && dateFields(mongoose.model(kind.model), kind.sinceFields).length === 0) {
+    return noSinceField(kind);
   }
   return null;
 }

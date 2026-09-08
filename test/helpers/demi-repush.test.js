@@ -228,5 +228,12 @@ describe('demi-repush', () => {
     it('rejects an unparseable --since', () => {
       expect(validate(parseArgs(['--since', 'yesterday']))).to.contain('--since');
     });
+
+    // Caught here rather than in buildQuery, so the run exits on the argument before it connects.
+    it('rejects --since on a kind whose model has no date field', () => {
+      const problem = validate(parseArgs(['--kind', 'projectNotification', '--since', '2026-01-01']));
+
+      expect(problem).to.contain('no date field');
+    });
   });
 });
