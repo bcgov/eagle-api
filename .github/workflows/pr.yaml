@@ -26,6 +26,18 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    services:
+      # test:db drives the real aggregation pipeline, so it needs a MongoDB of the same major
+      # version as docker-compose.yml pins for local runs.
+      mongodb:
+        image: mongo:8.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -41,3 +53,6 @@ jobs:
 
       - run: yarn install --immutable
       - run: yarn test
+      - run: yarn test:db
+        env:
+          MONGODB_TEST_URI: mongodb://127.0.0.1:27017/epic-parent-read-test

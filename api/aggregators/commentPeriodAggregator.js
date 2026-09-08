@@ -1,13 +1,16 @@
 const { setProjectDefault } = require('../helpers/aggregators');
+const parentReadAggr = require('../helpers/parentReadAggr');
 
 /**
- * Creates an aggregate for looking up recent activity.
+ * Creates an aggregate for looking up comment periods.
  *
  * @param {boolean} populate Flag indicating if fields need a look up
- * @returns {array} Aggregate for recent activity
+ * @param {array} roles Caller's roles, used to hide periods under a parent they cannot read
+ * @returns {array} Aggregate for comment periods
  */
-exports.createCommentPeriodAggr = (populate) => {
-  let aggregation = [];
+exports.createCommentPeriodAggr = (populate, roles) => {
+  // Runs whether or not the caller asked to populate, so `populate=false` is not a way around it.
+  let aggregation = [...parentReadAggr(roles)];
 
   if (populate) {
     // Handle project.

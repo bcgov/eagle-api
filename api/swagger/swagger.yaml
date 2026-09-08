@@ -5845,7 +5845,7 @@ paths:
         - commentperiod
       summary: "Get a list of comment periods"
       operationId: protectedGet
-      description: "Authenticated access to retreiving a commentperiod."
+      description: "Retrieving comment period(s). A period is returned only when the caller's roles can read both the period and its parent project or notification."
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -6033,7 +6033,7 @@ paths:
         - commentperiod
       summary: "Get a commentperiod"
       operationId: protectedGet
-      description: "Authenticated access to retreiving a commentperiod."
+      description: "Retrieving comment period(s). A period is returned only when the caller's roles can read both the period and its parent project or notification."
       x-anonymous-read: true
       security:
         - Bearer: []
@@ -6253,7 +6253,7 @@ paths:
         - commentperiod
       summary: "Get a list of comment period(s)"
       operationId: publicGet
-      description: "Retreiving public comment period(s)."
+      description: "Retrieving public comment period(s). A period is returned only when both the period and its parent project or notification are public."
       parameters:
         - in: query
           name: project
@@ -6317,7 +6317,7 @@ paths:
         - commentperiod
       summary: "Get a commentperiod"
       operationId: publicGet
-      description: "Public access to retreiving comments."
+      description: "Public access to a comment period. Returned only when both the period and its parent project or notification are public."
       parameters:
         - name: commentPeriodId
           in: path
