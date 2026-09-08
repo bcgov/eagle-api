@@ -3,7 +3,7 @@
 var mongoose        = require('mongoose');
 var NodeClam        = require('clamscan');
 const analytics     = require('./analytics');
-const parentReadAggr = require('./parentReadAggr');
+const parentRead    = require('./parentRead');
 var MAX_LIMIT       = 1000;
 const defaultLog      = require('winston').loggers.get('default');
 var DEFAULT_PAGESIZE  = 25;
@@ -180,6 +180,10 @@ exports.recordAction = async function (action, meta, payload, objId = null, args
 };
 
 exports.runDataQuery = async function (modelType, role, query, fields, sortWarmUp, sort, skip, limit, count, preQueryPipelineSteps, populateProponent = false, postQueryPipelineSteps = false, populateProject = false, gateOnParentRead = false) {
+  // Resolved before the pipeline is built so the gate stays a plain $match. A failure here throws
+  // rather than dropping the gate.
+  const unreadableParents = gateOnParentRead ? await parentRead.unreadableParentIds(role) : [];
+
   return new Promise(function (resolve, reject) {
     var theModel = mongoose.model(modelType);
     var projection = {};
@@ -207,7 +211,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
       },
       // Hide records whose parent the caller cannot read. The $redact below only sees each
       // record's own read[], so without this a published child under an unpublished parent leaks.
-      ...(gateOnParentRead ? parentReadAggr(role) : []),
+      ...parentRead.parentReadMatch(unreadableParents),
       (populateProject && modelType !== 'Project') && {
         '$lookup': {
           'from': 'epic',

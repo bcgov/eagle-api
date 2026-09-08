@@ -85,7 +85,6 @@ module.exports = {
   id,
   STAFF_ONLY,
   PUBLIC_READ,
-  PUBLIC_ONLY,
   PUBLIC_PROJECT,
   PRIVATE_PROJECT,
   PUBLIC_NOTIFICATION,
@@ -93,8 +92,6 @@ module.exports = {
   PUBLIC_ONLY_PROJECT,
   EMPTY_READ_PROJECT,
   MISSING_READ_PROJECT,
-  project,
-  notification,
   PARENT_FIXTURES,
   capture,
   idsIn

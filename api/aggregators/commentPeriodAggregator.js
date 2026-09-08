@@ -1,16 +1,16 @@
 const { setProjectDefault } = require('../helpers/aggregators');
-const parentReadAggr = require('../helpers/parentReadAggr');
+const { parentReadMatch } = require('../helpers/parentRead');
 
 /**
  * Creates an aggregate for looking up comment periods.
  *
  * @param {boolean} populate Flag indicating if fields need a look up
- * @param {array} roles Caller's roles, used to hide periods under a parent they cannot read
+ * @param {array} unreadableParentIds Parents the caller cannot read, from helpers/parentRead
  * @returns {array} Aggregate for comment periods
  */
-exports.createCommentPeriodAggr = (populate, roles) => {
+exports.createCommentPeriodAggr = (populate, unreadableParentIds = []) => {
   // Runs whether or not the caller asked to populate, so `populate=false` is not a way around it.
-  let aggregation = [...parentReadAggr(roles)];
+  let aggregation = [...parentReadMatch(unreadableParentIds)];
 
   if (populate) {
     // Handle project.

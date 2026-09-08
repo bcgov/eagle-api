@@ -2,7 +2,7 @@ const { setProjectDefault } = require('../helpers/aggregators');
 const mongoose = require('mongoose');
 
 const aggregateHelper = require('../helpers/aggregators');
-const parentReadAggr = require('../helpers/parentReadAggr');
+const { parentReadMatch } = require('../helpers/parentRead');
 
 /**
  * Create an aggregation that sets the matching criteria for a document search.
@@ -132,13 +132,14 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
  * Creates an aggregation for documents.
  *
  * @param {boolean} populate Flag to create lookups
- * @param {array} roles Set of user roles, also used to hide documents under a parent they cannot read
+ * @param {array} roles Set of user roles
+ * @param {array} unreadableParentIds Parents the caller cannot read, from helpers/parentRead
  * @returns {array} Aggregate for documents.
  */
-exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize) => {
+exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize, unreadableParentIds = []) => {
   // Runs whether or not the caller asked to populate, and before the project lookup below
   // overwrites the `project` reference the gate reads.
-  let aggregation = [...parentReadAggr(roles)];
+  let aggregation = [...parentReadMatch(unreadableParentIds)];
 
   // Allow documents to be sorted by status based on publish existence
   aggregation.push(

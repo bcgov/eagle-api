@@ -17,6 +17,7 @@ const MinioController = require('../../api/helpers/minio');
 const analytics = require('../../api/helpers/analytics');
 const defaultLog = require('winston').loggers.get('default');
 const demiPush = require('../../api/helpers/demiPush');
+const parentRead = require('../../api/helpers/parentRead');
 const commentPeriodController = require('../../api/controllers/commentperiod');
 const documentController = require('../../api/controllers/document');
 const projectController = require('../../api/controllers/project');
@@ -111,6 +112,11 @@ describe('Analytics call sites', () => {
     sinon.stub(fs, 'unlinkSync');
     sinon.stub(demiPush, 'document').resolves();
     sinon.stub(demiPush, 'project').resolves();
+
+    // The parent gate reads the epic collection; there is no connection here, and what it returns
+    // is covered against a real MongoDB by test/db/*ParentRead.test.js.
+    sinon.stub(parentRead, 'unreadableParentIds').resolves([]);
+    sinon.stub(parentRead, 'unreadablePeriodIds').resolves([]);
 
     sinon.stub(analytics, 'auditEvent');
     sinon.stub(analytics, 'trackEvent');
