@@ -18,6 +18,7 @@ const itemAggregator = require('../aggregators/itemAggregator');
 const commentPeriodAggregator = require('../aggregators/commentPeriodAggregator');
 const searchAggregator = require('../aggregators/searchAggregator');
 const aggregateHelper = require('../helpers/aggregators');
+const parentRead = require('../helpers/parentRead');
 
 // Pagination limits
 const PAGE_SIZE_DEFAULT = 25;
@@ -42,10 +43,12 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   let matchAggregation;
   let regexKeywordAggregation = [];
   switch (schemaName) {
-  case constants.DOCUMENT:
+  case constants.DOCUMENT: {
     matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, categorized, roles, fuzzy);
-    schemaAggregation = documentAggregator.createDocumentAggr(populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize);
+    const unreadableParentIds = await parentRead.unreadableParentIds(roles);
+    schemaAggregation = documentAggregator.createDocumentAggr(populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize, unreadableParentIds);
     break;
+  }
   case constants.PROJECT:
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles, fuzzy);
     schemaAggregation = projectAggregator.createProjectAggr(projectLegislation);
@@ -84,12 +87,14 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   case constants.LIST:
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
     break;
-  case constants.COMMENT_PERIOD:
+  case constants.COMMENT_PERIOD: {
     // Comment Periods are searched via project name, need to add keyword after schemaAggregation to match on project.name
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, '', false, or, and, roles);
-    schemaAggregation = commentPeriodAggregator.createCommentPeriodAggr(populate, roles);
+    const unreadableParentIds = await parentRead.unreadableParentIds(roles);
+    schemaAggregation = commentPeriodAggregator.createCommentPeriodAggr(populate, unreadableParentIds);
     regexKeywordAggregation = await searchAggregator.createRegexForProjectLookupAggr(decodedKeywords, caseSensitive);
     break;
+  }
   case constants.ORGANIZATION:
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
     break;
@@ -350,7 +355,8 @@ const executeQuery = async function (args, res) {
     }
 
     const collectionObj = mongoose.model(schemaNameVal);
-    const aggregation = itemAggregator.createItemAggr(args.swagger.params._id.value, schemaNameVal, roles);
+    const gate = await itemAggregator.resolveParentGate(schemaNameVal, roles);
+    const aggregation = itemAggregator.createItemAggr(args.swagger.params._id.value, schemaNameVal, roles, gate);
     let data = await collectionObj.aggregate(aggregation).allowDiskUse(true);
 
     if (schemaNameVal === constants.COMMENT) {

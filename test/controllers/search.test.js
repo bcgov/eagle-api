@@ -13,6 +13,7 @@ const Utils      = require('../../api/helpers/utils');
 const Actions    = require('../../api/helpers/actions');
 const defaultLog = require('winston').loggers.get('default');
 
+const parentRead = require('../../api/helpers/parentRead');
 const searchController = require('../../api/controllers/search');
 
 describe('Search Controller', () => {
@@ -73,6 +74,11 @@ describe('Search Controller', () => {
 
     sinon.stub(Utils, 'recordAction').resolves();
     sinon.stub(Utils, 'filterData').callsFake((schema, data) => data);
+
+    // The parent gate reads the epic collection; there is no connection here, and what it returns
+    // is covered against a real MongoDB by test/db/*ParentRead.test.js.
+    sinon.stub(parentRead, 'unreadableParentIds').resolves([]);
+    sinon.stub(parentRead, 'unreadablePeriodIds').resolves([]);
 
     sinon.stub(Actions, 'sendResponse').callsFake((r, code, data) => {
       r.status(code).json(data);

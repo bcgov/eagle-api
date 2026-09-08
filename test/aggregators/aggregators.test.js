@@ -84,39 +84,52 @@ describe('Document Aggregator', () => {
   describe('createDocumentAggr', () => {
     it('should create document aggregation pipeline', () => {
       // createSortingPagingAggr requires sortingValue to be an object, not null
-      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25);
-      
+      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25, []);
+
       expect(result).to.be.an('array');
       expect(result.length).to.be.greaterThan(0);
     });
 
     it('should include sorting when provided', () => {
-      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, 'name', 1, 0, 25);
-      
+      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, 'name', 1, 0, 25, []);
+
       expect(result).to.be.an('array');
       expect(result.length).to.be.greaterThan(0);
     });
 
     it('should handle populate option', () => {
-      const result = documentAggregator.createDocumentAggr(true, ['public'], {}, null, null, 0, 25);
-      
+      const result = documentAggregator.createDocumentAggr(true, ['public'], {}, null, null, 0, 25, []);
+
       expect(result).to.be.an('array');
       // Should have additional lookup stages when populate=true
     });
 
     it('should include pagination', () => {
-      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 1, 10);
-      
+      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 1, 10, []);
+
       expect(result).to.be.an('array');
       expect(result.length).to.be.greaterThan(0);
     });
 
     it('should enforce published status for public role', () => {
-      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25);
-      
+      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25, []);
+
       // Should have a match stage for status: 'published'
       const matchStage = result.find(stage => stage.$match && stage.$match.status === 'published');
       expect(matchStage).to.exist;
+    });
+
+    it('should drop documents under the parents it is given', () => {
+      const parent = new mongoose.Types.ObjectId();
+      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25, [parent]);
+
+      const gateStage = result.find(stage => stage.$match && stage.$match.project);
+      expect(gateStage.$match.project.$nin).to.deep.equal([parent]);
+    });
+
+    it('should refuse to build a pipeline with no parent gate', () => {
+      expect(() => documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25))
+        .to.throw(TypeError, /unreadable ids/);
     });
   });
 });
@@ -390,15 +403,27 @@ describe('Comment Period Aggregator', () => {
 
   describe('createCommentPeriodAggr', () => {
     it('should create comment period aggregation', () => {
-      const result = commentPeriodAggregator.createCommentPeriodAggr(false);
-      
+      const result = commentPeriodAggregator.createCommentPeriodAggr(false, []);
+
       expect(result).to.be.an('array');
     });
 
     it('should handle populate option', () => {
-      const result = commentPeriodAggregator.createCommentPeriodAggr(true);
-      
+      const result = commentPeriodAggregator.createCommentPeriodAggr(true, []);
+
       expect(result).to.be.an('array');
+    });
+
+    it('should drop periods under the parents it is given', () => {
+      const parent = new mongoose.Types.ObjectId();
+      const result = commentPeriodAggregator.createCommentPeriodAggr(false, [parent]);
+
+      expect(result[0].$match.project.$nin).to.deep.equal([parent]);
+    });
+
+    it('should refuse to build a pipeline with no parent gate', () => {
+      expect(() => commentPeriodAggregator.createCommentPeriodAggr(false))
+        .to.throw(TypeError, /unreadable ids/);
     });
   });
 });
@@ -468,8 +493,8 @@ describe('Item Aggregator', () => {
   describe('createItemAggr', () => {
     it('should create item aggregation', () => {
       const validObjectId = new mongoose.Types.ObjectId();
-      const result = itemAggregator.createItemAggr(validObjectId.toString(), 'Item', ['public']);
-      
+      const result = itemAggregator.createItemAggr(validObjectId.toString(), 'Item', ['public'], {});
+
       expect(result).to.be.an('array');
       expect(result.length).to.be.greaterThan(0);
       expect(result[0].$match._id).to.exist;
@@ -477,8 +502,8 @@ describe('Item Aggregator', () => {
 
     it('should include permissions check', () => {
       const validObjectId = new mongoose.Types.ObjectId();
-      const result = itemAggregator.createItemAggr(validObjectId.toString(), 'Item', ['public']);
-      
+      const result = itemAggregator.createItemAggr(validObjectId.toString(), 'Item', ['public'], {});
+
       const redactStage = result.find(stage => stage.$redact);
       expect(redactStage).to.exist;
     });
@@ -486,10 +511,31 @@ describe('Item Aggregator', () => {
     it('should handle inspection schema with lookups', () => {
       const validObjectId = new mongoose.Types.ObjectId();
       const constants = require('../../api/helpers/constants').schemaTypes;
-      const result = itemAggregator.createItemAggr(validObjectId.toString(), constants.INSPECTION, ['public']);
-      
+      const result = itemAggregator.createItemAggr(validObjectId.toString(), constants.INSPECTION, ['public'], {});
+
       expect(result).to.be.an('array');
       expect(result.length).to.be.greaterThan(1);
+    });
+
+    it('should drop a document under the parents it is given', () => {
+      const constants = require('../../api/helpers/constants').schemaTypes;
+      const parent = new mongoose.Types.ObjectId();
+      const result = itemAggregator.createItemAggr(new mongoose.Types.ObjectId().toString(), constants.DOCUMENT, ['public'], { unreadableParentIds: [parent] });
+
+      const gateStage = result.find(stage => stage.$match && stage.$match.project);
+      expect(gateStage.$match.project.$nin).to.deep.equal([parent]);
+    });
+
+    it('should refuse to build a pipeline with no gate object', () => {
+      expect(() => itemAggregator.createItemAggr(new mongoose.Types.ObjectId().toString(), 'Item', ['public']))
+        .to.throw(TypeError, /resolveParentGate/);
+    });
+
+    it('should refuse to build a gated schema whose gate carries no ids', () => {
+      const constants = require('../../api/helpers/constants').schemaTypes;
+
+      expect(() => itemAggregator.createItemAggr(new mongoose.Types.ObjectId().toString(), constants.DOCUMENT, ['public'], {}))
+        .to.throw(TypeError, /unreadable ids/);
     });
   });
 });
