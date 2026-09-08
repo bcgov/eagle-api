@@ -78,7 +78,12 @@ exports.publicGet = async function (args, res,) {
       null, // sort
       null, // skip
       null, // limit
-      false); // count
+      false, // count
+      null,  // pre-query pipeline steps
+      false, // populate proponent
+      false, // post-query pipeline steps
+      false, // populate project
+      true); // hide documents whose parent project or notification is not public
     defaultLog.info('Got document(s):', data);
     Utils.recordAction('Get', 'Document', 'public', args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
     return Actions.sendResponse(res, 200, data);
@@ -211,7 +216,7 @@ exports.protectedHead = function (args, res) {
   // Set query type
   Object.assign(query, { '_schemaName': 'Document' });
 
-  Utils.runDataQuery('Document',
+  return Utils.runDataQuery('Document',
     args.swagger.params.auth_payload.realm_access.roles,
     query,
     ['_id',
@@ -220,7 +225,12 @@ exports.protectedHead = function (args, res) {
     null, // sort
     null, // skip
     null, // limit
-    true) // count
+    true,  // count
+    null,  // pre-query pipeline steps
+    false, // populate proponent
+    false, // post-query pipeline steps
+    false, // populate project
+    true) // hide documents whose parent project or notification the caller cannot read
     .then(function (data) {
       Utils.recordAction('Head', 'Document', args.swagger.params.auth_payload.preferred_username, args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
       // /api/commentperiod/ route, return 200 OK with 0 items if necessary
@@ -263,7 +273,12 @@ exports.protectedGet = async function (args, res) {
       null, // sort
       skip, // skip
       limit, // limit
-      count); // count
+      count, // count
+      null,  // pre-query pipeline steps
+      false, // populate proponent
+      false, // post-query pipeline steps
+      false, // populate project
+      true); // hide documents whose parent project or notification the caller cannot read
     Utils.recordAction('Get', 'Document', args.swagger.params.auth_payload.preferred_username, args.swagger.params.docId && args.swagger.params.docId.value ? args.swagger.params.docId.value : null);
     defaultLog.info('Got document(s):', data);
     return Actions.sendResponse(res, 200, data);
@@ -284,7 +299,7 @@ exports.publicDownload = function (args, res) {
   // Set query type
   Object.assign(query, { '_schemaName': 'Document' });
 
-  Utils.runDataQuery('Document',
+  return Utils.runDataQuery('Document',
     ['public'],
     query,
     ['internalURL', 'documentFileName', 'internalMime', 'internalExt'], // Fields
@@ -292,7 +307,12 @@ exports.publicDownload = function (args, res) {
     null, // sort
     null, // skip
     null, // limit
-    false) // count
+    false, // count
+    null,  // pre-query pipeline steps
+    false, // populate proponent
+    false, // post-query pipeline steps
+    false, // populate project
+    true) // hide documents whose parent project or notification the caller cannot read
     .then(function (data) {
       if (data && data.length === 1) {
         var blob = data[0];
@@ -377,7 +397,7 @@ exports.protectedDownload = function (args, res) {
   // Set query type
   Object.assign(query, { '_schemaName': 'Document' });
 
-  Utils.runDataQuery('Document',
+  return Utils.runDataQuery('Document',
     args.swagger.params.auth_payload.realm_access.roles,
     query,
     ['internalURL', 'documentFileName', 'internalMime', 'internalExt'], // Fields
@@ -385,7 +405,12 @@ exports.protectedDownload = function (args, res) {
     null, // sort
     null, // skip
     null, // limit
-    false) // count
+    false, // count
+    null,  // pre-query pipeline steps
+    false, // populate proponent
+    false, // post-query pipeline steps
+    false, // populate project
+    true) // hide documents whose parent project or notification the caller cannot read
     .then(function (data) {
       if (data && data.length === 1) {
         var blob = data[0];
@@ -449,7 +474,7 @@ exports.protectedOpen = function (args, res) {
   // Set query type
   Object.assign(query, { '_schemaName': 'Document' });
 
-  Utils.runDataQuery('Document',
+  return Utils.runDataQuery('Document',
     args.swagger.params.auth_payload.realm_access.roles,
     query,
     ['internalURL', 'documentFileName', 'internalMime', 'internalExt'], // Fields
@@ -457,7 +482,12 @@ exports.protectedOpen = function (args, res) {
     null, // sort
     null, // skip
     null, // limit
-    false) // count
+    false, // count
+    null,  // pre-query pipeline steps
+    false, // populate proponent
+    false, // post-query pipeline steps
+    false, // populate project
+    true) // hide documents whose parent project or notification the caller cannot read
     .then(function (data) {
       if (data && data.length === 1) {
         var blob = data[0];
