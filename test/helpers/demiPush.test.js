@@ -112,6 +112,12 @@ describe('DemiPush Helper', () => {
       expect(fetchStub.called).to.be.false;
     });
 
+    it('should not call fetch for the config when DEMI_API_BASE is unset', async () => {
+      delete process.env.DEMI_API_BASE;
+      expect(await demiPush.config({ ENVIRONMENT: 'test' })).to.be.true;
+      expect(fetchStub.called).to.be.false;
+    });
+
     it('should not call fetch for Updates when DEMI_API_BASE is unset', async () => {
       delete process.env.DEMI_API_BASE;
       expect(await demiPush.recentActivity({ _id: 'u1' })).to.be.true;
@@ -430,6 +436,60 @@ describe('DemiPush Helper', () => {
       expect(pushedDoc()).to.deep.equal({ _id: 'd1', project: 'p1', read: ['public'], isDeleted: true });
       // the caller's document is left alone
       expect(doc).to.not.have.property('isDeleted');
+    });
+
+    it('should PUT the config to the fixed eagle config route', async () => {
+      fetchStub.resolves(okResponse());
+      const landed = await demiPush.config({ ENVIRONMENT: 'test', SEARCH_API_PATH: '', LOG_LEVEL: 0 });
+
+      expect(landed).to.be.true;
+      expect(fetchStub.calledOnce).to.be.true;
+      const [url, options] = fetchStub.firstCall.args;
+      // One config document, so the id is fixed rather than an Eagle _id
+      expect(url).to.equal(`${BASE}/eagle/config/public`);
+      expect(options.method).to.equal('PUT');
+      expect(options.headers['Ocp-Apim-Subscription-Key']).to.equal('test-key');
+      // The payload as it stands: no `{ doc }` envelope, and the kill switch survives
+      expect(JSON.parse(options.body)).to.deep.equal({ ENVIRONMENT: 'test', SEARCH_API_PATH: '', LOG_LEVEL: 0 });
+      expect(errorStub.called).to.be.false;
+    });
+
+    it('should strip the Mongo internals off a config body', async () => {
+      fetchStub.resolves(okResponse());
+      const stored = {
+        _id: '5f4c7d1e2b3a4c5d6e7f0006',
+        __v: 3,
+        _schemaName: 'Config',
+        ENVIRONMENT: 'test'
+      };
+
+      await demiPush.config(stored);
+
+      // DEMI keys this mirror on its own item id, so a stored _id must not become the route id
+      expect(fetchStub.firstCall.args[0]).to.equal(`${BASE}/eagle/config/public`);
+      expect(JSON.parse(fetchStub.firstCall.args[1].body)).to.deep.equal({ ENVIRONMENT: 'test' });
+      // the caller's document is left alone
+      expect(stored).to.have.property('_schemaName', 'Config');
+    });
+
+    it('should push the plain object off a mongoose config document', async () => {
+      fetchStub.resolves(okResponse());
+
+      await demiPush.config({ toObject: () => ({ _id: 'c1', _schemaName: 'Config', ENVIRONMENT: 'test' }) });
+
+      expect(JSON.parse(fetchStub.firstCall.args[1].body)).to.deep.equal({ ENVIRONMENT: 'test' });
+    });
+
+    it('should not push a config without a body', async () => {
+      expect(await demiPush.config(null)).to.be.true;
+      expect(fetchStub.called).to.be.false;
+    });
+
+    it('should resolve false when a config PUT is rejected', async () => {
+      fetchStub.resolves(failResponse(404));
+
+      expect(await demiPush.config({ ENVIRONMENT: 'test' })).to.be.false;
+      expect(errorStub.calledOnceWith('[demiPush] config public rejected 404')).to.be.true;
     });
 
     it('should resolve false when a document PUT is rejected', async () => {

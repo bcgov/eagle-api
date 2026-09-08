@@ -10,7 +10,10 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 const mongoose = require('mongoose');
 
-const configController = require('../../api/controllers/config');
+const demiPush = require('../../api/helpers/demiPush');
+
+const CONFIG_CONTROLLER_PATH = require.resolve('../../api/controllers/config');
+const configController = require(CONFIG_CONTROLLER_PATH);
 
 // Minimal stand-in for the Express response the controller is handed.
 function fakeRes() {
@@ -43,6 +46,10 @@ function stubHydratedConfig(fields) {
 }
 
 describe('Config Controller', () => {
+  // Every GET can mirror to DEMI, so the push is stubbed for the whole file rather than left to
+  // reach the network on whichever environment variables the runner happens to carry.
+  beforeEach(() => sinon.stub(demiPush, 'config').resolves(true));
+
   afterEach(() => sinon.restore());
 
   it('serves the stored configuration', async () => {
@@ -282,5 +289,88 @@ describe('Config Controller', () => {
     await configController.publicGet({}, res);
 
     expect(res.headers['Cache-Control']).to.equal('no-store');
+  });
+
+  // Config has no write controller, so the read path is the only place a hand edit in Mongo can be
+  // noticed. The pushed-hash lives in module scope, so each test gets its own copy of the module.
+  describe('DEMI mirror', () => {
+    let controller;
+    let stored;
+
+    beforeEach(() => {
+      delete require.cache[CONFIG_CONTROLLER_PATH];
+      controller = require(CONFIG_CONTROLLER_PATH);
+      stored = { _schemaName: 'Config', ENVIRONMENT: 'test', BANNER_COLOUR: 'orange' };
+      sinon.stub(mongoose, 'model').withArgs('Config').returns({
+        findOne: () => Promise.resolve(stored)
+      });
+    });
+
+    const get = async () => {
+      const res = fakeRes();
+      await controller.publicGet({}, res);
+      return res;
+    };
+
+    it('pushes the served payload to DEMI on the first read after boot', async () => {
+      const res = await get();
+
+      expect(res.statusCode).to.equal(200);
+      expect(demiPush.config.calledOnce).to.be.true;
+      // exactly what the caller got, shim included
+      expect(demiPush.config.firstCall.args).to.deep.equal([res.body]);
+      expect(res.body).to.have.property('ANALYTICS_API_URL', '');
+    });
+
+    it('does not push again when the next read serves the same payload', async () => {
+      await get();
+      await get();
+      await get();
+
+      expect(demiPush.config.callCount).to.equal(1);
+    });
+
+    it('pushes again once the stored configuration changes', async () => {
+      await get();
+      stored.BANNER_COLOUR = 'red';
+      const res = await get();
+
+      expect(demiPush.config.callCount).to.equal(2);
+      expect(demiPush.config.secondCall.args[0]).to.have.property('BANNER_COLOUR', 'red');
+      expect(res.body).to.have.property('BANNER_COLOUR', 'red');
+    });
+
+    it('pushes again when a key is removed rather than changed', async () => {
+      await get();
+      delete stored.BANNER_COLOUR;
+      await get();
+
+      expect(demiPush.config.callCount).to.equal(2);
+      expect(demiPush.config.secondCall.args[0]).to.not.have.property('BANNER_COLOUR');
+    });
+
+    it('still serves 200 when the push reports it did not land', async () => {
+      demiPush.config.resolves(false);
+      const res = await get();
+
+      expect(res.statusCode).to.equal(200);
+      expect(res.body).to.have.property('ENVIRONMENT', 'test');
+    });
+
+    it('answers without waiting for the push to finish', async () => {
+      // A push that never settles: an awaited call would hang this test out to the mocha timeout.
+      demiPush.config.returns(new Promise(() => {}));
+      const res = await get();
+
+      expect(res.statusCode).to.equal(200);
+    });
+
+    it('pushes nothing when there is no Config document to serve', async () => {
+      stored = null;
+      const res = await get();
+
+      expect(res.statusCode).to.equal(404);
+      expect(demiPush.config.called).to.be.false;
+    });
   });
 });
