@@ -10,7 +10,12 @@ npm test
 
 # Watch mode (re-run on file changes)
 npm run test:watch
+
+# Tests that need a real MongoDB (aggregation behaviour). Not part of `npm test` or CI.
+npm run db:up && npm run test:db
 ```
+
+Set `MONGODB_TEST_URI` to point `test:db` at a different server.
 
 ## Writing Tests
 

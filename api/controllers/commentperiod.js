@@ -94,7 +94,12 @@ exports.publicGet = async function (args, res) {
       sort, // sort
       null, // skip
       null, // limit
-      false); // count
+      false, // count
+      null,  // pre-query pipeline steps
+      false, // populate proponent
+      false, // post-query pipeline steps
+      false, // populate project
+      true); // hide periods whose parent project or notification is not public
 
     Utils.recordAction('Get', 'CommentPeriod', 'public', args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value ? args.swagger.params.commentPeriodId.value : null);
     return Actions.sendResponse(res, 200, data);
@@ -237,7 +242,12 @@ exports.protectedGet = async function (args, res) {
       sort,   // sort
       skip,   // skip
       limit,  // limit
-      count); // count
+      count,  // count
+      null,   // pre-query pipeline steps
+      false,  // populate proponent
+      false,  // post-query pipeline steps
+      false,  // populate project
+      true);  // hide periods whose parent project or notification the caller cannot read
     Utils.recordAction('Get', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, args.swagger.params.commentPeriodId && args.swagger.params.commentPeriodId.value ? args.swagger.params.commentPeriodId.value : null);
     defaultLog.info('Got comment period(s):', data);
     return Actions.sendResponse(res, 200, data);

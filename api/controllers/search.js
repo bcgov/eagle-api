@@ -87,7 +87,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   case constants.COMMENT_PERIOD:
     // Comment Periods are searched via project name, need to add keyword after schemaAggregation to match on project.name
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, '', false, or, and, roles);
-    schemaAggregation = commentPeriodAggregator.createCommentPeriodAggr(populate);
+    schemaAggregation = commentPeriodAggregator.createCommentPeriodAggr(populate, roles);
     regexKeywordAggregation = await searchAggregator.createRegexForProjectLookupAggr(decodedKeywords, caseSensitive);
     break;
   case constants.ORGANIZATION:
