@@ -419,6 +419,19 @@ describe('DemiPush Helper', () => {
       });
     });
 
+    it('should flag a deleted document so the mirror can drop it', async () => {
+      stubModels([], []);
+      fetchStub.resolves(okResponse());
+      const doc = { _id: 'd1', project: 'p1', read: ['public'] };
+
+      await demiPush.document(doc, { isDeleted: true });
+
+      expect(fetchStub.firstCall.args[0]).to.equal(`${BASE}/eagle/documents/d1`);
+      expect(pushedDoc()).to.deep.equal({ _id: 'd1', project: 'p1', read: ['public'], isDeleted: true });
+      // the caller's document is left alone
+      expect(doc).to.not.have.property('isDeleted');
+    });
+
     it('should resolve false when a document PUT is rejected', async () => {
       stubModels([], []);
       fetchStub.resolves(failResponse(404));

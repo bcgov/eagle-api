@@ -821,6 +821,9 @@ exports.protectedDelete = async function (args, res) {
     }
 
     var doc = await Document.findOneAndDelete({ _id: objId });
+    // A hard delete is invisible to the mirror otherwise: there is no later write to push. Sent
+    // before the Minio delete so a storage failure cannot leave DEMI serving a document Mongo lost.
+    demiPush.document(doc, { isDeleted: true });
     defaultLog.info('Deleting document %s from minio', doc && doc.internalURL);
     await MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
     Utils.recordAction('Delete', 'Document', args.swagger.params.auth_payload.preferred_username, objId, args, doc.project);

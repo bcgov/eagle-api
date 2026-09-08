@@ -131,6 +131,7 @@ describe('DEMI push call sites', () => {
     sinon.stub(Actions, 'publish').resolves(saved);
     sinon.stub(Actions, 'unPublish').resolves(saved);
     sinon.stub(MinioController, 'putDocument').resolves({ path: 'minio/a.pdf', extension: 'pdf' });
+    sinon.stub(MinioController, 'deleteDocument').resolves();
     sinon.stub(fs, 'writeFileSync');
     sinon.stub(fs, 'unlinkSync');
     sinon.stub(demiPush, 'document').resolves();
@@ -262,6 +263,37 @@ describe('DEMI push call sites', () => {
       expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
       expect(models.CommentPeriod.findById.calledOnce).to.be.true;
       expect(demiPush.commentPeriod.calledOnceWithExactly(reread)).to.be.true;
+    });
+
+    it('document.protectedDelete pushes the deleted document flagged isDeleted', async () => {
+      const gone = { _id: OID, project: OID, internalURL: 'p/a.pdf' };
+      models.Document.findOneAndDelete.resolves(gone);
+
+      await documentController.protectedDelete(docArgs(), res);
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(demiPush.document.calledOnceWithExactly(gone, { isDeleted: true })).to.be.true;
+    });
+
+    it('document.protectedDelete still returns 200 when the DEMI push rejects', async () => {
+      const rejected = Promise.reject(new Error('demi unreachable'));
+      rejected.catch(() => {});
+      demiPush.document.returns(rejected);
+      models.Document.findOneAndDelete.resolves({ _id: OID, project: OID });
+
+      await documentController.protectedDelete(docArgs(), res);
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+    });
+
+    it('document.protectedDelete pushes before Minio, so a storage failure still reaches DEMI', async () => {
+      const gone = { _id: OID, project: OID };
+      models.Document.findOneAndDelete.resolves(gone);
+      MinioController.deleteDocument.rejects(new Error('minio down'));
+
+      await documentController.protectedDelete(docArgs(), res);
+
+      expect(demiPush.document.calledOnceWithExactly(gone, { isDeleted: true })).to.be.true;
     });
 
     it('commentPeriod.protectedDelete pushes the deleted period flagged isDeleted', async () => {
