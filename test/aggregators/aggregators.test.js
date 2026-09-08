@@ -345,15 +345,37 @@ describe('Inspection Aggregator', () => {
 
   describe('createInspectionAggr', () => {
     it('should create inspection aggregation', () => {
-      const result = inspectionAggregator.createInspectionAggr(false);
+      const result = inspectionAggregator.createInspectionAggr(false, []);
       
       expect(result).to.be.an('array');
     });
 
     it('should handle populate option', () => {
-      const result = inspectionAggregator.createInspectionAggr(true);
+      const result = inspectionAggregator.createInspectionAggr(true, []);
       
       expect(result).to.be.an('array');
+    });
+
+    it('should drop inspections under the parents it is given', () => {
+      const parent = new mongoose.Types.ObjectId();
+      const result = inspectionAggregator.createInspectionAggr(false, [parent]);
+
+      expect(result[0].$match.project.$nin).to.deep.equal([parent]);
+    });
+
+    it('should gate before the project lookup overwrites the reference it reads', () => {
+      const parent = new mongoose.Types.ObjectId();
+      const result = inspectionAggregator.createInspectionAggr(true, [parent]);
+
+      const gateIndex = result.findIndex(stage => stage.$match && stage.$match.project);
+      const lookupIndex = result.findIndex(stage => stage.$lookup && stage.$lookup.localField === 'project');
+      expect(gateIndex).to.equal(0);
+      expect(gateIndex).to.be.lessThan(lookupIndex);
+    });
+
+    it('should refuse to build a pipeline with no parent gate', () => {
+      expect(() => inspectionAggregator.createInspectionAggr(false))
+        .to.throw(TypeError, /unreadable ids/);
     });
   });
 
@@ -381,15 +403,37 @@ describe('Recent Activity Aggregator', () => {
 
   describe('createRecentActivityAggr', () => {
     it('should create recent activity aggregation', () => {
-      const result = recentActivityAggregator.createRecentActivityAggr(false);
+      const result = recentActivityAggregator.createRecentActivityAggr(false, []);
       
       expect(result).to.be.an('array');
     });
 
     it('should handle populate option', () => {
-      const result = recentActivityAggregator.createRecentActivityAggr(true);
+      const result = recentActivityAggregator.createRecentActivityAggr(true, []);
       
       expect(result).to.be.an('array');
+    });
+
+    it('should drop activity under the parents it is given', () => {
+      const parent = new mongoose.Types.ObjectId();
+      const result = recentActivityAggregator.createRecentActivityAggr(false, [parent]);
+
+      expect(result[0].$match.project.$nin).to.deep.equal([parent]);
+    });
+
+    it('should gate before the project lookup overwrites the reference it reads', () => {
+      const parent = new mongoose.Types.ObjectId();
+      const result = recentActivityAggregator.createRecentActivityAggr(true, [parent]);
+
+      const gateIndex = result.findIndex(stage => stage.$match && stage.$match.project);
+      const lookupIndex = result.findIndex(stage => stage.$lookup && stage.$lookup.localField === 'project');
+      expect(gateIndex).to.equal(0);
+      expect(gateIndex).to.be.lessThan(lookupIndex);
+    });
+
+    it('should refuse to build a pipeline with no parent gate', () => {
+      expect(() => recentActivityAggregator.createRecentActivityAggr(false))
+        .to.throw(TypeError, /unreadable ids/);
     });
   });
 });
@@ -511,7 +555,7 @@ describe('Item Aggregator', () => {
     it('should handle inspection schema with lookups', () => {
       const validObjectId = new mongoose.Types.ObjectId();
       const constants = require('../../api/helpers/constants').schemaTypes;
-      const result = itemAggregator.createItemAggr(validObjectId.toString(), constants.INSPECTION, ['public'], {});
+      const result = itemAggregator.createItemAggr(validObjectId.toString(), constants.INSPECTION, ['public'], { unreadableParentIds: [] });
 
       expect(result).to.be.an('array');
       expect(result.length).to.be.greaterThan(1);
@@ -526,6 +570,26 @@ describe('Item Aggregator', () => {
       expect(gateStage.$match.project.$nin).to.deep.equal([parent]);
     });
 
+    it('should drop recent activity under the parents it is given', () => {
+      const constants = require('../../api/helpers/constants').schemaTypes;
+      const parent = new mongoose.Types.ObjectId();
+      const result = itemAggregator.createItemAggr(new mongoose.Types.ObjectId().toString(), constants.RECENT_ACTIVITY, ['public'], { unreadableParentIds: [parent] });
+
+      const gateStage = result.find(stage => stage.$match && stage.$match.project);
+      expect(gateStage.$match.project.$nin).to.deep.equal([parent]);
+    });
+
+    it('should drop an inspection under the parents it is given, before its project lookup', () => {
+      const constants = require('../../api/helpers/constants').schemaTypes;
+      const parent = new mongoose.Types.ObjectId();
+      const result = itemAggregator.createItemAggr(new mongoose.Types.ObjectId().toString(), constants.INSPECTION, ['public'], { unreadableParentIds: [parent] });
+
+      const gateIndex = result.findIndex(stage => stage.$match && stage.$match.project);
+      const lookupIndex = result.findIndex(stage => stage.$lookup && stage.$lookup.localField === 'project');
+      expect(result[gateIndex].$match.project.$nin).to.deep.equal([parent]);
+      expect(gateIndex).to.be.lessThan(lookupIndex);
+    });
+
     it('should refuse to build a pipeline with no gate object', () => {
       expect(() => itemAggregator.createItemAggr(new mongoose.Types.ObjectId().toString(), 'Item', ['public']))
         .to.throw(TypeError, /resolveParentGate/);
@@ -534,8 +598,10 @@ describe('Item Aggregator', () => {
     it('should refuse to build a gated schema whose gate carries no ids', () => {
       const constants = require('../../api/helpers/constants').schemaTypes;
 
-      expect(() => itemAggregator.createItemAggr(new mongoose.Types.ObjectId().toString(), constants.DOCUMENT, ['public'], {}))
-        .to.throw(TypeError, /unreadable ids/);
+      [constants.DOCUMENT, constants.RECENT_ACTIVITY, constants.INSPECTION].forEach(schemaName => {
+        expect(() => itemAggregator.createItemAggr(new mongoose.Types.ObjectId().toString(), schemaName, ['public'], {}), schemaName)
+          .to.throw(TypeError, /unreadable ids/);
+      });
     });
   });
 });

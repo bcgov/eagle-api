@@ -1,13 +1,17 @@
 const { setProjectDefault } = require('../helpers/aggregators');
+const { parentReadMatch } = require('../helpers/parentRead');
 
 /**
  * Creates an aggregate for looking up recent activity.
  *
  * @param {boolean} populate Flag indicating if fields need a look up
+ * @param {array} unreadableParentIds Parents the caller cannot read, from helpers/parentRead
  * @returns {array} Aggregate for recent activity
  */
-exports.createRecentActivityAggr = (populate) => {
-  let aggregation = [];
+exports.createRecentActivityAggr = (populate, unreadableParentIds) => {
+  // Runs whether or not the caller asked to populate, and before the project lookup below
+  // overwrites the `project` reference the gate reads.
+  let aggregation = [...parentReadMatch(unreadableParentIds)];
 
   if (populate) {
     // Handle project.

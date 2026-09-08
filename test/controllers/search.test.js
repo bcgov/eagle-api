@@ -70,7 +70,7 @@ describe('Search Controller', () => {
     };
 
     sinon.stub(mongoose, 'model').callsFake(() => modelStub);
-    sinon.stub(mongoose, 'modelNames').returns(['Document', 'Project', 'Comment', 'CACUser']);
+    sinon.stub(mongoose, 'modelNames').returns(['Document', 'Project', 'Comment', 'CACUser', 'RecentActivity', 'Inspection']);
 
     sinon.stub(Utils, 'recordAction').resolves();
     sinon.stub(Utils, 'filterData').callsFake((schema, data) => data);
@@ -189,6 +189,84 @@ describe('Search Controller', () => {
 
       await searchController.publicGet(args, res);
       expect(res.status.calledWith(400)).to.be.true;
+    });
+  });
+
+  describe('Parent Gate', () => {
+    const parent = new mongoose.Types.ObjectId();
+
+    // The pipeline handed to Mongo is the only place the gate shows up, so these read it back.
+    function pipeline() {
+      return modelStub.aggregate.firstCall.args[0];
+    }
+
+    function gateStages(stages) {
+      return stages.filter(stage => stage.$match && stage.$match.project && stage.$match.project.$nin);
+    }
+
+    beforeEach(() => {
+      parentRead.unreadableParentIds.resolves([parent]);
+    });
+
+    it('drops recent activity under a parent the caller cannot read', async () => {
+      await searchController.publicGet(makeArgs({ dataset: { value: 'RecentActivity' }, keywords: { value: '' } }), res);
+
+      const gates = gateStages(pipeline());
+      expect(gates).to.have.lengthOf(1);
+      expect(gates[0].$match.project.$nin).to.deep.equal([parent]);
+    });
+
+    it('keeps the recent activity gate ahead of the page when populating', async () => {
+      await searchController.publicGet(makeArgs({
+        dataset: { value: 'RecentActivity' },
+        populate: { value: true },
+        keywords: { value: '' }
+      }), res);
+
+      const stages = pipeline();
+      const facetIndex = stages.findIndex(stage => stage.$facet);
+      const gateIndex = stages.findIndex(stage => stage.$match && stage.$match.project && stage.$match.project.$nin);
+
+      expect(facetIndex, 'populate takes the $facet path').to.be.greaterThan(-1);
+      expect(gateIndex, 'gate runs before $skip/$limit').to.be.greaterThan(-1).and.to.be.lessThan(facetIndex);
+      // Hoisted, not copied: a second gate inside the facet would drop rows after the page is cut.
+      expect(gateStages(stages[facetIndex].$facet.searchResults)).to.be.empty;
+    });
+
+    it('resolves the unreadable parents once per request', async () => {
+      await searchController.publicGet(makeArgs({
+        dataset: { value: 'RecentActivity' },
+        populate: { value: true },
+        keywords: { value: '' }
+      }), res);
+
+      expect(parentRead.unreadableParentIds.callCount).to.equal(1);
+    });
+
+    it('drops an inspection under a parent the caller cannot read', async () => {
+      await searchController.publicGet(makeArgs({ dataset: { value: 'Inspection' }, keywords: { value: '' } }), res);
+
+      const gates = gateStages(pipeline());
+      expect(gates).to.have.lengthOf(1);
+      expect(gates[0].$match.project.$nin).to.deep.equal([parent]);
+    });
+
+    ['RecentActivity', 'Inspection'].forEach(schemaName => {
+      it(`gates a single ${schemaName} fetched through dataset=Item`, async () => {
+        const args = makeArgs({
+          dataset: { value: 'Item' },
+          _schemaName: { value: schemaName },
+          _id: { value: '507f1f77bcf86cd799439011' }
+        });
+        aggregateStub.exec.resolves([]);
+
+        await searchController.publicGet(args, res);
+
+        expect(res.status.calledWith(200)).to.be.true;
+        const gates = gateStages(pipeline());
+        expect(gates).to.have.lengthOf(1);
+        expect(gates[0].$match.project.$nin).to.deep.equal([parent]);
+      });
     });
   });
 

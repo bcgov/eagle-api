@@ -6399,7 +6399,7 @@ paths:
           required: false
         - in: query
           name: _schemaName
-          description: "Schema of the record to return with dataset=Item. Documents, comment periods, comments and valued components are withheld when the caller cannot read their parent."
+          description: "Schema of the record to return with dataset=Item. Documents, comment periods, comments, valued components, recent activity and inspections are withheld when the caller cannot read their parent."
           type: string
           required: false
         - in: query
@@ -6495,7 +6495,7 @@ paths:
             type: string
         - in: query
           name: _schemaName
-          description: "Schema of the record to return with dataset=Item. Documents, comment periods, comments and valued components are withheld when the caller cannot read their parent."
+          description: "Schema of the record to return with dataset=Item. Documents, comment periods, comments, valued components, recent activity and inspections are withheld when the caller cannot read their parent."
           type: string
           required: false
         - in: query

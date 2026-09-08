@@ -3,6 +3,8 @@ var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 var demiPush = require('../helpers/demiPush');
+var parentRead = require('../helpers/parentRead');
+var constants = require('../helpers/constants');
 
 
 exports.protectedOptions = function (args, res) {
@@ -12,6 +14,10 @@ exports.protectedOptions = function (args, res) {
 exports.publicGet = async function (args, res) {
   try {
     var RecentActivity = mongoose.model('RecentActivity');
+
+    // This route only ever answers the public, which is what the $redact below assumes. Resolved
+    // once here rather than per row; a failure throws instead of dropping the gate.
+    const unreadableParents = await parentRead.unreadableParentIds(constants.PUBLIC_ROLES);
 
     // Build a focused pipeline that sorts and limits BEFORE running $lookups.
     // The old approach ran 3 $lookups on all 2,462 active items and then
@@ -28,6 +34,10 @@ exports.publicGet = async function (args, res) {
     function buildPipeline(pinnedValue) {
       return [
         { $match: { _schemaName: 'RecentActivity', active: true, pinned: pinnedValue } },
+        // An activity's own read[] says nothing about its project, so an active row under an
+        // unpublished project would otherwise reach the public. Ahead of the $limit so a hidden
+        // row does not eat one of the four slots.
+        ...parentRead.parentReadMatch(unreadableParents),
         { $sort: { dateAdded: -1 } },
         { $limit: 4 },
         // --- lookups now run on at most 4 docs ---
