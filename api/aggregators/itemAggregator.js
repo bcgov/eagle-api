@@ -1,6 +1,16 @@
 const mongoose = require('mongoose');
 
 const constants = require('../helpers/constants').schemaTypes;
+const parentReadAggr = require('../helpers/parentReadAggr');
+
+// Not in schemaTypes: search.js builds its dataset allow-list from those values, and there is no
+// Vc dataset pipeline. Item reaches a Vc by _schemaName only.
+const VC_SCHEMA = 'Vc';
+
+// Gated on the parent's `read[]`. Project and ProjectNotification are parents themselves; List and
+// Organization have none. RecentActivity and Inspection do hang off a project but are out of scope
+// here: they leak the same way through their own list aggregators, so both paths get fixed together.
+const PROJECT_GATED_SCHEMAS = [constants.DOCUMENT, constants.COMMENT_PERIOD, VC_SCHEMA];
 
 /**
  * Creates an aggregate for an item.
@@ -47,6 +57,32 @@ exports.createItemAggr = (itemId, schemaName, roles) => {
       }
     }
   );
+
+  if (PROJECT_GATED_SCHEMAS.includes(schemaName)) {
+    aggregation.push(...parentReadAggr(roles));
+  } else if (schemaName === constants.COMMENT) {
+    // A comment hangs off a comment period, which hangs off a project, so both levels gate it.
+    aggregation.push(
+      ...parentReadAggr(roles, 'period'),
+      {
+        '$lookup': {
+          'from': 'epic',
+          'localField': 'period',
+          'foreignField': '_id',
+          'as': 'periodParentCheck'
+        }
+      },
+      {
+        '$addFields': {
+          periodProject: { $arrayElemAt: ['$periodParentCheck.project', 0] }
+        }
+      },
+      ...parentReadAggr(roles, 'periodProject'),
+      {
+        '$project': { periodParentCheck: 0, periodProject: 0 }
+      }
+    );
+  }
 
   if (schemaName === constants.INSPECTION) {
     // pop elements and their items.
