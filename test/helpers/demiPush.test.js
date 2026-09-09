@@ -20,8 +20,19 @@ const REGULATION = '5f4c7d1e2b3a4c5d6e7f0001';
 const PROPONENT = '5f4c7d1e2b3a4c5d6e7f0002';
 const PIN_A = '5f4c7d1e2b3a4c5d6e7f0003';
 const PIN_B = '5f4c7d1e2b3a4c5d6e7f0004';
+const PHASE = '5f4c7d1e2b3a4c5d6e7f0006';
+const PAST_PHASE = '5f4c7d1e2b3a4c5d6e7f0007';
+const DECISION = '5f4c7d1e2b3a4c5d6e7f0008';
+const CEAA = '5f4c7d1e2b3a4c5d6e7f0009';
+const GONE = '5f4c7d1e2b3a4c5d6e7f000a';
 
-const LISTS = [{ _id: REGULATION, name: 'Reviewable Projects Regulation', item: 'https://www.bclaws.ca/rpr' }];
+const LISTS = [
+  { _id: REGULATION, name: 'Reviewable Projects Regulation', item: 'https://www.bclaws.ca/rpr' },
+  { _id: PAST_PHASE, name: 'Pre-Application', type: 'projectPhase', legislation: 2002 },
+  { _id: PHASE, name: 'Application Review', type: 'projectPhase', legislation: 2002 },
+  { _id: DECISION, name: 'Certificate Issued', type: 'eaDecisions', legislation: 2002 },
+  { _id: CEAA, name: 'Substituted', type: 'ceaaInvolvements', legislation: 2002 }
+];
 const ORGS = [
   { _id: PROPONENT, name: 'Acme Mining', province: 'BC' },
   { _id: PIN_A, name: 'First Nation A', province: 'BC' },
@@ -207,7 +218,7 @@ describe('DemiPush Helper', () => {
 
       expect(fetchStub.calledOnce).to.be.true;
       expect(fetchStub.firstCall.args[0]).to.equal(`${BASE}/eagle/projects/p1`);
-      expect(listFind.calledOnceWithExactly({ _schemaName: 'List' }, '_id name item')).to.be.true;
+      expect(listFind.calledOnceWithExactly({ _schemaName: 'List' }, '_id name item type legislation')).to.be.true;
       // pins and proponent resolve in one Organization read
       expect(orgFind.calledOnceWithExactly(
         { _id: { $in: [PIN_A, PIN_B, PROPONENT] } },
@@ -243,6 +254,112 @@ describe('DemiPush Helper', () => {
       await demiPush.project(project);
 
       expect(pushedDoc().legislation_2002.applicableRegulation).to.deep.equal(populated);
+    });
+
+    it('should resolve phase, decision and involvement refs into List objects', async () => {
+      const { listFind } = stubModels(LISTS, ORGS);
+      fetchStub.resolves(okResponse());
+      const project = projectDoc();
+      project.legislation_2002.currentPhaseName = PHASE;
+      project.legislation_2002.eacDecision = DECISION;
+      project.legislation_2002.CEAAInvolvement = CEAA;
+
+      const landed = await demiPush.project(project);
+
+      expect(landed).to.be.true;
+      // one read covers every List ref on the push
+      expect(listFind.calledOnce).to.be.true;
+
+      const block = pushedDoc().legislation_2002;
+      // eagle-public picks its stage rail off the phase's own type and legislation year
+      expect(block.currentPhaseName).to.deep.equal({
+        _id: PHASE, name: 'Application Review', type: 'projectPhase', legislation: 2002
+      });
+      expect(block.eacDecision).to.deep.equal({
+        _id: DECISION, name: 'Certificate Issued', type: 'eaDecisions', legislation: 2002
+      });
+      expect(block.CEAAInvolvement).to.deep.equal({
+        _id: CEAA, name: 'Substituted', type: 'ceaaInvolvements', legislation: 2002
+      });
+      expect(warnStub.called).to.be.false;
+    });
+
+    it('should resolve every phaseHistory entry and leave a populated one alone', async () => {
+      stubModels(LISTS, ORGS);
+      fetchStub.resolves(okResponse());
+      const populated = { _id: PAST_PHASE, name: 'Already Here', type: 'projectPhase', legislation: 1996 };
+      const project = projectDoc();
+      project.legislation_2002.phaseHistory = [populated, PHASE];
+
+      await demiPush.project(project);
+
+      expect(pushedDoc().legislation_2002.phaseHistory).to.deep.equal([
+        populated,
+        { _id: PHASE, name: 'Application Review', type: 'projectPhase', legislation: 2002 }
+      ]);
+      // a ref that arrived populated is not an unresolved one
+      expect(warnStub.called).to.be.false;
+    });
+
+    it('should keep an already-populated currentPhaseName as it stands', async () => {
+      stubModels([], ORGS);
+      fetchStub.resolves(okResponse());
+      const populated = { _id: PHASE, name: 'Already Here', type: 'projectPhase', legislation: 2002 };
+      const project = projectDoc();
+      project.legislation_2002.currentPhaseName = populated;
+
+      await demiPush.project(project);
+
+      expect(pushedDoc().legislation_2002.currentPhaseName).to.deep.equal(populated);
+      expect(warnStub.called).to.be.false;
+    });
+
+    it('should pass an id with no List row through unchanged and warn once', async () => {
+      stubModels(LISTS, ORGS);
+      fetchStub.resolves(okResponse());
+      const project = projectDoc();
+      project.legislation_2002.currentPhaseName = GONE;
+      project.legislation_2002.phaseHistory = [GONE, PHASE];
+
+      const landed = await demiPush.project(project);
+
+      expect(landed).to.be.true;
+      const block = pushedDoc().legislation_2002;
+      // a stale ref still reaches DEMI, so the reconcile can see it
+      expect(block.currentPhaseName).to.equal(GONE);
+      expect(block.phaseHistory[0]).to.equal(GONE);
+      expect(block.phaseHistory[1].name).to.equal('Application Review');
+      // one line for the push, whatever how many refs missed
+      expect(warnStub.calledOnce).to.be.true;
+      expect(warnStub.firstCall.args[0]).to.equal('[demiPush] project p1: List ids not found, pushed as ids');
+      expect(warnStub.firstCall.args[1]).to.deep.equal({ ids: [GONE] });
+      expect(errorStub.called).to.be.false;
+    });
+
+    it('should read the List collection for a phase even when no regulation is set', async () => {
+      const { listFind } = stubModels(LISTS, ORGS);
+      fetchStub.resolves(okResponse());
+      const project = projectDoc();
+      project.legislation_2002.applicableRegulation = null;
+      project.legislation_2002.currentPhaseName = PHASE;
+
+      await demiPush.project(project);
+
+      expect(listFind.calledOnce).to.be.true;
+      expect(pushedDoc().legislation_2002.currentPhaseName.name).to.equal('Application Review');
+    });
+
+    it('should not mutate the phase refs on the project it was handed', async () => {
+      stubModels(LISTS, ORGS);
+      fetchStub.resolves(okResponse());
+      const project = projectDoc();
+      project.legislation_2002.currentPhaseName = PHASE;
+      project.legislation_2002.phaseHistory = [PHASE];
+
+      await demiPush.project(project);
+
+      expect(project.legislation_2002.currentPhaseName).to.equal(PHASE);
+      expect(project.legislation_2002.phaseHistory).to.deep.equal([PHASE]);
     });
 
     it('should leave a null proponent, regulation and pin out of the lookups', async () => {
@@ -413,7 +530,7 @@ describe('DemiPush Helper', () => {
       });
 
       expect(landed).to.be.true;
-      expect(listFind.calledOnceWithExactly({ _schemaName: 'List' }, '_id name item')).to.be.true;
+      expect(listFind.calledOnceWithExactly({ _schemaName: 'List' }, '_id name item type legislation')).to.be.true;
       expect(fetchStub.calledOnce).to.be.true;
       const [url, options] = fetchStub.firstCall.args;
       expect(url).to.equal(`${BASE}/eagle/documents/d1`);
