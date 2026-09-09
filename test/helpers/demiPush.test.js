@@ -25,10 +25,12 @@ const PAST_PHASE = '5f4c7d1e2b3a4c5d6e7f0007';
 const DECISION = '5f4c7d1e2b3a4c5d6e7f0008';
 const CEAA = '5f4c7d1e2b3a4c5d6e7f0009';
 const GONE = '5f4c7d1e2b3a4c5d6e7f000a';
+const ZERO_LEG_PHASE = '5f4c7d1e2b3a4c5d6e7f000b';
 
 const LISTS = [
   { _id: REGULATION, name: 'Reviewable Projects Regulation', item: 'https://www.bclaws.ca/rpr' },
   { _id: PAST_PHASE, name: 'Pre-Application', type: 'projectPhase', legislation: 2002 },
+  { _id: ZERO_LEG_PHASE, name: 'Unassigned Phase', type: 'projectPhase', legislation: 0 },
   { _id: PHASE, name: 'Application Review', type: 'projectPhase', legislation: 2002 },
   { _id: DECISION, name: 'Certificate Issued', type: 'eaDecisions', legislation: 2002 },
   { _id: CEAA, name: 'Substituted', type: 'ceaaInvolvements', legislation: 2002 }
@@ -282,6 +284,19 @@ describe('DemiPush Helper', () => {
         _id: CEAA, name: 'Substituted', type: 'ceaaInvolvements', legislation: 2002
       });
       expect(warnStub.called).to.be.false;
+    });
+
+    it('should carry a List row with legislation 0 as 0, not null', async () => {
+      stubModels(LISTS, ORGS);
+      fetchStub.resolves(okResponse());
+      const project = projectDoc();
+      project.legislation_2002.currentPhaseName = ZERO_LEG_PHASE;
+
+      await demiPush.project(project);
+
+      expect(pushedDoc().legislation_2002.currentPhaseName).to.deep.equal({
+        _id: ZERO_LEG_PHASE, name: 'Unassigned Phase', type: 'projectPhase', legislation: 0
+      });
     });
 
     it('should resolve every phaseHistory entry and leave a populated one alone', async () => {

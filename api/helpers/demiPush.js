@@ -12,8 +12,9 @@ const client = require('./pushClient')({
 });
 
 const LABEL_FIELDS = ['type', 'milestone', 'projectPhase', 'documentAuthorType'];
-// Project fields stored as a bare List ref. eagle-public reads `name` off each one, and reads
-// `type` and `legislation` off the phase to pick its stage rail, so all three ride along.
+// Project fields stored as a bare List ref. eagle-public reads `name` off each one and
+// `legislation` off the phase to pick its stage rail (assessment-stages.ts); `type` rides along
+// for parity with the List row, no consumer reads it today.
 const LIST_REF_FIELDS = ['eacDecision', 'currentPhaseName', 'CEAAInvolvement'];
 const LEGISLATION_KEYS = ['legislation_1996', 'legislation_2002', 'legislation_2018'];
 
