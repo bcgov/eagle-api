@@ -12,6 +12,10 @@ const client = require('./pushClient')({
 });
 
 const LABEL_FIELDS = ['type', 'milestone', 'projectPhase', 'documentAuthorType'];
+// Project fields stored as a bare List ref. eagle-public reads `name` off each one and
+// `legislation` off the phase to pick its stage rail (assessment-stages.ts); `type` rides along
+// for parity with the List row, no consumer reads it today.
+const LIST_REF_FIELDS = ['eacDecision', 'currentPhaseName', 'CEAAInvolvement'];
 const LEGISLATION_KEYS = ['legislation_1996', 'legislation_2002', 'legislation_2018'];
 
 // ponytail: memoized for process lifetime; add a TTL if List items start changing while pods are up
@@ -19,7 +23,7 @@ let listEntriesPromise = null;
 
 function listEntries() {
   if (!listEntriesPromise) {
-    listEntriesPromise = Promise.resolve(mongoose.model('List').find({ _schemaName: 'List' }, '_id name item').lean())
+    listEntriesPromise = Promise.resolve(mongoose.model('List').find({ _schemaName: 'List' }, '_id name item type legislation').lean())
       .then(items => new Map(items.map(i => [String(i._id), i])))
       .catch(err => {
         listEntriesPromise = null;
@@ -29,7 +33,8 @@ function listEntries() {
   return listEntriesPromise;
 }
 
-// An ObjectId or a hex string, as a plain id string. No caller populates these refs.
+// An ObjectId or a hex string, as a plain id string. A ref the caller did populate is handed back
+// untouched by the resolvers below before it ever reaches here.
 function idOf(value) {
   return value ? String(value) : null;
 }
@@ -53,6 +58,24 @@ function regulationOf(value, lists) {
   const id = idOf(value);
   const entry = lists.get(id) || {};
   return { _id: id, name: entry.name || null, item: entry.item || null };
+}
+
+// A List ref DEMI copies verbatim. An id with no List row is left exactly as it arrived rather than
+// blanked, so a stale ref still reaches DEMI and the reconcile can see it; the caller logs it once.
+function listRefOf(value, lists, unresolved) {
+  if (!value) {
+    return value;
+  }
+  if (typeof value === 'object' && value.name !== undefined) {
+    return value;
+  }
+  const id = idOf(value);
+  const entry = lists.get(id);
+  if (!entry) {
+    unresolved.add(id);
+    return value;
+  }
+  return { _id: id, name: entry.name || null, type: entry.type || null, legislation: entry.legislation ?? null };
 }
 
 // Never mutate the caller's document: the push carries resolved fields the Mongo schema has no room for.
@@ -82,13 +105,24 @@ async function enrichProject(project) {
     }
   }
 
+  const needsLists = blocks.some(b => b.applicableRegulation ||
+    LIST_REF_FIELDS.some(field => b[field]) ||
+    (Array.isArray(b.phaseHistory) && b.phaseHistory.length));
+
   const [lists, orgs] = await Promise.all([
-    blocks.some(b => b.applicableRegulation) ? listEntries() : new Map(),
+    needsLists ? listEntries() : new Map(),
     orgsById(Array.from(orgIds))
   ]);
 
+  const unresolved = new Set();
   for (const block of blocks) {
     block.applicableRegulation = regulationOf(block.applicableRegulation, lists);
+    for (const field of LIST_REF_FIELDS) {
+      block[field] = listRefOf(block[field], lists, unresolved);
+    }
+    if (Array.isArray(block.phaseHistory)) {
+      block.phaseHistory = block.phaseHistory.map(entry => listRefOf(entry, lists, unresolved));
+    }
     const proponentId = idOf(block.proponent);
     const proponent = proponentId ? orgs.get(proponentId) : null;
     block.proponentId = proponentId;
@@ -105,6 +139,9 @@ async function enrichProject(project) {
   }
   if (Array.isArray(project.featuredDocuments)) {
     project.featuredDocuments = project.featuredDocuments.map(idOf).filter(Boolean);
+  }
+  if (unresolved.size) {
+    defaultLog.warn(`[demiPush] project ${project._id}: List ids not found, pushed as ids`, { ids: Array.from(unresolved) });
   }
 }
 
