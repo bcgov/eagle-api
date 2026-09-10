@@ -50,6 +50,12 @@ const ALLOWED_FIELDS = [
   'contentPageCount'
 ];
 
+// A stored documentFileName can hold anything an uploader typed, including CR, LF and quotes,
+// which Node rejects in a header value (ERR_INVALID_CHAR).
+function cleanFileNameForHeader(fileName) {
+  return encodeURIComponent(fileName).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/%2F/g, '_').replace(/ /g, '_');
+}
+
 exports.protectedOptions = function (args, res,) {
   res.status(200).send();
 };
@@ -334,7 +340,7 @@ exports.publicDownload = function (args, res) {
         }
 
         // clean the filename
-        fileName = encodeURIComponent(fileName).replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\\/g, '_').replace(/\//g, '_').replace(/%2F/g, '_').replace(/ /g, '_');
+        fileName = cleanFileNameForHeader(fileName);
         // update document public hit count
 
         mongoose.model('Document').findById(args.swagger.params.docId.value)
@@ -502,6 +508,9 @@ exports.protectedOpen = function (args, res) {
         if (args.swagger.params.filename) {
           fileName = args.swagger.params.filename.value;
         }
+
+        // clean the filename
+        fileName = cleanFileNameForHeader(fileName);
 
         var fileMeta;
 
