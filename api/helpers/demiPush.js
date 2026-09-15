@@ -175,6 +175,9 @@ function serialize(key, run) {
   return next;
 }
 
+// Test-only view of the queue: a chain entry left behind means a later push would skip the queue.
+exports._pendingCount = () => chains.size;
+
 async function readById(model, id) {
   try {
     return { doc: await model.findById(id) };

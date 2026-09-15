@@ -707,6 +707,42 @@ describe('DemiPush Helper', () => {
         expect(errorStub.called).to.be.false;
       });
 
+      it('should keep a third push behind the second and leave no chain entry behind', async () => {
+        // readyState 0 skips the re-read, so each push carries the name its caller passed in.
+        stubMongoose({ Project: { modelName: 'Project', db: { readyState: 0 }, findById: sinon.stub() } });
+        const gates = { A: deferred(), B: deferred(), C: deferred() };
+        const events = [];
+        fetchStub.callsFake((url, options) => {
+          const name = JSON.parse(options.body).doc.name;
+          events.push(`${name} start`);
+          return gates[name].promise.then(response => {
+            events.push(`${name} end`);
+            return response;
+          });
+        });
+
+        const a = demiPush.project({ _id: 'p1', name: 'A' });
+        const b = demiPush.project({ _id: 'p1', name: 'B' });
+        await settle();
+        expect(events).to.deep.equal(['A start']);
+
+        gates.A.resolve(okResponse());
+        await settle();
+        // C is queued only once A has drained, when a broken drain guard would have dropped the live chain.
+        const c = demiPush.project({ _id: 'p1', name: 'C' });
+        await settle();
+        expect(events, 'C must wait for B').to.deep.equal(['A start', 'A end', 'B start']);
+
+        gates.B.resolve(okResponse());
+        await settle();
+        gates.C.resolve(okResponse());
+        expect(await Promise.all([a, b, c])).to.deep.equal([true, true, true]);
+        await settle();
+
+        expect(events).to.deep.equal(['A start', 'A end', 'B start', 'B end', 'C start', 'C end']);
+        expect(demiPush._pendingCount(), 'the queue must be empty once every push has settled').to.equal(0);
+      });
+
       it('should skip the re-read when no Mongo connection is up', async () => {
         const offline = { modelName: 'Project', db: { readyState: 0 }, findById: sinon.stub() };
         stubMongoose({ Project: offline });
