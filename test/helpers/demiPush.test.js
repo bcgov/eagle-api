@@ -104,6 +104,12 @@ describe('DemiPush Helper', () => {
   }
 
   const pushedDoc = () => JSON.parse(fetchStub.firstCall.args[1].body).doc;
+  // Every push carries a pushedAt stamp, asserted on its own below; envelope checks drop it.
+  const pushedBody = raw => {
+    const body = JSON.parse(raw);
+    delete body.pushedAt;
+    return body;
+  };
 
   afterEach(() => {
     sinon.restore();
@@ -177,7 +183,7 @@ describe('DemiPush Helper', () => {
         'Content-Type': 'application/json',
         'Ocp-Apim-Subscription-Key': 'test-key'
       });
-      expect(JSON.parse(options.body)).to.deep.equal({ doc: { _id: 'p1', name: 'Test' } });
+      expect(pushedBody(options.body)).to.deep.equal({ doc: { _id: 'p1', name: 'Test' } });
       expect(errorStub.called).to.be.false;
     });
 
@@ -462,7 +468,7 @@ describe('DemiPush Helper', () => {
       const [url, options] = fetchStub.firstCall.args;
       expect(url).to.equal(`${BASE}/eagle/updates/u1`);
       expect(options.method).to.equal('PUT');
-      expect(JSON.parse(options.body)).to.deep.equal({ doc: { _id: 'u1', headline: 'Decision issued', active: true } });
+      expect(pushedBody(options.body)).to.deep.equal({ doc: { _id: 'u1', headline: 'Decision issued', active: true } });
       expect(errorStub.called).to.be.false;
     });
 
@@ -477,7 +483,7 @@ describe('DemiPush Helper', () => {
         expect(url).to.equal(`${BASE}/eagle/${segment}/x1`);
         expect(options.method).to.equal('PUT');
         expect(options.headers['Ocp-Apim-Subscription-Key']).to.equal('test-key');
-        expect(JSON.parse(options.body)).to.deep.equal({ doc: { _id: 'x1', name: 'Thing', read: ['public'] } });
+        expect(pushedBody(options.body)).to.deep.equal({ doc: { _id: 'x1', name: 'Thing', read: ['public'] } });
         expect(errorStub.called).to.be.false;
       });
 
@@ -582,7 +588,7 @@ describe('DemiPush Helper', () => {
       expect(options.method).to.equal('PUT');
       expect(options.headers['Ocp-Apim-Subscription-Key']).to.equal('test-key');
       // The payload as it stands: no `{ doc }` envelope, and the kill switch survives
-      expect(JSON.parse(options.body)).to.deep.equal({ ENVIRONMENT: 'test', SEARCH_API_PATH: '', LOG_LEVEL: 0 });
+      expect(pushedBody(options.body)).to.deep.equal({ ENVIRONMENT: 'test', SEARCH_API_PATH: '', LOG_LEVEL: 0 });
       expect(errorStub.called).to.be.false;
     });
 
@@ -596,6 +602,166 @@ describe('DemiPush Helper', () => {
 
       expect(await demiPush.config({ ENVIRONMENT: 'test' })).to.be.false;
       expect(errorStub.calledOnceWith('[demiPush] config public rejected 404')).to.be.true;
+    });
+
+    describe('one push at a time per record', () => {
+      // `db.readyState` is what demiPush checks before it asks Mongo for anything.
+      const stubModel = (name, findById) => ({
+        modelName: name,
+        db: { readyState: 1 },
+        findById: sinon.stub().callsFake(findById)
+      });
+
+      function stubMongoose(models) {
+        const model = sinon.stub(mongoose, 'model');
+        model.withArgs('List').returns({ find: () => ({ lean: () => Promise.resolve(LISTS) }) });
+        model.withArgs('Organization').returns({ find: () => ({ lean: () => Promise.resolve(ORGS) }) });
+        Object.entries(models).forEach(([name, stub]) => model.withArgs(name).returns(stub));
+        return models;
+      }
+
+      function deferred() {
+        let resolve;
+        const promise = new Promise(r => { resolve = r; });
+        return { promise, resolve };
+      }
+
+      // Let every pending microtask run, so an unsequenced second push would have reached fetch.
+      const settle = () => new Promise(setImmediate);
+
+      const published = () => ({
+        _id: 'p1',
+        isPublished: true,
+        read: ['public', 'staff'],
+        currentLegislationYear: 'legislation_2002',
+        legislation_2002: { name: 'Fresh' }
+      });
+
+      it('should hold a second push for the same project until the first one has landed', async () => {
+        stubMongoose({ Project: stubModel('Project', () => Promise.resolve(published())) });
+        const inFlight = deferred();
+        fetchStub.onCall(0).returns(inFlight.promise);
+        fetchStub.onCall(1).resolves(okResponse());
+
+        // save-and-publish: the pre-publish copy goes out first, the published one right behind it
+        const stale = demiPush.project({ _id: 'p1', isPublished: false, read: ['staff'], legislation_2002: { name: 'Stale' } });
+        const fresh = demiPush.project({ _id: 'p1', isPublished: true, read: ['public', 'staff'] });
+
+        await settle();
+        expect(fetchStub.callCount, 'second push must wait for the first').to.equal(1);
+
+        inFlight.resolve(okResponse());
+        expect(await Promise.all([stale, fresh])).to.deep.equal([true, true]);
+        expect(fetchStub.callCount).to.equal(2);
+        expect(fetchStub.getCalls().map(c => c.args[0])).to.deep.equal([
+          `${BASE}/eagle/projects/p1`, `${BASE}/eagle/projects/p1`
+        ]);
+      });
+
+      it('should build each push from the project as Mongo has it, not from the caller\'s copy', async () => {
+        stubMongoose({ Project: stubModel('Project', () => Promise.resolve(published())) });
+        fetchStub.resolves(okResponse());
+
+        await demiPush.project({ _id: 'p1', isPublished: false, read: ['staff'], legislation_2002: { name: 'Stale' } });
+
+        const doc = pushedDoc();
+        expect(doc.isPublished).to.be.true;
+        expect(doc.read).to.deep.equal(['public', 'staff']);
+        expect(doc.legislation_2002.name).to.equal('Fresh');
+      });
+
+      it('should not hold a push for one project behind another project', async () => {
+        stubMongoose({ Project: stubModel('Project', id => Promise.resolve({ _id: id })) });
+        const blocked = deferred();
+        fetchStub.withArgs(`${BASE}/eagle/projects/p1`).returns(blocked.promise);
+        fetchStub.withArgs(`${BASE}/eagle/projects/p2`).resolves(okResponse());
+
+        const stuck = demiPush.project({ _id: 'p1' });
+        expect(await demiPush.project({ _id: 'p2' })).to.be.true;
+
+        blocked.resolve(okResponse());
+        expect(await stuck).to.be.true;
+      });
+
+      it('should push the caller\'s copy when the row is gone, so a delete mirror still lands', async () => {
+        stubMongoose({ CommentPeriod: stubModel('CommentPeriod', () => Promise.resolve(null)) });
+        const debugStub = sinon.stub(defaultLog, 'debug');
+        fetchStub.resolves(okResponse());
+
+        await demiPush.commentPeriod({ _id: 'cp1', project: 'p1', read: ['public'] }, { isDeleted: true });
+
+        expect(pushedDoc()).to.deep.equal({ _id: 'cp1', project: 'p1', read: ['public'], isDeleted: true });
+        expect(debugStub.calledOnceWith('[demiPush] commentperiods cp1 gone from Mongo, pushing the caller\'s copy')).to.be.true;
+        expect(warnStub.called).to.be.false;
+      });
+
+      it('should push the caller\'s copy and warn when the re-read fails', async () => {
+        stubMongoose({ Comment: stubModel('Comment', () => Promise.reject(new Error('mongo down'))) });
+        fetchStub.resolves(okResponse());
+
+        expect(await demiPush.comment({ _id: 'c1', comment: 'Body text' })).to.be.true;
+
+        expect(pushedDoc()).to.deep.equal({ _id: 'c1', comment: 'Body text' });
+        expect(warnStub.calledOnce).to.be.true;
+        expect(warnStub.firstCall.args[0]).to.equal('[demiPush] comments c1 re-read failed, pushing the caller\'s copy');
+        expect(errorStub.called).to.be.false;
+      });
+
+      it('should skip the re-read when no Mongo connection is up', async () => {
+        const offline = { modelName: 'Project', db: { readyState: 0 }, findById: sinon.stub() };
+        stubMongoose({ Project: offline });
+        fetchStub.resolves(okResponse());
+
+        await demiPush.project({ _id: 'p1', isPublished: true });
+
+        expect(offline.findById.called).to.be.false;
+        expect(pushedDoc()).to.deep.equal({ _id: 'p1', isPublished: true });
+      });
+    });
+
+    describe('ordering stamp', () => {
+      // Three pods push the same record, so in-process ordering cannot help; DEMI compares the stamps.
+      const NOW = 1757894400000;
+
+      it('should stamp the push body with an integer pushedAt, outside the mirrored document', async () => {
+        stubModels([], []);
+        sinon.useFakeTimers({ now: NOW, toFake: ['Date'] });
+        fetchStub.resolves(okResponse());
+
+        await demiPush.project({ _id: 'p1', name: 'Test' });
+
+        const body = JSON.parse(fetchStub.firstCall.args[1].body);
+        expect(Number.isInteger(body.pushedAt), 'pushedAt must be a ms epoch integer').to.be.true;
+        expect(body.pushedAt).to.equal(NOW);
+        expect(body.doc).to.not.have.property('pushedAt');
+      });
+
+      it('should stamp every mirrored kind and the config push', async () => {
+        stubModels([], []);
+        sinon.useFakeTimers({ now: NOW, toFake: ['Date'] });
+        fetchStub.resolves(okResponse());
+
+        await demiPush.comment({ _id: 'c1', comment: 'Body text' });
+        await demiPush.document({ _id: 'd1', project: 'p1' });
+        await demiPush.config({ ENVIRONMENT: 'test' });
+
+        const stamps = fetchStub.getCalls().map(call => JSON.parse(call.args[1].body).pushedAt);
+        expect(stamps).to.deep.equal([NOW, NOW, NOW]);
+      });
+
+      it('should not let a later push carry an older stamp than the one before it', async () => {
+        stubModels([], []);
+        const clock = sinon.useFakeTimers({ now: NOW, toFake: ['Date'] });
+        fetchStub.resolves(okResponse());
+
+        await demiPush.project({ _id: 'p1', name: 'First' });
+        clock.tick(5000);
+        await demiPush.project({ _id: 'p1', name: 'Second' });
+
+        const [first, second] = fetchStub.getCalls().map(call => JSON.parse(call.args[1].body).pushedAt);
+        expect(second, 'the later push must not be stamped older').to.be.at.least(first);
+        expect(second - first).to.equal(5000);
+      });
     });
 
     it('should resolve false when a document PUT is rejected', async () => {

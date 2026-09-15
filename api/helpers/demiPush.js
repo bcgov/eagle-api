@@ -145,83 +145,148 @@ async function enrichProject(project) {
   }
 }
 
+const CONNECTED = 1;
+
+// Mongoose model behind each DEMI route segment, for the re-read before a push.
+const MODEL_BY_KIND = {
+  projects: 'Project',
+  documents: 'Document',
+  commentperiods: 'CommentPeriod',
+  comments: 'Comment',
+  organizations: 'Organization',
+  notifications: 'ProjectNotification',
+  updates: 'RecentActivity'
+};
+
+// One push in flight per record. DEMI takes the last writer, so two mirrors of the same record
+// racing each other (save-and-publish fires both) could otherwise land in the wrong order.
+const chains = new Map();
+
+function serialize(key, run) {
+  const previous = chains.get(key) || Promise.resolve();
+  const next = previous.then(run, run);
+  chains.set(key, next);
+  const drain = () => {
+    if (chains.get(key) === next) {
+      chains.delete(key);
+    }
+  };
+  next.then(drain, drain);
+  return next;
+}
+
+async function readById(model, id) {
+  try {
+    return { doc: await model.findById(id) };
+  } catch (err) {
+    return { error: err };
+  }
+}
+
 // A mirror push re-reads the stored document after the write. A miss or a failed read leaves DEMI
 // on the pre-write state, so it is logged; the caller's own HTTP response is unaffected.
 exports.freshDoc = async function (model, id) {
-  try {
-    const doc = await model.findById(id);
-    if (!doc) {
-      defaultLog.warn(`[demiPush] skipping push: ${model.modelName} ${id} not found on re-read`);
-    }
-    return doc;
-  } catch (err) {
-    defaultLog.warn(`[demiPush] skipping push: ${model.modelName} ${id} re-read failed`, { error: err.message });
-    return null;
+  const read = await readById(model, id);
+  if (read.error) {
+    defaultLog.warn(`[demiPush] skipping push: ${model.modelName} ${id} re-read failed`, { error: read.error.message });
+  } else if (!read.doc) {
+    defaultLog.warn(`[demiPush] skipping push: ${model.modelName} ${id} not found on re-read`);
   }
+  return read.doc || null;
 };
 
-// ponytail: last-writer-wins; sequence per id if the reconcile ever reports ordering drift
+function modelFor(kind) {
+  const name = MODEL_BY_KIND[kind];
+  if (!name) {
+    return null;
+  }
+  try {
+    return mongoose.model(name);
+  } catch (err) {
+    return null;
+  }
+}
+
+// The caller's snapshot can be a write behind by the time its turn in the chain comes, so the body
+// is built from the row as Mongo holds it now. Without a live connection there is nothing to read:
+// mongoose would only buffer the query until it times out.
+async function currentDoc(kind, id, snapshot) {
+  const model = modelFor(kind);
+  if (!model || !model.db || model.db.readyState !== CONNECTED) {
+    return snapshot;
+  }
+  const read = await readById(model, id);
+  if (read.error) {
+    defaultLog.warn(`[demiPush] ${kind} ${id} re-read failed, pushing the caller's copy`, { error: read.error.message });
+    return snapshot;
+  }
+  if (!read.doc) {
+    // Row is gone, so the snapshot is the last state DEMI can be told about — and on a delete
+    // mirror it is the body carrying the marker the row itself never held.
+    defaultLog.debug(`[demiPush] ${kind} ${id} gone from Mongo, pushing the caller's copy`);
+    return snapshot;
+  }
+  return read.doc;
+}
+
 function push(kind, id, body) {
   // No /api segment: the APIM machine API's backend already carries it
   return client.push(`/eagle/${kind}/${id}`, body, `${kind} ${id}`);
 }
 
-// Every export resolves true when the body landed or there was nothing to send, false when it did
-// not. Controllers ignore it — they never await — but a backfill has to know what to retry.
-exports.project = async function (doc) {
+// Every mirror runs through here. `extra` says what the stored document cannot: a hard delete
+// leaves nothing to re-read, so the caller's own copy carries the marker instead.
+function mirrorPush(kind, label, doc, extra, buildBody) {
   if (!client.configured() || !doc || !doc._id) {
-    return true;
+    return Promise.resolve(true);
   }
-  try {
-    const body = toPushBody(doc);
-    await enrichProject(body);
-    return await push('projects', doc._id, { doc: body });
-  } catch (err) {
-    defaultLog.error('[demiPush] project push failed', { error: err.message, stack: err.stack });
-    return false;
-  }
-};
-
-// `extra` says what the stored document cannot, as it does for the mirrors below: a hard delete
-// leaves nothing to re-read. Without it the body stays the caller's own document, untouched.
-exports.document = async function (doc, extra) {
-  if (!client.configured() || !doc || !doc._id) {
-    return true;
-  }
-  try {
-    const lists = await listEntries();
-    const labels = {};
-    for (const field of LABEL_FIELDS) {
-      if (doc[field]) {
-        const entry = lists.get(String(doc[field]));
-        labels[field] = (entry && entry.name) || null;
-      }
-    }
-    return await push('documents', doc._id, { doc: extra ? Object.assign(toPushBody(doc), extra) : doc, labels });
-  } catch (err) {
-    defaultLog.error('[demiPush] document push failed', { error: err.message, stack: err.stack });
-    return false;
-  }
-};
-
-exports.recentActivity = function (doc) {
-  return doc && doc._id ? push('updates', doc._id, { doc }) : Promise.resolve(true);
-};
-
-// Kinds that need no lookup: the stored document is the whole payload, read[] included, and DEMI
-// derives visibility from it. `extra` carries what the stored document cannot say, e.g. a hard
-// delete, which leaves nothing to re-read. Callers never await, so nothing may reject.
-function mirror(kind, label) {
-  return async function (doc, extra) {
-    if (!client.configured() || !doc || !doc._id) {
-      return true;
-    }
+  const id = doc._id;
+  return serialize(`${kind}:${id}`, async () => {
     try {
-      return await push(kind, doc._id, { doc: Object.assign(toPushBody(doc), extra) });
+      const current = await currentDoc(kind, id, doc);
+      // Pods push the same record independently, so DEMI keeps the newest stamp and drops an older body.
+      const pushedAt = Date.now();
+      const body = Object.assign(toPushBody(current), extra);
+      return await push(kind, id, Object.assign(await buildBody(body), { pushedAt }));
     } catch (err) {
       defaultLog.error(`[demiPush] ${label} push failed`, { error: err.message, stack: err.stack });
       return false;
     }
+  });
+}
+
+// Every export resolves true when the body landed or there was nothing to send, false when it did
+// not. Controllers ignore it — they never await — but a backfill has to know what to retry.
+exports.project = function (doc) {
+  return mirrorPush('projects', 'project', doc, null, async body => {
+    await enrichProject(body);
+    return { doc: body };
+  });
+};
+
+exports.document = function (doc, extra) {
+  return mirrorPush('documents', 'document', doc, extra, async body => {
+    const lists = await listEntries();
+    const labels = {};
+    for (const field of LABEL_FIELDS) {
+      if (body[field]) {
+        const entry = lists.get(String(body[field]));
+        labels[field] = (entry && entry.name) || null;
+      }
+    }
+    return { doc: body, labels };
+  });
+};
+
+exports.recentActivity = function (doc) {
+  return mirrorPush('updates', 'recentActivity', doc, null, body => ({ doc: body }));
+};
+
+// Kinds that need no lookup: the stored document is the whole payload, read[] included, and DEMI
+// derives visibility from it.
+function mirror(kind, label) {
+  return function (doc, extra) {
+    return mirrorPush(kind, label, doc, extra, body => ({ doc: body }));
   };
 }
 
@@ -232,14 +297,16 @@ exports.projectNotification = mirror('notifications', 'projectNotification');
 
 // One config document, one id, and `body` is already the payload GET /api/config served — no
 // `{ doc }` envelope, because there is no _id here for DEMI to match the path against.
-exports.config = async function (body) {
+exports.config = function (body) {
   if (!client.configured() || !body) {
-    return true;
+    return Promise.resolve(true);
   }
-  try {
-    return await push('config', 'public', body);
-  } catch (err) {
-    defaultLog.error('[demiPush] config push failed', { error: err.message, stack: err.stack });
-    return false;
-  }
+  return serialize('config:public', async () => {
+    try {
+      return await push('config', 'public', Object.assign({}, body, { pushedAt: Date.now() }));
+    } catch (err) {
+      defaultLog.error('[demiPush] config push failed', { error: err.message, stack: err.stack });
+      return false;
+    }
+  });
 };
