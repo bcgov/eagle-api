@@ -713,16 +713,17 @@ exports.protectedPut = async function (args, res) {
   defaultLog.debug('Updating with:', filteredData);
   defaultLog.debug('--------------------------');
 
-  if (projectLegislationYear == 2018) {
-    fullProjectObject.legislation_2018 = filteredData;
-  } else if (projectLegislationYear == 2002) {
-    fullProjectObject.legislation_2002 = filteredData;
-  } else if (projectLegislationYear == 1996) {
-    fullProjectObject.legislation_1996 = filteredData;
-  }
-  fullProjectObject.currentLegislationYear = 'legislation_' + projectLegislationYear;
+  // Write back only the fields this handler rebuilt. Sending the whole document read at the top
+  // would restore its `read` array over a publish that landed since (api/helpers/actions.js).
+  var update = {
+    currentLegislationYear: 'legislation_' + projectLegislationYear,
+    legislationYearList: fullProjectObject.legislationYearList,
+    review45Start: fullProjectObject.review45Start,
+    review180Start: fullProjectObject.review180Start
+  };
+  update['legislation_' + projectLegislationYear] = filteredData;
 
-  var doc = await Project.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(objId) }, fullProjectObject, { upsert: false, returnDocument: 'after' });
+  var doc = await Project.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(objId) }, { $set: update }, { upsert: false, returnDocument: 'after' });
   // Project.update({ _id: new mongoose.Types.ObjectId(objId) }, { $set: updateObj }, function (err, o) {
   if (doc) {
     Utils.recordAction('Put', 'Project', args.swagger.params.auth_payload.preferred_username, objId, args);
