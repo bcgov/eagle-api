@@ -111,4 +111,23 @@ describe('Project protectedPut', () => {
     expect(res.status.calledWith(200)).to.be.true;
     expect(demiPush.project.calledOnce).to.be.true;
   });
+
+  it('adds a legislation year not already in the list', async () => {
+    storedProject.legislation_2002 = {
+      name: 'Old Project',
+      description: 'old description',
+      phaseHistory: []
+    };
+
+    const args = putArgs();
+    args.swagger.params.ProjObject.value.legislationYear = 2002;
+
+    await projectController.protectedPut(args, res);
+
+    const fields = updateArg().$set || updateArg();
+    expect(fields.legislationYearList).to.include(2002);
+    expect(fields.currentLegislationYear).to.equal('legislation_2002');
+    expect(fields.legislation_2002.name).to.equal('Renamed Project');
+    expect(fields.legislation_2002.description).to.equal('new description');
+  });
 });

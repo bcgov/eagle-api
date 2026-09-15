@@ -683,8 +683,6 @@ exports.protectedPut = async function (args, res) {
   filteredData.CEAALink = projectObj.CEAALink;
   filteredData.eacDecision = projectObj.eacDecision;
   filteredData.decisionDate = projectObj.decisionDate ? new Date(projectObj.decisionDate) : null;
-  fullProjectObject.review45Start = projectObj.review45Start ? new Date(projectObj.review45Start) : null;
-  fullProjectObject.review180Start = projectObj.review180Start ? new Date(projectObj.review180Start) : null;
 
   filteredData.nameSearchTerms = Utils.generateSearchTerms(projectObj.name, WORDS_TO_ANALYZE);
 
@@ -717,9 +715,7 @@ exports.protectedPut = async function (args, res) {
   // would restore its `read` array over a publish that landed since (api/helpers/actions.js).
   var update = {
     currentLegislationYear: 'legislation_' + projectLegislationYear,
-    legislationYearList: fullProjectObject.legislationYearList,
-    review45Start: fullProjectObject.review45Start,
-    review180Start: fullProjectObject.review180Start
+    legislationYearList: fullProjectObject.legislationYearList
   };
   update['legislation_' + projectLegislationYear] = filteredData;
 
