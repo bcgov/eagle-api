@@ -8,6 +8,8 @@ image:
 route:
   enabled: true  # opt in; the chart default is off (see values.yaml)
   host: eagle-test.apps.silver.devops.gov.bc.ca
+  # eagle-public Route on this host owns /, so this Route needs its own path or it gets shadowed
+  path: /api
 
 directRoute:
   enabled: true
