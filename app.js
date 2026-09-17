@@ -13,7 +13,9 @@ if (process.env.APPLICATIONINSIGHTS_CONNECTION_STRING) {
   useAzureMonitor({
     enablePerformanceCounters: false,
     instrumentationOptions: {
-      winston: { enabled: true }
+      winston: { enabled: true },
+      // Mongo spans were 0.17 GB/day of a 0.25 GB workspace cap; requests and logs stay.
+      mongoDb: { enabled: false }
     }
   });
 }
