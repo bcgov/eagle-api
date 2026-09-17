@@ -24,8 +24,9 @@ route:
   # carries its certificate — so prod must not have to remember to opt out. dev and test opt IN.
   enabled: false
   host: ""  # Set in values-{env}.yaml
-  targetPort: "8080-tcp"
-  serviceName: "rproxy"  # API is proxied through rproxy
+  path: "/api"  # eagle-public Route on the same host owns /, so this Route needs its own path
+  targetPort: "3000-tcp"
+  serviceName: "eagle-api"  # rproxy is retired; dev and test Routes go straight to the app
   tls:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
