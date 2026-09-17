@@ -10,6 +10,8 @@ route:
   host: eagle-test.apps.silver.devops.gov.bc.ca
   # eagle-public Route on this host owns /, so this Route needs its own path or it gets shadowed
   path: /api
+  serviceName: eagle-api
+  targetPort: 3000-tcp
 
 directRoute:
   enabled: true
