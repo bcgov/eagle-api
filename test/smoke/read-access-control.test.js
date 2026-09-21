@@ -15,10 +15,29 @@
  *   SMOKE_TEST_TOKEN=<token> yarn test:smoke  # Full suite including authed tests
  */
 
-const { API, get, authGet, hasToken, resolveProjectId, resolveDocId } = require('./helpers');
+const { API, TOKEN, API_KEY, get, authGet, resolveProjectId, resolveDocId } = require('./helpers');
+
+// Authed /search is scoped to project-system-admin, which the API key does not hold, so these need a bearer token.
+const hasSearchToken = () => Boolean(TOKEN);
 const { expect } = require('chai');
 
 describe('READ ACCESS CONTROL — search endpoint enforces document.read[] ACL', () => {
+
+  // An empty CI secret would otherwise skip every authed check below without anyone seeing it.
+  before(function () {
+    if (process.env.CI && !TOKEN && !API_KEY) throw new Error('CI run has neither SMOKE_API_KEY nor SMOKE_TEST_TOKEN set');
+  });
+
+  // CI sets only the API key: prove it cannot reach project-system-admin search.
+  describe('API key only — authed /search refused', function () {
+    before(function () {
+      if (TOKEN || !API_KEY) this.skip();
+    });
+
+    it('GET /search?dataset=Document with the API key returns 403', async () => {
+      await authGet('/search').query({ dataset: 'Document', pageNum: 0, pageSize: 1 }).expect(403);
+    });
+  });
 
   before(async () => {
     // Ensure database has projects and documents seeded to prevent silent passes
@@ -82,7 +101,7 @@ describe('READ ACCESS CONTROL — search endpoint enforces document.read[] ACL',
 
   describe('Staff (authenticated) — sees staff + public docs, NOT sysadmin-only', function () {
     before(function () {
-      if (!hasToken()) this.skip();
+      if (!hasSearchToken()) this.skip();
     });
 
     it('GET /search?dataset=Document (authed) — returns docs with staff OR public in read[]', async () => {
@@ -135,7 +154,7 @@ describe('READ ACCESS CONTROL — search endpoint enforces document.read[] ACL',
     });
 
     it('authenticated: pageSize=-1 returns 400', function (done) {
-      if (!hasToken()) return this.skip();
+      if (!hasSearchToken()) return this.skip();
       authGet('/search')
         .query({ dataset: 'Document', pageNum: 0, pageSize: -1 })
         .expect(400, done);
@@ -144,7 +163,7 @@ describe('READ ACCESS CONTROL — search endpoint enforces document.read[] ACL',
 
   describe('Cross-role isolation — sysadmin-only docs invisible to staff', function () {
     before(function () {
-      if (!hasToken()) this.skip();
+      if (!hasSearchToken()) this.skip();
     });
 
     it('search results never include docs where read is exclusively sysadmin-only', async () => {
