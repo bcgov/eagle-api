@@ -32,6 +32,16 @@ function safeEqual(a, b) {
 }
 exports.safeEqual = safeEqual;
 
+const JWT_BYPASS_ROLES = ['sysadmin', 'staff'];
+const API_KEY_METHODS = ['GET', 'HEAD'];
+
+// True when the route declares no scopes, the caller holds a bypass role, or the caller holds one of the route's scopes.
+function hasRouteScope(routeScopes, callerScopes, bypassRoles) {
+  return !routeScopes || routeScopes.length === 0 ||
+    bypassRoles.some(role => callerScopes.includes(role)) ||
+    routeScopes.some(role => callerScopes.includes(role));
+}
+
 exports.verifyToken = function(req, authOrSecDef, token, callback) {
   // scopes/roles defined for the current endpoint
   var currentScopes = req.swagger.operation['x-security-scopes'];
@@ -46,10 +56,16 @@ exports.verifyToken = function(req, authOrSecDef, token, callback) {
     const apiKey = req.headers['x-api-key'];
     if (apiKey) {
       if (safeEqual(apiKey, INTERNAL_API_KEY)) {
+        const roles = ['project-admin-staff', 'project-team', 'public'];
+        // The key is read-only. 'staff' opens staff-scoped routes only; kept off the payload so read[] filtering never sees it.
+        if (!API_KEY_METHODS.includes(req.method) || !hasRouteScope(currentScopes, roles.concat('staff'), [])) {
+          defaultLog.warn('API key refused: %s, route scopes %j', req.method, currentScopes);
+          return callback(sendError());
+        }
         req.swagger.params.auth_payload = {
           iss: ISSUER,
           preferred_username: 'internal-service',
-          realm_access: { roles: ['project-admin-staff', 'project-team', 'public'] }
+          realm_access: { roles }
         };
         return callback(null);
       }
@@ -148,10 +164,7 @@ function _verifySecret (currentScopes, tokenString, secret, req, callback, sendE
       var issuerMatch = decodedToken.iss == ISSUER;
 
       // Check if user has at least one of the required x-security-scopes or is a global sysadmin/staff
-      var roleMatch = !currentScopes || currentScopes.length === 0 ||
-                      decodedToken.realm_access.roles.includes('sysadmin') ||
-                      decodedToken.realm_access.roles.includes('staff') ||
-                      currentScopes.some(role => decodedToken.realm_access.roles.includes(role));
+      var roleMatch = hasRouteScope(currentScopes, decodedToken.realm_access.roles, JWT_BYPASS_ROLES);
 
       if (roleMatch && issuerMatch) {
         // add the token to the request so that we can access it in the endpoint code if necessary

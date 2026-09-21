@@ -1,7 +1,7 @@
 'use strict';
 
 const { expect } = require('chai');
-const { authGet, hasToken, resolveProjectId } = require('./helpers');
+const { TOKEN, authGet, hasToken, resolveProjectId } = require('./helpers');
 
 describe('PROTECTED /api/project (requires token)', () => {
   let projId;
@@ -37,6 +37,11 @@ describe('PROTECTED /api/project (requires token)', () => {
 
   it('GET /search?dataset=Project — protected search', async function () {
     if (!hasToken()) return this.skip();
+    // /search is scoped to project-system-admin; a staff token passes, the API key holds only staff-level scopes and gets 403.
+    if (!TOKEN) {
+      await authGet('/search').query({ dataset: 'Project', pageNum: 0, pageSize: 5 }).expect(403);
+      return;
+    }
     const res = await authGet('/search').query({ dataset: 'Project', pageNum: 0, pageSize: 5 }).expect(200);
     expect(res.body).to.be.an('array');
   });

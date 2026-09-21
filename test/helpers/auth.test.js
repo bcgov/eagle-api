@@ -118,6 +118,7 @@ describe('Auth Helper Functions', () => {
       resJson = sandbox.spy();
       resStatus = sandbox.stub().returns({ json: resJson });
       mockReq = {
+        method: 'GET',
         res: {
           status: resStatus
         },
@@ -217,6 +218,136 @@ describe('Auth Helper Functions', () => {
         expect(roles).to.not.include('sysadmin');
         delete process.env.INTERNAL_API_KEY;
         done();
+      });
+    });
+
+    describe('x-api-key route scopes', () => {
+      beforeEach(() => {
+        process.env.INTERNAL_API_KEY = 'testApiKey123';
+        mockReq.headers = { 'x-api-key': 'testApiKey123' };
+      });
+
+      afterEach(() => {
+        delete process.env.INTERNAL_API_KEY;
+      });
+
+      [['project-system-admin'], ['sysadmin'], ['project-system-admin', 'sysadmin']].forEach((scopes) => {
+        it(`refuses a route scoped to ${scopes.join(', ')}`, (done) => {
+          mockReq.swagger.operation['x-security-scopes'] = scopes;
+          auth.verifyToken(mockReq, {}, null, () => {
+            expect(resStatus.calledWith(403)).to.be.true;
+            expect(mockReq.swagger.params.auth_payload).to.be.undefined;
+            done();
+          });
+        });
+      });
+
+      ['PUT', 'POST', 'DELETE'].forEach((method) => {
+        it(`refuses a ${method} on a staff route`, (done) => {
+          mockReq.method = method;
+          mockReq.swagger.operation['x-security-scopes'] = ['staff', 'sysadmin'];
+          auth.verifyToken(mockReq, {}, null, () => {
+            expect(resStatus.calledWith(403)).to.be.true;
+            expect(mockReq.swagger.params.auth_payload).to.be.undefined;
+            done();
+          });
+        });
+      });
+
+      it('refuses a PUT on a route with no scopes', (done) => {
+        mockReq.method = 'PUT';
+        auth.verifyToken(mockReq, {}, null, () => {
+          expect(resStatus.calledWith(403)).to.be.true;
+          done();
+        });
+      });
+
+      it('passes a GET on a route with no scopes', (done) => {
+        auth.verifyToken(mockReq, {}, null, (err) => {
+          expect(err).to.be.null;
+          expect(resStatus.called).to.be.false;
+          done();
+        });
+      });
+
+      it('passes a HEAD on a staff route', (done) => {
+        mockReq.method = 'HEAD';
+        mockReq.swagger.operation['x-security-scopes'] = ['staff', 'sysadmin'];
+        auth.verifyToken(mockReq, {}, null, (err) => {
+          expect(err).to.be.null;
+          done();
+        });
+      });
+
+      it('passes a GET on a staff route without adding staff to the request roles', (done) => {
+        mockReq.swagger.operation['x-security-scopes'] = ['staff', 'sysadmin'];
+        auth.verifyToken(mockReq, {}, null, (err) => {
+          expect(err).to.be.null;
+          expect(resStatus.called).to.be.false;
+          // read[] filtering uses these roles, so staff-only documents stay hidden from the key.
+          expect(mockReq.swagger.params.auth_payload.realm_access.roles)
+            .to.eql(['project-admin-staff', 'project-team', 'public']);
+          done();
+        });
+      });
+    });
+
+    describe('JWT route scopes', () => {
+      const bearer = (roles) => 'Bearer ' + auth.issueToken({ _id: 'u1', username: 'u1' }, 'dev', roles);
+
+      it('lets a staff token through a project-system-admin route', (done) => {
+        mockReq.swagger.operation['x-security-scopes'] = ['project-system-admin'];
+        auth.verifyToken(mockReq, {}, bearer(['staff']), (err) => {
+          expect(err).to.be.null;
+          done();
+        });
+      });
+
+      it('lets a sysadmin token through a staff route', (done) => {
+        mockReq.swagger.operation['x-security-scopes'] = ['staff'];
+        auth.verifyToken(mockReq, {}, bearer(['sysadmin']), (err) => {
+          expect(err).to.be.null;
+          done();
+        });
+      });
+
+      it('lets a staff token through the project-system-admin, sysadmin pair', (done) => {
+        mockReq.swagger.operation['x-security-scopes'] = ['project-system-admin', 'sysadmin'];
+        auth.verifyToken(mockReq, {}, bearer(['staff']), (err) => {
+          expect(err).to.be.null;
+          done();
+        });
+      });
+
+      it('refuses a public token on the project-system-admin, sysadmin pair', (done) => {
+        mockReq.swagger.operation['x-security-scopes'] = ['project-system-admin', 'sysadmin'];
+        auth.verifyToken(mockReq, {}, bearer(['public']), () => {
+          expect(resStatus.calledWith(403)).to.be.true;
+          done();
+        });
+      });
+
+      it('lets a public token through a route with no scopes', (done) => {
+        auth.verifyToken(mockReq, {}, bearer(['public']), (err) => {
+          expect(err).to.be.null;
+          done();
+        });
+      });
+
+      it('lets a token holding the route scope through', (done) => {
+        mockReq.swagger.operation['x-security-scopes'] = ['project-system-admin'];
+        auth.verifyToken(mockReq, {}, bearer(['project-system-admin']), (err) => {
+          expect(err).to.be.null;
+          done();
+        });
+      });
+
+      it('refuses the key roles when sent as a token on a staff route', (done) => {
+        mockReq.swagger.operation['x-security-scopes'] = ['staff', 'sysadmin'];
+        auth.verifyToken(mockReq, {}, bearer(['project-admin-staff', 'project-team', 'public']), () => {
+          expect(resStatus.calledWith(403)).to.be.true;
+          done();
+        });
       });
     });
   });
