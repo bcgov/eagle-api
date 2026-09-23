@@ -110,7 +110,7 @@ oc --context epic-test -n 6cdc9e-test exec deploy/eagle-api -- node scripts/demi
 Options, in full under `--help`:
 
 - `--kind` — `project` (default), `document`, `commentPeriod`, `comment`, `organization`,
-  `projectNotification`.
+  `projectNotification`, `recentActivity` (Updates).
 - `--since <ISO>` — only records stamped at or after the date. A project keeps its timestamps inside
   the legislation blocks, so the filter is on `legislation_*.dateUpdated`; a projectNotification has
   no update stamp and the script refuses `--since` for it rather than quietly matching everything.
