@@ -5,6 +5,7 @@ var Utils = require('../helpers/utils');
 var demiPush = require('../helpers/demiPush');
 var parentRead = require('../helpers/parentRead');
 var constants = require('../helpers/constants');
+var updateRules = require('../helpers/updateRules');
 
 
 exports.protectedOptions = function (args, res) {
@@ -28,17 +29,20 @@ exports.publicGet = async function (args, res) {
       documentUrl: 1, contentUrl: 1, type: 1, notificationName: 1,
       projectNotification: 1, pcp: 1, active: 1, project: 1,
       content: 1, headline: 1, complianceAndEnforcement: 1,
-      code: 1, proponent: 1, tags: 1, read: 1
+      code: 1, proponent: 1, tags: 1, read: 1,
+      category: 1, shortHeadline: 1, summary: 1, featuredImage: 1, attachments: 1,
+      regions: 1, location: 1, engagementUrl: 1, subject: 1, status: 1, publishDate: 1
     };
+    const now = new Date();
 
     function buildPipeline(pinnedValue) {
       return [
-        { $match: { _schemaName: 'RecentActivity', active: true, pinned: pinnedValue } },
+        { $match: { _schemaName: 'RecentActivity', active: true, pinned: pinnedValue, ...updateRules.publicVisibleMatch(now) } },
         // An activity's own read[] says nothing about its project, so an active row under an
         // unpublished project would otherwise reach the public. Ahead of the $limit so a hidden
         // row does not eat one of the four slots.
         ...parentRead.parentReadMatch(unreadableParents),
-        { $sort: { dateAdded: -1 } },
+        { $sort: { publishDate: -1, dateAdded: -1 } },
         { $limit: 4 },
         // --- lookups now run on at most 4 docs ---
         { $lookup: { from: 'epic', localField: 'project', foreignField: '_id', as: 'project' } },
@@ -116,23 +120,34 @@ exports.protectedDelete = async function (args, res) {
   var query = {};
   // Build match query if on recentActivityId route
   if (args.swagger.params.recentActivityId) {
-    query = Utils.buildQuery('_id', args.swagger.params.recentActivityId.value, query);
+    query = Utils.buildQuery('_id', args.swagger.params.recentActivityId.value, { _schemaName: 'RecentActivity' });
   }
 
-  if (!Object.keys(query).length > 0) {
+  if (!query._id) {
     // Don't allow unilateral delete.
     return Actions.sendResponse(res, 400, 'Can\'t delete entire collection.');
   }
 
-  // Straight delete, don't isDelete=true them.
+  // Archive, never delete: a published Update keeps its public URL answerable ("no longer available").
   try {
-    const doomed = await RecentActivity.find(query, '_id project headline active').lean();
-    const data = await RecentActivity.deleteMany(query);
-    // DEMI unpublishes on active: false; eagle-api hard-deletes, so there is no later mirror
-    (doomed || []).forEach(d => demiPush.recentActivity({ ...d, active: false }));
-    Utils.recordAction('Delete', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, args.swagger.params.recentActivityId ? args.swagger.params.recentActivityId.value : null);
-    return Actions.sendResponse(res, 200, data);
+    const rec = await RecentActivity.findOneAndUpdate(query, {
+      $set: {
+        status: 'archived',
+        active: false,
+        dateUpdated: new Date(),
+        _updatedBy: args.swagger.params.auth_payload.preferred_username
+      },
+      $pull: { read: 'public' }
+    }, { upsert: false, returnDocument: 'after' });
+    if (!rec) {
+      return Actions.sendResponse(res, 404, { message: 'RecentActivity not found' });
+    }
+    demiPush.recentActivity(rec);
+    Utils.recordAction('Archive', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, rec._id);
+    defaultLog.info('Archived RecentActivity object:', rec._id);
+    return Actions.sendResponse(res, 200, rec);
   } catch (err) {
+    defaultLog.error(`Error archiving RecentActivity: ${err.message}`);
     return Actions.sendResponse(res, 400, err);
   }
 };
@@ -144,21 +159,32 @@ exports.protectedPost = async function (args, res) {
 
   var RecentActivity = mongoose.model('RecentActivity');
   delete obj._id;
-  var recentActivity = new RecentActivity(obj);
-  // Define security tag defaults.  Default public and sysadmin.
+  // Set once by the send, never by a client.
+  delete obj.notifiedAt;
+  // Security tags come from status, not the client.
+  delete obj.read;
 
-  if (recentActivity.active) {
-    recentActivity.read = ['sysadmin', 'staff', 'public'];
-  } else {
-    recentActivity.read = ['sysadmin', 'staff'];
+  updateRules.applyStatus(obj, obj);
+
+  try {
+    const errors = await updateRules.check(obj);
+    if (errors.length) {
+      defaultLog.warn('Rejected new RecentActivity:', errors);
+      return Actions.sendResponse(res, 400, { message: errors.join('; '), errors });
+    }
+  } catch (e) {
+    defaultLog.error(`Error checking new RecentActivity: ${e.message}`);
+    return Actions.sendResponse(res, 400, e);
   }
+
+  var recentActivity = new RecentActivity(obj);
 
   recentActivity.pinned = false;
 
   recentActivity.dateAdded = new Date();
   recentActivity._addedBy = args.swagger.params.auth_payload.preferred_username;
 
-  if (recentActivity.type !== 'Project Notification Public Comment Period') {
+  if (recentActivity.type !== updateRules.PN_PCP_TYPE) {
     recentActivity.notificationName = null;
   }
 
@@ -184,15 +210,12 @@ exports.protectedPut = async function (args, res) {
   defaultLog.info('Incoming updated object:', obj);
   // Normalize active — defend against frontend boolean coercion bugs (false → null)
   obj.active = obj.active === true;
-  if (obj.active) {
-    obj.read = ['sysadmin', 'staff', 'public'];
-  } else {
-    obj.read = ['sysadmin', 'staff'];
-  }
+  delete obj.notifiedAt;
+  delete obj.read;
   // TODO sanitize/update audits.
   obj._updatedBy = args.swagger.params.auth_payload.preferred_username;
 
-  if (obj.type !== 'Project Notification Public Comment Period') {
+  if (obj.type !== updateRules.PN_PCP_TYPE) {
     obj.notificationName = null;
   }
 
@@ -202,7 +225,38 @@ exports.protectedPut = async function (args, res) {
       obj.project = null;
     }
 
-    var rec = await RecentActivity.findOneAndUpdate({ _id: objId }, obj, { upsert: false, returnDocument: 'after' });
+    const existing = await RecentActivity.findOne({ _id: objId, _schemaName: 'RecentActivity' }).lean();
+    if (!existing) {
+      return Actions.sendResponse(res, 404, { message: 'RecentActivity not found' });
+    }
+    // A client that only sends `active` must not carry a stale status over the new value; an
+    // archived Update stays archived until a status says otherwise.
+    const deriveStatus = obj.status === undefined && existing.status !== 'archived';
+    // The admin sends null to mean "stamp it when it goes live"; the stored date must not be lost to it.
+    if (obj.publishDate === null || obj.publishDate === '') {
+      delete obj.publishDate;
+    }
+    const merged = { ...existing, ...(deriveStatus ? { status: null } : {}), ...obj };
+    updateRules.applyStatus(obj, merged, { wasLive: updateRules.isLive(existing) });
+    const errors = await updateRules.check({ ...merged, ...obj });
+    if (errors.length) {
+      defaultLog.warn(`Rejected RecentActivity ${objId} update:`, errors);
+      return Actions.sendResponse(res, 400, { message: errors.join('; '), errors });
+    }
+
+    // Conditional on the version the client loaded (else the row read above), so a concurrent edit
+    // is refused rather than overwritten.
+    const loaded = obj.dateUpdated ? new Date(obj.dateUpdated) : (existing.dateUpdated || null);
+    obj.dateUpdated = new Date();
+    const rec = await RecentActivity.findOneAndUpdate(
+      { _id: objId, _schemaName: 'RecentActivity', dateUpdated: loaded },
+      obj,
+      { upsert: false, returnDocument: 'after' }
+    );
+    if (!rec) {
+      defaultLog.warn(`RecentActivity ${objId} changed since it was read; update refused`);
+      return Actions.sendResponse(res, 409, { message: 'RecentActivity was changed by someone else; reload and try again' });
+    }
     Utils.recordAction('Put', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, rec._id);
     demiPush.recentActivity(rec);
     defaultLog.info('Updated RecentActivity object:', rec._id);

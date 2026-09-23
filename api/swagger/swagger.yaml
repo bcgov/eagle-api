@@ -299,7 +299,65 @@ definitions:
       tags:
         type: string
         example: "[['public']]"
-        ## TODO: Add more fields here.
+      headline:
+        type: string
+      content:
+        type: string
+        description: "Full body HTML."
+      project:
+        type: string
+        description: "Project id on write (reads may return the populated project). Required unless category is Corporate or pcp is set."
+      active:
+        type: boolean
+        description: "Kept in step with status for older readers: true only when published."
+      category:
+        type: string
+        description: "Name from List type updateCategory."
+        example: "Project News"
+      shortHeadline:
+        type: string
+        description: "Plain text, no HTML tags, max 70 characters. Readers fall back to headline when empty."
+      summary:
+        type: string
+        description: "Plain text, no HTML tags, max 280 characters."
+      featuredImage:
+        type: object
+        properties:
+          document:
+            type: string
+            description: "Document id."
+          alt:
+            type: string
+            description: "Required when document is set."
+      attachments:
+        type: array
+        items:
+          type: string
+          description: "Document id."
+      regions:
+        type: array
+        items:
+          type: string
+      location:
+        type: string
+      engagementUrl:
+        type: string
+        description: "Outbound ENGAGE link, http or https only."
+      subject:
+        type: string
+        description: "Name from List type updateSubject. Required when category is Corporate."
+      status:
+        type: string
+        enum: [draft, published, archived]
+        description: "Scheduled is published with a future publishDate. Sets active and read[]; omitted, it is derived from active."
+      publishDate:
+        type: string
+        format: date-time
+        description: "When the Update goes live. Set to now on publish when empty."
+      notifiedAt:
+        type: string
+        format: date-time
+        description: "Read only, never in public responses. Set once when the subscriber email is sent; ignored on write."
   RecentActivity:
     type: string
     description: "Optional fields to return."
@@ -3406,7 +3464,7 @@ paths:
         - recentActivity
       summary: "Get top recentActivity"
       operationId: publicGet
-      description: "Get top recentActivity."
+      description: "Get top recentActivity. Only rows with status published and publishDate in the past; rows without a status fall back to active. Newest publishDate first. Never returns notifiedAt, _addedBy or _updatedBy."
       responses:
         "200":
           description: "Success"
@@ -3439,7 +3497,7 @@ paths:
         - recentActivity
       summary: "Create a new recentActivity"
       operationId: protectedPost
-      description: "Create a new recentActivity object."
+      description: "Create a new recentActivity object. 400 when a field check fails, including a non-public featured image or attachment on publish."
       security:
         - Bearer: []
       x-security-scopes:
@@ -3450,7 +3508,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: "#/definitions/RecentActivityId"
+            $ref: "#/definitions/RecentActivityObject"
       responses:
         "200":
           description: "Success"
@@ -3463,9 +3521,9 @@ paths:
     delete:
       tags:
         - recentActivity
-      summary: "Delete a recentActivity(s)"
+      summary: "Refused: archive one recentActivity by id instead"
       operationId: protectedDelete
-      description: "Delete specific activities."
+      description: "Always 400. Archive a single Update through DELETE /recentActivity/{recentActivityId}."
       security:
         - Bearer: []
       x-security-scopes:
@@ -3514,7 +3572,7 @@ paths:
         - recentActivity
       summary: "Update an recentActivity"
       operationId: protectedPut
-      description: "Update an recentActivity object."
+      description: "Update an recentActivity object. 400 when a field check fails (including a non-public featured image or attachment on publish), 404 when the id is unknown, 409 when the row changed since the client loaded it (send the dateUpdated you loaded; without it the server's own read is used). publishDate null on an Update that is already live keeps its stored date. Without a status, an archived Update stays archived."
       security:
         - Bearer: []
       x-security-scopes:
@@ -3543,9 +3601,9 @@ paths:
     delete:
       tags:
         - recentActivity
-      summary: "Delete an recentActivity"
+      summary: "Archive an recentActivity"
       operationId: protectedDelete
-      description: "Delete an recentActivity object."
+      description: "Archives the activity (status archived, active false, public removed from read). Nothing is hard deleted."
       security:
         - Bearer: []
       x-security-scopes:
