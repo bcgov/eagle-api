@@ -280,6 +280,16 @@ describe('Search Controller', () => {
       expect(JSON.stringify(stages[0])).to.include('"status":"archived"');
     });
 
+    it('leaves archived Updates out of a staff search filtering on another field', async () => {
+      await searchController.protectedGet(makeArgs({
+        dataset: { value: 'RecentActivity' },
+        keywords: { value: '' },
+        and: { value: 'type=News' }
+      }), res);
+
+      expect(archivedGates(pipeline())).to.have.lengthOf(1);
+    });
+
     it('resolves the unreadable parents once per request', async () => {
       await searchController.publicGet(makeArgs({
         dataset: { value: 'RecentActivity' },

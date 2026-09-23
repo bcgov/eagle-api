@@ -169,6 +169,15 @@ describe('Update status visibility (requires MongoDB)', function () {
       expect(idsIn(filtered.body.data)).to.deep.equal([String(ARCHIVED)]);
     });
 
+    it(`staff search filtering on another field still leaves archived Updates out (populate=${populate})`, async () => {
+      const args = searchArgs(['staff'], populate);
+      args.swagger.params.and = { value: 'type=News' };
+      const { res, body } = capture();
+      await searchController.protectedGet(args, res);
+
+      expect(idsIn(body.data)).to.include(String(DRAFT)).and.not.include(String(ARCHIVED));
+    });
+
     it(`public search serves only published, live Updates (populate=${populate})`, async () => {
       const { res, body } = capture();
       await searchController.publicGet(searchArgs(['public'], populate), res);
