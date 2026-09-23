@@ -233,6 +233,63 @@ describe('Search Controller', () => {
       expect(gateStages(stages[facetIndex].$facet.searchResults)).to.be.empty;
     });
 
+    // A $match whose $or holds the published branch; only the publish gate builds one.
+    const publishGates = stages => stages.filter(stage => stage.$match && stage.$match.$or &&
+      stage.$match.$or.some(branch => branch.status === 'published'));
+
+    it('keeps drafts and scheduled Updates away from a public caller, ahead of the page', async () => {
+      await searchController.publicGet(makeArgs({
+        dataset: { value: 'RecentActivity' },
+        populate: { value: true },
+        keywords: { value: '' },
+        auth_payload: undefined
+      }), res);
+
+      const stages = pipeline();
+      const facetIndex = stages.findIndex(stage => stage.$facet);
+      const gateIndex = stages.findIndex(stage => publishGates([stage]).length);
+      expect(gateIndex).to.be.greaterThan(-1).and.to.be.lessThan(facetIndex);
+      const live = stages[gateIndex].$match.$or.find(branch => branch.status === 'published');
+      expect(live.publishDate.$lte).to.be.instanceOf(Date);
+      expect(publishGates(stages[facetIndex].$facet.searchResults)).to.be.empty;
+    });
+
+    it('leaves drafts and scheduled Updates to a staff caller', async () => {
+      await searchController.protectedGet(makeArgs({ dataset: { value: 'RecentActivity' }, keywords: { value: '' } }), res);
+
+      expect(publishGates(pipeline())).to.be.empty;
+    });
+
+    const archivedGates = stages => stages.filter(stage => stage.$match && stage.$match.status && stage.$match.status.$ne === 'archived');
+
+    it('leaves archived Updates out of a staff search that did not ask for them', async () => {
+      await searchController.protectedGet(makeArgs({ dataset: { value: 'RecentActivity' }, keywords: { value: '' } }), res);
+
+      expect(archivedGates(pipeline())).to.have.lengthOf(1);
+    });
+
+    it('returns archived Updates to a staff search filtering on status', async () => {
+      await searchController.protectedGet(makeArgs({
+        dataset: { value: 'RecentActivity' },
+        keywords: { value: '' },
+        and: { value: 'status=archived' }
+      }), res);
+
+      const stages = pipeline();
+      expect(archivedGates(stages)).to.be.empty;
+      expect(JSON.stringify(stages[0])).to.include('"status":"archived"');
+    });
+
+    it('leaves archived Updates out of a staff search filtering on another field', async () => {
+      await searchController.protectedGet(makeArgs({
+        dataset: { value: 'RecentActivity' },
+        keywords: { value: '' },
+        and: { value: 'type=News' }
+      }), res);
+
+      expect(archivedGates(pipeline())).to.have.lengthOf(1);
+    });
+
     it('resolves the unreadable parents once per request', async () => {
       await searchController.publicGet(makeArgs({
         dataset: { value: 'RecentActivity' },

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const constants = require('../helpers/constants').schemaTypes;
 const parentRead = require('../helpers/parentRead');
+const updateRules = require('../helpers/updateRules');
 
 // Not in schemaTypes: search.js builds its dataset allow-list from those values, and there is no
 // Vc dataset pipeline. Item reaches a Vc by _schemaName only.
@@ -84,6 +85,11 @@ exports.createItemAggr = (itemId, schemaName, roles, gate) => {
       }
     }
   );
+
+  if (schemaName === constants.RECENT_ACTIVITY) {
+    // A fetch by id is how staff open an archived Update, so only the public gate applies.
+    aggregation.push(...updateRules.visibilityAggr(roles, { includeArchived: true }));
+  }
 
   if (PROJECT_GATED_SCHEMAS.includes(schemaName)) {
     aggregation.push(...parentRead.parentReadMatch(gate.unreadableParentIds));

@@ -101,7 +101,12 @@ describe('DEMI push call sites', () => {
       _id: OID, project: OID, read: [], dateCompleted: new Date(Date.now() + 86400000),
       legislation_2002: { phaseHistory: '' }, currentLegislationYear: 'legislation_2002'
     });
-    M.findOne = sinon.stub().callsFake(() => Promise.resolve(stored()));
+    // recentActivity.protectedPut reads the stored row with .lean() before validating the merge
+    M.findOne = sinon.stub().callsFake(() => {
+      const query = Promise.resolve(stored());
+      query.lean = () => Promise.resolve({ ...stored() });
+      return query;
+    });
     M.findById = sinon.stub().callsFake(() => Promise.resolve(stored()));
     // organization.protectedPut calls .exec() on the query; pins awaits it directly
     M.findOneAndUpdate = sinon.stub().callsFake(() => {
@@ -194,11 +199,12 @@ describe('DEMI push call sites', () => {
     expect(demiPush.document.called).to.be.false;
   });
 
-  it('recentActivity.protectedDelete mirrors each doomed Update as inactive', async () => {
+  it('recentActivity.protectedDelete archives the Update and mirrors the archived row', async () => {
     await recentActivityController.protectedDelete(raArgs(), res);
 
     expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
-    expect(demiPush.recentActivity.calledOnceWithExactly({ _id: OID, active: false })).to.be.true;
+    expect(models.RecentActivity.deleteMany.called).to.be.false;
+    expect(demiPush.recentActivity.calledOnceWithExactly(saved)).to.be.true;
   });
 
   describe('pins handlers', () => {

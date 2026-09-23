@@ -1,17 +1,29 @@
 const { setProjectDefault } = require('../helpers/aggregators');
 const { parentReadMatch } = require('../helpers/parentRead');
+const { visibilityAggr } = require('../helpers/updateRules');
+
+/**
+ * Stages that drop Updates the caller may not see (helpers/updateRules visibilityAggr), then those
+ * under a parent the caller cannot read.
+ */
+exports.createGateAggr = (unreadableParentIds, roles, options) => [
+  ...visibilityAggr(roles, options),
+  ...parentReadMatch(unreadableParentIds)
+];
 
 /**
  * Creates an aggregate for looking up recent activity.
  *
  * @param {boolean} populate Flag indicating if fields need a look up
  * @param {array} unreadableParentIds Parents the caller cannot read, from helpers/parentRead
+ * @param {array} roles Caller roles; no staff role means the public visibility rule applies
+ * @param {object} options { includeArchived } for staff callers that filtered on status
  * @returns {array} Aggregate for recent activity
  */
-exports.createRecentActivityAggr = (populate, unreadableParentIds) => {
+exports.createRecentActivityAggr = (populate, unreadableParentIds, roles, options) => {
   // Runs whether or not the caller asked to populate, and before the project lookup below
   // overwrites the `project` reference the gate reads.
-  let aggregation = [...parentReadMatch(unreadableParentIds)];
+  let aggregation = exports.createGateAggr(unreadableParentIds, roles, options);
 
   if (populate) {
     // Handle project.

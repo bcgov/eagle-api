@@ -60,7 +60,8 @@ const KINDS = {
   commentPeriod: { model: 'CommentPeriod', schemaName: 'CommentPeriod', push: 'commentPeriod', sinceFields: ['dateUpdated', 'dateAdded'] },
   comment: { model: 'Comment', schemaName: 'Comment', push: 'comment', sinceFields: ['dateUpdated', 'dateAdded'] },
   organization: { model: 'Organization', schemaName: 'Organization', push: 'organization', sinceFields: ['dateUpdated', 'dateAdded'] },
-  projectNotification: { model: 'ProjectNotification', schemaName: 'ProjectNotification', push: 'projectNotification', sinceFields: [] }
+  projectNotification: { model: 'ProjectNotification', schemaName: 'ProjectNotification', push: 'projectNotification', sinceFields: [] },
+  recentActivity: { model: 'RecentActivity', schemaName: 'RecentActivity', push: 'recentActivity', sinceFields: ['dateUpdated', 'dateAdded'] }
 };
 
 const USAGE = `Re-push existing eagle-api records to DEMI through api/helpers/demiPush.js.

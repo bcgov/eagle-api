@@ -1,5 +1,6 @@
 const defaultLog = require('winston').loggers.get('default');
 const mongoose = require('mongoose');
+const qs = require('qs');
 
 const Actions = require('../helpers/actions');
 const Utils = require('../helpers/utils');
@@ -72,8 +73,10 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   case constants.RECENT_ACTIVITY: {
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
     const unreadableParentIds = await parentRead.unreadableParentIds(roles);
-    parentGateAggregation = parentRead.parentReadMatch(unreadableParentIds);
-    schemaAggregation = recentActivityAggregator.createRecentActivityAggr(populate, unreadableParentIds);
+    // A staff caller filtering on status (and=status=archived) asked for archived Updates.
+    const gateOptions = { includeArchived: [and, or].some(filter => filter && 'status' in qs.parse(filter)) };
+    parentGateAggregation = recentActivityAggregator.createGateAggr(unreadableParentIds, roles, gateOptions);
+    schemaAggregation = recentActivityAggregator.createRecentActivityAggr(populate, unreadableParentIds, roles, gateOptions);
     break;
   }
   // NOTE: RecentActivity with populate uses an optimized pipeline (see below)

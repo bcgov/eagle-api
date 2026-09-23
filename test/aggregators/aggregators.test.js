@@ -416,19 +416,49 @@ describe('Recent Activity Aggregator', () => {
 
     it('should drop activity under the parents it is given', () => {
       const parent = new mongoose.Types.ObjectId();
-      const result = recentActivityAggregator.createRecentActivityAggr(false, [parent]);
+      const result = recentActivityAggregator.createRecentActivityAggr(false, [parent], ['staff'], { includeArchived: true });
 
       expect(result[0].$match.project.$nin).to.deep.equal([parent]);
     });
 
     it('should gate before the project lookup overwrites the reference it reads', () => {
       const parent = new mongoose.Types.ObjectId();
-      const result = recentActivityAggregator.createRecentActivityAggr(true, [parent]);
+      const result = recentActivityAggregator.createRecentActivityAggr(true, [parent], ['staff'], { includeArchived: true });
 
       const gateIndex = result.findIndex(stage => stage.$match && stage.$match.project);
       const lookupIndex = result.findIndex(stage => stage.$lookup && stage.$lookup.localField === 'project');
       expect(gateIndex).to.equal(0);
       expect(gateIndex).to.be.lessThan(lookupIndex);
+    });
+
+    it('should apply the publish gate for a public caller, and when roles are missing', () => {
+      [['public'], undefined].forEach(roles => {
+        const before = Date.now();
+        const result = recentActivityAggregator.createRecentActivityAggr(true, [], roles);
+
+        const live = result[0].$match.$or[0];
+        expect(live.status).to.equal('published');
+        expect(live.publishDate.$lte.getTime()).to.be.within(before, Date.now());
+      });
+    });
+
+    it('should strip staff fields for a public caller', () => {
+      const result = recentActivityAggregator.createRecentActivityAggr(true, [], ['public']);
+
+      expect(result[1].$project).to.deep.equal({ notifiedAt: 0, _addedBy: 0, _updatedBy: 0 });
+    });
+
+    it('should leave drafts and scheduled Updates to a staff caller, but not archived ones', () => {
+      const result = recentActivityAggregator.createRecentActivityAggr(true, [], ['sysadmin']);
+
+      expect(result.some(stage => stage.$match && stage.$match.$or)).to.be.false;
+      expect(result[0].$match).to.deep.equal({ status: { $ne: 'archived' } });
+    });
+
+    it('should keep archived Updates for a staff caller who asked for them', () => {
+      const result = recentActivityAggregator.createRecentActivityAggr(true, [], ['sysadmin'], { includeArchived: true });
+
+      expect(result.some(stage => stage.$match && stage.$match.status)).to.be.false;
     });
 
     it('should refuse to build a pipeline with no parent gate', () => {

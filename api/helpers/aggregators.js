@@ -250,7 +250,8 @@ const generateExpArray = async (field, roles, schemaName) => {
 
       if (item === 'pcp') {
         await handlePCPItem(roles, expArray, decodeURIComponent(entry));
-      } else if (item === 'status') {
+      } else if (item === 'status' && schemaName !== constants.RECENT_ACTIVITY) {
+        // An Update's status is a plain field; the comment period status terms mean nothing to it.
         handlePCPStatus(expArray, decodeURIComponent(entry));
       } else if (Array.isArray(entry)) {
         // Arrays are a list of options so will always be ors

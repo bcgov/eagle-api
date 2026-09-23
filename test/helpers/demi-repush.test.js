@@ -8,7 +8,10 @@
 const { expect } = require('chai');
 const sinon = require('sinon');
 
+const mongoose = require('mongoose');
+
 const { buildQuery, KINDS, parseArgs, repush, validate } = require('../../scripts/demi-repush');
+const demiPush = require('../../api/helpers/demiPush');
 
 // Mimics the mongoose cursor: next() yields documents in order, then null forever.
 function fakeCursor(docs) {
@@ -198,6 +201,24 @@ describe('demi-repush', () => {
     });
   });
 
+  describe('KINDS', () => {
+    // A kind naming a helper or model that does not exist would only fail at run time, mid-walk.
+    Object.keys(KINDS).forEach(name => {
+      it(`${name} pushes through a demiPush export and reads a registered model`, () => {
+        const kind = KINDS[name];
+
+        expect(demiPush).to.respondTo(kind.push);
+        expect(mongoose.model(kind.model).modelName).to.equal(kind.schemaName);
+      });
+    });
+
+    it('repushes Updates as RecentActivity rows', () => {
+      const query = buildQuery(KINDS.recentActivity, { model: fakeModel({}) });
+
+      expect(query._schemaName).to.equal('RecentActivity');
+    });
+  });
+
   describe('parseArgs and validate', () => {
     it('defaults to a dry run of projects', () => {
       const args = parseArgs([]);
@@ -215,6 +236,10 @@ describe('demi-repush', () => {
       expect(args.state).to.equal('/tmp/s.json');
       expect(args.live).to.be.true;
       expect(validate(args)).to.be.null;
+    });
+
+    it('takes --since on Updates, whose date fields are Dates', () => {
+      expect(validate(parseArgs(['--kind', 'recentActivity', '--since', '2026-01-01']))).to.be.null;
     });
 
     it('rejects an unknown kind', () => {

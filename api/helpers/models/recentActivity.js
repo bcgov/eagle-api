@@ -1,3 +1,5 @@
+const { STATUSES } = require('../updateRules');
+
 module.exports = require ('../models')('RecentActivity', {
   dateUpdated               : { type: Date, default: Date.now() },
   dateAdded                 : { type: Date, default: Date.now() },
@@ -16,6 +18,23 @@ module.exports = require ('../models')('RecentActivity', {
   content                   : { type: String, default: null },
   headline                  : { type: String, default: null },
   complianceAndEnforcement  : { type: Boolean, default: false },
+
+  // Update fields. Optional so rows written before them stay valid; write checks in helpers/updateRules.
+  category                  : { type: String, default: null },
+  shortHeadline             : { type: String, default: null },
+  summary                   : { type: String, default: null },
+  featuredImage             : {
+    document                : { type: 'ObjectId', ref: 'Document', default: null },
+    alt                     : { type: String, default: null }
+  },
+  attachments               : [{ type: 'ObjectId', ref: 'Document' }],
+  regions                   : [{ type: String, trim: true }],
+  location                  : { type: String, default: null },
+  engagementUrl             : { type: String, default: null },
+  subject                   : { type: String, default: null },
+  status                    : { type: String, enum: [...STATUSES, null], default: null },
+  publishDate               : { type: Date, default: null },
+  notifiedAt                : { type: Date, default: null },
 
 
   // Permissions
