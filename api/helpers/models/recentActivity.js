@@ -25,7 +25,20 @@ module.exports = require ('../models')('RecentActivity', {
   summary                   : { type: String, default: null },
   featuredImage             : {
     document                : { type: 'ObjectId', ref: 'Document', default: null },
-    alt                     : { type: String, default: null }
+    alt                     : { type: String, default: null },
+    caption                 : { type: String, default: null },
+    credit                  : { type: String, default: null }
+  },
+  // Gallery, in display order. Same shape as featuredImage.
+  images                    : {
+    type: [{
+      _id                   : false,
+      document              : { type: 'ObjectId', ref: 'Document', default: null },
+      alt                   : { type: String, default: null },
+      caption               : { type: String, default: null },
+      credit                : { type: String, default: null }
+    }],
+    default: []
   },
   attachments               : [{ type: 'ObjectId', ref: 'Document' }],
   regions                   : [{ type: String, trim: true }],

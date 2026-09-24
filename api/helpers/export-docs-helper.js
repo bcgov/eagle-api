@@ -10,6 +10,7 @@
  */
 
 const { ObjectId } = require('mongodb');
+const { IMAGE_SOURCE } = require('./updateRules');
 
 function csvEscape(val) {
   if (val == null) return '';
@@ -39,7 +40,7 @@ async function exportProjectDocs(db, projectId, includeAll = false) {
   for (const l of lists) listMap[l._id.toString()] = l.name;
 
   const projId = new ObjectId(projectId);
-  const query = { _schemaName: 'Document', project: projId };
+  const query = { _schemaName: 'Document', project: projId, documentSource: { $ne: IMAGE_SOURCE } };
   if (!includeAll) query.eaoStatus = 'Published';
 
   const docs = await col.find(query, {
