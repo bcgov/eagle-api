@@ -329,6 +329,32 @@ definitions:
           alt:
             type: string
             description: "Required when document is set."
+          caption:
+            type: string
+            maxLength: 300
+          credit:
+            type: string
+            maxLength: 150
+      images:
+        type: array
+        maxItems: 5
+        description: "Gallery in display order. To publish, every document must be public or have documentSource 'UPDATE' and the Update's project (published with the Update)."
+        items:
+          type: object
+          required: [document, alt]
+          properties:
+            document:
+              type: string
+              description: "Document id."
+            alt:
+              type: string
+              description: "Not blank."
+            caption:
+              type: string
+              maxLength: 300
+            credit:
+              type: string
+              maxLength: 150
       attachments:
         type: array
         items:
@@ -3497,7 +3523,7 @@ paths:
         - recentActivity
       summary: "Create a new recentActivity"
       operationId: protectedPost
-      description: "Create a new recentActivity object. 400 when a field check fails, including a non-public featured image or attachment on publish."
+      description: "Create a new recentActivity object. 400 when a field check fails, including a non-public featured image, image or attachment on publish; images uploaded from the Update form (documentSource 'UPDATE') are published with the Update instead. 500 when publishing those images fails; the Update is not saved."
       security:
         - Bearer: []
       x-security-scopes:
@@ -3572,7 +3598,7 @@ paths:
         - recentActivity
       summary: "Update an recentActivity"
       operationId: protectedPut
-      description: "Update an recentActivity object. 400 when a field check fails (including a non-public featured image or attachment on publish), 404 when the id is unknown, 409 when the row changed since the client loaded it (send the dateUpdated you loaded; without it the server's own read is used). publishDate null on an Update that is already live keeps its stored date. Without a status, an archived Update stays archived."
+      description: "Update an recentActivity object. 400 when a field check fails (including a non-public featured image, image or attachment on publish; images with documentSource 'UPDATE' are published with the Update instead, and unpublished once no published Update shows them), 500 when publishing those images fails and the Update is not saved, 404 when the id is unknown, 409 when the row changed since the client loaded it (send the dateUpdated you loaded; without it the server's own read is used). publishDate null on an Update that is already live keeps its stored date. Without a status, an archived Update stays archived."
       security:
         - Bearer: []
       x-security-scopes:
@@ -3603,7 +3629,7 @@ paths:
         - recentActivity
       summary: "Archive an recentActivity"
       operationId: protectedDelete
-      description: "Archives the activity (status archived, active false, public removed from read). Nothing is hard deleted."
+      description: "Archives the activity (status archived, active false, public removed from read). Nothing is hard deleted. Its images with documentSource 'UPDATE' are unpublished unless another published Update shows them."
       security:
         - Bearer: []
       x-security-scopes:
@@ -3679,7 +3705,7 @@ paths:
           type: string
         - name: documentSource
           in: formData
-          description: "The documentSource of this document."
+          description: "The documentSource of this document. 'UPDATE' marks an image uploaded from the Update form: it needs a project and must be JPEG, PNG, WebP or GIF (file contents, declared type and file extension agree) and 10MB or smaller, else 400. It is stored private whatever eaoStatus and publish say; its Update publishes it."
           required: false
           type: string
         - name: documentAuthor

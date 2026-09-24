@@ -21,6 +21,7 @@ describe('RecentActivity Controller - DEMI mirror', () => {
   const PROJECT_ID  = '507f1f77bcf86cd799439011';
   const DOC_ID      = '507f1f77bcf86cd799439055';
   const HIDDEN_DOC  = '507f1f77bcf86cd799439066';
+  const OTHER_DOC   = '507f1f77bcf86cd799439088';
   const STORED_AT   = new Date('2026-09-01T00:00:00Z');
 
   let res;
@@ -33,6 +34,19 @@ describe('RecentActivity Controller - DEMI mirror', () => {
   let documents;
   let documentModel;
 
+  // Enough of a Mongo find for the queries the handlers send: ids, source, project, and read[] has / lacks.
+  function findIn(rows, query) {
+    const matches = row => (!query._id || !query._id.$in || query._id.$in.map(String).includes(String(row._id))) &&
+      (!query.documentSource || row.documentSource === query.documentSource) &&
+      (!('project' in query) || String(row.project || null) === String(query.project || null)) &&
+      (query.read === undefined || (typeof query.read === 'string'
+        ? (row.read || []).includes(query.read)
+        : !(row.read || []).includes(query.read.$ne)));
+    const found = Promise.resolve(rows.filter(matches));
+    found.lean = () => found;
+    return found;
+  }
+
   function createModel() {
     function MockRecentActivity(obj) {
       Object.assign(this, obj);
@@ -43,6 +57,8 @@ describe('RecentActivity Controller - DEMI mirror', () => {
     MockRecentActivity.findOneAndUpdate = sinon.stub().callsFake(() => Promise.resolve(saved));
     MockRecentActivity.findOne = sinon.stub().returns({ lean: () => Promise.resolve(stored) });
     MockRecentActivity.deleteMany = sinon.stub().resolves({ deletedCount: 1 });
+    // No other published Update shows an image, so releasing one unpublishes it.
+    MockRecentActivity.find = sinon.stub().returns({ lean: () => Promise.resolve([]) });
     return MockRecentActivity;
   }
 
@@ -91,11 +107,7 @@ describe('RecentActivity Controller - DEMI mirror', () => {
     };
     constructed = null;
     documents = [{ _id: DOC_ID, read: ['public', 'staff'] }, { _id: HIDDEN_DOC, read: ['staff'] }];
-    documentModel = {
-      find: sinon.stub().callsFake(query => ({
-        lean: () => Promise.resolve(documents.filter(doc => query._id.$in.includes(doc._id)))
-      }))
-    };
+    documentModel = { find: sinon.stub().callsFake(query => findIn(documents, query)) };
     model = createModel();
 
     sinon.stub(mongoose, 'model').callsFake(name => ({ RecentActivity: model, Document: documentModel }[name] || {}));
@@ -204,10 +216,18 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       'a shortHeadline over 70 characters': { shortHeadline: 'x'.repeat(71) },
       'a summary over 280 characters': { summary: 'x'.repeat(281) },
       'a featured image with no alt text': { featuredImage: { document: DOC_ID, alt: ' ' } },
+      'a featured image caption over 300 characters': { featuredImage: { document: DOC_ID, alt: 'Map', caption: 'x'.repeat(301) } },
+      'a featured image credit over 150 characters': { featuredImage: { document: DOC_ID, alt: 'Map', credit: 'x'.repeat(151) } },
       'HTML in shortHeadline': { shortHeadline: '<b>Decision</b>' },
       'HTML in summary': { summary: 'Read <a href="x">this</a>' },
       'a non-public featured image on publish': { featuredImage: { document: HIDDEN_DOC, alt: 'Map' } },
       'a non-public attachment on publish': { attachments: [DOC_ID, HIDDEN_DOC] },
+      'more than 5 images': { images: Array.from({ length: 6 }, () => ({ document: DOC_ID, alt: 'Map' })) },
+      'an image with no alt text': { images: [{ document: DOC_ID, alt: ' ' }] },
+      'an image with no document': { images: [{ alt: 'Map' }] },
+      'an image caption over 300 characters': { images: [{ document: DOC_ID, alt: 'Map', caption: 'x'.repeat(301) }] },
+      'an image credit over 150 characters': { images: [{ document: DOC_ID, alt: 'Map', credit: 'x'.repeat(151) }] },
+      'a non-public image on publish': { images: [{ document: DOC_ID, alt: 'Map' }, { document: HIDDEN_DOC, alt: 'Plan' }] },
       'an attachment that does not exist': { attachments: ['507f1f77bcf86cd799439077'] },
       'a javascript: engagementUrl': { engagementUrl: 'javascript:alert(1)' },
       'a Corporate Update with no subject': { category: 'Corporate', subject: '' },
@@ -231,7 +251,7 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       await recentActivity.protectedPost(postArgs(true, {
         shortHeadline: 'x'.repeat(70),
         summary: 'x'.repeat(280),
-        featuredImage: { document: DOC_ID, alt: 'Site map' },
+        featuredImage: { document: DOC_ID, alt: 'Site map', caption: 'x'.repeat(300), credit: 'x'.repeat(150) },
         attachments: [DOC_ID],
         summary: 'Costs < benefits, and 3 > 2',
         engagementUrl: 'https://engage.eao.gov.bc.ca/x',
@@ -241,6 +261,38 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       }), res);
 
       expect(res.status.calledWith(200)).to.be.true;
+    });
+
+    it('POST keeps 5 images at the caption and credit caps, in the order sent', async () => {
+      documents.push({ _id: OTHER_DOC, read: ['public'] });
+      const images = [OTHER_DOC, DOC_ID, OTHER_DOC, DOC_ID, OTHER_DOC].map((document, i) => ({
+        document, alt: `Image ${i}`, caption: 'x'.repeat(300), credit: 'x'.repeat(150)
+      }));
+
+      await recentActivity.protectedPost(postArgs(true, { images }), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+      expect(constructed.images.map(image => image.alt)).to.deep.equal(['Image 0', 'Image 1', 'Image 2', 'Image 3', 'Image 4']);
+    });
+
+    it('names the non-public image it refused', async () => {
+      await recentActivity.protectedPost(postArgs(true, {
+        images: [{ document: DOC_ID, alt: 'Map' }, { document: HIDDEN_DOC, alt: 'Plan' }]
+      }), res);
+
+      expect(res.json.firstCall.args[0].message).to.include(HIDDEN_DOC).and.not.include(DOC_ID);
+    });
+
+    it('says which featured image field is too long', async () => {
+      await recentActivity.protectedPost(postArgs(false, { featuredImage: { document: DOC_ID, alt: 'Map', credit: 'x'.repeat(151) } }), res);
+
+      expect(res.json.firstCall.args[0].errors).to.deep.equal(['featuredImage.credit must be 150 characters or fewer']);
+    });
+
+    it('says which image lacks alt text', async () => {
+      await recentActivity.protectedPost(postArgs(false, { images: [{ document: DOC_ID, alt: 'Map' }, { document: DOC_ID }] }), res);
+
+      expect(res.json.firstCall.args[0].errors).to.deep.equal(['images[1].alt is required']);
     });
 
     it('names the non-public documents it refused', async () => {
@@ -431,6 +483,185 @@ describe('RecentActivity Controller - DEMI mirror', () => {
 
       expect(written()).to.not.have.property('notifiedAt');
       expect(constructed).to.not.have.property('notifiedAt');
+    });
+  });
+
+  describe('Update images publish with the Update', () => {
+    const UPLOAD = '507f1f77bcf86cd7994390a1';
+    const SECOND_UPLOAD = '507f1f77bcf86cd7994390a2';
+    let docPush;
+
+    // A stored Document as mongoose hands it back: save() keeps the change on the same object.
+    const uploaded = (_id, read = ['sysadmin', 'staff']) => {
+      const doc = { _id, documentSource: 'UPDATE', project: PROJECT_ID, read };
+      doc.save = sinon.stub().callsFake(() => Promise.resolve(doc));
+      return doc;
+    };
+    const isPublic = doc => doc.read.includes('public');
+
+    beforeEach(() => {
+      docPush = sinon.stub(demiPush, 'document').resolves();
+    });
+
+    it('POST publishes a private uploaded image before the Update is saved', async () => {
+      const image = uploaded(UPLOAD);
+      documents.push(image);
+      let publicWhenSaved;
+      saveResult = () => { publicWhenSaved = isPublic(image); return Promise.resolve(saved); };
+
+      await recentActivity.protectedPost(postArgs(true, { images: [{ document: UPLOAD, alt: 'Site' }] }), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+      expect(publicWhenSaved).to.be.true;
+      expect(image.eaoStatus).to.equal('Published');
+      expect(docPush.calledWith(image)).to.be.true;
+    });
+
+    it('PUT to scheduled publishes the featured image too', async () => {
+      const image = uploaded(UPLOAD);
+      documents.push(image);
+
+      await recentActivity.protectedPut(putArgs(false, {
+        status: 'published', publishDate: new Date(Date.now() + 86400000), featuredImage: { document: UPLOAD, alt: 'Site' }
+      }), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+      expect(isPublic(image)).to.be.true;
+    });
+
+    it('a draft leaves its uploaded image private', async () => {
+      const image = uploaded(UPLOAD);
+      documents.push(image);
+
+      await recentActivity.protectedPost(postArgs(false, { images: [{ document: UPLOAD, alt: 'Site' }] }), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+      expect(isPublic(image)).to.be.false;
+    });
+
+    it('still refuses an uploaded image used as an attachment, since only images publish with the Update', async () => {
+      documents.push(uploaded(UPLOAD));
+
+      await recentActivity.protectedPost(postArgs(true, { attachments: [UPLOAD] }), res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.firstCall.args[0].message).to.include(UPLOAD);
+    });
+
+    it('answers 500 without saving, and takes back what it published, when an image fails to publish', async () => {
+      const first = uploaded(UPLOAD);
+      const second = uploaded(SECOND_UPLOAD);
+      second.save = sinon.stub().rejects(new Error('write failed'));
+      documents.push(first, second);
+      const save = sinon.spy(saveResult);
+      saveResult = save;
+
+      await recentActivity.protectedPost(postArgs(true, {
+        images: [{ document: UPLOAD, alt: 'Site' }, { document: SECOND_UPLOAD, alt: 'Road' }]
+      }), res);
+
+      expect(res.status.calledWith(500)).to.be.true;
+      expect(res.json.firstCall.args[0].message).to.equal('Could not publish the Update images; the Update was not saved.');
+      expect(save.called).to.be.false;
+      expect(isPublic(first)).to.be.false;
+    });
+
+    it('PUT takes back the images it published when the Update changed underneath (409)', async () => {
+      const image = uploaded(UPLOAD);
+      documents.push(image);
+      saved = null;
+
+      await recentActivity.protectedPut(putArgs(true, { status: 'published', images: [{ document: UPLOAD, alt: 'Site' }] }), res);
+
+      expect(res.status.calledWith(409)).to.be.true;
+      expect(isPublic(image)).to.be.false;
+    });
+
+    it('refuses on publish an image uploaded to another project, naming it, and leaves it private', async () => {
+      const image = uploaded(UPLOAD);
+      image.project = '507f1f77bcf86cd7994390ff';
+      documents.push(image);
+
+      await recentActivity.protectedPost(postArgs(true, { images: [{ document: UPLOAD, alt: 'Site' }] }), res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.firstCall.args[0].message).to.include(UPLOAD);
+      expect(isPublic(image)).to.be.false;
+    });
+
+    it('POST takes back a published image, back to no status, when the Update fails to save', async () => {
+      const image = uploaded(UPLOAD);
+      documents.push(image);
+      saveResult = () => Promise.reject(new Error('mongo down'));
+
+      await recentActivity.protectedPost(postArgs(true, { images: [{ document: UPLOAD, alt: 'Site' }] }), res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(isPublic(image)).to.be.false;
+      expect(image.eaoStatus).to.be.null;
+    });
+
+    it('PUT takes back a published image when the Update write throws', async () => {
+      const image = uploaded(UPLOAD);
+      documents.push(image);
+      model.findOneAndUpdate = sinon.stub().rejects(new Error('mongo down'));
+
+      await recentActivity.protectedPut(putArgs(true, { status: 'published', images: [{ document: UPLOAD, alt: 'Site' }] }), res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(isPublic(image)).to.be.false;
+    });
+
+    it('POST publishes an image again when a concurrent release took it private during the save', async () => {
+      const image = uploaded(UPLOAD);
+      documents.push(image);
+      Object.assign(saved, { status: 'published', project: PROJECT_ID, images: [{ document: UPLOAD, alt: 'Site' }] });
+      saveResult = () => {
+        image.read = image.read.filter(role => role !== 'public');
+        return Promise.resolve(saved);
+      };
+
+      await recentActivity.protectedPost(postArgs(true, { images: [{ document: UPLOAD, alt: 'Site' }] }), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+      expect(isPublic(image)).to.be.true;
+    });
+
+    it('PUT publishes an image again when a concurrent release took it private during the save', async () => {
+      const image = uploaded(UPLOAD);
+      documents.push(image);
+      Object.assign(saved, { status: 'published', project: PROJECT_ID, images: [{ document: UPLOAD, alt: 'Site' }] });
+      model.findOneAndUpdate = sinon.stub().callsFake(() => {
+        image.read = image.read.filter(role => role !== 'public');
+        return Promise.resolve(saved);
+      });
+
+      await recentActivity.protectedPut(putArgs(true, { status: 'published', images: [{ document: UPLOAD, alt: 'Site' }] }), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+      expect(isPublic(image)).to.be.true;
+    });
+
+    it('logs an image it could not unpublish and still answers 200', async () => {
+      const image = uploaded(UPLOAD, ['sysadmin', 'staff', 'public']);
+      image.save = sinon.stub().rejects(new Error('write failed'));
+      documents.push(image);
+      stored.images = [{ document: UPLOAD, alt: 'Site' }];
+
+      await recentActivity.protectedPut(putArgs(false, { status: 'draft' }), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+      expect(defaultLog.error.args.map(args => args.join(' ')).join('\n')).to.include(`Could not unpublish Update image ${UPLOAD}`);
+    });
+
+    it('logs a release that failed outright and still answers 200', async () => {
+      documentModel.find = sinon.stub().rejects(new Error('mongo down'));
+      stored.images = [{ document: UPLOAD, alt: 'Site' }];
+
+      await recentActivity.protectedPut(putArgs(false, { status: 'draft' }), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+      expect(defaultLog.error.args.map(args => args.join(' ')).join('\n')).to.include(`Could not release images of Update ${ACTIVITY_ID}: mongo down`);
     });
   });
 });

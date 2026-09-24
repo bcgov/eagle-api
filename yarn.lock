@@ -3079,6 +3079,7 @@ __metadata:
     jwks-rsa: "npm:^3.2.2"
     luxon: "npm:^3.7.2"
     migrate-mongo: "npm:^14.0.7"
+    mime-types: "npm:^2.1.35"
     minio: "npm:~7.0.8"
     mocha: "npm:^11.0.0"
     mongodb: "npm:^7.0.0"

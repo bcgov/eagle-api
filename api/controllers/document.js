@@ -9,6 +9,9 @@ const Actions         = require('../helpers/actions');
 const Utils           = require('../helpers/utils');
 const MinioController = require('../helpers/minio');
 const demiPush        = require('../helpers/demiPush');
+const documentPublish = require('../helpers/documentPublish');
+const updateImages    = require('../helpers/updateImages');
+const updateRules     = require('../helpers/updateRules');
 const analytics       = require('../helpers/analytics');
 
 const ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING ? process.env.ENABLE_VIRUS_SCANNING.toLowerCase() == 'true' : false;
@@ -67,6 +70,9 @@ exports.publicGet = async function (args, res,) {
     query = Utils.buildQuery('_id', args.swagger.params.docId.value, query);
   } else if (args.swagger.params.docIds && args.swagger.params.docIds.value && args.swagger.params.docIds.value.length > 0) {
     query = Utils.buildQuery('_id', args.swagger.params.docIds.value);
+  } else {
+    // A listing leaves out Update form images; asking for one by id still finds it.
+    query.documentSource = { $ne: updateRules.IMAGE_SOURCE };
   }
   if (args.swagger.params.project && args.swagger.params.project.value) {
     query = Utils.buildQuery('project', args.swagger.params.project.value, query);
@@ -261,6 +267,8 @@ exports.protectedGet = async function (args, res) {
     Object.assign(query, { _id: new mongoose.Types.ObjectId(args.swagger.params.docId.value) });
   } else if (args.swagger.params.docIds && args.swagger.params.docIds.value && args.swagger.params.docIds.value.length > 0) {
     query = Utils.buildQuery('_id', args.swagger.params.docIds.value);
+  } else {
+    query.documentSource = { $ne: updateRules.IMAGE_SOURCE };
   }
 
   if (args.swagger.params.project && args.swagger.params.project.value) {
@@ -580,6 +588,18 @@ exports.protectedPost = async function (args, res) {
     defaultLog.warn('Protected file upload rejected: exceeds 3GB limit (%d bytes)', upfile.size);
     return Actions.sendResponse(res, 400, { message: 'File size exceeds 3GB limit.' });
   }
+  const isUpdateImage = args.swagger.params.documentSource && args.swagger.params.documentSource.value === updateRules.IMAGE_SOURCE;
+  if (isUpdateImage) {
+    if (!project) {
+      defaultLog.warn('Update image upload rejected: no project');
+      return Actions.sendResponse(res, 400, { message: updateImages.PROJECT_ERROR });
+    }
+    const uploadError = updateImages.uploadError(upfile, args.swagger.params.documentFileName && args.swagger.params.documentFileName.value);
+    if (uploadError) {
+      defaultLog.warn('Update image upload rejected: %s (%s, %d bytes)', uploadError, upfile.mimetype, upfile.size);
+      return Actions.sendResponse(res, 400, { message: uploadError });
+    }
+  }
 
   var guid = crypto.randomUUID();
   var ext = mime.extension(upfile.mimetype);
@@ -631,7 +651,10 @@ exports.protectedPost = async function (args, res) {
     doc.documentSource = args.swagger.params.documentSource.value;
 
     doc.displayName = args.swagger.params.displayName.value;
-    if (args.swagger.params.eaoStatus && args.swagger.params.eaoStatus.value) {
+    // An Update image stays private until its Update publishes it.
+    if (isUpdateImage) {
+      doc.eaoStatus = null;
+    } else if (args.swagger.params.eaoStatus && args.swagger.params.eaoStatus.value) {
       doc.eaoStatus = args.swagger.params.eaoStatus.value;
       if (args.swagger.params.eaoStatus.value == 'Published') {
         doc.read.push('public');
@@ -640,7 +663,7 @@ exports.protectedPost = async function (args, res) {
       doc.eaoStatus = null;
     }
 
-    if (args.swagger.params.publish && args.swagger.params.publish.value === true) {
+    if (!isUpdateImage && args.swagger.params.publish && args.swagger.params.publish.value === true) {
       doc.read.push('public');
     }
 
@@ -689,10 +712,7 @@ exports.protectedPublish = async function (args, res) {
       }
 
       defaultLog.info('Document:', document);
-      document.eaoStatus = 'Published';
-      var published = await Actions.publish(await document.save());
-      Utils.recordAction('Publish', 'Document', args.swagger.params.auth_payload.preferred_username, objId, args, document.project);
-      demiPush.document(published);
+      const published = await documentPublish.publish(document, args.swagger.params.auth_payload.preferred_username, args);
       return Actions.sendResponse(res, 200, published);
     } else {
       defaultLog.info('Couldn\'t find that document!');
@@ -721,10 +741,7 @@ exports.protectedUnPublish = async function (args, res) {
       }
 
       defaultLog.info('Document:', document);
-      document.eaoStatus = 'Rejected';
-      var unPublished = await Actions.unPublish(await document.save());
-      Utils.recordAction('Unpublish', 'Document', args.swagger.params.auth_payload.preferred_username, objId, args, document.project);
-      demiPush.document(unPublished);
+      const unPublished = await documentPublish.unPublish(document, args.swagger.params.auth_payload.preferred_username, args);
       return Actions.sendResponse(res, 200, unPublished);
     } else {
       defaultLog.info('Couldn\'t find that document!');
