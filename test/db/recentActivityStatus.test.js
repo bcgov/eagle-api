@@ -34,6 +34,12 @@ const PUBLISHED_LATE = id('58990017d334ee001d60eb07');
 
 const DAY = 24 * 60 * 60 * 1000;
 
+// Stored out of id order, so a sort by id would show.
+const IMAGES = [
+  { document: id('58990017d334ee001d60eb12'), alt: 'Site plan', caption: 'Phase one', credit: 'EAO' },
+  { document: id('58990017d334ee001d60eb11'), alt: 'Access road', caption: null, credit: null }
+];
+
 // read[] and active are set as if they were live, so only status and publishDate can hide a row.
 const update = (_id, fields, dateAdded) => ({
   _id,
@@ -69,7 +75,7 @@ const expectNoStaffFields = (payload) => {
 
 const FIXTURES = [
   { _id: PUBLIC_PROJECT, _schemaName: 'Project', read: PUBLIC_READ, currentLegislationYear: 'legislation_2018', legislation_2018: { name: 'P' } },
-  update(PUBLISHED, { status: 'published', publishDate: new Date(Date.now() - DAY) }, '2026-06-01'),
+  update(PUBLISHED, { status: 'published', publishDate: new Date(Date.now() - DAY), images: IMAGES }, '2026-06-01'),
   update(SCHEDULED, { status: 'published', publishDate: new Date(Date.now() + DAY) }, '2026-06-02'),
   update(DRAFT, { status: 'draft', publishDate: new Date(Date.now() - DAY) }, '2026-06-03'),
   update(ARCHIVED, { status: 'archived', publishDate: new Date(Date.now() - DAY) }, '2026-06-04'),
@@ -149,6 +155,15 @@ describe('Update status visibility (requires MongoDB)', function () {
     expectNoStaffFields(body.data);
   });
 
+  it('GET /api/public/recentActivity serves images in the order stored', async () => {
+    const { res, body } = capture();
+    await recentActivityController.publicGet({ swagger: { params: {} } }, res);
+
+    const row = body.data.find(item => String(item._id) === String(PUBLISHED));
+    expect(row.images.map(image => ({ ...image, document: String(image.document) })))
+      .to.deep.equal(IMAGES.map(image => ({ ...image, document: String(image.document) })));
+  });
+
   [true, false].forEach(populate => {
     it(`public search hides staff fields (populate=${populate})`, async () => {
       const { res, body } = capture();
@@ -218,6 +233,25 @@ describe('Update status visibility (requires MongoDB)', function () {
     await searchController.protectedGet(itemArgs(['staff'], ARCHIVED), res);
 
     expect(idsIn(body.data)).to.deep.equal([String(ARCHIVED)]);
+  });
+
+  it('PUT stores the featured image caption and credit', async () => {
+    sinon.stub(demiPush, 'recentActivity').resolves(true);
+    const featuredImage = { document: id('58990017d334ee001d60eb13'), alt: 'Site plan', caption: 'Phase one', credit: 'EAO' };
+    const { res, body } = capture();
+    await recentActivityController.protectedPut({
+      swagger: {
+        params: {
+          recentActivityId: { value: String(DRAFT) },
+          RecentActivityObject: { value: { status: 'draft', featuredImage } },
+          auth_payload: { preferred_username: 'staff' }
+        }
+      }
+    }, res);
+
+    expect(body.code).to.equal(200);
+    const stored = await mongoose.connection.collection('epic').findOne({ _id: DRAFT });
+    expect(stored.featuredImage).to.include({ caption: 'Phase one', credit: 'EAO' });
   });
 
   it('DELETE archives the Update and takes it off the public feed', async () => {

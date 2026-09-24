@@ -1,8 +1,10 @@
 const { setProjectDefault } = require('../helpers/aggregators');
 const mongoose = require('mongoose');
+const qs = require('qs');
 
 const aggregateHelper = require('../helpers/aggregators');
 const { parentReadMatch } = require('../helpers/parentRead');
+const { IMAGE_SOURCE } = require('../helpers/updateRules');
 
 /**
  * Create an aggregation that sets the matching criteria for a document search.
@@ -90,10 +92,19 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
     };
   }
 
+  // Update form images belong to their Update, not the document lists, unless a signed-in caller asks
+  // for a source. A scheduled Update's images are public before it is live, so the public never gets them here.
+  const signedIn = Array.isArray(roles) && roles.some(role => role !== 'public');
+  const asksForSource = [andModifier, orModifier].some(m => Object.keys(qs.parse(m)).includes('documentSource'));
+  const sourceModifier = asksForSource && signedIn
+    ? undefined
+    : { documentSource: { $ne: IMAGE_SOURCE } };
+
   aggregation.push({
     $match: {
       _schemaName: schemaName,
       ...(aggregateHelper.isEmpty(modifier) ? undefined : modifier),
+      ...sourceModifier,
       ...(projectModifier ? projectModifier : undefined),
       ...(keywordModifier ? keywordModifier : undefined),
       ...(categorizedModifier && categorized === true ? categorizedModifier : undefined),

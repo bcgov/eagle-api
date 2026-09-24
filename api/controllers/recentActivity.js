@@ -6,6 +6,9 @@ var demiPush = require('../helpers/demiPush');
 var parentRead = require('../helpers/parentRead');
 var constants = require('../helpers/constants');
 var updateRules = require('../helpers/updateRules');
+const updateImages = require('../helpers/updateImages');
+
+const IMAGE_PUBLISH_FAILED = 'Could not publish the Update images; the Update was not saved.';
 
 
 exports.protectedOptions = function (args, res) {
@@ -30,7 +33,7 @@ exports.publicGet = async function (args, res) {
       projectNotification: 1, pcp: 1, active: 1, project: 1,
       content: 1, headline: 1, complianceAndEnforcement: 1,
       code: 1, proponent: 1, tags: 1, read: 1,
-      category: 1, shortHeadline: 1, summary: 1, featuredImage: 1, attachments: 1,
+      category: 1, shortHeadline: 1, summary: 1, featuredImage: 1, images: 1, attachments: 1,
       regions: 1, location: 1, engagementUrl: 1, subject: 1, status: 1, publishDate: 1
     };
     const now = new Date();
@@ -143,6 +146,7 @@ exports.protectedDelete = async function (args, res) {
       return Actions.sendResponse(res, 404, { message: 'RecentActivity not found' });
     }
     demiPush.recentActivity(rec);
+    await updateImages.release(updateRules.imageDocumentIds(rec), rec._id, args.swagger.params.auth_payload.preferred_username);
     Utils.recordAction('Archive', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, rec._id);
     defaultLog.info('Archived RecentActivity object:', rec._id);
     return Actions.sendResponse(res, 200, rec);
@@ -177,6 +181,16 @@ exports.protectedPost = async function (args, res) {
     return Actions.sendResponse(res, 400, e);
   }
 
+  const username = args.swagger.params.auth_payload.preferred_username;
+  let publishedImages = [];
+  if (obj.status === 'published') {
+    try {
+      publishedImages = await updateImages.publishFor(obj, username);
+    } catch {
+      return Actions.sendResponse(res, 500, { message: IMAGE_PUBLISH_FAILED });
+    }
+  }
+
   var recentActivity = new RecentActivity(obj);
 
   recentActivity.pinned = false;
@@ -192,10 +206,14 @@ exports.protectedPost = async function (args, res) {
     var rec = await recentActivity.save();
     Utils.recordAction('Post', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, rec._id);
     demiPush.recentActivity(rec);
+    if (rec.status === 'published') {
+      await updateImages.republish(rec, username);
+    }
     defaultLog.info('Saved new RecentActivity object:', rec);
     return Actions.sendResponse(res, 200, rec);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
+    await updateImages.revert(publishedImages, username);
     return Actions.sendResponse(res, 400, e);
   }
 };
@@ -220,6 +238,7 @@ exports.protectedPut = async function (args, res) {
   }
 
   var RecentActivity = require('mongoose').model('RecentActivity');
+  let publishedImages = [];
   try {
     if ( obj.project && Object.keys(obj.project).length === 0 && obj.project.constructor === Object){
       obj.project = null;
@@ -238,10 +257,19 @@ exports.protectedPut = async function (args, res) {
     }
     const merged = { ...existing, ...(deriveStatus ? { status: null } : {}), ...obj };
     updateRules.applyStatus(obj, merged, { wasLive: updateRules.isLive(existing) });
-    const errors = await updateRules.check({ ...merged, ...obj });
+    const updated = { ...merged, ...obj };
+    const errors = await updateRules.check(updated);
     if (errors.length) {
       defaultLog.warn(`Rejected RecentActivity ${objId} update:`, errors);
       return Actions.sendResponse(res, 400, { message: errors.join('; '), errors });
+    }
+    const publishing = updated.status === 'published';
+    if (publishing) {
+      try {
+        publishedImages = await updateImages.publishFor(updated, obj._updatedBy);
+      } catch {
+        return Actions.sendResponse(res, 500, { message: IMAGE_PUBLISH_FAILED });
+      }
     }
 
     // Conditional on the version the client loaded (else the row read above), so a concurrent edit
@@ -255,14 +283,26 @@ exports.protectedPut = async function (args, res) {
     );
     if (!rec) {
       defaultLog.warn(`RecentActivity ${objId} changed since it was read; update refused`);
+      await updateImages.revert(publishedImages, obj._updatedBy);
       return Actions.sendResponse(res, 409, { message: 'RecentActivity was changed by someone else; reload and try again' });
     }
     Utils.recordAction('Put', 'RecentActivity', args.swagger.params.auth_payload.preferred_username, rec._id);
     demiPush.recentActivity(rec);
+    // Live: only images it dropped may go private. Not live: none of its images need to stay public.
+    const shownBefore = updateRules.imageDocumentIds(existing);
+    const shownAfter = updateRules.imageDocumentIds(updated);
+    const released = publishing
+      ? shownBefore.filter(id => !shownAfter.includes(id))
+      : [...new Set([...shownBefore, ...shownAfter])];
+    await updateImages.release(released, rec._id, obj._updatedBy);
+    if (publishing) {
+      await updateImages.republish(rec, obj._updatedBy);
+    }
     defaultLog.info('Updated RecentActivity object:', rec._id);
     return Actions.sendResponse(res, 200, rec);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
+    await updateImages.revert(publishedImages, obj._updatedBy);
     return Actions.sendResponse(res, 400, e);
   }
 };

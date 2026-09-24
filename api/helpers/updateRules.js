@@ -11,6 +11,9 @@ const constants = require('./constants');
 const STATUSES = ['draft', 'published', 'archived'];
 const SHORT_HEADLINE_MAX = 70;
 const SUMMARY_MAX = 280;
+const IMAGES_MAX = 5;
+const IMAGE_CAPTION_MAX = 300;
+const IMAGE_CREDIT_MAX = 150;
 const CORPORATE = 'Corporate';
 const PN_PCP_TYPE = 'Project Notification Public Comment Period';
 
@@ -32,6 +35,38 @@ const isHttpUrl = value => {
   } catch (err) {
     return false;
   }
+};
+
+const captionCreditErrors = ({ caption, credit }, label) => {
+  const errors = [];
+  if (!isBlank(caption) && String(caption).length > IMAGE_CAPTION_MAX) {
+    errors.push(`${label}.caption must be ${IMAGE_CAPTION_MAX} characters or fewer`);
+  }
+  if (!isBlank(credit) && String(credit).length > IMAGE_CREDIT_MAX) {
+    errors.push(`${label}.credit must be ${IMAGE_CREDIT_MAX} characters or fewer`);
+  }
+  return errors;
+};
+
+const imageErrors = (images) => {
+  if (images === undefined || images === null) {
+    return [];
+  }
+  if (!Array.isArray(images)) {
+    return ['images must be a list'];
+  }
+  const errors = images.length > IMAGES_MAX ? [`images must hold ${IMAGES_MAX} or fewer`] : [];
+  images.forEach((image, i) => {
+    const { document, alt } = image || {};
+    if (isBlank(document)) {
+      errors.push(`images[${i}].document is required`);
+    }
+    if (isBlank(alt)) {
+      errors.push(`images[${i}].alt is required`);
+    }
+    errors.push(...captionCreditErrors(image || {}, `images[${i}]`));
+  });
+  return errors;
 };
 
 /**
@@ -58,6 +93,10 @@ exports.validate = (update) => {
   if (update.featuredImage && !isBlank(update.featuredImage.document) && isBlank(update.featuredImage.alt)) {
     errors.push('featuredImage.alt is required when featuredImage.document is set');
   }
+  if (update.featuredImage) {
+    errors.push(...captionCreditErrors(update.featuredImage, 'featuredImage'));
+  }
+  errors.push(...imageErrors(update.images));
   if (!isBlank(update.engagementUrl) && !isHttpUrl(update.engagementUrl)) {
     errors.push('engagementUrl must be an http or https URL');
   }
@@ -104,7 +143,7 @@ exports.check = async (update) => {
   if (!errors.length && update.status === 'published') {
     const hidden = await exports.nonPublicDocumentIds(update);
     if (hidden.length) {
-      errors.push(`featuredImage and attachments must be public documents; not public: ${hidden.join(', ')}`);
+      errors.push(`featuredImage, images and attachments must be public documents; not public: ${hidden.join(', ')}`);
     }
   }
   return errors;
@@ -115,20 +154,37 @@ exports.isLive = (row, now = new Date()) => {
   return published && (isBlank(row.publishDate) || new Date(row.publishDate) <= now);
 };
 
+// documentSource of images uploaded from the Update form; they publish and unpublish with the Update.
+exports.IMAGE_SOURCE = 'UPDATE';
+
+const idList = values => [...new Set(values.filter(id => !isBlank(id)).map(String))];
+
 /**
- * Ids of the featured image and attachments that the public cannot read (or that do not exist).
+ * Ids of the documents an Update shows as images: the featured image and the gallery.
+ */
+exports.imageDocumentIds = (update) => idList([
+  update && update.featuredImage && update.featuredImage.document,
+  ...(update && Array.isArray(update.images) ? update.images.map(image => image && image.document) : [])
+]);
+
+/**
+ * Ids of the featured image, images and attachments that the public cannot read (or that do not
+ * exist). An image uploaded from the Update form of the same project passes: publishing the Update
+ * publishes it.
  */
 exports.nonPublicDocumentIds = async (update) => {
-  const ids = [
-    update.featuredImage && update.featuredImage.document,
-    ...(Array.isArray(update.attachments) ? update.attachments : [])
-  ].filter(id => !isBlank(id)).map(String);
+  const imageIds = exports.imageDocumentIds(update);
+  const ids = idList([...imageIds, ...(Array.isArray(update.attachments) ? update.attachments : [])]);
   if (!ids.length) {
     return [];
   }
-  const docs = await mongoose.model('Document').find({ _id: { $in: ids } }, { read: 1 }).lean();
-  const readable = new Set(docs.filter(doc => (doc.read || []).includes('public')).map(doc => String(doc._id)));
-  return [...new Set(ids)].filter(id => !readable.has(id));
+  const docs = await mongoose.model('Document').find({ _id: { $in: ids } }, { read: 1, documentSource: 1, project: 1 }).lean();
+  const passes = new Set(docs
+    .filter(doc => (doc.read || []).includes('public') ||
+      (doc.documentSource === exports.IMAGE_SOURCE && imageIds.includes(String(doc._id)) &&
+        String(doc.project || null) === String(update.project || null)))
+    .map(doc => String(doc._id)));
+  return ids.filter(id => !passes.has(id));
 };
 
 /**

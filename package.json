@@ -54,6 +54,7 @@
     "jwks-rsa": "^3.2.2",
     "luxon": "^3.7.2",
     "migrate-mongo": "^14.0.7",
+    "mime-types": "^2.1.35",
     "minio": "~7.0.8",
     "mongodb": "^7.0.0",
     "mongoose": "^9.7.2",
