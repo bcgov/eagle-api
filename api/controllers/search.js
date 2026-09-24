@@ -27,6 +27,11 @@ const PAGE_SIZE_MAX_PUBLIC = 1000;  // unauthenticated requests
 const PAGE_SIZE_MAX_AUTH   = 1000; // authenticated staff requests
 const PAGE_SIZE_MAX_LIST   = 500;  // List dataset (reference/dropdown data)
 
+// Project fields that hold ids until addProjectLookupAggrs joins them.
+const PROJECT_JOINED_FIELDS = ['proponent', 'currentPhaseName', 'eacDecision', 'CEAAInvolvement', 'applicableRegulation'];
+// Project fields still on the root before the page is cut; unwindProjectData copies them into default after it.
+const PROJECT_ROOT_FIELDS = ['_id', ...aggregateHelper.PROJECT_ROOT_FIELDS];
+
 const searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue, categorized, fuzzy) {
   const aggregateCollation = {
     locale: 'en',
@@ -50,7 +55,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   case constants.DOCUMENT: {
     matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, categorized, roles, fuzzy);
     const unreadableParentIds = await parentRead.unreadableParentIds(roles);
-    schemaAggregation = documentAggregator.createDocumentAggr(populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize, unreadableParentIds);
+    schemaAggregation = await documentAggregator.createDocumentAggr(populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize, unreadableParentIds);
     break;
   }
   case constants.PROJECT:
@@ -80,7 +85,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
     break;
   }
   // NOTE: RecentActivity with populate uses an optimized pipeline (see below)
-  // that paginates BEFORE $lookup to avoid N×$lookup on the entire collection.
+  // that paginates before $lookup unless the sort needs a joined project field.
   case constants.INSPECTION: {
     matchAggregation = await searchAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, roles);
     const unreadableParentIds = await parentRead.unreadableParentIds(roles);
@@ -132,28 +137,24 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   let aggregation;
 
   // Performance optimization for RecentActivity with populate:
-  // Paginate BEFORE $lookup so we only join 'pageSize' documents (e.g. 10)
-  // instead of running $lookup on the entire matched set (thousands of docs).
+  // Paginate before $lookup so we only join 'pageSize' documents (e.g. 10)
+  // instead of the entire matched set, unless the sort needs a joined project field.
   if (schemaName === constants.RECENT_ACTIVITY && populate && schemaAggregation && schemaAggregation.length > 0) {
-    const sortStages = [];
-    if (sortField && sortDirection) {
-      sortStages.push({ $sort: sortingValue });
-    }
+    const sorting = Boolean(sortField && sortDirection);
+    // With no sortBy, _id alone keeps pages stable.
+    const pageStages = [{ $sort: Utils.withIdTiebreak(sorting ? sortingValue : {}) }, { $skip: pageNum * pageSize }, { $limit: pageSize }];
     // The gate leads schemaAggregation; run it before the page is cut so a hidden row neither
     // takes a slot on the page nor counts towards the total.
     const populateStages = schemaAggregation.slice(parentGateAggregation.length);
+    // project holds an id until populate joins it, so a sort on its fields must wait for the join.
+    const sortsOnJoin = sorting && Object.keys(sortingValue).some(key => key.startsWith('project.'));
     aggregation = [
       ...matchAggregation,
       ...parentGateAggregation,
       ...keywordRegexFilter,
       {
         $facet: {
-          searchResults: [
-            ...sortStages,
-            { $skip: pageNum * pageSize },
-            { $limit: pageSize },
-            ...populateStages
-          ],
+          searchResults: sortsOnJoin ? [...populateStages, ...pageStages] : [...pageStages, ...populateStages],
           meta: [{ $count: 'searchResultsTotal' }]
         }
       }
@@ -161,23 +162,29 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   } else if (schemaName === constants.PROJECT && (!projectLegislation || projectLegislation === 'default') && schemaAggregation && schemaAggregation.length > 1) {
     // Performance optimization for Project with default legislation:
     // schemaAggregation[0] is $addFields (setProjectDefault - picks correct legislation year).
-    // schemaAggregation[1..] are 4×$lookup/$unwind + $addFields + $replaceRoot.
+    // schemaAggregation[1..] are 5×$lookup/$unwind + $addFields + $replaceRoot.
     // Run setProjectDefault first so we can sort by default.fieldName,
-    // then paginate BEFORE expensive lookups.
+    // then paginate BEFORE expensive lookups unless the sort needs a joined field.
     const preSortStage = schemaAggregation[0]; // $addFields { default: ... }
     const postPaginationStages = schemaAggregation.slice(1); // lookups + replaceRoot
 
-    // Prefix sort fields with 'default.' since name/type/region live inside
-    // the default sub-document until $replaceRoot flattens them.
-    const adjustedSortValues = {};
+    const sorting = Boolean(sortField && sortDirection);
+    const sortsOnJoin = sorting && Object.keys(sortingValue).some(key => PROJECT_JOINED_FIELDS.includes(key.split('.')[0]));
+    const projectSort = {};
     for (const [key, val] of Object.entries(sortingValue)) {
-      adjustedSortValues[`default.${key}`] = val;
+      if (sortsOnJoin) {
+        // After the join a bare joined field is a whole document; order by the name the admin table shows.
+        projectSort[PROJECT_JOINED_FIELDS.includes(key) ? `${key}.name` : key] = val;
+      } else {
+        // Before $replaceRoot, name/type/region live inside the default sub-document.
+        projectSort[PROJECT_ROOT_FIELDS.includes(key) ? key : `default.${key}`] = val;
+      }
     }
-
-    const sortStages = [];
-    if (sortField && sortDirection) {
-      sortStages.push({ $sort: adjustedSortValues });
-    }
+    const pageStages = [
+      { $sort: Utils.withIdTiebreak(sorting ? projectSort : {}) },
+      { $skip: pageNum * pageSize },
+      { $limit: pageSize }
+    ];
 
     aggregation = [
       ...matchAggregation,
@@ -185,12 +192,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
       preSortStage,
       {
         $facet: {
-          searchResults: [
-            ...sortStages,
-            { $skip: pageNum * pageSize },
-            { $limit: pageSize },
-            ...postPaginationStages
-          ],
+          searchResults: sortsOnJoin ? [...postPaginationStages, ...pageStages] : [...pageStages, ...postPaginationStages],
           meta: [{ $count: 'searchResultsTotal' }]
         }
       }

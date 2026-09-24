@@ -179,6 +179,10 @@ exports.recordAction = async function (action, meta, payload, objId = null, args
   return await audit.save();
 };
 
+// _id breaks ties so a row cannot show on two pages or none.
+const withIdTiebreak = (sort) => ('_id' in sort ? sort : { ...sort, _id: 1 });
+exports.withIdTiebreak = withIdTiebreak;
+
 exports.runDataQuery = async function (modelType, role, query, fields, sortWarmUp, sort, skip, limit, count, preQueryPipelineSteps, populateProponent = false, postQueryPipelineSteps = false, populateProject = false, gateOnParentRead = false) {
   // Resolved before the pipeline is built so the gate stays a plain $match. A failure here throws
   // rather than dropping the gate.
@@ -431,7 +435,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
 
       sortWarmUp, // Used to setup the sort if a temporary projection is needed.
 
-      (sort && Object.keys(sort).length > 0) ? { $sort: sort } : null,
+      (sort && Object.keys(sort).length > 0) ? { $sort: withIdTiebreak(sort) } : null,
 
       sort ? { $project: projection } : null, // Reset the projection just in case the sortWarmUp changed it.
 

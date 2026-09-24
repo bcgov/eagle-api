@@ -139,6 +139,118 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
   return aggregation;
 };
 
+// Document fields holding a List id; the admin tables show the List name, so they sort by it.
+const LIST_LABEL_FIELDS = ['type', 'milestone'];
+const SORT_RANK_ROOT = '_sortRank';
+
+// Shapes a joined `project` as Document rows show it: default legislation merged in, proponent joined.
+const projectShapeStages = () => [
+  ...setProjectDefault(false),
+  // We need to merge the legislation key with the Project while preserving the _id and the rest of the document info
+  {
+    '$addFields': {
+      'project': {
+        '$cond': {
+          if: '$project._id',
+          then: { '$mergeObjects': ['$project', { '$ifNull': ['$project.default', {}] }] },
+          else: null
+        }
+      }
+    }
+  },
+  {
+    '$project': {['project.legislation_2002']: 0 }
+  },
+  {
+    '$project': {['project.legislation_1996']: 0 }
+  },
+  {
+    '$project': {['project.default']: 0 }
+  },
+  {
+    '$lookup': {
+      from: 'epic',
+      localField: 'project.proponent',
+      foreignField: '_id',
+      as: 'project.proponent'
+    }
+  },
+  {
+    '$unwind': {
+      path: '$project.proponent',
+      preserveNullAndEmptyArrays: true
+    }
+  }
+];
+
+// Ids grouped by sort value in ascending order; ids whose value is null or missing are left out.
+const groupIdsByValue = (modelName, shapeStages, valuePath, idPath) => mongoose.model(modelName)
+  .aggregate([
+    { $match: { _schemaName: modelName } },
+    ...shapeStages,
+    { $group: { _id: { $ifNull: [`$${valuePath}`, null] }, ids: { $push: `$${idPath}` } } },
+    { $match: { _id: { $ne: null } } },
+    { $sort: { _id: 1 } }
+  ])
+  .collation({ locale: 'en', strength: 2 })
+  .exec();
+
+const rankGroups = (key, populate) => {
+  if (LIST_LABEL_FIELDS.includes(key)) {
+    return { idField: key, groups: groupIdsByValue('List', [], 'name', '_id') };
+  }
+  // Without populate, project stays an id and a project.* sort has nothing to compare.
+  if (populate && key.startsWith('project.')) {
+    const shape = [{ $replaceRoot: { newRoot: { project: '$$ROOT' } } }, ...projectShapeStages()];
+    return { idField: 'project', groups: groupIdsByValue('Project', shape, key, 'project._id') };
+  }
+  return null;
+};
+
+// ponytail: rank arrays hold every List item or Project; cache them if those collections reach tens of thousands.
+// Rank of the row's id among the groups; equal values share a rank, an unknown id ranks lowest.
+const rankExpression = (groups, idField) => {
+  const ids = groups.flatMap(group => group.ids);
+  const ranks = groups.flatMap((group, rank) => group.ids.map(() => rank));
+  return {
+    $let: {
+      vars: { at: { $indexOfArray: [ids, `$${idField}`] } },
+      in: { $cond: [{ $lt: ['$$at', 0] }, -1, { $arrayElemAt: [ranks, '$$at'] }] }
+    }
+  };
+};
+
+/** Swaps a sort on a List label or joined project field for a prefetched rank, so the page is cut before any join. */
+const withSortRanks = async (pagingAggregation, populate) => {
+  const [facetStage, ...rest] = pagingAggregation;
+  const { searchResults } = facetStage.$facet;
+  const sortStage = searchResults.find(stage => stage.$sort);
+  const ranked = sortStage
+    ? Object.keys(sortStage.$sort).map(key => ({ key, rank: rankGroups(key, populate) })).filter(({ rank }) => rank)
+    : [];
+  if (ranked.length === 0) {
+    return pagingAggregation;
+  }
+
+  const rankField = key => `${SORT_RANK_ROOT}.${key}`;
+  const rankedKeys = ranked.map(({ key }) => key);
+  const sort = Object.fromEntries(Object.entries(sortStage.$sort)
+    .map(([key, direction]) => [rankedKeys.includes(key) ? rankField(key) : key, direction]));
+  const groups = await Promise.all(ranked.map(({ rank }) => rank.groups));
+  const rankFields = Object.fromEntries(ranked.map(({ key, rank }, i) => [rankField(key), rankExpression(groups[i], rank.idField)]));
+
+  return [
+    { $addFields: rankFields },
+    {
+      $facet: {
+        ...facetStage.$facet,
+        searchResults: [...searchResults.map(stage => (stage === sortStage ? { $sort: sort } : stage)), { $unset: SORT_RANK_ROOT }]
+      }
+    },
+    ...rest
+  ];
+};
+
 /**
  * Creates an aggregation for documents.
  *
@@ -147,7 +259,7 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
  * @param {array} unreadableParentIds Parents the caller cannot read, from helpers/parentRead
  * @returns {array} Aggregate for documents.
  */
-exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize, unreadableParentIds) => {
+exports.createDocumentAggr = async (populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize, unreadableParentIds) => {
   // Runs whether or not the caller asked to populate, and before the project lookup below
   // overwrites the `project` reference the gate reads.
   let aggregation = [...parentReadMatch(unreadableParentIds)];
@@ -183,7 +295,8 @@ exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDire
       }
     });
   }
-  var sortAggregation = aggregateHelper.createSortingPagingAggr('Document', sortingValue, sortField, sortDirection, pageNum, pageSize);
+  const sortAggregation = await withSortRanks(
+    aggregateHelper.createSortingPagingAggr('Document', sortingValue, sortField, sortDirection, pageNum, pageSize), populate);
   aggregation = [...aggregation, ...sortAggregation];
 
   if (populate) {
@@ -207,52 +320,10 @@ exports.createDocumentAggr = (populate, roles, sortingValue, sortField, sortDire
           'path': '$project',
           'preserveNullAndEmptyArrays': true
         }
-      }
+      },
+      // Here we have documents with a nested Project and a nested legislation key
+      ...projectShapeStages()
     );
-
-    // Here we have documents with a nested Project and a nested legislation key
-    const defaultAggr = setProjectDefault(false);
-    aggregation = [...aggregation, ...defaultAggr];
-
-    // We need to merge the legislation key with the Project while preserving the _id and the rest of the document info
-    // TODO: Abstract these types of stages, as we will need to do this a lot")
-    aggregation.push(
-      {
-        '$addFields': {
-          'project': {
-            '$cond': {
-              if: '$project._id',
-              then: { '$mergeObjects': ['$project', { '$ifNull': ['$project.default', {}] }] },
-              else: null
-            }
-          }
-        }
-      },
-      {
-        '$project': {['project.legislation_2002']: 0 }
-      },
-      {
-        '$project': {['project.legislation_1996']: 0 }
-      },
-      {
-        '$project': {['project.default']: 0 }
-      },
-      {
-        '$lookup': {
-          from: 'epic',
-          localField: 'project.proponent',
-          foreignField: '_id',
-          as: 'project.proponent'
-        }
-      },
-      {
-        '$unwind': {
-          path: '$project.proponent',
-          preserveNullAndEmptyArrays: true
-        }
-      }
-    );
-
   }
 
   return aggregation;

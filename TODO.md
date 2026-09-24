@@ -12,3 +12,13 @@
 - 2026-09-24 eagle-api: `documentAggregator.js:97` `signedIn` repeats the isAuthenticated test at `search.js:227`; pass the flag in.
 - 2026-09-24 eagle-api: GET `/public/document/{id}` and `/fetch` serve an UPDATE image of a scheduled Update before it goes live (public at save); check the Update is live, or accept.
 - 2026-09-24 eagle-api: `updateImages.js:129` release saves a doc loaded earlier, so a concurrent save gets a VersionError. It is caught and the image stays public; say so in the log line.
+
+## Sorting
+
+- 2026-09-24: `documentAggregator.js` rank prefetch hard-codes the collation `{ locale: 'en', strength: 2 }`, a copy of `aggregateCollation` in `search.js`. Rank order only matches the joined order while the two agree; share one constant.
+- 2026-09-24: The rank prefetch `.exec()` has no `maxTimeMS`; give it the same 45000 ms as the main query.
+- 2026-09-24: The List rank prefetch reads every List item, and a `type,milestone` sort runs it twice. Run it once per call, and filter to `doctype` / `label` once the data confirms Document type and milestone never point at other List types.
+- 2026-09-24: The Project rank prefetch runs the proponent `$lookup` for every key; only `project.proponent.*` needs it.
+- 2026-09-24: The `ponytail:` note on the rank sort names only collection size; cost is matched Documents times rank array length (`$indexOfArray` is a linear scan).
+- 2026-09-24: Rename the local `PROJECT_ROOT_FIELDS` in `search.js` (it adds `_id`, unlike `aggregateHelper.PROJECT_ROOT_FIELDS`), for example `PROJECT_ROOT_SORT_FIELDS`.
+- 2026-09-24: `utils.js` `exports.runDataQuery =async function` is missing a space after `=`.
