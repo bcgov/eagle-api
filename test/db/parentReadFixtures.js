@@ -74,6 +74,32 @@ function capture() {
   return { res, body };
 }
 
+// The /search query a staff caller sends; options override the defaults.
+function searchArgs({ dataset, sortBy, keywords = '', populate = true, pageNum = 0, pageSize = 100, projectLegislation = '', roles = ['staff'] }) {
+  return {
+    swagger: {
+      params: {
+        _id: { value: null },
+        keywords: { value: keywords },
+        dataset: { value: dataset },
+        project: { value: null },
+        populate: { value: populate },
+        pageNum: { value: pageNum },
+        pageSize: { value: pageSize },
+        projectLegislation: { value: projectLegislation },
+        // Absent, as when the caller sends none: a keyword search then ranks by relevance.
+        sortBy: { value: sortBy === undefined ? undefined : [].concat(sortBy) },
+        caseSensitive: { value: false },
+        and: { value: '' },
+        or: { value: '' },
+        categorized: { value: null },
+        fuzzy: { value: false },
+        auth_payload: { realm_access: { roles }, preferred_username: roles.join(',') }
+      }
+    }
+  };
+}
+
 const idsIn = (payload) => {
   const rows = Array.isArray(payload) ? payload : [];
   const results = rows.length && rows[0].searchResults ? rows[0].searchResults : rows;
@@ -94,5 +120,6 @@ module.exports = {
   MISSING_READ_PROJECT,
   PARENT_FIXTURES,
   capture,
+  searchArgs,
   idsIn
 };

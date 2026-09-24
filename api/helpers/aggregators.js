@@ -5,6 +5,9 @@ const defaultLog = require('winston').loggers.get('default');
 const constants = require('../helpers/constants').schemaTypes;
 const Utils = require('../helpers/utils');
 
+// Project fields kept on the root, not in a legislation sub-document; the default unwind copies them in.
+const PROJECT_ROOT_FIELDS = ['read', 'pins', 'hasMetCommentPeriods', 'pinsHistory', 'pinsRead', 'cacEmail', 'cacMembers', 'projectCAC', 'projectCACPublished', 'score'];
+
 /**
  * Creates an aggregation with the default project year set as the root.
  *
@@ -91,16 +94,7 @@ const unwindProjectData = (projectLegislationDataKey, projectLegislationDataIdKe
       {
         '$addFields': {
           [projectLegislationDataIdKey]: '$_id',
-          [projectLegislationDataKey + '.read']: '$read',
-          [projectLegislationDataKey + '.pins']: '$pins',
-          [projectLegislationDataKey + '.hasMetCommentPeriods']: '$hasMetCommentPeriods',
-          [projectLegislationDataKey + '.pinsHistory']: '$pinsHistory',
-          [projectLegislationDataKey + '.pinsRead']: '$pinsRead',
-          [projectLegislationDataKey + ".cacEmail"]: "$cacEmail",
-          [projectLegislationDataKey + ".cacMembers"]: "$cacMembers",
-          [projectLegislationDataKey + ".projectCAC"]: "$projectCAC",
-          [projectLegislationDataKey + ".projectCACPublished"]: "$projectCACPublished",
-          [projectLegislationDataKey + ".score"]: "$score"
+          ...Object.fromEntries(PROJECT_ROOT_FIELDS.map(field => [`${projectLegislationDataKey}.${field}`, `$${field}`]))
         }
       }
     );
@@ -570,33 +564,31 @@ const isEmpty = (obj) => {
     }
   }
 
-  // if we have no sorting going on, we should sort by the score
-  if(!sortField) {
-    sortValues = { score: -1 };
+  // With no sortBy, _id alone keeps pages stable. A keyword search arrives here sorted by -score.
+  if (!sortField || !sortDirection) {
+    sortValues = {};
   }
 
-  // We don't want to have sort in the aggregation if the front end doesn't need sort.
-  if (sortField && sortDirection) {
-    if(datePostedHandlingTruncating){
-      // Currently this is just handling datePosted, if more date variables are needed change datePosted to a variable and detect it above
-      searchResultAggregation.push(
+  if(datePostedHandlingTruncating){
+    // Currently this is just handling datePosted, if more date variables are needed change datePosted to a variable and detect it above
+    searchResultAggregation.push(
 
-        { $addFields: {
-          'date':
-            { $dateToString: {
-              'format': '%Y-%m-%d', 'date': '$datePosted'
-            }}
+      { $addFields: {
+        'date':
+          { $dateToString: {
+            'format': '%Y-%m-%d', 'date': '$datePosted'
+          }}
 
-        }},
-        { $sort: sortValues }
-      );
-    } else {
-      searchResultAggregation.push(
-        {
-          $sort: sortValues
-        }
-      );
-    }
+      }},
+      { $sort: Utils.withIdTiebreak(sortValues) },
+      { $unset: 'date' }
+    );
+  } else {
+    searchResultAggregation.push(
+      {
+        $sort: Utils.withIdTiebreak(sortValues)
+      }
+    );
   }
 
   searchResultAggregation.push(
@@ -655,3 +647,4 @@ exports.addProjectLookupAggrs = addProjectLookupAggrs;
 exports.generateExpArray = generateExpArray;
 exports.isEmpty = isEmpty;
 exports.createSortingPagingAggr = createSortingPagingAggr;
+exports.PROJECT_ROOT_FIELDS = PROJECT_ROOT_FIELDS;

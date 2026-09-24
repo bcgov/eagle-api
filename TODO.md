@@ -9,3 +9,13 @@
 - 2026-09-23: `nonPublicDocumentIds` Document lookup should match `_schemaName: 'Document'` and skip `isDeleted` rows.
 - 2026-09-23: Security: public search filters (`and`/`or`) can match on fields hidden from the response (staff usernames in `_addedBy`/`_updatedBy`, `notifiedAt`), so a caller can probe their values; reject hidden keys in public filters.
 - 2026-09-23: Add DB tests that drive POST/PUT with the bodies eagle-admin actually sends.
+
+## Sorting
+
+- 2026-09-24: `documentAggregator.js` rank prefetch hard-codes the collation `{ locale: 'en', strength: 2 }`, a copy of `aggregateCollation` in `search.js`. Rank order only matches the joined order while the two agree; share one constant.
+- 2026-09-24: The rank prefetch `.exec()` has no `maxTimeMS`; give it the same 45000 ms as the main query.
+- 2026-09-24: The List rank prefetch reads every List item, and a `type,milestone` sort runs it twice. Run it once per call, and filter to `doctype` / `label` once the data confirms Document type and milestone never point at other List types.
+- 2026-09-24: The Project rank prefetch runs the proponent `$lookup` for every key; only `project.proponent.*` needs it.
+- 2026-09-24: The `ponytail:` note on the rank sort names only collection size; cost is matched Documents times rank array length (`$indexOfArray` is a linear scan).
+- 2026-09-24: Rename the local `PROJECT_ROOT_FIELDS` in `search.js` (it adds `_id`, unlike `aggregateHelper.PROJECT_ROOT_FIELDS`), for example `PROJECT_ROOT_SORT_FIELDS`.
+- 2026-09-24: `utils.js` `exports.runDataQuery =async function` is missing a space after `=`.

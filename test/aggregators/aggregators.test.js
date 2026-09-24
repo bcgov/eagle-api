@@ -82,54 +82,55 @@ describe('Document Aggregator', () => {
   });
 
   describe('createDocumentAggr', () => {
-    it('should create document aggregation pipeline', () => {
+    it('should create document aggregation pipeline', async () => {
       // createSortingPagingAggr requires sortingValue to be an object, not null
-      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25, []);
+      const result = await documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25, []);
 
       expect(result).to.be.an('array');
       expect(result.length).to.be.greaterThan(0);
     });
 
-    it('should include sorting when provided', () => {
-      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, 'name', 1, 0, 25, []);
+    it('should include sorting when provided', async () => {
+      const result = await documentAggregator.createDocumentAggr(false, ['public'], {}, 'name', 1, 0, 25, []);
 
       expect(result).to.be.an('array');
       expect(result.length).to.be.greaterThan(0);
     });
 
-    it('should handle populate option', () => {
-      const result = documentAggregator.createDocumentAggr(true, ['public'], {}, null, null, 0, 25, []);
+    it('should handle populate option', async () => {
+      const result = await documentAggregator.createDocumentAggr(true, ['public'], {}, null, null, 0, 25, []);
 
       expect(result).to.be.an('array');
       // Should have additional lookup stages when populate=true
     });
 
-    it('should include pagination', () => {
-      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 1, 10, []);
+    it('should include pagination', async () => {
+      const result = await documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 1, 10, []);
 
       expect(result).to.be.an('array');
       expect(result.length).to.be.greaterThan(0);
     });
 
-    it('should enforce published status for public role', () => {
-      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25, []);
+    it('should enforce published status for public role', async () => {
+      const result = await documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25, []);
 
       // Should have a match stage for status: 'published'
       const matchStage = result.find(stage => stage.$match && stage.$match.status === 'published');
       expect(matchStage).to.exist;
     });
 
-    it('should drop documents under the parents it is given', () => {
+    it('should drop documents under the parents it is given', async () => {
       const parent = new mongoose.Types.ObjectId();
-      const result = documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25, [parent]);
+      const result = await documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25, [parent]);
 
       const gateStage = result.find(stage => stage.$match && stage.$match.project);
       expect(gateStage.$match.project.$nin).to.deep.equal([parent]);
     });
 
-    it('should refuse to build a pipeline with no parent gate', () => {
-      expect(() => documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25))
-        .to.throw(TypeError, /unreadable ids/);
+    it('should refuse to build a pipeline with no parent gate', async () => {
+      const error = await documentAggregator.createDocumentAggr(false, ['public'], {}, null, null, 0, 25).catch(caught => caught);
+      expect(error).to.be.instanceOf(TypeError);
+      expect(error.message).to.match(/unreadable ids/);
     });
   });
 });

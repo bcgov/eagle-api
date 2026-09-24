@@ -164,6 +164,20 @@ describe('Search Controller', () => {
       await searchController.publicGet(args, res);
       expect(modelStub.aggregate.calledOnce).to.be.true;
     });
+
+    // Ordering itself is checked against MongoDB in test/db/recentActivitySort.test.js; this guards the cost.
+    it('cuts the populated Updates page before the project join when sorting on an Update field', async () => {
+      await searchController.protectedGet(makeArgs({
+        dataset: { value: 'RecentActivity' },
+        populate: { value: true },
+        keywords: { value: '' },
+        sortBy: { value: ['-dateAdded'] }
+      }), res);
+
+      const page = modelStub.aggregate.firstCall.args[0].find(stage => stage.$facet).$facet.searchResults;
+      const limitIndex = page.findIndex(stage => stage.$limit);
+      expect(limitIndex).to.be.greaterThan(-1).and.lessThan(page.findIndex(stage => stage.$lookup));
+    });
   });
 
   describe('Item Aggregator Search', () => {

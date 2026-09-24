@@ -17,7 +17,11 @@ exports.createUserAggr = (populate) => {
       }
     },
     {
-      '$unwind': '$org'
+      // Keep contacts with no organization; the admin shows '-' for them.
+      '$unwind': {
+        'path': '$org',
+        'preserveNullAndEmptyArrays': true
+      }
     },
   );
 

@@ -62,6 +62,16 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
     }
   });
 
+  // Only add textScore when a $text search is present (MongoDB 4.4+ requirement).
+  // It must come before $redact, which drops the text score metadata.
+  if (hasTextSearch) {
+    aggregation.push({
+      $addFields: {
+        score: { $meta: 'textScore' }
+      }
+    });
+  }
+
   // Ensure 'public' is always included in roles for permission checks
   // Authenticated users should still see publicly available content
   const rolesWithPublic = roles.includes('public') ? roles : [...roles, 'public'];
@@ -94,15 +104,6 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
       }
     }
   );
-
-  // Only add textScore when a $text search is present (MongoDB 4.4+ requirement)
-  if (hasTextSearch) {
-    aggregation.push({
-      $addFields: {
-        score: { $meta: 'textScore' }
-      }
-    });
-  }
 
   return aggregation;
 };
