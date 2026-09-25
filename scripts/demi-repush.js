@@ -17,7 +17,9 @@
  * directory'.
  */
 
+const crypto = require('crypto');
 const fs = require('fs');
+const path = require('path');
 const mongoose = require('mongoose');
 
 // Requiring app_helper registers the 'default' logger and every mongoose model, which demiPush
@@ -42,6 +44,8 @@ const demiClient = pushClient({
 });
 
 const DEFAULT_CONCURRENCY = 4;
+// The APIM machine product allows 300 calls per 60 s per subscription, shared with the live pods.
+const DEFAULT_RATE = 150;
 const PROGRESS_EVERY = 100;
 
 // Every model below shares the `epic` collection, so _schemaName is what separates them.
@@ -68,15 +72,29 @@ const USAGE = `Re-push existing eagle-api records to DEMI through api/helpers/de
 
 Usage: node scripts/demi-repush.js [options]
 
-  --kind <name>    ${Object.keys(KINDS).join(' | ')} (default: project)
+  --kind <name>    ${Object.keys(KINDS).join(' | ')}. This or --kinds is required.
+  --kinds <a,b>    Several kinds, run one after another in the order given. Not with --kind.
+                   A project run needs --concurrency 1, and --ids-file when live.
+  --ids-file <path>
+                   Only these records: 24-character Mongo ids separated by newlines, spaces or
+                   commas. Ids of another kind are skipped, so one file can serve every kind.
   --since <ISO>    Only records whose timestamp is at or after this date, e.g. 2026-01-01
-  --limit <N>      Stop after N records.
+  --limit <N>      Stop after N records of each kind.
   --state <path>   Checkpoint file. Written after each settled batch; a rerun resumes after the
-                   last _id it holds. Default: no checkpoint, the whole collection every run.
+                   last _id it holds, if it ran over the same ids and --since. With several
+                   kinds each gets its own file, the kind added before the extension:
+                   /tmp/r.json becomes /tmp/r.project.json. Default: no checkpoint.
   --concurrency N  Pushes in flight (default: ${DEFAULT_CONCURRENCY}).
+  --rate N         HTTP calls per minute, retries included, 1 or more (default: ${DEFAULT_RATE}).
+                   The APIM subscription allows 300 a minute and the live pods share it.
+  --continue-on-failure
+                   With several kinds, go on to the next kind after one had failures. By
+                   default the run stops there.
   --dry-run        Count what would be pushed and push nothing. This is the default.
   --live           Actually push.
   --help           This text.
+
+A flag given with a missing or empty value, or followed straight by another flag, exits 2.
 
 Connection comes from the same env vars run_migration.js uses: MONGODB_SERVICE_HOST, MONGODB_PORT,
 MONGODB_DATABASE, MONGODB_USERNAME, MONGODB_PASSWORD, MONGODB_AUTHSOURCE. Pushes need DEMI_API_BASE
@@ -100,6 +118,10 @@ function buildQuery(kind, options) {
 
   if (options.lastId) {
     query._id = { $gt: new mongoose.Types.ObjectId(String(options.lastId)) };
+  }
+
+  if (options.ids) {
+    query._id = Object.assign(query._id || {}, { $in: options.ids.map(id => new mongoose.Types.ObjectId(id)) });
   }
 
   if (options.since) {
@@ -126,6 +148,104 @@ function writeState(statePath, state) {
   const tmp = `${statePath}.tmp`;
   fs.writeFileSync(tmp, `${JSON.stringify(state, null, 2)}\n`);
   fs.renameSync(tmp, statePath);
+}
+
+// A single kind keeps the --state path as given, so an existing checkpoint still resumes.
+function statePathFor(statePath, kind, kindCount) {
+  if (!statePath || kindCount < 2) {
+    return statePath;
+  }
+  const parsed = path.parse(statePath);
+  return path.join(parsed.dir, `${parsed.name}.${kind}${parsed.ext}`);
+}
+
+// Throws on anything that is not a 24-character hex id, so a stray log fragment cannot widen or
+// silently empty the query.
+function readIds(idsPath) {
+  const ids = fs.readFileSync(idsPath, 'utf8').split(/[\s,]+/).filter(Boolean);
+  const bad = ids.find(id => !mongoose.isObjectIdOrHexString(id));
+  if (bad !== undefined) {
+    throw new Error(`--ids-file ${idsPath}: "${bad}" is not a 24-character Mongo id`);
+  }
+  if (ids.length === 0) {
+    throw new Error(`--ids-file ${idsPath} holds no ids`);
+  }
+  return Array.from(new Set(ids.map(id => id.toLowerCase())));
+}
+
+// Consecutive calls go out at least `gap` apart, measured from when each caller actually proceeds,
+// so a late start cannot bunch the next ones up. The 1% margin keeps a closed 60 s window, both
+// ends included, to perMinute calls. Slots are reserved synchronously so callers queue in order.
+function rateMeter(perMinute) {
+  const gap = (60000 / perMinute) * 1.01;
+  let next = 0;
+  let lastSent = -Infinity;
+  let pausedUntil = 0;
+  return {
+    async acquire() {
+      let ready = Math.max(Date.now(), next);
+      next = ready + gap;
+      for (;;) {
+        const now = Date.now();
+        ready = Math.max(ready, pausedUntil, lastSent + gap);
+        if (now >= ready) {
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, ready - now));
+      }
+      lastSent = Date.now();
+      next = Math.max(next, lastSent + gap);
+    },
+    // A 429 means the shared quota is spent, so every caller waits, not only the throttled one.
+    pause(ms) {
+      pausedUntil = Math.max(pausedUntil, Date.now() + ms);
+      next = Math.max(next, pausedUntil);
+    }
+  };
+}
+
+function idsDigest(ids) {
+  if (!ids) {
+    return null;
+  }
+  const sha256 = crypto.createHash('sha256').update(ids.slice().sort().join('\n')).digest('hex');
+  return { count: ids.length, sha256: sha256 };
+}
+
+// Where a kind's checkpoint lives and the _id to resume after. A checkpoint from a run over a
+// different id list or --since is not resumed: it would skip records this run was asked for.
+function planKind(args, name, read) {
+  const statePath = statePathFor(args.state, name, args.kinds.length);
+  const ids = idsDigest(args.ids);
+  const since = args.since ? args.since.toISOString() : null;
+  const previous = (read || readState)(statePath);
+  const was = (previous && previous.ids) || null;
+  const sameIds = was === null || ids === null ? was === ids : was.count === ids.count && was.sha256 === ids.sha256;
+  const sameSince = ((previous && previous.since) || null) === since;
+  const lastId = previous && previous.kind === name && sameIds && sameSince ? previous.lastId || null : null;
+  return { statePath, ids, since, lastId };
+}
+
+// The query and checkpoint for one kind, kept apart from the connection so they can be checked.
+function kindJob(args, name, plan, model) {
+  const query = buildQuery(KINDS[name], { model: model, since: args.since, lastId: plan.lastId, ids: args.ids });
+  const checkpoint = (lastId, running) => ({
+    kind: name,
+    ids: plan.ids,
+    since: plan.since,
+    lastId: lastId,
+    seen: running.seen,
+    pushed: running.pushed,
+    failed: running.failed,
+    failedIds: running.failedIds,
+    updatedAt: new Date().toISOString()
+  });
+  return { query, checkpoint };
+}
+
+// Only a live run sends anything, so only a live run is paced.
+function pacerFor(args) {
+  return args.live ? rateMeter(args.rate) : null;
 }
 
 /**
@@ -232,16 +352,30 @@ async function repush(options) {
 
 function parseArgs(argv) {
   const args = {
-    kind: 'project',
+    kind: null,
+    kinds: null,
+    idsFile: null,
     since: null,
     limit: null,
     state: null,
     concurrency: DEFAULT_CONCURRENCY,
+    rate: DEFAULT_RATE,
     live: false,
+    continueOnFailure: false,
     help: false,
-    unknown: []
+    unknown: [],
+    noValue: []
   };
-  const withValue = { '--kind': 'kind', '--since': 'since', '--limit': 'limit', '--state': 'state', '--concurrency': 'concurrency' };
+  const withValue = {
+    '--kind': 'kind',
+    '--kinds': 'kinds',
+    '--ids-file': 'idsFile',
+    '--since': 'since',
+    '--limit': 'limit',
+    '--state': 'state',
+    '--concurrency': 'concurrency',
+    '--rate': 'rate'
+  };
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -251,8 +385,21 @@ function parseArgs(argv) {
       args.live = false;
     } else if (arg === '--live') {
       args.live = true;
+    } else if (arg === '--continue-on-failure') {
+      args.continueOnFailure = true;
     } else if (withValue[arg]) {
-      args[withValue[arg]] = argv[++i];
+      // An unset shell variable must fail the run, never drop a filter and widen it.
+      const value = argv[i + 1];
+      if (value === undefined || value.startsWith('--')) {
+        args.noValue.push(arg);
+      } else {
+        i++;
+        if (value.trim() === '') {
+          args.noValue.push(arg);
+        } else {
+          args[withValue[arg]] = value;
+        }
+      }
     } else {
       args.unknown.push(arg);
     }
@@ -261,7 +408,12 @@ function parseArgs(argv) {
   if (args.limit !== null) {
     args.limit = Number(args.limit);
   }
+  args.bothKindFlags = args.kind !== null && args.kinds !== null;
+  const kinds = args.kinds !== null ? args.kinds : args.kind !== null ? args.kind : '';
+  args.kinds = Array.from(new Set(kinds.split(',').map(kind => kind.trim()).filter(Boolean)));
+  delete args.kind;
   args.concurrency = Number(args.concurrency);
+  args.rate = Number(args.rate);
   if (args.since) {
     args.since = new Date(args.since);
   }
@@ -269,8 +421,18 @@ function parseArgs(argv) {
 }
 
 function validate(args) {
-  if (!KINDS[args.kind]) {
-    return `Unknown --kind ${args.kind}; pick one of ${Object.keys(KINDS).join(', ')}`;
+  if (args.noValue.length > 0) {
+    return `${args.noValue.join(', ')} needs a value`;
+  }
+  if (args.bothKindFlags) {
+    return 'Give --kind or --kinds, not both';
+  }
+  const unknownKind = args.kinds.find(kind => !KINDS[kind]);
+  if (unknownKind !== undefined) {
+    return `Unknown --kind ${unknownKind}; pick one of ${Object.keys(KINDS).join(', ')}`;
+  }
+  if (args.kinds.length === 0) {
+    return `--kind or --kinds is required: ${Object.keys(KINDS).join(', ')}`;
   }
   if (args.unknown.length > 0) {
     return `Unknown argument: ${args.unknown.join(' ')}`;
@@ -281,64 +443,86 @@ function validate(args) {
   if (!Number.isInteger(args.concurrency) || args.concurrency < 1) {
     return '--concurrency takes a positive whole number';
   }
+  // A project push resets DEMI's read and runs a cascade that can outlast the per-attempt timeout.
+  if (args.kinds.includes('project') && args.concurrency > 1) {
+    return 'The project kind runs with --concurrency 1';
+  }
+  if (args.kinds.includes('project') && args.live && !args.idsFile) {
+    return 'A live project run needs --ids-file: pushing every project undoes DEMI takedowns';
+  }
+  if (!Number.isFinite(args.rate) || args.rate < 1) {
+    return '--rate takes a number of calls per minute, 1 or more';
+  }
   if (args.since && Number.isNaN(args.since.getTime())) {
     return '--since takes an ISO date, e.g. 2026-01-01';
   }
   // Schema paths are registered by the app_helper require, so this needs no connection.
-  const kind = KINDS[args.kind];
-  if (args.since && dateFields(mongoose.model(kind.model), kind.sinceFields).length === 0) {
-    return noSinceField(kind);
+  const undated = args.since && args.kinds.map(name => KINDS[name])
+    .find(kind => dateFields(mongoose.model(kind.model), kind.sinceFields).length === 0);
+  if (undated) {
+    return noSinceField(undated);
   }
   return null;
 }
 
-async function run(args) {
-  const kind = KINDS[args.kind];
-
-  const uri = buildMongoUri();
-  // Naming the target guards against backfilling from the wrong database; the password stays out.
-  defaultLog.info(`[demi-repush] connecting to ${uri.replace(/\/\/[^@]+@/, '//')}`);
-  await mongoose.connect(uri, mongooseOptions);
+async function runKind(args, name) {
+  const kind = KINDS[name];
+  const plan = planKind(args, name);
 
   const model = mongoose.model(kind.model);
-  const previous = readState(args.state);
-  const lastId = previous && previous.kind === args.kind ? previous.lastId : null;
-  if (lastId) {
-    defaultLog.info(`[demi-repush] resuming ${args.kind} after _id ${lastId}`);
+  if (plan.lastId) {
+    defaultLog.info(`[demi-repush] resuming ${name} after _id ${plan.lastId}`);
   }
 
-  const query = buildQuery(kind, { model: model, since: args.since, lastId: lastId });
-  const cursor = model.find(query).sort({ _id: 1 }).cursor();
+  const job = kindJob(args, name, plan, model);
+  const cursor = model.find(job.query).sort({ _id: 1 }).cursor();
 
   const counts = await repush({
     cursor: cursor,
     push: doc => demiPush[kind.push](doc),
     log: defaultLog,
-    startId: lastId,
+    startId: plan.lastId,
     concurrency: args.concurrency,
     limit: args.limit,
     dryRun: !args.live,
-    onCheckpoint: args.state
-      ? (id, running) => writeState(args.state, {
-        kind: args.kind,
-        lastId: id,
-        seen: running.seen,
-        pushed: running.pushed,
-        failed: running.failed,
-        failedIds: running.failedIds,
-        updatedAt: new Date().toISOString()
-      })
-      : null
+    onCheckpoint: plan.statePath ? (id, running) => writeState(plan.statePath, job.checkpoint(id, running)) : null
   });
 
   if (args.live) {
-    defaultLog.info(`[demi-repush] done: ${counts.seen} seen, ${counts.pushed} pushed, ${counts.failed} failed`);
+    defaultLog.info(`[demi-repush] ${name} done: ${counts.seen} seen, ${counts.pushed} pushed, ${counts.failed} failed`);
     if (counts.failed > 0) {
-      defaultLog.error(`[demi-repush] failed ids: ${counts.failedIds.join(', ')}`);
+      defaultLog.error(`[demi-repush] ${name} failed ids: ${counts.failedIds.join(', ')}`);
     }
   } else {
-    defaultLog.info(`[demi-repush] [dry-run] ${counts.seen} ${args.kind} records would be pushed; nothing sent`);
+    defaultLog.info(`[demi-repush] [dry-run] ${counts.seen} ${name} records would be pushed; nothing sent`);
   }
+  return counts;
+}
+
+// Kinds run one after another, so a parent kind listed first lands before its children. A kind
+// with failures stops the run, since children of a failed parent would all be refused.
+async function runKinds(args, runOne, log) {
+  let failed = 0;
+  for (const [i, name] of args.kinds.entries()) {
+    const kindFailed = (await runOne(args, name)).failed;
+    failed += kindFailed;
+    const rest = args.kinds.slice(i + 1);
+    if (kindFailed > 0 && rest.length > 0 && !args.continueOnFailure) {
+      log.error(`[demi-repush] stopping: ${kindFailed} ${name} failed, so ${rest.join(', ')} not run; fix and rerun, or pass --continue-on-failure`);
+      break;
+    }
+  }
+  return { failed };
+}
+
+async function run(args) {
+  const uri = buildMongoUri();
+  // Naming the target guards against backfilling from the wrong database; the password stays out.
+  defaultLog.info(`[demi-repush] connecting to ${uri.replace(/\/\/[^@]+@/, '//')}`);
+  await mongoose.connect(uri, mongooseOptions);
+
+  pushClient.setPacer(pacerFor(args));
+  const counts = await runKinds(args, runKind, defaultLog);
 
   await mongoose.disconnect();
   return counts;
@@ -358,6 +542,15 @@ if (require.main === module) {
     process.exit(2);
   }
 
+  if (args.idsFile) {
+    try {
+      args.ids = readIds(args.idsFile);
+    } catch (err) {
+      process.stderr.write(`${err.message}\n`);
+      process.exit(2);
+    }
+  }
+
   if (!demiClient.configured()) {
     process.stderr.write('DEMI pushes are off: set DEMI_API_BASE and DEMI_APIM_KEY, or run this where they are set.\n');
     process.exit(2);
@@ -374,4 +567,21 @@ if (require.main === module) {
   });
 }
 
-module.exports = { KINDS, USAGE, buildQuery, dateFields, parseArgs, readState, repush, validate, writeState };
+module.exports = {
+  KINDS,
+  USAGE,
+  buildQuery,
+  dateFields,
+  pacerFor,
+  parseArgs,
+  kindJob,
+  planKind,
+  rateMeter,
+  readIds,
+  readState,
+  repush,
+  runKinds,
+  statePathFor,
+  validate,
+  writeState
+};

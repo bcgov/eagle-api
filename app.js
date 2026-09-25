@@ -34,6 +34,7 @@ var swaggerSpec      = YAML.load(fs.readFileSync('./api/swagger/swagger.yaml', '
 const rateLimit      = require('express-rate-limit');
 const rateLimitKey   = require('./api/helpers/rateLimitKey');
 const analytics      = require('./api/helpers/analytics');
+const pushClient     = require('./api/helpers/pushClient');
 
 var api_default_port = 3000;
 
@@ -231,6 +232,7 @@ async function shutdown() {
     defaultLog.info('Shutting down gracefully');
     express_server.close(() => {
       defaultLog.info('Closed out remaining connections');
+      pushClient.logUnsent();
       process.exit(0);
     });
   }

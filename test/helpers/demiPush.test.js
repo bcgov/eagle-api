@@ -189,23 +189,30 @@ describe('DemiPush Helper', () => {
 
     it('should resolve false and log once when fetch throws', async () => {
       fetchStub.rejects(new Error('ECONNREFUSED'));
-      const landed = await demiPush.project({ _id: 'p1' });
+      const clock = sinon.useFakeTimers();
+      const pending = demiPush.project({ _id: 'p1' });
+      await clock.runAllAsync();
+      const landed = await pending;
 
       expect(landed).to.be.false;
+      expect(fetchStub.callCount).to.equal(2);
       expect(errorStub.calledOnce).to.be.true;
       const [message, meta] = errorStub.firstCall.args;
-      expect(message).to.equal('[demiPush] projects p1 failed');
+      expect(message).to.equal('[demiPush] push-dropped projects p1: failed');
       expect(meta.error).to.equal('ECONNREFUSED');
       expect(meta.stack).to.be.a('string');
     });
 
     it('should retry once on a 5xx', async () => {
       fetchStub.resolves(failResponse(500));
-      const landed = await demiPush.project({ _id: 'p1' });
+      const clock = sinon.useFakeTimers();
+      const pending = demiPush.project({ _id: 'p1' });
+      await clock.runAllAsync();
+      const landed = await pending;
 
       expect(landed).to.be.false;
       expect(fetchStub.callCount).to.equal(2);
-      expect(errorStub.calledOnceWith('[demiPush] projects p1 rejected 500')).to.be.true;
+      expect(errorStub.calledOnceWith('[demiPush] push-dropped projects p1: rejected 500')).to.be.true;
     });
 
     it('should not retry on a 4xx', async () => {
@@ -214,7 +221,7 @@ describe('DemiPush Helper', () => {
 
       expect(landed).to.be.false;
       expect(fetchStub.callCount).to.equal(1);
-      expect(errorStub.calledOnceWith('[demiPush] projects p1 rejected 404')).to.be.true;
+      expect(errorStub.calledOnceWith('[demiPush] push-dropped projects p1: rejected 404')).to.be.true;
     });
 
 
@@ -450,8 +457,17 @@ describe('DemiPush Helper', () => {
       expect(landed).to.be.false;
       expect(fetchStub.called).to.be.false;
       expect(errorStub.calledOnce).to.be.true;
-      expect(errorStub.firstCall.args[0]).to.equal('[demiPush] project push failed');
+      expect(errorStub.firstCall.args[0]).to.equal(`[demiPush] push-dropped projects ${projectDoc()._id}: failed`);
       expect(errorStub.firstCall.args[1].error).to.equal('mongo down');
+    });
+
+    it('should log a config push that throws before it is sent as dropped', async () => {
+      const body = { get ENVIRONMENT() { throw new Error('unreadable body'); } };
+
+      expect(await demiPush.config(body)).to.be.false;
+      expect(fetchStub.called).to.be.false;
+      expect(errorStub.calledOnceWith('[demiPush] push-dropped config public: failed')).to.be.true;
+      expect(errorStub.firstCall.args[1].error).to.equal('unreadable body');
     });
 
     it('should not push an Update without a document or an _id', async () => {
@@ -601,7 +617,7 @@ describe('DemiPush Helper', () => {
       fetchStub.resolves(failResponse(404));
 
       expect(await demiPush.config({ ENVIRONMENT: 'test' })).to.be.false;
-      expect(errorStub.calledOnceWith('[demiPush] config public rejected 404')).to.be.true;
+      expect(errorStub.calledOnceWith('[demiPush] push-dropped config public: rejected 404')).to.be.true;
     });
 
     describe('one push at a time per record', () => {
