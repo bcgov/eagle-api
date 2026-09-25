@@ -284,9 +284,10 @@ describe('Analytics Helper', () => {
       const clock = sinon.useFakeTimers();
 
       analytics.trackEvent('Search Executed', { dataset: 'Document' });
-      await clock.tickAsync(5000);
+      // The 5 s flush, then pushClient's retry pause of at most 2 s.
+      await clock.tickAsync(7000);
 
-      expect(errorStub.args.map(args => args[0])).to.include('[analytics] 1 events failed');
+      expect(errorStub.args.map(args => args[0])).to.include('[analytics] push-dropped 1 events: failed');
       expect(analytics._buffers.events.rows).to.have.lengthOf(0);
     });
   });

@@ -347,11 +347,23 @@ describe('DEMI push call sites', () => {
   // A lost re-read leaves DEMI on the pre-write state. The write itself stands, so the only way to
   // notice is the log line.
   describe('re-read failures before a DEMI push', () => {
-    let warn;
+    // The DEMI route each model pushes to, which is what the push-dropped line names.
+    const ROUTE = { Comment: 'comments', CommentPeriod: 'commentperiods', Project: 'projects' };
+    let error;
+    let originalEnv;
 
+    // A drop is only logged when pushes are on.
     beforeEach(() => {
-      warn = sinon.stub(winston.loggers.get('default'), 'warn');
+      originalEnv = { base: process.env.DEMI_API_BASE, key: process.env.DEMI_APIM_KEY };
+      process.env.DEMI_API_BASE = 'https://demi.test';
+      process.env.DEMI_APIM_KEY = 'test-key';
+      error = sinon.stub(winston.loggers.get('default'), 'error');
       models.Project.findOne.resolves({ _id: OID, pins: [OID] });
+    });
+
+    afterEach(() => {
+      if (originalEnv.base === undefined) { delete process.env.DEMI_API_BASE; } else { process.env.DEMI_API_BASE = originalEnv.base; }
+      if (originalEnv.key === undefined) { delete process.env.DEMI_APIM_KEY; } else { process.env.DEMI_APIM_KEY = originalEnv.key; }
     });
 
     [
@@ -369,7 +381,7 @@ describe('DEMI push call sites', () => {
 
         expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
         expect(demiPush[kind].calledOnceWithExactly(null)).to.be.true;
-        expect(warn.calledWithMatch(`${modelName} ${OID} re-read failed`)).to.be.true;
+        expect(error.calledWithMatch(`[demiPush] push-dropped ${ROUTE[modelName]} ${OID}: failed (re-read failed)`)).to.be.true;
       });
     });
 
@@ -380,7 +392,7 @@ describe('DEMI push call sites', () => {
 
       expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
       expect(demiPush.comment.calledOnceWithExactly(null)).to.be.true;
-      expect(warn.calledWithMatch(`Comment ${OID} not found on re-read`)).to.be.true;
+      expect(error.calledWithMatch(`[demiPush] push-dropped comments ${OID}: failed (not found on re-read)`)).to.be.true;
     });
   });
 

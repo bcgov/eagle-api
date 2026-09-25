@@ -3,7 +3,9 @@
 const mongoose = require('mongoose');
 const defaultLog = require('winston').loggers.get('default');
 
-const client = require('./pushClient')({
+const pushClient = require('./pushClient');
+
+const client = pushClient({
   name: 'demiPush',
   baseEnv: 'DEMI_API_BASE',
   keyEnv: 'DEMI_APIM_KEY',
@@ -157,6 +159,9 @@ const MODEL_BY_KIND = {
   notifications: 'ProjectNotification',
   updates: 'RecentActivity'
 };
+const KIND_BY_MODEL = Object.fromEntries(Object.entries(MODEL_BY_KIND).map(([kind, model]) => [model, kind]));
+
+const dropped = (kind, id, reason, meta) => pushClient.logDropped('demiPush', `${kind} ${id}`, reason, meta);
 
 // One push in flight per record. DEMI takes the last writer, so two mirrors of the same record
 // racing each other (save-and-publish fires both) could otherwise land in the wrong order.
@@ -190,10 +195,15 @@ async function readById(model, id) {
 // on the pre-write state, so it is logged; the caller's own HTTP response is unaffected.
 exports.freshDoc = async function (model, id) {
   const read = await readById(model, id);
+  // With pushes off nothing would have been sent, so a miss is not a dropped push.
+  if (!client.configured()) {
+    return read.doc || null;
+  }
+  const kind = KIND_BY_MODEL[model.modelName] || model.modelName;
   if (read.error) {
-    defaultLog.warn(`[demiPush] skipping push: ${model.modelName} ${id} re-read failed`, { error: read.error.message });
+    dropped(kind, id, 'failed (re-read failed)', { error: read.error.message });
   } else if (!read.doc) {
-    defaultLog.warn(`[demiPush] skipping push: ${model.modelName} ${id} not found on re-read`);
+    dropped(kind, id, 'failed (not found on re-read)');
   }
   return read.doc || null;
 };
@@ -239,7 +249,7 @@ function push(kind, id, body) {
 
 // Every mirror runs through here. `extra` says what the stored document cannot: a hard delete
 // leaves nothing to re-read, so the caller's own copy carries the marker instead.
-function mirrorPush(kind, label, doc, extra, buildBody) {
+function mirrorPush(kind, doc, extra, buildBody) {
   if (!client.configured() || !doc || !doc._id) {
     return Promise.resolve(true);
   }
@@ -252,7 +262,7 @@ function mirrorPush(kind, label, doc, extra, buildBody) {
       const body = Object.assign(toPushBody(current), extra);
       return await push(kind, id, Object.assign(await buildBody(body), { pushedAt }));
     } catch (err) {
-      defaultLog.error(`[demiPush] ${label} push failed`, { error: err.message, stack: err.stack });
+      dropped(kind, id, 'failed', { error: err.message, stack: err.stack });
       return false;
     }
   });
@@ -261,14 +271,14 @@ function mirrorPush(kind, label, doc, extra, buildBody) {
 // Every export resolves true when the body landed or there was nothing to send, false when it did
 // not. Controllers ignore it — they never await — but a backfill has to know what to retry.
 exports.project = function (doc) {
-  return mirrorPush('projects', 'project', doc, null, async body => {
+  return mirrorPush('projects', doc, null, async body => {
     await enrichProject(body);
     return { doc: body };
   });
 };
 
 exports.document = function (doc, extra) {
-  return mirrorPush('documents', 'document', doc, extra, async body => {
+  return mirrorPush('documents', doc, extra, async body => {
     const lists = await listEntries();
     const labels = {};
     for (const field of LABEL_FIELDS) {
@@ -282,21 +292,21 @@ exports.document = function (doc, extra) {
 };
 
 exports.recentActivity = function (doc) {
-  return mirrorPush('updates', 'recentActivity', doc, null, body => ({ doc: body }));
+  return mirrorPush('updates', doc, null, body => ({ doc: body }));
 };
 
 // Kinds that need no lookup: the stored document is the whole payload, read[] included, and DEMI
 // derives visibility from it.
-function mirror(kind, label) {
+function mirror(kind) {
   return function (doc, extra) {
-    return mirrorPush(kind, label, doc, extra, body => ({ doc: body }));
+    return mirrorPush(kind, doc, extra, body => ({ doc: body }));
   };
 }
 
-exports.commentPeriod = mirror('commentperiods', 'commentPeriod');
-exports.comment = mirror('comments', 'comment');
-exports.organization = mirror('organizations', 'organization');
-exports.projectNotification = mirror('notifications', 'projectNotification');
+exports.commentPeriod = mirror('commentperiods');
+exports.comment = mirror('comments');
+exports.organization = mirror('organizations');
+exports.projectNotification = mirror('notifications');
 
 // One config document, one id, and `body` is already the payload GET /api/config served — no
 // `{ doc }` envelope, because there is no _id here for DEMI to match the path against.
@@ -308,7 +318,7 @@ exports.config = function (body) {
     try {
       return await push('config', 'public', Object.assign({}, body, { pushedAt: Date.now() }));
     } catch (err) {
-      defaultLog.error('[demiPush] config push failed', { error: err.message, stack: err.stack });
+      dropped('config', 'public', 'failed', { error: err.message, stack: err.stack });
       return false;
     }
   });
