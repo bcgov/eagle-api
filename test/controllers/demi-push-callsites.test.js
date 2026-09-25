@@ -350,10 +350,20 @@ describe('DEMI push call sites', () => {
     // The DEMI route each model pushes to, which is what the push-dropped line names.
     const ROUTE = { Comment: 'comments', CommentPeriod: 'commentperiods', Project: 'projects' };
     let error;
+    let originalEnv;
 
+    // A drop is only logged when pushes are on.
     beforeEach(() => {
+      originalEnv = { base: process.env.DEMI_API_BASE, key: process.env.DEMI_APIM_KEY };
+      process.env.DEMI_API_BASE = 'https://demi.test';
+      process.env.DEMI_APIM_KEY = 'test-key';
       error = sinon.stub(winston.loggers.get('default'), 'error');
       models.Project.findOne.resolves({ _id: OID, pins: [OID] });
+    });
+
+    afterEach(() => {
+      if (originalEnv.base === undefined) { delete process.env.DEMI_API_BASE; } else { process.env.DEMI_API_BASE = originalEnv.base; }
+      if (originalEnv.key === undefined) { delete process.env.DEMI_APIM_KEY; } else { process.env.DEMI_APIM_KEY = originalEnv.key; }
     });
 
     [

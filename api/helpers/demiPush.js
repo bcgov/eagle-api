@@ -195,6 +195,10 @@ async function readById(model, id) {
 // on the pre-write state, so it is logged; the caller's own HTTP response is unaffected.
 exports.freshDoc = async function (model, id) {
   const read = await readById(model, id);
+  // With pushes off nothing would have been sent, so a miss is not a dropped push.
+  if (!client.configured()) {
+    return read.doc || null;
+  }
   const kind = KIND_BY_MODEL[model.modelName] || model.modelName;
   if (read.error) {
     dropped(kind, id, 'failed (re-read failed)', { error: read.error.message });

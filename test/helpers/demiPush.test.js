@@ -151,6 +151,16 @@ describe('DemiPush Helper', () => {
       });
     });
 
+    it('should not log a dropped push when a re-read misses or fails with DEMI_API_BASE unset', async () => {
+      delete process.env.DEMI_API_BASE;
+      const missing = { modelName: 'Document', findById: sinon.stub().resolves(null) };
+      const failing = { modelName: 'Document', findById: sinon.stub().rejects(new Error('boom')) };
+
+      expect(await demiPush.freshDoc(missing, 'd1')).to.be.null;
+      expect(await demiPush.freshDoc(failing, 'd2')).to.be.null;
+      expect(errorStub.called).to.be.false;
+    });
+
     it('should stay dark and warn once per process when DEMI_APIM_KEY is unset', async () => {
       process.env.DEMI_API_BASE = BASE;
       delete process.env.DEMI_APIM_KEY;
