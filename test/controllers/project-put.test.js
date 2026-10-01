@@ -130,4 +130,129 @@ describe('Project protectedPut', () => {
     expect(fields.legislation_2002.name).to.equal('Renamed Project');
     expect(fields.legislation_2002.description).to.equal('new description');
   });
+
+  it('does not add a year sent as a string that the list already holds', async () => {
+    const args = putArgs();
+    args.swagger.params.ProjObject.value.legislationYear = '2018';
+
+    await projectController.protectedPut(args, res);
+
+    const fields = updateArg().$set;
+    expect(fields.legislationYearList).to.deep.equal([2018]);
+    expect(fields.currentLegislationYear).to.equal('legislation_2018');
+  });
+
+  it('answers 404 and writes nothing for a year that is not a known Act', async () => {
+    const args = putArgs();
+    args.swagger.params.ProjObject.value.legislationYear = 2019;
+
+    await projectController.protectedPut(args, res);
+
+    expect(res.status.firstCall.args[0]).to.equal(404);
+    expect(projectModel.findOneAndUpdate.called).to.be.false;
+  });
+
+  describe('on a Building Canada Act project', () => {
+    beforeEach(() => {
+      storedProject.currentLegislationYear = 'legislation_2025';
+      storedProject.legislationYearList = [2025];
+      delete storedProject.legislation_2018;
+      storedProject.legislation_2025 = {
+        name: 'Harbour Crossing',
+        description: 'old description',
+        phaseHistory: []
+      };
+    });
+
+    it('writes the 2025 block when the request names 2025', async () => {
+      const args = putArgs();
+      args.swagger.params.ProjObject.value.legislationYear = 2025;
+
+      await projectController.protectedPut(args, res);
+
+      const fields = updateArg().$set;
+      expect(res.status.firstCall.args[0]).to.equal(200);
+      expect(fields.currentLegislationYear).to.equal('legislation_2025');
+      expect(fields.legislation_2025.name).to.equal('Renamed Project');
+      expect(fields.legislation_2025.legislation).to.equal('Building Canada Act');
+      expect(fields.legislationYearList).to.deep.equal([2025]);
+    });
+
+    it('writes the 2025 block when the request names no year', async () => {
+      const args = putArgs();
+      delete args.swagger.params.ProjObject.value.legislationYear;
+
+      await projectController.protectedPut(args, res);
+
+      const fields = updateArg().$set;
+      expect(res.status.firstCall.args[0]).to.equal(200);
+      expect(fields.currentLegislationYear).to.equal('legislation_2025');
+      expect(fields.legislation_2025.name).to.equal('Renamed Project');
+    });
+
+    [2018, 2019].forEach(year => {
+      it(`refuses with 409 and writes nothing when the request names ${year}`, async () => {
+        const args = putArgs();
+        args.swagger.params.ProjObject.value.legislationYear = year;
+
+        await projectController.protectedPut(args, res);
+
+        expect(res.status.firstCall.args[0]).to.equal(409);
+        expect(res.json.firstCall.args[0]).to.deep.equal({ message: 'Project is under the Building Canada Act' });
+        expect(projectModel.findOneAndUpdate.called).to.be.false;
+        expect(demiPush.project.called).to.be.false;
+      });
+    });
+
+    it('does not add the Building Canada Act condition to the write filter when the request names 2025', async () => {
+      const args = putArgs();
+      args.swagger.params.ProjObject.value.legislationYear = 2025;
+
+      await projectController.protectedPut(args, res);
+
+      expect(projectModel.findOneAndUpdate.firstCall.args[0]).to.not.have.property('currentLegislationYear');
+    });
+  });
+
+  it('answers 404 and writes nothing when the project does not exist', async () => {
+    projectModel.findById.resolves(null);
+
+    await projectController.protectedPut(putArgs(), res);
+
+    expect(res.status.firstCall.args[0]).to.equal(404);
+    expect(projectModel.findOneAndUpdate.called).to.be.false;
+    expect(demiPush.project.called).to.be.false;
+  });
+
+  describe('when the project moves under the Building Canada Act between the read and the write', () => {
+    beforeEach(() => {
+      // The stored project no longer matches the write filter.
+      projectModel.findOneAndUpdate.resolves(null);
+      projectModel.exists = sinon.stub().resolves({ _id: PROJ_ID });
+    });
+
+    it('writes only where the stored project is not under the Building Canada Act', async () => {
+      await projectController.protectedPut(putArgs(), res);
+
+      expect(projectModel.findOneAndUpdate.firstCall.args[0].currentLegislationYear).to.deep.equal({ $nin: ['legislation_2025'] });
+    });
+
+    it('refuses with 409 and pushes nothing', async () => {
+      await projectController.protectedPut(putArgs(), res);
+
+      expect(res.status.firstCall.args[0]).to.equal(409);
+      expect(res.json.firstCall.args[0]).to.deep.equal({ message: 'Project is under the Building Canada Act' });
+      expect(projectModel.exists.firstCall.args[0].currentLegislationYear).to.deep.equal({ $in: ['legislation_2025'] });
+      expect(demiPush.project.called).to.be.false;
+    });
+
+    it('still answers 404 when the project was deleted instead', async () => {
+      projectModel.exists.resolves(null);
+
+      await projectController.protectedPut(putArgs(), res);
+
+      expect(res.status.firstCall.args[0]).to.equal(404);
+      expect(res.json.firstCall.args[0]).to.deep.equal({});
+    });
+  });
 });

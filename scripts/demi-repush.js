@@ -28,6 +28,7 @@ const mongoose = require('mongoose');
 const appHelper = require('../app_helper');
 const demiPush = require('../api/helpers/demiPush');
 const pushClient = require('../api/helpers/pushClient');
+const { LEGISLATION_KEYS } = require('../api/helpers/constants');
 const { buildMongoUri } = require('../config/mongo_uri');
 const { mongooseOptions } = require('../config/mongoose_options');
 
@@ -58,7 +59,7 @@ const KINDS = {
     model: 'Project',
     schemaName: 'Project',
     push: 'project',
-    sinceFields: ['legislation_1996.dateUpdated', 'legislation_2002.dateUpdated', 'legislation_2018.dateUpdated']
+    sinceFields: LEGISLATION_KEYS.map(key => key + '.dateUpdated')
   },
   document: { model: 'Document', schemaName: 'Document', push: 'document', sinceFields: ['_updatedDate', 'dateUploaded'] },
   commentPeriod: { model: 'CommentPeriod', schemaName: 'CommentPeriod', push: 'commentPeriod', sinceFields: ['dateUpdated', 'dateAdded'] },

@@ -74,12 +74,17 @@ describe('Analytics call sites', () => {
   let res, saved, models;
 
   function model() {
-    const M = function (init) { Object.assign(this, init || {}); this.legislationYearList = []; };
+    const M = function (init) { Object.assign(this, init || {}); this.legislationYearList = this.legislationYearList || []; };
     M.prototype.save = () => Promise.resolve(saved);
-    const stored = () => new M({ _id: OID, project: PROJ, legislation_2002: { phaseHistory: '' }, currentLegislationYear: 'legislation_2002' });
+    // project.protectedPublish only switches to a year the project lists and has a named block for.
+    const stored = () => new M({
+      _id: OID, project: PROJ, legislation_2002: { name: 'X', phaseHistory: '' },
+      currentLegislationYear: 'legislation_2002', legislationYearList: [2002]
+    });
     M.findOne = sinon.stub().callsFake(() => Promise.resolve(stored()));
     M.findById = sinon.stub().callsFake(() => Promise.resolve(stored()));
     M.findOneAndUpdate = sinon.stub().resolves(saved);
+    M.exists = sinon.stub().resolves(null);
     M.findOneAndDelete = sinon.stub().resolves(saved);
     M.countDocuments = sinon.stub().resolves(0);
     M.updateOne = sinon.stub().resolves({ nModified: 1 });

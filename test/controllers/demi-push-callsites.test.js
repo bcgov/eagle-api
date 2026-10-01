@@ -93,13 +93,14 @@ describe('DEMI push call sites', () => {
   let res, saved, models;
 
   function model(modelName) {
-    const M = function (init) { Object.assign(this, init || {}); this.legislationYearList = []; };
+    const M = function (init) { Object.assign(this, init || {}); this.legislationYearList = this.legislationYearList || []; };
     M.modelName = modelName;
     M.prototype.save = () => Promise.resolve(saved);
-    // dateCompleted keeps comment.unProtectedPost inside the period; read[] is what publish toggles
+    // dateCompleted keeps comment.unProtectedPost inside the period; read[] is what publish toggles.
+    // project.protectedPublish only switches to a year the project lists and has a named block for.
     const stored = () => new M({
       _id: OID, project: OID, read: [], dateCompleted: new Date(Date.now() + 86400000),
-      legislation_2002: { phaseHistory: '' }, currentLegislationYear: 'legislation_2002'
+      legislation_2002: { name: 'X', phaseHistory: '' }, currentLegislationYear: 'legislation_2002', legislationYearList: [2002]
     });
     // recentActivity.protectedPut reads the stored row with .lean() before validating the merge
     M.findOne = sinon.stub().callsFake(() => {

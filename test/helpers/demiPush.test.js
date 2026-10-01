@@ -9,6 +9,8 @@ const sinon = require('sinon');
 const mongoose = require('mongoose');
 const winston = require('winston');
 
+const { LEGISLATION_KEYS } = require('../../api/helpers/constants');
+
 const DEMI_PUSH_PATH = require.resolve('../../api/helpers/demiPush');
 const defaultLog = winston.loggers.get('default');
 
@@ -433,6 +435,60 @@ describe('DemiPush Helper', () => {
       expect(doc.legislation_2002.applicableRegulation).to.deep.equal({ _id: REGULATION, name: null, item: null });
       expect(doc.legislation_2002.proponentName).to.be.null;
       expect(doc.legislation_2002.proponentId).to.equal(PROPONENT);
+    });
+
+    it('should enrich a Building Canada Act block and pass its null refs through', async () => {
+      stubModels(LISTS, ORGS);
+      fetchStub.resolves(okResponse());
+      const project = {
+        _id: 'p25',
+        currentLegislationYear: 'legislation_2025',
+        pins: [],
+        legislation_2025: {
+          name: 'Harbour Crossing',
+          proponent: PROPONENT,
+          applicableRegulation: REGULATION,
+          currentPhaseName: PHASE,
+          phaseHistory: [PAST_PHASE],
+          eacDecision: null,
+          CEAAInvolvement: null
+        }
+      };
+
+      await demiPush.project(project);
+
+      const block = pushedDoc().legislation_2025;
+      expect(block.name).to.equal('Harbour Crossing');
+      expect(block.proponentId).to.equal(PROPONENT);
+      expect(block.proponentName).to.equal('Acme Mining');
+      expect(block.applicableRegulation).to.deep.equal({
+        _id: REGULATION, name: 'Reviewable Projects Regulation', item: 'https://www.bclaws.ca/rpr'
+      });
+      expect(block.currentPhaseName).to.deep.equal({
+        _id: PHASE, name: 'Application Review', type: 'projectPhase', legislation: 2002
+      });
+      expect(block.phaseHistory).to.deep.equal([
+        { _id: PAST_PHASE, name: 'Pre-Application', type: 'projectPhase', legislation: 2002 }
+      ]);
+      expect(block.eacDecision).to.equal(null);
+      expect(block.CEAAInvolvement).to.equal(null);
+      // the caller's block is left as it was handed in
+      expect(project.legislation_2025.currentPhaseName).to.equal(PHASE);
+      expect(project.legislation_2025).to.not.have.property('proponentName');
+    });
+
+    // Guard: a new registry Act must be copied (toPushBody) and enriched (enrichProject) like the others.
+    LEGISLATION_KEYS.forEach(key => {
+      it(`should copy and enrich a ${key} block without touching the caller's`, async () => {
+        stubModels(LISTS, ORGS);
+        fetchStub.resolves(okResponse());
+        const project = { _id: 'p1', currentLegislationYear: key, pins: [], [key]: { name: 'Any', proponent: PROPONENT } };
+
+        await demiPush.project(project);
+
+        expect(pushedDoc()[key].proponentName).to.equal('Acme Mining');
+        expect(project[key]).to.not.have.property('proponentName');
+      });
     });
 
     it('should not mutate the project it was handed', async () => {

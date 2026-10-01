@@ -4,6 +4,7 @@ var qs = require('qs');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 var demiPush = require('../helpers/demiPush');
+const { LEGISLATIONS, DEFAULT_LEGISLATION_YEAR, LOCKED_KEYS, legislationKey, legislationYearOf } = require('../helpers/constants');
 var tagList = [
   'CEAAInvolvement',
   'CELead',
@@ -396,8 +397,9 @@ exports.protectedDelete = async function (args, res) {
 exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.project.value;
 
-  // default project creation is set to 2002 right now for backwards compatibility with other apps that use this api
-  var projectLegislationYear = obj.legislationYear ? obj.legislationYear : 2002;
+  // The registry default (2002) keeps older callers that send no year working.
+  var projectLegislationYear = obj.legislationYear ? Number(obj.legislationYear) : DEFAULT_LEGISLATION_YEAR;
+  const blockKey = legislationKey(projectLegislationYear);
 
   defaultLog.info('Incoming new object:', obj);
 
@@ -405,18 +407,10 @@ exports.protectedPost = async function (args, res) {
   var project;
   var projectData;
 
-  if (projectLegislationYear == 2018) {
-    project = new Project({ legislation_2018: obj });
-    projectData = project.legislation_2018;
-    projectData.legislation = '2018 Environmental Assessment Act';
-  } else if (projectLegislationYear == 2002) {
-    project = new Project({ legislation_2002: obj });
-    projectData = project.legislation_2002;
-    projectData.legislation = '2002 Environmental Assessment Act';
-  } else if (projectLegislationYear == 1996) {
-    project = new Project({ legislation_1996: obj });
-    projectData = project.legislation_1996;
-    projectData.legislation = '1996 Environmental Assessment Act';
+  if (blockKey) {
+    project = new Project({ [blockKey]: obj });
+    projectData = project[blockKey];
+    projectData.legislation = LEGISLATIONS[projectLegislationYear].label;
   }
 
   if (!project) {
@@ -425,7 +419,7 @@ exports.protectedPost = async function (args, res) {
   }
 
   //Need to add this logic to the put because we will only hit a post on a net new project
-  project.currentLegislationYear = 'legislation_' + projectLegislationYear;
+  project.currentLegislationYear = blockKey;
   project.legislationYearList.push(projectLegislationYear);
 
   if (!mongoose.Types.ObjectId.isValid(obj.proponent)
@@ -461,17 +455,11 @@ exports.protectedPost = async function (args, res) {
   projectData._createdBy = args.swagger.params.auth_payload.preferred_username;
   projectData.createdDate = Date.now();
 
-  if (projectLegislationYear == 2018) {
-    project.legislation_2018 = projectData;
-  } else if (projectLegislationYear == 2002) {
-    project.legislation_2002 = projectData;
-  } else if (projectLegislationYear == 1996) {
-    project.legislation_1996 = projectData;
-  }
+  project[blockKey] = projectData;
 
   // Currently this will save based on the entire project model.
-  // Meaning there will be three project legislation keys ( legislation_1996, legislation_2002, legislation_2018) only one of which will be populated with data.
-  // The other two keys will be full of null values, as well as any other fields that are in the project model and are not explicitly defined above.
+  // Meaning there will be one project legislation key per year in LEGISLATIONS, only one of which will be populated with data.
+  // The other keys will be full of null values, as well as any other fields that are in the project model and are not explicitly defined above.
   project.save()
     .then(function (theProject) {
       Utils.recordAction('Post', 'Project', args.swagger.params.auth_payload.preferred_username, theProject._id, args);
@@ -593,6 +581,20 @@ exports.protectedExtensionUpdate = async function (args, res) {
 
 
 
+// The admin forms only know the B.C. Acts, so saving one would move a project off a locked Act (registry `locked`).
+const refusesLegislationChange = (project, requestedYear) =>
+  LOCKED_KEYS.includes(project.currentLegislationYear) && Boolean(requestedYear)
+    && Number(requestedYear) !== legislationYearOf(project.currentLegislationYear);
+const actLabels = keys => keys.map(key => 'the ' + LEGISLATIONS[legislationYearOf(key)].label).join(' or ');
+const lockedActRefusal = keys => ({ message: 'Project is under ' + actLabels(keys) });
+// A write to `blockKey` re-checks these at write time: the lock check above it read an earlier copy.
+const lockedKeysOtherThan = blockKey => LOCKED_KEYS.filter(key => key !== blockKey);
+const movedUnderLockedAct = (Project, _id, keys) =>
+  keys.length > 0 && Project.exists({ _id, currentLegislationYear: { $in: keys } });
+// save() reports a filter miss as VersionError, not DocumentNotFoundError, when it also bumps the version (`read` push).
+const saveMatchedNothing = err =>
+  err instanceof mongoose.Error.DocumentNotFoundError || err instanceof mongoose.Error.VersionError;
+
 // Update an existing project
 exports.protectedPut = async function (args, res) {
   var objId = args.swagger.params.projId.value;
@@ -606,31 +608,36 @@ exports.protectedPut = async function (args, res) {
 
   // get full project object to retain existing data
   var fullProjectObject = await Project.findById(new mongoose.Types.ObjectId(objId));
+  if (!fullProjectObject) {
+    defaultLog.info('protectedPut: project %s not found', objId);
+    return Actions.sendResponse(res, 404, {});
+  }
 
   var projectLegislationYear;
   var filteredData;
 
+  if (refusesLegislationChange(fullProjectObject, projectObj.legislationYear)) {
+    const current = [fullProjectObject.currentLegislationYear];
+    defaultLog.warn('protectedPut refused: project %s is under %s, request named %s', objId, actLabels(current), projectObj.legislationYear);
+    return Actions.sendResponse(res, 409, lockedActRefusal(current));
+  }
+
   // if project legislation doesn't exist then look up current legislation for the project
   if (projectObj.legislationYear) {
-    projectLegislationYear = projectObj.legislationYear;
+    projectLegislationYear = Number(projectObj.legislationYear);
     // check if the passed in project year exists in the legislation year list
     if (!fullProjectObject.legislationYearList.includes(projectLegislationYear)) {
       fullProjectObject.legislationYearList.push(projectLegislationYear);
     }
   } else {
     // look up the current project legislation
-    projectLegislationYear = fullProjectObject.currentLegislationYear.split('_')[1];
+    projectLegislationYear = legislationYearOf(fullProjectObject.currentLegislationYear);
   }
 
-  if (projectLegislationYear == 2018) {
-    filteredData = fullProjectObject.legislation_2018;
-    filteredData.legislation = '2018 Environmental Assessment Act';
-  } else if (projectLegislationYear == 2002) {
-    filteredData = fullProjectObject.legislation_2002;
-    filteredData.legislation = '2002 Environmental Assessment Act';
-  } else if (projectLegislationYear == 1996) {
-    filteredData = fullProjectObject.legislation_1996;
-    filteredData.legislation = '1996 Environmental Assessment Act';
+  const blockKey = legislationKey(projectLegislationYear);
+  if (blockKey) {
+    filteredData = fullProjectObject[blockKey];
+    filteredData.legislation = LEGISLATIONS[projectLegislationYear].label;
   }
 
   if (!filteredData) {
@@ -714,21 +721,28 @@ exports.protectedPut = async function (args, res) {
   // Write back only the fields this handler rebuilt. Sending the whole document read at the top
   // would restore its `read` array over a publish that landed since (api/helpers/actions.js).
   var update = {
-    currentLegislationYear: 'legislation_' + projectLegislationYear,
+    currentLegislationYear: blockKey,
     legislationYearList: fullProjectObject.legislationYearList
   };
-  update['legislation_' + projectLegislationYear] = filteredData;
+  update[blockKey] = filteredData;
 
-  var doc = await Project.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(objId) }, { $set: update }, { upsert: false, returnDocument: 'after' });
-  // Project.update({ _id: new mongoose.Types.ObjectId(objId) }, { $set: updateObj }, function (err, o) {
+  var filter = { _id: new mongoose.Types.ObjectId(objId) };
+  var guardedKeys = lockedKeysOtherThan(blockKey);
+  if (guardedKeys.length) {
+    filter.currentLegislationYear = { $nin: guardedKeys };
+  }
+  var doc = await Project.findOneAndUpdate(filter, { $set: update }, { upsert: false, returnDocument: 'after' });
   if (doc) {
     Utils.recordAction('Put', 'Project', args.swagger.params.auth_payload.preferred_username, objId, args);
     demiPush.project(doc);
     return Actions.sendResponse(res, 200, doc);
-  } else {
-    defaultLog.info('Couldn\'t find that object!');
-    return Actions.sendResponse(res, 404, {});
   }
+  if (await movedUnderLockedAct(Project, filter._id, guardedKeys)) {
+    defaultLog.warn('protectedPut refused: project %s moved under %s before the write', objId, actLabels(guardedKeys));
+    return Actions.sendResponse(res, 409, lockedActRefusal(guardedKeys));
+  }
+  defaultLog.info('Couldn\'t find that object!');
+  return Actions.sendResponse(res, 404, {});
 };
 
 // Publish/Unpublish the project
@@ -746,9 +760,34 @@ exports.protectedPublish = async function (args, res) {
     const o = await Project.findOne({ _id: objId });
     if (o) {
       defaultLog.info('o:', o);
+      let guardedKeys = [];
 
       if (ProjObject && ProjObject.legislationYear) {
-        o.currentLegislationYear = 'legislation_' + ProjObject.legislationYear;
+        const year = Number(ProjObject.legislationYear);
+        if (refusesLegislationChange(o, year)) {
+          const current = [o.currentLegislationYear];
+          defaultLog.warn('protectedPublish refused: project %s is under %s, request named %s', objId, actLabels(current), ProjObject.legislationYear);
+          return Actions.sendResponse(res, 409, lockedActRefusal(current));
+        }
+        const blockKey = legislationKey(year);
+        if (!blockKey) {
+          defaultLog.warn('protectedPublish refused: project %s, unknown legislation year %s', objId, ProjObject.legislationYear);
+          return Actions.sendResponse(res, 404, { message: 'Unknown legislation year' });
+        }
+        // Naming the current year changes nothing, so it publishes as before the year check existed.
+        if (blockKey !== o.currentLegislationYear) {
+          const block = o[blockKey];
+          if (!o.legislationYearList.includes(year) || !(block && block.name)) {
+            defaultLog.warn('protectedPublish refused: project %s has no content under legislation year %s', objId, year);
+            return Actions.sendResponse(res, 409, { message: 'Project has no content under legislation year ' + year });
+          }
+          guardedKeys = lockedKeysOtherThan(blockKey);
+          if (guardedKeys.length) {
+            // Mongoose adds `$where` to the filter of this document's save().
+            o.$where = { currentLegislationYear: { $nin: guardedKeys } };
+          }
+          o.currentLegislationYear = blockKey;
+        }
       }
 
       try {
@@ -757,6 +796,10 @@ exports.protectedPublish = async function (args, res) {
         demiPush.project(published);
         return Actions.sendResponse(res, 200, published);
       } catch (err) {
+        if (saveMatchedNothing(err) && await movedUnderLockedAct(Project, o._id, guardedKeys)) {
+          defaultLog.warn('protectedPublish refused: project %s moved under %s before the write', objId, actLabels(guardedKeys));
+          return Actions.sendResponse(res, 409, lockedActRefusal(guardedKeys));
+        }
         return Actions.sendResponse(res, 500, err);
       }
     } else {

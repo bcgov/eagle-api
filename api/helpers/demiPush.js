@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const defaultLog = require('winston').loggers.get('default');
 
 const pushClient = require('./pushClient');
+const { LEGISLATION_KEYS } = require('./constants');
 
 const client = pushClient({
   name: 'demiPush',
@@ -18,7 +19,6 @@ const LABEL_FIELDS = ['type', 'milestone', 'projectPhase', 'documentAuthorType']
 // `legislation` off the phase to pick its stage rail (assessment-stages.ts); `type` rides along
 // for parity with the List row, no consumer reads it today.
 const LIST_REF_FIELDS = ['eacDecision', 'currentPhaseName', 'CEAAInvolvement'];
-const LEGISLATION_KEYS = ['legislation_1996', 'legislation_2002', 'legislation_2018'];
 
 // ponytail: memoized for process lifetime; add a TTL if List items start changing while pods are up
 let listEntriesPromise = null;

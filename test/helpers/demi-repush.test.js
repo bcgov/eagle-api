@@ -87,6 +87,19 @@ describe('demi-repush', () => {
       expect(query.$or).to.deep.equal([{ 'legislation_2018.dateUpdated': { $gte: since } }]);
     });
 
+    it('filters a project --since on every legislation block the Project schema stores, 2025 included', () => {
+      const since = new Date('2026-01-01T00:00:00.000Z');
+
+      const query = buildQuery(KINDS.project, { model: mongoose.model('Project'), since: since });
+
+      expect(query.$or).to.deep.equal([
+        { 'legislation_1996.dateUpdated': { $gte: since } },
+        { 'legislation_2002.dateUpdated': { $gte: since } },
+        { 'legislation_2018.dateUpdated': { $gte: since } },
+        { 'legislation_2025.dateUpdated': { $gte: since } }
+      ]);
+    });
+
     it('refuses --since on a kind with no date field rather than matching everything', () => {
       const call = () => buildQuery(KINDS.projectNotification, { model: fakeModel({}), since: new Date() });
 

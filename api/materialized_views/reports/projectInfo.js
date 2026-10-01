@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { legislationSwitch } = require('../../helpers/constants');
 
 async function update(defaultLog) {
   const queryAggregates = [
@@ -9,40 +10,7 @@ async function update(defaultLog) {
     },
     {
       $addFields: {
-        default: {
-          $switch: {
-            branches: [
-              {
-                case: {
-                  $eq: [
-                    "$currentLegislationYear",
-                    "legislation_1996"
-                  ]
-                },
-                then: "$legislation_1996"
-              },
-              {
-                case: {
-                  $eq: [
-                    "$currentLegislationYear",
-                    "legislation_2002"
-                  ]
-                },
-                then: "$legislation_2002"
-              },
-              {
-                case: {
-                  $eq: [
-                    "$currentLegislationYear",
-                    "legislation_2018"
-                  ]
-                },
-                then: "$legislation_2018"
-              }
-            ],
-            default: "$legislation_2002"
-          }
-        }
+        default: legislationSwitch()
       }
     },
     {

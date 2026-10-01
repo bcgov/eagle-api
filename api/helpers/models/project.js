@@ -1,6 +1,7 @@
 var mongoose = require('mongoose');
 var Mixed = mongoose.Schema.Types.Mixed;
 const defaultLog = require('winston').loggers.get('default');
+const { LEGISLATION_KEYS } = require('../constants');
 
 // legislation specific data schema
 var projectDataDefinition = {
@@ -99,9 +100,7 @@ var projectDataDefinition = {
 var projectDefinition = {
   currentLegislationYear: String,
   legislationYearList: [ Number ],
-  legislation_1996: projectDataDefinition,
-  legislation_2002: projectDataDefinition,
-  legislation_2018: projectDataDefinition,
+  ...Object.fromEntries(LEGISLATION_KEYS.map(key => [key, projectDataDefinition])),
   trackProjectId: { type: Number, unique: true, sparse: true, index: true },
   region: { type: String, default: '', index: true },
   // Permissions
@@ -152,9 +151,7 @@ nature.set = function (nature) {
 projectDefinition.virtuals__ = [nature];
 
 projectDefinition.presave__ = function() {
-  const legislations = ['legislation_1996', 'legislation_2002', 'legislation_2018'];
-
-  for (const leg of legislations) {
+  for (const leg of LEGISLATION_KEYS) {
     if (this[leg] && this[leg].centroid && this[leg].centroid.length === 2) {
       let lon = Number(this[leg].centroid[0]);
       let lat = Number(this[leg].centroid[1]);

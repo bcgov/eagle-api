@@ -274,3 +274,57 @@ describe('Update status visibility (requires MongoDB)', function () {
     expect(idsIn(feed.body.data)).to.not.include(String(PUBLISHED));
   });
 });
+
+describe('Update on a Building Canada Act project (requires MongoDB)', function () {
+  this.timeout(20000);
+
+  const BCA_PROJECT = id('58990017d334ee001d625c01');
+  const BCA_UPDATE = id('58990017d334ee001d625c02');
+
+  const BCA_FIXTURES = [
+    {
+      _id: BCA_PROJECT,
+      _schemaName: 'Project',
+      read: PUBLIC_READ,
+      currentLegislationYear: 'legislation_2025',
+      legislation_2025: { name: 'Harbour Crossing' },
+      // The empty block a POST leaves behind; the $switch fallback reads it.
+      legislation_2002: { name: '' }
+    },
+    update(BCA_UPDATE, { project: BCA_PROJECT, status: 'published', publishDate: new Date(Date.now() - DAY) }, '2026-06-05')
+  ];
+
+  before(async () => {
+    await mongoose.connect(TEST_URI);
+  });
+
+  beforeEach(async () => {
+    await mongoose.connection.collection('epic').deleteMany({});
+    await mongoose.connection.collection('epic').insertMany(BCA_FIXTURES);
+    sinon.stub(Utils, 'recordAction').resolves();
+  });
+
+  afterEach(() => sinon.restore());
+
+  after(async () => {
+    await mongoose.connection.collection('epic').deleteMany({});
+    await mongoose.disconnect();
+  });
+
+  it('GET /api/public/recentActivity carries the project name from its 2025 block', async () => {
+    const { res, body } = capture();
+    await recentActivityController.publicGet({ swagger: { params: {} } }, res);
+
+    expect(body.code).to.equal(200);
+    const row = body.data.find(item => String(item._id) === String(BCA_UPDATE));
+    expect(row.project.name).to.equal('Harbour Crossing');
+  });
+
+  it('staff search with populate carries the project name from its 2025 block', async () => {
+    const { res, body } = capture();
+    await searchController.protectedGet(searchArgs(['staff'], true), res);
+
+    const row = rowsIn(body.data).find(item => String(item._id) === String(BCA_UPDATE));
+    expect(row.project.name).to.equal('Harbour Crossing');
+  });
+});
