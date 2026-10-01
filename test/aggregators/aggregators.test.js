@@ -281,8 +281,29 @@ describe('Project Aggregator', () => {
 
     it('should handle empty string legislation', () => {
       const result = projectAggregator.createProjectAggr('');
-      
+
       expect(result).to.be.an('array');
+    });
+
+    const joinedFields = (pipeline) => pipeline.filter(stage => stage.$lookup).map(stage => stage.$lookup.localField);
+
+    it('joins the 2025 block, not the default one, for legislation 2025', () => {
+      const result = projectAggregator.createProjectAggr('2025');
+
+      expect(joinedFields(result)).to.include.members(['legislation_2025.proponent', 'legislation_2025.currentPhaseName']);
+      expect(joinedFields(result)).to.not.include('default.proponent');
+      expect(result.find(stage => stage.$addFields && stage.$addFields['legislation_2025._id'])).to.exist;
+    });
+
+    it('joins every block, 2025 included, for all legislation', () => {
+      const result = projectAggregator.createProjectAggr('all');
+
+      expect(joinedFields(result)).to.include.members([
+        'legislation_1996.proponent',
+        'legislation_2002.proponent',
+        'legislation_2018.proponent',
+        'legislation_2025.proponent'
+      ]);
     });
   });
 });

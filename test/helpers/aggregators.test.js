@@ -9,20 +9,68 @@ describe('Aggregators Helper Functions', function() {
 
 
   describe('setProjectDefault', function() {
-    it('should create $switch aggregation for all 3 legislation years', function() {
+    it('should create $switch aggregation for all 4 legislation years', function() {
       const result = aggregatorsHelper.setProjectDefault(true);
       const branches = result[0].$addFields.default.$switch.branches;
-      
-      expect(branches).to.have.lengthOf(3);
+
+      expect(branches).to.have.lengthOf(4);
       expect(branches.find(b => b.then === '$legislation_1996')).to.exist;
       expect(branches.find(b => b.then === '$legislation_2002')).to.exist;
       expect(branches.find(b => b.then === '$legislation_2018')).to.exist;
+      expect(branches.find(b => b.then === '$legislation_2025')).to.exist;
       expect(result[0].$addFields.default.$switch.default).to.equal('$legislation_2002');
     });
 
     it('should nest under project when projectOnly=false', function() {
       const result = aggregatorsHelper.setProjectDefault(false);
       expect(result[0].$addFields).to.have.property('project.default');
+    });
+  });
+
+  describe('legislationSwitch', function() {
+    const { legislationSwitch } = require('../../api/helpers/constants');
+
+    it('picks each legislation block off the project root, falling back to 2002', function() {
+      expect(legislationSwitch('')).to.deep.equal({
+        $switch: {
+          branches: [
+            { case: { $eq: ['$currentLegislationYear', 'legislation_1996'] }, then: '$legislation_1996' },
+            { case: { $eq: ['$currentLegislationYear', 'legislation_2002'] }, then: '$legislation_2002' },
+            { case: { $eq: ['$currentLegislationYear', 'legislation_2018'] }, then: '$legislation_2018' },
+            { case: { $eq: ['$currentLegislationYear', 'legislation_2025'] }, then: '$legislation_2025' }
+          ],
+          default: '$legislation_2002'
+        }
+      });
+    });
+
+    it('picks each legislation block off a joined project, falling back to 2002', function() {
+      expect(legislationSwitch('project.')).to.deep.equal({
+        $switch: {
+          branches: [
+            { case: { $eq: ['$project.currentLegislationYear', 'legislation_1996'] }, then: '$project.legislation_1996' },
+            { case: { $eq: ['$project.currentLegislationYear', 'legislation_2002'] }, then: '$project.legislation_2002' },
+            { case: { $eq: ['$project.currentLegislationYear', 'legislation_2018'] }, then: '$project.legislation_2018' },
+            { case: { $eq: ['$project.currentLegislationYear', 'legislation_2025'] }, then: '$project.legislation_2025' }
+          ],
+          default: '$project.legislation_2002'
+        }
+      });
+    });
+  });
+
+  describe('project filter terms', function() {
+    it('matches a project filter against all four legislation blocks', async function() {
+      const result = await aggregatorsHelper.generateExpArray('type=Mines', ['staff'], 'Project');
+
+      expect(result).to.deep.equal([{
+        $or: [
+          { 'legislation_1996.type': 'Mines' },
+          { 'legislation_2002.type': 'Mines' },
+          { 'legislation_2018.type': 'Mines' },
+          { 'legislation_2025.type': 'Mines' }
+        ]
+      }]);
     });
   });
 

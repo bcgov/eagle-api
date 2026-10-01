@@ -158,6 +158,7 @@ const projectShapeStages = () => [
       }
     }
   },
+  // Historic strip list, not per Act: stripping more blocks would change responses, so new Acts stay out.
   {
     '$project': {['project.legislation_2002']: 0 }
   },

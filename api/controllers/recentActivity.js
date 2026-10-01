@@ -55,14 +55,7 @@ exports.publicGet = async function (args, res) {
         { $lookup: { from: 'epic', localField: 'project._id', foreignField: '_id', as: 'projectNotification' } },
         { $unwind: { path: '$projectNotification', preserveNullAndEmptyArrays: true } },
         // Unpack legislation data into the populated project
-        { $addFields: { 'project.default': { $switch: {
-          branches: [
-            { case: { $eq: ['$project.currentLegislationYear', 'legislation_1996'] }, then: '$project.legislation_1996' },
-            { case: { $eq: ['$project.currentLegislationYear', 'legislation_2002'] }, then: '$project.legislation_2002' },
-            { case: { $eq: ['$project.currentLegislationYear', 'legislation_2018'] }, then: '$project.legislation_2018' }
-          ],
-          default: '$project.legislation_2002'
-        }}}},
+        { $addFields: { 'project.default': constants.legislationSwitch('project.') } },
         { $addFields: {
           'project.default._id': '$project._id',
           'project.default.read': '$project.read',

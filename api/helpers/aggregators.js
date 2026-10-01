@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const defaultLog = require('winston').loggers.get('default');
 
 const constants = require('../helpers/constants').schemaTypes;
+const { LEGISLATION_KEYS, legislationSwitch } = require('../helpers/constants');
 const Utils = require('../helpers/utils');
 
 // Project fields kept on the root, not in a legislation sub-document; the default unwind copies them in.
@@ -15,64 +16,12 @@ const PROJECT_ROOT_FIELDS = ['read', 'pins', 'hasMetCommentPeriods', 'pinsHistor
  * @returns {array} Aggregate with the default year set.
  */
 const setProjectDefault = (projectOnly) => {
-  const aggregation = [];
-
+  // variables are tricky for fieldpaths ie. "default"
   if (projectOnly) {
-    // variables are tricky for fieldpaths ie. "default"
-    aggregation.push(
-      {
-        $addFields: {
-          'default': {
-            $switch: {
-              branches: [
-                {
-                  case: { $eq: [ '$currentLegislationYear', 'legislation_1996' ]},
-                  then: '$legislation_1996'
-                },
-                {
-                  case: { $eq: [ '$currentLegislationYear', 'legislation_2002' ]},
-                  then: '$legislation_2002'
-                },
-                {
-                  case: { $eq: [ '$currentLegislationYear', 'legislation_2018' ]},
-                  then: '$legislation_2018'
-                }
-              ],
-              default: '$legislation_2002'
-            }
-          }
-        }
-      }
-    );
-  } else {
-    aggregation.push(
-      {
-        $addFields: {
-          'project.default': {
-            $switch: {
-              branches: [
-                {
-                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_1996' ]},
-                  then: '$project.legislation_1996'
-                },
-                {
-                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_2002' ]},
-                  then: '$project.legislation_2002'
-                },
-                {
-                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_2018' ]},
-                  then: '$project.legislation_2018'
-                }
-              //TODO: watch out for the default case. If we hit this then we will have empty projects
-              ], default: '$project.legislation_2002'
-            }
-          }
-        }
-      }
-    );
+    return [{ $addFields: { 'default': legislationSwitch() } }];
   }
-
-  return aggregation;
+  //TODO: watch out for the default case. If we hit this then we will have empty projects
+  return [{ $addFields: { 'project.default': legislationSwitch('project.') } }];
 };
 
 
@@ -356,8 +305,7 @@ const handleProjectTerms = (item) => {
   }
 
   // prepend for embedded fields
-  let legislations = ['legislation_1996', 'legislation_2002', 'legislation_2018'];
-  for (let legis of legislations) {
+  for (let legis of LEGISLATION_KEYS) {
     legislation_items.push(legis + '.' + item);
   }
 

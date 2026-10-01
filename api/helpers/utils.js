@@ -4,6 +4,7 @@ var mongoose        = require('mongoose');
 var NodeClam        = require('clamscan');
 const analytics     = require('./analytics');
 const parentRead    = require('./parentRead');
+const { legislationSwitch } = require('./constants');
 var MAX_LIMIT       = 1000;
 const defaultLog      = require('winston').loggers.get('default');
 var DEFAULT_PAGESIZE  = 25;
@@ -233,24 +234,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
       // To unpack the legislation data into the project key
       (modelType === 'Project') && {
         $addFields: {
-          'default': {
-            $switch: {
-              branches: [
-                {
-                  case: { $eq: [ '$currentLegislationYear', 'legislation_1996' ]},
-                  then: '$legislation_1996'
-                },
-                {
-                  case: { $eq: [ '$currentLegislationYear', 'legislation_2002' ]},
-                  then: '$legislation_2002'
-                },
-                {
-                  case: { $eq: [ '$currentLegislationYear', 'legislation_2018' ]},
-                  then: '$legislation_2018'
-                }
-              ], default: '$legislation_2002'
-            }
-          }
+          'default': legislationSwitch()
         }
       },
       (modelType === 'Project') &&  {
@@ -349,24 +333,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
       // To unpack the legislation data into the project key
       (modelType !== 'Project' && populateProject) && {
         $addFields: {
-          'project.default': {
-            $switch: {
-              branches: [
-                {
-                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_1996' ]},
-                  then: '$project.legislation_1996'
-                },
-                {
-                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_2002' ]},
-                  then: '$project.legislation_2002'
-                },
-                {
-                  case: { $eq: [ '$project.currentLegislationYear', 'legislation_2018' ]},
-                  then: '$project.legislation_2018'
-                }
-              ], default: '$project.legislation_2002'
-            }
-          }
+          'project.default': legislationSwitch('project.')
         }
       },
       (modelType !== 'Project' && populateProject) &&  {

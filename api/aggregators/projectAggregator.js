@@ -1,4 +1,5 @@
 const { setProjectDefault, unwindProjectData, addProjectLookupAggrs } = require('../helpers/aggregators');
+const { LEGISLATIONS, LEGISLATION_KEYS } = require('../helpers/constants');
 
 /**
  * Creates aggregation required for projects.
@@ -36,21 +37,13 @@ exports.createProjectAggr = (projectLegislation) => {
  */
 const getProjectLegislationInfo = (legislation) => {
   let projectLegislationDataKey;
-  switch (legislation) {
-  //TODO: Update this to work for future years
-  case '1996':
-  case '2002':
-  case '2018':
+  if (Object.keys(LEGISLATIONS).includes(legislation)) {
     projectLegislationDataKey = 'legislation_' + legislation;
-    break;
-  case 'all':
-    //TODO: Make this extendable. Pull from a list
-    projectLegislationDataKey = [ 'legislation_1996', 'legislation_2002', 'legislation_2018' ];
-    break;
-  default:
+  } else if (legislation === 'all') {
+    projectLegislationDataKey = LEGISLATION_KEYS;
+  } else {
     //TODO: need to know current legislation, to set proper default
     projectLegislationDataKey = 'default';
-    break;
   }
 
   return {projectLegislationDataKey, projectLegislationDataIdKey: projectLegislationDataKey + '._id'};
