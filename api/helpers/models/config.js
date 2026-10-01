@@ -1,3 +1,6 @@
+var mongoose = require('mongoose');
+var Mixed = mongoose.Schema.Types.Mixed;
+
 // Runtime configuration for the frontends, served unauthenticated by GET /api/config.
 //
 // One document. It replaces the nginx ConfigMap that rproxy used to serve from
@@ -51,5 +54,9 @@ module.exports = require('../models')('Config', {
 
   // Tells the frontends to show the access curtain. The password itself is never served here —
   // POST /api/public/gate checks it server-side.
-  ACCESS_GATE                 : { type: Boolean, default: false }
+  ACCESS_GATE                 : { type: Boolean, default: false },
+
+  // No default: absent or {} keeps the extended project page off. Eagle project id to page content
+  // key, e.g. { "<24-hex id>": "pacific-link" }; the controller drops a malformed map on read.
+  EXTENDED_PROJECT_PAGES      : { type: Mixed }
 }, 'epic');

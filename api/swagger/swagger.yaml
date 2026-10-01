@@ -137,6 +137,14 @@ definitions:
         type: boolean
         description: "True means the frontend shows the access curtain; the password is checked by POST /public/gate."
         example: false
+      EXTENDED_PROJECT_PAGES:
+        type: object
+        description: "Absent unless set. Maps an Eagle project id (24 lower-case hex characters) to the content key of its extended project page (lowercase letters, digits and hyphens, 1-40 characters), at most 50 entries. Absent or empty turns the extended project page off. A malformed map is not served: an id in any other form, upper case included, or more than 50 entries drops the whole map."
+        additionalProperties:
+          type: string
+          pattern: "^[a-z0-9-]{1,40}$"
+        example:
+          "5c3e3f8b3d5a2e001a6b7c8d": "pacific-link"
 
   Authentication:
     type: object

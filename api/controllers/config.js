@@ -46,8 +46,32 @@ var PUBLIC_KEYS = [
   'APPINSIGHTS_CONNECTION_STRING',
   'SURVEY_URL',
   'SHOW_SURVEY_BANNER',
-  'ACCESS_GATE'
+  'ACCESS_GATE',
+  'EXTENDED_PROJECT_PAGES'
 ];
+
+// EXTENDED_PROJECT_PAGES shape, the same rule DEMI applies to the pushed copy: a plain object of
+// Eagle project id to page content key, at most 50 entries.
+// Lower case only: the public site matches ids by exact string, so an upper-case id would be
+// served and never match.
+var EAGLE_OBJECT_ID = /^[0-9a-f]{24}$/;
+var CONTENT_KEY = /^[a-z0-9-]{1,40}$/;
+// Keeps the served payload small and the DEMI copy far under the Cosmos item size limit.
+var MAX_EXTENDED_PROJECT_PAGES = 50;
+
+// The malformed value last warned about (null once the key is fine), so a bad hand edit logs once,
+// not on every read.
+let lastWarnedMalformed = null;
+
+function isExtendedProjectPages(value) {
+  if (!value || typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype) {
+    return false;
+  }
+  var entries = Object.entries(value);
+  return entries.length <= MAX_EXTENDED_PROJECT_PAGES && entries.every(function ([id, contentKey]) {
+    return EAGLE_OBJECT_ID.test(id) && typeof contentKey === 'string' && CONTENT_KEY.test(contentKey);
+  });
+}
 
 /**
  * Runtime configuration for the frontends.
@@ -84,6 +108,19 @@ exports.publicGet = async function (args, res) {
         payload[key] = doc[key];
       }
     });
+
+    // A hand edit in Mongo is the only write, so a malformed map is served as absent (page off)
+    // rather than handed to anonymous callers and to DEMI. null is plain absence, not a warning.
+    var extendedPages = payload.EXTENDED_PROJECT_PAGES;
+    var isSet = extendedPages !== undefined && extendedPages !== null;
+    var malformed = isSet && !isExtendedProjectPages(extendedPages) ? JSON.stringify(extendedPages) : null;
+    if (malformed && malformed !== lastWarnedMalformed) {
+      defaultLog.warn('GET /api/config: EXTENDED_PROJECT_PAGES is not a map of up to 50 lower-case Eagle project ids to content keys; dropped');
+    }
+    lastWarnedMalformed = malformed;
+    if (extendedPages === null || malformed) {
+      delete payload.EXTENDED_PROJECT_PAGES;
+    }
 
     // Retirement shim, not a config key: both frontends merge this payload over env.js with a
     // shallow spread, and env.js bakes ANALYTICS_API_URL: '/analytics'. Omitting it would turn the
