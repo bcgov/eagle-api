@@ -23,10 +23,11 @@ exports.SUMMARY_MAX = SUMMARY_MAX;
 exports.PN_PCP_TYPE = PN_PCP_TYPE;
 
 const isBlank = value => value === undefined || value === null || String(value).trim() === '';
-const hasTag = value => /<[a-z!/][^>]*>/i.test(String(value));
+// Browsers open a tag at `<` plus a letter, `/` or `!`, so `x<y, onclick=f()>` is a tag too.
+const hasTag = value => /<[a-z/!]/i.test(String(value));
 
 // Staff bookkeeping a public reader has no use for.
-const HIDDEN_FROM_PUBLIC = ['notifiedAt', '_addedBy', '_updatedBy'];
+const HIDDEN_FROM_PUBLIC = ['notifiedAt', '_addedBy', '_updatedBy', '_deletedBy'];
 
 const isHttpUrl = value => {
   try {
@@ -138,9 +139,9 @@ exports.applyStatus = (target, update, { now = new Date(), wasLive = false } = {
  * Field checks plus, for an Update that will be published, the public check on the documents it
  * shows. `update` is the row as it will be stored, status already applied.
  */
-exports.check = async (update) => {
+exports.check = async (update, { checkDocuments = true } = {}) => {
   const errors = exports.validate(update);
-  if (!errors.length && update.status === 'published') {
+  if (!errors.length && checkDocuments && update.status === 'published') {
     const hidden = await exports.nonPublicDocumentIds(update);
     if (hidden.length) {
       errors.push(`featuredImage, images and attachments must be public documents; not public: ${hidden.join(', ')}`);
@@ -167,6 +168,18 @@ exports.imageDocumentIds = (update) => idList([
   ...(update && Array.isArray(update.images) ? update.images.map(image => image && image.document) : [])
 ]);
 
+const shownDocumentIds = update => idList([
+  ...exports.imageDocumentIds(update),
+  ...(update && Array.isArray(update.attachments) ? update.attachments : [])
+]);
+
+/**
+ * True when a published Update stays published with the same documents and only flips `pinned`.
+ */
+exports.isPinToggle = (existing, updated) => existing.status === 'published' && updated.status === 'published' &&
+  Boolean(existing.pinned) !== Boolean(updated.pinned) &&
+  shownDocumentIds(existing).sort().join() === shownDocumentIds(updated).sort().join();
+
 /**
  * Ids of the featured image, images and attachments that the public cannot read (or that do not
  * exist). An image uploaded from the Update form of the same project passes: publishing the Update
@@ -174,11 +187,14 @@ exports.imageDocumentIds = (update) => idList([
  */
 exports.nonPublicDocumentIds = async (update) => {
   const imageIds = exports.imageDocumentIds(update);
-  const ids = idList([...imageIds, ...(Array.isArray(update.attachments) ? update.attachments : [])]);
+  const ids = shownDocumentIds(update);
   if (!ids.length) {
     return [];
   }
-  const docs = await mongoose.model('Document').find({ _id: { $in: ids } }, { read: 1, documentSource: 1, project: 1 }).lean();
+  const docs = await mongoose.model('Document').find(
+    { _id: { $in: ids }, _schemaName: 'Document', isDeleted: { $ne: true } },
+    { read: 1, documentSource: 1, project: 1 }
+  ).lean();
   const passes = new Set(docs
     .filter(doc => (doc.read || []).includes('public') ||
       (doc.documentSource === exports.IMAGE_SOURCE && imageIds.includes(String(doc._id)) &&
@@ -197,6 +213,12 @@ exports.publicVisibleMatch = (now = new Date()) => ({
     { status: null, active: true }
   ]
 });
+
+/**
+ * The filter or sort keys that reach a field hidden from public callers, nested paths included.
+ */
+exports.hiddenKeys = (keys) => keys.filter(key =>
+  HIDDEN_FROM_PUBLIC.some(field => key === field || key.startsWith(`${field}.`)));
 
 exports.isPublicCaller = (roles) => !(Array.isArray(roles) ? roles : []).some(role => constants.SECURE_ROLES.includes(role));
 

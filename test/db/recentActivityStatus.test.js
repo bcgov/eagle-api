@@ -56,10 +56,11 @@ const update = (_id, fields, dateAdded) => ({
   notifiedAt: new Date(dateAdded),
   _addedBy: 'staff-author',
   _updatedBy: 'staff-editor',
+  _deletedBy: 'staff-remover',
   ...fields
 });
 
-const STAFF_FIELDS = ['notifiedAt', '_addedBy', '_updatedBy'];
+const STAFF_FIELDS = ['notifiedAt', '_addedBy', '_updatedBy', '_deletedBy'];
 
 // Rows as the response carries them, whichever shape the route returns.
 const rowsIn = (payload) => {
@@ -191,6 +192,24 @@ describe('Update status visibility (requires MongoDB)', function () {
       await searchController.protectedGet(args, res);
 
       expect(idsIn(body.data)).to.include(String(DRAFT)).and.not.include(String(ARCHIVED));
+    });
+
+    it(`staff search on status=draft,archived returns both (populate=${populate})`, async () => {
+      const args = searchArgs(['staff'], populate);
+      args.swagger.params.and = { value: 'status=draft,archived' };
+      const { res, body } = capture();
+      await searchController.protectedGet(args, res);
+
+      expect(idsIn(body.data)).to.have.members([String(DRAFT), String(ARCHIVED)]);
+    });
+
+    it(`public search cannot filter on a staff field (populate=${populate})`, async () => {
+      const args = searchArgs(['public'], populate);
+      args.swagger.params.and = { value: '_addedBy=staff-author' };
+      const { res, body } = capture();
+      await searchController.publicGet(args, res);
+
+      expect(body.code).to.equal(400);
     });
 
     it(`public search serves only published, live Updates (populate=${populate})`, async () => {

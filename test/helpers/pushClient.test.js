@@ -234,6 +234,19 @@ describe('pushClient', () => {
       expect(await pending).to.be.false;
       expect(fetchStub.called).to.be.false;
     });
+
+    it('waits on a pacer with no pause before the first try and before the 5xx retry', async () => {
+      const pacer = { acquire: sinon.stub().resolves() };
+      pushClient.setPacer(pacer);
+      fetchStub.onFirstCall().resolves(reply(503)).onSecondCall().resolves(reply(200));
+
+      const pending = client.push(`/eagle/projects/${ID}`, { doc: {} }, `projects ${ID}`);
+      await clock.runAllAsync();
+
+      expect(await pending).to.be.true;
+      expect(pacer.acquire.callCount).to.equal(2);
+      expect(pacer.acquire.secondCall.calledBefore(fetchStub.secondCall)).to.be.true;
+    });
   });
 
   describe('on other statuses', () => {
@@ -246,6 +259,15 @@ describe('pushClient', () => {
         expect(landed).to.be.false;
         expect(fetchStub.callCount).to.equal(1);
       });
+    });
+
+    it('cancels the body of a refused response so its connection is freed', async () => {
+      const cancel = sinon.stub().resolves();
+      fetchStub.resolves({ ok: false, status: 404, body: { cancel }, headers: new Map() });
+
+      await client.push(`/eagle/projects/${ID}`, { doc: {} }, `projects ${ID}`);
+
+      expect(cancel.calledOnce).to.be.true;
     });
 
     it('pauses 1 s before retrying a 5xx', async () => {

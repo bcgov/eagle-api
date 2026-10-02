@@ -180,6 +180,42 @@ describe('Search Controller', () => {
     });
   });
 
+  describe('Fields hidden from a public Update search', () => {
+    const updateSearch = (overrides) => makeArgs({ dataset: { value: 'RecentActivity' }, keywords: { value: '' }, ...overrides });
+    const publicCaller = { auth_payload: { realm_access: { roles: ['public'] }, preferred_username: 'public' } };
+
+    const probes = {
+      'an and filter on _addedBy': { and: { value: '_addedBy=jsmith' } },
+      'an or filter on _updatedBy': { or: { value: '_updatedBy=jsmith' } },
+      'a filter on _deletedBy': { and: { value: '_deletedBy=jsmith' } },
+      'a filter on a path under notifiedAt': { and: { value: 'notifiedAt.x=1' } },
+      'a sort on notifiedAt': { sortBy: { value: ['-notifiedAt'] } },
+      'a sort on _addedBy after another key': { sortBy: { value: ['-dateAdded,+_addedBy'] } }
+    };
+
+    Object.entries(probes).forEach(([label, overrides]) => {
+      it(`refuses ${label} without querying`, async () => {
+        await searchController.publicGet(updateSearch({ ...publicCaller, ...overrides }), res);
+
+        expect(res.status.calledWith(400)).to.be.true;
+        expect(modelStub.aggregate.called).to.be.false;
+      });
+    });
+
+    it('still serves a public filter on a shown field', async () => {
+      await searchController.publicGet(updateSearch({ ...publicCaller, and: { value: 'type=News' } }), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+    });
+
+    it('lets staff filter on a staff field', async () => {
+      await searchController.protectedGet(updateSearch({ and: { value: '_addedBy=jsmith' } }), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+      expect(JSON.stringify(modelStub.aggregate.firstCall.args[0][0])).to.include('"_addedBy":"jsmith"');
+    });
+  });
+
   describe('Item Aggregator Search', () => {
     it('returns item when dataset is ITEM', async () => {
       const args = makeArgs({
@@ -292,6 +328,16 @@ describe('Search Controller', () => {
       const stages = pipeline();
       expect(archivedGates(stages)).to.be.empty;
       expect(JSON.stringify(stages[0])).to.include('"status":"archived"');
+    });
+
+    it('splits a staff status filter on commas into either value', async () => {
+      await searchController.protectedGet(makeArgs({
+        dataset: { value: 'RecentActivity' },
+        keywords: { value: '' },
+        and: { value: 'status=draft,archived' }
+      }), res);
+
+      expect(pipeline()[0].$match.$and).to.deep.include({ $or: [{ status: 'draft' }, { status: 'archived' }] });
     });
 
     it('leaves archived Updates out of a staff search filtering on another field', async () => {
