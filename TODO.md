@@ -5,7 +5,6 @@
 - 2026-09-23: Add DB tests that drive POST/PUT with the bodies eagle-admin actually sends.
 - 2026-09-24 eagle-api: `documentAggregator.js:97` `signedIn` repeats the isAuthenticated test at `search.js:227`; pass the flag in.
 - 2026-09-24 eagle-api: GET `/public/document/{id}` and `/fetch` serve an UPDATE image of a scheduled Update before it goes live (public at save); check the Update is live, or accept.
-- 2026-09-24 eagle-api: `updateImages.js:129` release saves a doc loaded earlier, so a concurrent save gets a VersionError. It is caught and the image stays public; say so in the log line.
 
 ## Sorting
 

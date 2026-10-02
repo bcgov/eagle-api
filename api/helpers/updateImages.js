@@ -130,7 +130,7 @@ exports.release = async (ids, updateId, username) => {
         unpublished.push(doc);
         defaultLog.info(`Unpublished Update image ${doc._id}; Update ${updateId} no longer shows it published`);
       } catch (e) {
-        defaultLog.error(`Could not unpublish Update image ${doc._id} for Update ${updateId}: ${e.message}`);
+        defaultLog.error(`Could not unpublish Update image ${doc._id} for Update ${updateId}; it stays public (a VersionError means another save changed it first): ${e.message}`);
       }
     }
     if (!unpublished.length) {

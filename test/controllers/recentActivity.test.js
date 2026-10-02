@@ -738,7 +738,7 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       await recentActivity.protectedPut(putArgs(false, { status: 'draft' }), res);
 
       expect(res.status.calledWith(200)).to.be.true;
-      expect(defaultLog.error.args.map(args => args.join(' ')).join('\n')).to.include(`Could not unpublish Update image ${UPLOAD}`);
+      expect(defaultLog.error.args.map(args => args.join(' ')).join('\n')).to.include(`Could not unpublish Update image ${UPLOAD} for Update ${ACTIVITY_ID}; it stays public`);
     });
 
     it('logs a release that failed outright and still answers 200', async () => {
