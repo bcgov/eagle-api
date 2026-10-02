@@ -444,6 +444,8 @@ describe('Project legislation years on create and publish', () => {
 
   const PROJ_ID = '5f4c7d1e2b3a4c5d6e7f8191';
   const ORG_ID = '5f4c7d1e2b3a4c5d6e7f8192';
+  const LEAD_ID = '5f4c7d1e2b3a4c5d6e7f8193';
+  const EPD_ID = '5f4c7d1e2b3a4c5d6e7f8194';
   const auth = { preferred_username: 'tester', realm_access: { roles: ['sysadmin'] } };
 
   let Project;
@@ -537,6 +539,74 @@ describe('Project legislation years on create and publish', () => {
     it('answers 400 and saves nothing for a year that is not a known Act', async () => {
       const answered = answer();
       await projectController.protectedPost(postArgs(2019), {});
+      const { code } = await answered;
+
+      expect(code).to.equal(400);
+      expect(Project.prototype.save.called).to.be.false;
+    });
+
+    // A project can be created before anyone is named as its lead or EPD.
+    function postWithContacts(set) {
+      const args = postArgs(2025);
+      set(args.swagger.params.project.value);
+      return args;
+    }
+
+    [
+      ['are not sent', p => { delete p.projectLeadId; delete p.responsibleEPDId; }],
+      ['are null', p => { p.projectLeadId = null; p.responsibleEPDId = null; }],
+      ['are empty', p => { p.projectLeadId = ''; p.responsibleEPDId = ''; }]
+    ].forEach(([label, set]) => {
+      it(`creates the project and stores null when the lead and EPD ids ${label}`, async () => {
+        const answered = answer();
+        await projectController.protectedPost(postWithContacts(set), {});
+        const { code, data } = await answered;
+
+        expect(code).to.equal(200);
+        expect(data.legislation_2025.projectLeadId).to.be.null;
+        expect(data.legislation_2025.responsibleEPDId).to.be.null;
+      });
+    });
+
+    it('stores the lead and EPD ids each on its own field', async () => {
+      const answered = answer();
+      await projectController.protectedPost(postWithContacts(p => {
+        p.projectLeadId = LEAD_ID;
+        p.responsibleEPDId = EPD_ID;
+      }), {});
+      const { data } = await answered;
+
+      expect(String(data.legislation_2025.projectLeadId)).to.equal(LEAD_ID);
+      expect(String(data.legislation_2025.responsibleEPDId)).to.equal(EPD_ID);
+    });
+
+    it('keeps a sent lead id and stores null for a blank EPD id', async () => {
+      const answered = answer();
+      await projectController.protectedPost(postWithContacts(p => {
+        p.projectLeadId = LEAD_ID;
+        p.responsibleEPDId = '';
+      }), {});
+      const { code, data } = await answered;
+
+      expect(code).to.equal(200);
+      expect(String(data.legislation_2025.projectLeadId)).to.equal(LEAD_ID);
+      expect(data.legislation_2025.responsibleEPDId).to.be.null;
+    });
+
+    ['projectLeadId', 'responsibleEPDId'].forEach(field => {
+      it(`answers 400 and saves nothing when ${field} is not a valid id`, async () => {
+        const answered = answer();
+        await projectController.protectedPost(postWithContacts(p => { p[field] = 'not-an-id'; }), {});
+        const { code } = await answered;
+
+        expect(code).to.equal(400);
+        expect(Project.prototype.save.called).to.be.false;
+      });
+    });
+
+    it('still answers 400 and saves nothing when proponent is not sent', async () => {
+      const answered = answer();
+      await projectController.protectedPost(postWithContacts(p => { delete p.proponent; }), {});
       const { code } = await answered;
 
       expect(code).to.equal(400);

@@ -15,6 +15,8 @@ const projectController = require('../../api/controllers/project');
 const PROJ_ID = '5f4c7d1e2b3a4c5d6e7f8091';
 const LEAD_ID = '5f4c7d1e2b3a4c5d6e7f8092';
 const EPD_ID = '5f4c7d1e2b3a4c5d6e7f8093';
+const NEW_LEAD_ID = '5f4c7d1e2b3a4c5d6e7f8094';
+const NEW_EPD_ID = '5f4c7d1e2b3a4c5d6e7f8095';
 
 describe('Project protectedPut', () => {
   let res, projectModel, storedProject;
@@ -58,6 +60,10 @@ describe('Project protectedPut', () => {
       legislation_2018: {
         name: 'Old Project',
         description: 'old description',
+        projectLeadId: new mongoose.Types.ObjectId(LEAD_ID),
+        projectLead: 'Old Lead',
+        responsibleEPDId: new mongoose.Types.ObjectId(EPD_ID),
+        responsibleEPD: 'Old EPD',
         phaseHistory: []
       }
     };
@@ -140,6 +146,73 @@ describe('Project protectedPut', () => {
     const fields = updateArg().$set;
     expect(fields.legislationYearList).to.deep.equal([2018]);
     expect(fields.currentLegislationYear).to.equal('legislation_2018');
+  });
+
+  describe('lead and EPD ids', () => {
+    function putWithContacts(set) {
+      const args = putArgs();
+      set(args.swagger.params.ProjObject.value);
+      return args;
+    }
+
+    function storedBlock() {
+      return (updateArg().$set || updateArg()).legislation_2018;
+    }
+
+    [
+      ['are not sent', p => { delete p.projectLeadId; delete p.responsibleEPDId; }],
+      ['are null', p => { p.projectLeadId = null; p.responsibleEPDId = null; }],
+      ['are empty', p => { p.projectLeadId = ''; p.responsibleEPDId = ''; }]
+    ].forEach(([label, set]) => {
+      it(`stores null, not a new id, when they ${label}`, async () => {
+        await projectController.protectedPut(putWithContacts(set), res);
+
+        expect(res.status.firstCall.args[0]).to.equal(200);
+        expect(storedBlock().projectLeadId).to.be.null;
+        expect(storedBlock().responsibleEPDId).to.be.null;
+      });
+    });
+
+    it('clears the stored lead and EPD names when the ids are cleared', async () => {
+      await projectController.protectedPut(putWithContacts(p => { p.projectLeadId = ''; p.responsibleEPDId = null; }), res);
+
+      expect(storedBlock().projectLead).to.equal('');
+      expect(storedBlock().responsibleEPD).to.equal('');
+    });
+
+    it('stores the ids the request sends', async () => {
+      await projectController.protectedPut(putWithContacts(p => {
+        p.projectLeadId = NEW_LEAD_ID;
+        p.responsibleEPDId = NEW_EPD_ID;
+      }), res);
+
+      expect(storedBlock().projectLeadId).to.be.instanceOf(mongoose.Types.ObjectId);
+      expect(String(storedBlock().projectLeadId)).to.equal(NEW_LEAD_ID);
+      expect(String(storedBlock().responsibleEPDId)).to.equal(NEW_EPD_ID);
+    });
+
+    it('keeps a sent lead and clears only a blank EPD, id and name', async () => {
+      await projectController.protectedPut(putWithContacts(p => {
+        p.projectLeadId = NEW_LEAD_ID;
+        p.responsibleEPDId = '';
+      }), res);
+
+      expect(String(storedBlock().projectLeadId)).to.equal(NEW_LEAD_ID);
+      expect(storedBlock().projectLead).to.equal('Old Lead');
+      expect(storedBlock().responsibleEPDId).to.be.null;
+      expect(storedBlock().responsibleEPD).to.equal('');
+    });
+
+    ['projectLeadId', 'responsibleEPDId'].forEach(field => {
+      it(`answers 400 and writes nothing when ${field} is not a valid id`, async () => {
+        await projectController.protectedPut(putWithContacts(p => { p[field] = 'not-an-id'; }), res);
+
+        expect(res.status.firstCall.args[0]).to.equal(400);
+        expect(projectModel.findById.called).to.be.false;
+        expect(projectModel.findOneAndUpdate.called).to.be.false;
+        expect(demiPush.project.called).to.be.false;
+      });
+    });
   });
 
   it('answers 404 and writes nothing for a year that is not a known Act', async () => {

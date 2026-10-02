@@ -940,7 +940,7 @@ paths:
         - project
       summary: "Create a new project"
       operationId: protectedPost
-      description: "Create a new project object. legislationYear accepts 1996, 2002, 2018 or 2025 (Building Canada Act); default 2002. 400 when legislationYear is not one of these; nothing is saved."
+      description: "Create a new project object. legislationYear accepts 1996, 2002, 2018 or 2025 (Building Canada Act); default 2002. 400 when legislationYear is not one of these; nothing is saved. proponent must be a valid id. projectLeadId and responsibleEPDId are optional: missing, null or empty is stored as null; a value that is not a valid id answers 400 and nothing is saved."
       security:
         - Bearer: []
       x-security-scopes:
@@ -958,7 +958,7 @@ paths:
           schema:
             $ref: "#/definitions/ProjObject"
         "400":
-          description: "legislationYear is not a known legislation year"
+          description: "legislationYear is not a known legislation year, or proponent, projectLeadId or responsibleEPDId is not a valid id"
         "403":
           description: "Access Denied"
           schema:
@@ -1328,7 +1328,7 @@ paths:
         - project
       summary: "Update an project"
       operationId: protectedPut
-      description: "Update an project object. 404 when the project does not exist or legislationYear is not a known legislation year. 409 when the project's current Act is locked (today the Building Canada Act, 2025) and legislationYear names another year, including when it moved under a locked Act after this request read it; nothing is written."
+      description: "Update an project object. 404 when the project does not exist or legislationYear is not a known legislation year. 409 when the project's current Act is locked (today the Building Canada Act, 2025) and legislationYear names another year, including when it moved under a locked Act after this request read it; nothing is written. projectLeadId and responsibleEPDId are optional: missing, null or empty is stored as null; a value that is not a valid id answers 400 and nothing is written."
       security:
         - Bearer: []
       x-security-scopes:
@@ -1349,6 +1349,8 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/ProjObject"
+        "400":
+          description: "projId, projectLeadId or responsibleEPDId is not a valid id"
         "403":
           description: "Access Denied"
           schema:
