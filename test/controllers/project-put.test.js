@@ -142,6 +142,50 @@ describe('Project protectedPut', () => {
     expect(fields.currentLegislationYear).to.equal('legislation_2018');
   });
 
+  describe('lead and EPD ids', () => {
+    function putWithContacts(set) {
+      const args = putArgs();
+      set(args.swagger.params.ProjObject.value);
+      return args;
+    }
+
+    function storedBlock() {
+      return (updateArg().$set || updateArg()).legislation_2018;
+    }
+
+    [
+      ['are not sent', p => { delete p.projectLeadId; delete p.responsibleEPDId; }],
+      ['are null', p => { p.projectLeadId = null; p.responsibleEPDId = null; }],
+      ['are empty', p => { p.projectLeadId = ''; p.responsibleEPDId = ''; }]
+    ].forEach(([label, set]) => {
+      it(`stores null, not a new id, when they ${label}`, async () => {
+        await projectController.protectedPut(putWithContacts(set), res);
+
+        expect(res.status.firstCall.args[0]).to.equal(200);
+        expect(storedBlock().projectLeadId).to.be.null;
+        expect(storedBlock().responsibleEPDId).to.be.null;
+      });
+    });
+
+    it('stores the ids the request sends', async () => {
+      await projectController.protectedPut(putArgs(), res);
+
+      expect(storedBlock().projectLeadId).to.be.instanceOf(mongoose.Types.ObjectId);
+      expect(String(storedBlock().projectLeadId)).to.equal(LEAD_ID);
+      expect(String(storedBlock().responsibleEPDId)).to.equal(EPD_ID);
+    });
+
+    ['projectLeadId', 'responsibleEPDId'].forEach(field => {
+      it(`answers 400 and writes nothing when ${field} is not a valid id`, async () => {
+        await projectController.protectedPut(putWithContacts(p => { p[field] = 'not-an-id'; }), res);
+
+        expect(res.status.firstCall.args[0]).to.equal(400);
+        expect(projectModel.findOneAndUpdate.called).to.be.false;
+        expect(demiPush.project.called).to.be.false;
+      });
+    });
+  });
+
   it('answers 404 and writes nothing for a year that is not a known Act', async () => {
     const args = putArgs();
     args.swagger.params.ProjObject.value.legislationYear = 2019;

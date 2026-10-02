@@ -542,6 +542,49 @@ describe('Project legislation years on create and publish', () => {
       expect(code).to.equal(400);
       expect(Project.prototype.save.called).to.be.false;
     });
+
+    // A project can be created before anyone is named as its lead or EPD.
+    function postWithContacts(set) {
+      const args = postArgs(2025);
+      set(args.swagger.params.project.value);
+      return args;
+    }
+
+    [
+      ['are not sent', p => { delete p.projectLeadId; delete p.responsibleEPDId; }],
+      ['are null', p => { p.projectLeadId = null; p.responsibleEPDId = null; }],
+      ['are empty', p => { p.projectLeadId = ''; p.responsibleEPDId = ''; }]
+    ].forEach(([label, set]) => {
+      it(`creates the project and stores null when the lead and EPD ids ${label}`, async () => {
+        const answered = answer();
+        await projectController.protectedPost(postWithContacts(set), {});
+        const { code, data } = await answered;
+
+        expect(code).to.equal(200);
+        expect(data.legislation_2025.projectLeadId).to.be.null;
+        expect(data.legislation_2025.responsibleEPDId).to.be.null;
+      });
+    });
+
+    ['projectLeadId', 'responsibleEPDId'].forEach(field => {
+      it(`answers 400 and saves nothing when ${field} is not a valid id`, async () => {
+        const answered = answer();
+        await projectController.protectedPost(postWithContacts(p => { p[field] = 'not-an-id'; }), {});
+        const { code } = await answered;
+
+        expect(code).to.equal(400);
+        expect(Project.prototype.save.called).to.be.false;
+      });
+    });
+
+    it('still answers 400 and saves nothing when proponent is not sent', async () => {
+      const answered = answer();
+      await projectController.protectedPost(postWithContacts(p => { delete p.proponent; }), {});
+      const { code } = await answered;
+
+      expect(code).to.equal(400);
+      expect(Project.prototype.save.called).to.be.false;
+    });
   });
 
   describe('protectedPublish on a Building Canada Act project', () => {

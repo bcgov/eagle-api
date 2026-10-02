@@ -86,6 +86,12 @@ var tagList = [
 
 const WORDS_TO_ANALYZE = 3;
 
+// A project may have no lead or EPD named yet: a blank id is stored as null, never a new id.
+const isBlankId = value => value === undefined || value === null || value === '';
+const optionalObjectId = value => (isBlankId(value) ? null : new mongoose.Types.ObjectId(value));
+const hasInvalidContactId = obj => ['projectLeadId', 'responsibleEPDId']
+  .some(field => !isBlankId(obj[field]) && !mongoose.Types.ObjectId.isValid(obj[field]));
+
 
 
 exports.protectedOptions = function (args, res) {
@@ -422,15 +428,13 @@ exports.protectedPost = async function (args, res) {
   project.currentLegislationYear = blockKey;
   project.legislationYearList.push(projectLegislationYear);
 
-  if (!mongoose.Types.ObjectId.isValid(obj.proponent)
-      || !mongoose.Types.ObjectId.isValid(obj.responsibleEPDId)
-      || !mongoose.Types.ObjectId.isValid(obj.projectLeadId)) {
+  if (!mongoose.Types.ObjectId.isValid(obj.proponent) || hasInvalidContactId(obj)) {
     return Actions.sendResponse(res, 400, {});
   }
 
   projectData.proponent = new mongoose.Types.ObjectId(obj.proponent);
-  projectData.responsibleEPDId = new mongoose.Types.ObjectId(obj.responsibleEPDId);
-  projectData.projectLeadId = new mongoose.Types.ObjectId(obj.projectLeadId);
+  projectData.responsibleEPDId = optionalObjectId(obj.responsibleEPDId);
+  projectData.projectLeadId = optionalObjectId(obj.projectLeadId);
 
   // Also need to make sure that the eacDecision and CEAAInvolvement fields are in the project. Hard requirement for public
   projectData.CEAAInvolvement = obj.CEAAInvolvement ? obj.CEAAInvolvement : null;
@@ -605,6 +609,9 @@ exports.protectedPut = async function (args, res) {
 
   var Project = mongoose.model('Project');
   var projectObj = args.swagger.params.ProjObject.value;
+  if (hasInvalidContactId(projectObj)) {
+    return Actions.sendResponse(res, 400, {});
+  }
 
   // get full project object to retain existing data
   var fullProjectObject = await Project.findById(new mongoose.Types.ObjectId(objId));
@@ -683,8 +690,8 @@ exports.protectedPut = async function (args, res) {
   filteredData.centroid = projectObj.centroid;
 
   // Contacts
-  filteredData.projectLeadId = new mongoose.Types.ObjectId(projectObj.projectLeadId);
-  filteredData.responsibleEPDId = new mongoose.Types.ObjectId(projectObj.responsibleEPDId);
+  filteredData.projectLeadId = optionalObjectId(projectObj.projectLeadId);
+  filteredData.responsibleEPDId = optionalObjectId(projectObj.responsibleEPDId);
 
   filteredData.CEAAInvolvement = projectObj.CEAAInvolvement;
   filteredData.CEAALink = projectObj.CEAALink;
