@@ -31,15 +31,10 @@ const PAGE_SIZE_MAX_LIST   = 500;  // List dataset (reference/dropdown data)
 // Project fields that hold ids until addProjectLookupAggrs joins them.
 const PROJECT_JOINED_FIELDS = ['proponent', 'currentPhaseName', 'eacDecision', 'CEAAInvolvement', 'applicableRegulation'];
 // Project fields still on the root before the page is cut; unwindProjectData copies them into default after it.
-const PROJECT_ROOT_FIELDS = ['_id', ...aggregateHelper.PROJECT_ROOT_FIELDS];
+const PROJECT_ROOT_SORT_FIELDS = ['_id', ...aggregateHelper.PROJECT_ROOT_FIELDS];
 
 const searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue, categorized, fuzzy) {
-  const aggregateCollation = {
-    locale: 'en',
-    strength: 2
-  };
-
-  defaultLog.debug('collation:', aggregateCollation);
+  defaultLog.debug('collation:', aggregateHelper.AGGREGATE_COLLATION);
   defaultLog.debug('populate:', populate);
 
   // Decode any parameters here that may arrive encoded.
@@ -178,7 +173,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
         projectSort[PROJECT_JOINED_FIELDS.includes(key) ? `${key}.name` : key] = val;
       } else {
         // Before $replaceRoot, name/type/region live inside the default sub-document.
-        projectSort[PROJECT_ROOT_FIELDS.includes(key) ? key : `default.${key}`] = val;
+        projectSort[PROJECT_ROOT_SORT_FIELDS.includes(key) ? key : `default.${key}`] = val;
       }
     }
     const pageStages = [
@@ -209,8 +204,8 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
 
     collectionObj.aggregate(aggregation)
       .allowDiskUse(true)
-      .collation(aggregateCollation)
-      .option('maxTimeMS', 45000)
+      .collation(aggregateHelper.AGGREGATE_COLLATION)
+      .option('maxTimeMS', aggregateHelper.AGGREGATE_MAX_TIME_MS)
       .exec()
       .then(function (data) {
         resolve(Utils.filterData(schemaName, data, roles));
@@ -335,7 +330,7 @@ const executeQuery = async function (args, res) {
       ]
     })
     .sort({ listOrder: 1, name: 1 })
-    .collation({ locale: 'en', strength: 2 })
+    .collation(aggregateHelper.AGGREGATE_COLLATION)
     .exec();
 
     const collectionData = [{

@@ -133,6 +133,52 @@ describe('Document Aggregator', () => {
       expect(error.message).to.match(/unreadable ids/);
     });
   });
+
+  describe('sort rank prefetch', () => {
+    let calls;
+
+    beforeEach(() => {
+      calls = [];
+      sinon.stub(mongoose, 'model').callsFake(modelName => ({
+        aggregate: pipeline => {
+          const call = { modelName, pipeline };
+          calls.push(call);
+          const chain = {
+            collation: collation => Object.assign(call, { collation }) && chain,
+            option: (name, value) => Object.assign(call, { [name]: value }) && chain,
+            exec: () => Promise.resolve([])
+          };
+          return chain;
+        }
+      }));
+    });
+
+    afterEach(() => {
+      sinon.restore();
+    });
+
+    const sortBy = sortingValue => documentAggregator.createDocumentAggr(true, ['staff'], sortingValue, Object.keys(sortingValue).pop(), 1, 0, 25, []);
+
+    it('reads the List collection once for a type and milestone sort', async () => {
+      await sortBy({ type: 1, milestone: 1 });
+      expect(calls.map(call => call.modelName)).to.deep.equal(['List']);
+    });
+
+    it('uses the collation and time cap of the search query', async () => {
+      await sortBy({ type: 1, 'project.name': 1 });
+      expect(calls.map(call => [call.modelName, call.collation, call.maxTimeMS])).to.deep.equal([
+        ['List', aggregateHelper.AGGREGATE_COLLATION, aggregateHelper.AGGREGATE_MAX_TIME_MS],
+        ['Project', aggregateHelper.AGGREGATE_COLLATION, aggregateHelper.AGGREGATE_MAX_TIME_MS]
+      ]);
+      calls.forEach(call => expect(call.collation).to.equal(aggregateHelper.AGGREGATE_COLLATION));
+    });
+
+    it('joins the proponent only for a project.proponent sort', async () => {
+      await sortBy({ 'project.name': 1 });
+      await sortBy({ 'project.proponent.name': 1 });
+      expect(calls.map(call => call.pipeline.some(stage => stage.$lookup))).to.deep.equal([false, true]);
+    });
+  });
 });
 
 describe('Search Aggregator', () => {

@@ -7,6 +7,10 @@ const { LEGISLATION_KEYS, legislationSwitch } = require('../helpers/constants');
 const Utils = require('../helpers/utils');
 
 // Project fields kept on the root, not in a legislation sub-document; the default unwind copies them in.
+// Search aggregations share one collation and time cap; a rank prefetch must sort exactly as the query it feeds.
+const AGGREGATE_COLLATION = Object.freeze({ locale: 'en', strength: 2 });
+const AGGREGATE_MAX_TIME_MS = 45000;
+
 const PROJECT_ROOT_FIELDS = ['read', 'pins', 'hasMetCommentPeriods', 'pinsHistory', 'pinsRead', 'cacEmail', 'cacMembers', 'projectCAC', 'projectCACPublished', 'score'];
 
 /**
@@ -600,3 +604,5 @@ exports.generateExpArray = generateExpArray;
 exports.isEmpty = isEmpty;
 exports.createSortingPagingAggr = createSortingPagingAggr;
 exports.PROJECT_ROOT_FIELDS = PROJECT_ROOT_FIELDS;
+exports.AGGREGATE_COLLATION = AGGREGATE_COLLATION;
+exports.AGGREGATE_MAX_TIME_MS = AGGREGATE_MAX_TIME_MS;
