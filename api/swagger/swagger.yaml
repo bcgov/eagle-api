@@ -958,7 +958,7 @@ paths:
           schema:
             $ref: "#/definitions/ProjObject"
         "400":
-          description: "legislationYear is not a known legislation year"
+          description: "legislationYear is not a known legislation year, or proponent, projectLeadId or responsibleEPDId is not a valid id"
         "403":
           description: "Access Denied"
           schema:

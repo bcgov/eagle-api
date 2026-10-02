@@ -87,10 +87,10 @@ var tagList = [
 const WORDS_TO_ANALYZE = 3;
 
 // A project may have no lead or EPD named yet: a blank id is stored as null, never a new id.
-const isBlankId = value => value === undefined || value === null || value === '';
-const optionalObjectId = value => (isBlankId(value) ? null : new mongoose.Types.ObjectId(value));
-const hasInvalidContactId = obj => ['projectLeadId', 'responsibleEPDId']
-  .some(field => !isBlankId(obj[field]) && !mongoose.Types.ObjectId.isValid(obj[field]));
+const CONTACT_NAME_FIELDS = { projectLeadId: 'projectLead', responsibleEPDId: 'responsibleEPD' };
+// Throws { status: 400 } when an id is present but not valid.
+const contactIdsOf = obj => Object.fromEntries(Object.keys(CONTACT_NAME_FIELDS)
+  .map(field => [field, Utils.getValidObjectId({ value: obj[field] })]));
 
 
 
@@ -428,13 +428,19 @@ exports.protectedPost = async function (args, res) {
   project.currentLegislationYear = blockKey;
   project.legislationYearList.push(projectLegislationYear);
 
-  if (!mongoose.Types.ObjectId.isValid(obj.proponent) || hasInvalidContactId(obj)) {
+  let contactIds;
+  try {
+    contactIds = contactIdsOf(obj);
+  } catch (err) {
+    return Actions.sendResponse(res, 400, {});
+  }
+  if (!mongoose.Types.ObjectId.isValid(obj.proponent)) {
     return Actions.sendResponse(res, 400, {});
   }
 
   projectData.proponent = new mongoose.Types.ObjectId(obj.proponent);
-  projectData.responsibleEPDId = optionalObjectId(obj.responsibleEPDId);
-  projectData.projectLeadId = optionalObjectId(obj.projectLeadId);
+  projectData.responsibleEPDId = contactIds.responsibleEPDId;
+  projectData.projectLeadId = contactIds.projectLeadId;
 
   // Also need to make sure that the eacDecision and CEAAInvolvement fields are in the project. Hard requirement for public
   projectData.CEAAInvolvement = obj.CEAAInvolvement ? obj.CEAAInvolvement : null;
@@ -609,7 +615,10 @@ exports.protectedPut = async function (args, res) {
 
   var Project = mongoose.model('Project');
   var projectObj = args.swagger.params.ProjObject.value;
-  if (hasInvalidContactId(projectObj)) {
+  let contactIds;
+  try {
+    contactIds = contactIdsOf(projectObj);
+  } catch (err) {
     return Actions.sendResponse(res, 400, {});
   }
 
@@ -689,9 +698,13 @@ exports.protectedPut = async function (args, res) {
 
   filteredData.centroid = projectObj.centroid;
 
-  // Contacts
-  filteredData.projectLeadId = optionalObjectId(projectObj.projectLeadId);
-  filteredData.responsibleEPDId = optionalObjectId(projectObj.responsibleEPDId);
+  // Contacts. A cleared id also clears its stored name, so the old person is not shown.
+  for (const [idField, nameField] of Object.entries(CONTACT_NAME_FIELDS)) {
+    filteredData[idField] = contactIds[idField];
+    if (!contactIds[idField]) {
+      filteredData[nameField] = '';
+    }
+  }
 
   filteredData.CEAAInvolvement = projectObj.CEAAInvolvement;
   filteredData.CEAALink = projectObj.CEAALink;

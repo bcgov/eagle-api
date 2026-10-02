@@ -15,6 +15,8 @@ const projectController = require('../../api/controllers/project');
 const PROJ_ID = '5f4c7d1e2b3a4c5d6e7f8091';
 const LEAD_ID = '5f4c7d1e2b3a4c5d6e7f8092';
 const EPD_ID = '5f4c7d1e2b3a4c5d6e7f8093';
+const NEW_LEAD_ID = '5f4c7d1e2b3a4c5d6e7f8094';
+const NEW_EPD_ID = '5f4c7d1e2b3a4c5d6e7f8095';
 
 describe('Project protectedPut', () => {
   let res, projectModel, storedProject;
@@ -58,6 +60,10 @@ describe('Project protectedPut', () => {
       legislation_2018: {
         name: 'Old Project',
         description: 'old description',
+        projectLeadId: new mongoose.Types.ObjectId(LEAD_ID),
+        projectLead: 'Old Lead',
+        responsibleEPDId: new mongoose.Types.ObjectId(EPD_ID),
+        responsibleEPD: 'Old EPD',
         phaseHistory: []
       }
     };
@@ -167,12 +173,34 @@ describe('Project protectedPut', () => {
       });
     });
 
+    it('clears the stored lead and EPD names when the ids are cleared', async () => {
+      await projectController.protectedPut(putWithContacts(p => { p.projectLeadId = ''; p.responsibleEPDId = null; }), res);
+
+      expect(storedBlock().projectLead).to.equal('');
+      expect(storedBlock().responsibleEPD).to.equal('');
+    });
+
     it('stores the ids the request sends', async () => {
-      await projectController.protectedPut(putArgs(), res);
+      await projectController.protectedPut(putWithContacts(p => {
+        p.projectLeadId = NEW_LEAD_ID;
+        p.responsibleEPDId = NEW_EPD_ID;
+      }), res);
 
       expect(storedBlock().projectLeadId).to.be.instanceOf(mongoose.Types.ObjectId);
-      expect(String(storedBlock().projectLeadId)).to.equal(LEAD_ID);
-      expect(String(storedBlock().responsibleEPDId)).to.equal(EPD_ID);
+      expect(String(storedBlock().projectLeadId)).to.equal(NEW_LEAD_ID);
+      expect(String(storedBlock().responsibleEPDId)).to.equal(NEW_EPD_ID);
+    });
+
+    it('keeps a sent lead and clears only a blank EPD, id and name', async () => {
+      await projectController.protectedPut(putWithContacts(p => {
+        p.projectLeadId = NEW_LEAD_ID;
+        p.responsibleEPDId = '';
+      }), res);
+
+      expect(String(storedBlock().projectLeadId)).to.equal(NEW_LEAD_ID);
+      expect(storedBlock().projectLead).to.equal('Old Lead');
+      expect(storedBlock().responsibleEPDId).to.be.null;
+      expect(storedBlock().responsibleEPD).to.equal('');
     });
 
     ['projectLeadId', 'responsibleEPDId'].forEach(field => {
@@ -180,6 +208,7 @@ describe('Project protectedPut', () => {
         await projectController.protectedPut(putWithContacts(p => { p[field] = 'not-an-id'; }), res);
 
         expect(res.status.firstCall.args[0]).to.equal(400);
+        expect(projectModel.findById.called).to.be.false;
         expect(projectModel.findOneAndUpdate.called).to.be.false;
         expect(demiPush.project.called).to.be.false;
       });

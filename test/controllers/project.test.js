@@ -444,6 +444,8 @@ describe('Project legislation years on create and publish', () => {
 
   const PROJ_ID = '5f4c7d1e2b3a4c5d6e7f8191';
   const ORG_ID = '5f4c7d1e2b3a4c5d6e7f8192';
+  const LEAD_ID = '5f4c7d1e2b3a4c5d6e7f8193';
+  const EPD_ID = '5f4c7d1e2b3a4c5d6e7f8194';
   const auth = { preferred_username: 'tester', realm_access: { roles: ['sysadmin'] } };
 
   let Project;
@@ -564,6 +566,31 @@ describe('Project legislation years on create and publish', () => {
         expect(data.legislation_2025.projectLeadId).to.be.null;
         expect(data.legislation_2025.responsibleEPDId).to.be.null;
       });
+    });
+
+    it('stores the lead and EPD ids each on its own field', async () => {
+      const answered = answer();
+      await projectController.protectedPost(postWithContacts(p => {
+        p.projectLeadId = LEAD_ID;
+        p.responsibleEPDId = EPD_ID;
+      }), {});
+      const { data } = await answered;
+
+      expect(String(data.legislation_2025.projectLeadId)).to.equal(LEAD_ID);
+      expect(String(data.legislation_2025.responsibleEPDId)).to.equal(EPD_ID);
+    });
+
+    it('keeps a sent lead id and stores null for a blank EPD id', async () => {
+      const answered = answer();
+      await projectController.protectedPost(postWithContacts(p => {
+        p.projectLeadId = LEAD_ID;
+        p.responsibleEPDId = '';
+      }), {});
+      const { code, data } = await answered;
+
+      expect(code).to.equal(200);
+      expect(String(data.legislation_2025.projectLeadId)).to.equal(LEAD_ID);
+      expect(data.legislation_2025.responsibleEPDId).to.be.null;
     });
 
     ['projectLeadId', 'responsibleEPDId'].forEach(field => {
