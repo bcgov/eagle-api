@@ -34,9 +34,12 @@ describe('RecentActivity Controller - DEMI mirror', () => {
   let documents;
   let documentModel;
 
-  // Enough of a Mongo find for the queries the handlers send: ids, source, project, and read[] has / lacks.
+  // Enough of a Mongo find for the queries the handlers send: ids, schema (rows default to Document),
+  // isDeleted $ne true, source, project, and read[] has / lacks.
   function findIn(rows, query) {
     const matches = row => (!query._id || !query._id.$in || query._id.$in.map(String).includes(String(row._id))) &&
+      (!query._schemaName || (row._schemaName || 'Document') === query._schemaName) &&
+      (!query.isDeleted || row.isDeleted !== true) &&
       (!query.documentSource || row.documentSource === query.documentSource) &&
       (!('project' in query) || String(row.project || null) === String(query.project || null)) &&
       (query.read === undefined || (typeof query.read === 'string'
@@ -220,6 +223,8 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       'a featured image credit over 150 characters': { featuredImage: { document: DOC_ID, alt: 'Map', credit: 'x'.repeat(151) } },
       'HTML in shortHeadline': { shortHeadline: '<b>Decision</b>' },
       'HTML in summary': { summary: 'Read <a href="x">this</a>' },
+      'a self-closing tag in summary': { summary: 'Line<br/>break' },
+      'an HTML comment in summary': { summary: 'Note <!-- hidden -->' },
       'a non-public featured image on publish': { featuredImage: { document: HIDDEN_DOC, alt: 'Map' } },
       'a non-public attachment on publish': { attachments: [DOC_ID, HIDDEN_DOC] },
       'more than 5 images': { images: Array.from({ length: 6 }, () => ({ document: DOC_ID, alt: 'Map' })) },
@@ -295,6 +300,29 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       expect(res.json.firstCall.args[0].errors).to.deep.equal(['images[1].alt is required']);
     });
 
+    it('POST accepts angle brackets that open no tag', async () => {
+      await recentActivity.protectedPost(postArgs(true, { shortHeadline: 'Flow x<y, y>z', summary: 'We <3 it; 5 > 3' }), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+    });
+
+    it('refuses a public attachment id that is not a Document', async () => {
+      documents.push({ _id: OTHER_DOC, _schemaName: 'Project', read: ['public'] });
+
+      await recentActivity.protectedPost(postArgs(true, { attachments: [OTHER_DOC] }), res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+      expect(res.json.firstCall.args[0].message).to.include(OTHER_DOC);
+    });
+
+    it('refuses a deleted Document even if it was public', async () => {
+      documents.push({ _id: OTHER_DOC, read: ['public'], isDeleted: true });
+
+      await recentActivity.protectedPost(postArgs(true, { attachments: [OTHER_DOC] }), res);
+
+      expect(res.status.calledWith(400)).to.be.true;
+    });
+
     it('names the non-public documents it refused', async () => {
       await recentActivity.protectedPost(postArgs(true, { attachments: [DOC_ID, HIDDEN_DOC] }), res);
 
@@ -351,6 +379,42 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       const [query, update] = model.findOneAndUpdate.firstCall.args;
       expect(query.dateUpdated.toISOString()).to.equal(loaded);
       expect(update.dateUpdated.getTime()).to.be.greaterThan(Date.now() - 5000);
+    });
+
+    describe('a published Update whose attachment went private', () => {
+      beforeEach(() => {
+        stored = { ...stored, pinned: false, attachments: [HIDDEN_DOC] };
+      });
+
+      it('PUT lets a pin toggle through without the document check', async () => {
+        await recentActivity.protectedPut(putArgs(true, { status: 'published', pinned: true, attachments: [HIDDEN_DOC] }), res);
+
+        expect(res.status.calledWith(200)).to.be.true;
+        expect(model.findOneAndUpdate.firstCall.args[1]).to.include({ pinned: true });
+      });
+
+      it('PUT still checks the documents on an edit that leaves pinned alone', async () => {
+        await recentActivity.protectedPut(putArgs(true, { status: 'published', pinned: false, attachments: [HIDDEN_DOC], headline: 'New' }), res);
+
+        expect(res.status.calledWith(400)).to.be.true;
+        expect(model.findOneAndUpdate.called).to.be.false;
+      });
+
+      it('PUT still checks the documents when a pin toggle also changes them', async () => {
+        stored.attachments = [DOC_ID];
+
+        await recentActivity.protectedPut(putArgs(true, { status: 'published', pinned: true, attachments: [DOC_ID, HIDDEN_DOC] }), res);
+
+        expect(res.status.calledWith(400)).to.be.true;
+      });
+
+      it('PUT still checks the documents when a pin toggle comes with going live', async () => {
+        stored.status = 'draft';
+
+        await recentActivity.protectedPut(putArgs(true, { status: 'published', pinned: true, attachments: [HIDDEN_DOC] }), res);
+
+        expect(res.status.calledWith(400)).to.be.true;
+      });
     });
 
     it('PUT answers 404 when the Update does not exist', async () => {

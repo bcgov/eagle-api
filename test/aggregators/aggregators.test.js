@@ -467,7 +467,7 @@ describe('Recent Activity Aggregator', () => {
     it('should strip staff fields for a public caller', () => {
       const result = recentActivityAggregator.createRecentActivityAggr(true, [], ['public']);
 
-      expect(result[1].$project).to.deep.equal({ notifiedAt: 0, _addedBy: 0, _updatedBy: 0 });
+      expect(result[1].$project).to.deep.equal({ notifiedAt: 0, _addedBy: 0, _updatedBy: 0, _deletedBy: 0 });
     });
 
     it('should leave drafts and scheduled Updates to a staff caller, but not archived ones', () => {

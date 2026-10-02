@@ -190,6 +190,10 @@ const generateExpArray = async (field, roles, schemaName) => {
       let entry = queryString[item];
       defaultLog.debug('generateExpArray item: %s entry: %j', item, entry);
       const orArray = [];
+      // and=status=draft,published asks for either, like the pcp and comment period status lists.
+      if (item === 'status' && schemaName === constants.RECENT_ACTIVITY && typeof entry === 'string' && entry.includes(',')) {
+        entry = entry.split(',');
+      }
 
       if (item === 'pcp') {
         await handlePCPItem(roles, expArray, decodeURIComponent(entry));

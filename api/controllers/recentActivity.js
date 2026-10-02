@@ -251,7 +251,8 @@ exports.protectedPut = async function (args, res) {
     const merged = { ...existing, ...(deriveStatus ? { status: null } : {}), ...obj };
     updateRules.applyStatus(obj, merged, { wasLive: updateRules.isLive(existing) });
     const updated = { ...merged, ...obj };
-    const errors = await updateRules.check(updated);
+    // A pin toggle must not fail on a document that went private after the Update was published.
+    const errors = await updateRules.check(updated, { checkDocuments: !updateRules.isPinToggle(existing, updated) });
     if (errors.length) {
       defaultLog.warn(`Rejected RecentActivity ${objId} update:`, errors);
       return Actions.sendResponse(res, 400, { message: errors.join('; '), errors });

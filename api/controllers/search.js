@@ -20,6 +20,7 @@ const commentPeriodAggregator = require('../aggregators/commentPeriodAggregator'
 const searchAggregator = require('../aggregators/searchAggregator');
 const aggregateHelper = require('../helpers/aggregators');
 const parentRead = require('../helpers/parentRead');
+const updateRules = require('../helpers/updateRules');
 
 // Pagination limits
 const PAGE_SIZE_DEFAULT = 25;
@@ -305,6 +306,14 @@ const executeQuery = async function (args, res) {
 
   if (sortField === '') {
     sortField = sortBy[0];
+  }
+
+  if (dataset === constants.RECENT_ACTIVITY && updateRules.isPublicCaller(roles)) {
+    const hidden = updateRules.hiddenKeys([and, or].flatMap(filter => Object.keys(qs.parse(filter || ''))).concat(Object.keys(sortingValue)));
+    if (hidden.length) {
+      defaultLog.warn('Public search on hidden Update fields refused:', hidden);
+      return Actions.sendResponse(res, 400, { message: `Cannot filter or sort on ${[...new Set(hidden)].join(', ')}` });
+    }
   }
 
   defaultLog.info('sortingValue:', sortingValue);
