@@ -23,8 +23,8 @@ exports.SUMMARY_MAX = SUMMARY_MAX;
 exports.PN_PCP_TYPE = PN_PCP_TYPE;
 
 const isBlank = value => value === undefined || value === null || String(value).trim() === '';
-// A tag name ends at whitespace, `/` or `>`, so text such as `x<y, y>z` passes.
-const hasTag = value => /<\/?[a-z][a-z0-9-]*(?:\s[^<>]*)?\/?>|<!(?:--|[a-z])/i.test(String(value));
+// Browsers open a tag at `<` plus a letter, `/` or `!`, so `x<y, onclick=f()>` is a tag too.
+const hasTag = value => /<[a-z/!]/i.test(String(value));
 
 // Staff bookkeeping a public reader has no use for.
 const HIDDEN_FROM_PUBLIC = ['notifiedAt', '_addedBy', '_updatedBy', '_deletedBy'];

@@ -300,10 +300,33 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       expect(res.json.firstCall.args[0].errors).to.deep.equal(['images[1].alt is required']);
     });
 
-    it('POST accepts angle brackets that open no tag', async () => {
-      await recentActivity.protectedPost(postArgs(true, { shortHeadline: 'Flow x<y, y>z', summary: 'We <3 it; 5 > 3' }), res);
+    const tagSummaries = {
+      'a tag name followed by / and an attribute': '<svg/onload=alert(1)>',
+      'an attribute right after the tag name and /': '<a/href=x>',
+      'a quoted attribute value holding <': '<img alt="<" src=x onerror=alert(1)>',
+      'a quoted attribute value holding >': '<img alt=">" src=x onerror=alert(1)>',
+      'a closing tag': 'Done</p>',
+      'a doctype': '<!doctype html>',
+      'an unclosed tag': 'Hi <img src=x onerror=alert(1)',
+      'a tag name ending in a comma': 'x<y, onmouseover=alert(1)>z',
+      'a comparison with no space before a letter': 'x<y, y>z'
+    };
 
-      expect(res.status.calledWith(200)).to.be.true;
+    Object.entries(tagSummaries).forEach(([label, summary]) => {
+      it(`POST rejects ${label} in summary`, async () => {
+        await recentActivity.protectedPost(postArgs(true, { summary }), res);
+
+        expect(res.status.calledWith(400)).to.be.true;
+        expect(res.json.firstCall.args[0].errors).to.deep.equal(['summary must be plain text, no HTML tags']);
+      });
+    });
+
+    ['a < b', '3<4', 'We <3 it; 5 > 3', 'x < y, y > z'].forEach(text => {
+      it(`POST accepts the plain text ${JSON.stringify(text)}`, async () => {
+        await recentActivity.protectedPost(postArgs(true, { shortHeadline: text, summary: text }), res);
+
+        expect(res.status.calledWith(200)).to.be.true;
+      });
     });
 
     it('refuses a public attachment id that is not a Document', async () => {
