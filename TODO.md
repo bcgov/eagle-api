@@ -15,7 +15,6 @@
 - 2026-10-01 api/controllers/project.js:634: a PUT with no `legislationYear` returns 404 when the stored `currentLegislationYear` is not an exact key (for example `'legislation_2018 '`, written by the old publish that did not trim) or is missing. Develop wrote the first case and threw on the second. Staff forms always send the year. Count such rows on test; if any exist, read the stored year suffix with `Number()`.
 - 2026-10-01 api/controllers/project.js:619: no test for a PUT that moves a 1996, 2002 or 2018 project to 2025 (allowed, and one-way after that).
 - 2026-10-01 api/dao/projectDAO.js:53: `publishProject` sets `currentLegislationYear` with no lock and no content check; its only caller is its own test. Delete it, or send it through the controller checks.
-- 2026-10-01 api/helpers/constants.js:54: nothing checks at load time that exactly one entry has `isDefault`; only a test does. Throw at load when the count is not 1.
 - 2026-10-01 api/controllers/project.js:741: the 409 for a project that moved under a locked Act before the write names every guarded locked Act joined with "or" (PUT and publish). Read the stored key back and name only that Act. test/controllers/project-locked-act.test.js:161 asserts the joined wording.
 - 2026-10-01 api/controllers/project.js:775: a non-numeric year on a locked project gets 404 from publish but 409 from PUT.
 - 2026-10-01 api/controllers/project.js:401, 627, 766: `Number()` reads `'0x7D2'` and `'2.018e3'` as 2018. Harmless.
