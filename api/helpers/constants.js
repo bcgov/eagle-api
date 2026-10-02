@@ -51,7 +51,19 @@ const legislationYearOf = key => {
 };
 
 const LEGISLATION_KEYS = Object.freeze(Object.keys(LEGISLATIONS).map(legislationKey));
-const DEFAULT_LEGISLATION_YEAR = Number(Object.keys(LEGISLATIONS).find(year => LEGISLATIONS[year].isDefault));
+/**
+ * @param {object} registry Legislation registry, keyed by year.
+ * @returns {number} The one year marked `isDefault`; throws when there is not exactly one.
+ */
+const defaultLegislationYear = registry => {
+  const years = Object.keys(registry).filter(year => registry[year].isDefault);
+  if (years.length !== 1) {
+    throw new Error(`Legislation registry needs exactly one isDefault entry, found ${years.length}`);
+  }
+  return Number(years[0]);
+};
+
+const DEFAULT_LEGISLATION_YEAR = defaultLegislationYear(LEGISLATIONS);
 const LOCKED_KEYS = Object.freeze(Object.keys(LEGISLATIONS).filter(year => LEGISLATIONS[year].locked).map(legislationKey));
 
 /**
@@ -74,6 +86,7 @@ const legislationSwitch = (prefix = '') => ({
 exports.LEGISLATIONS = LEGISLATIONS;
 exports.LEGISLATION_KEYS = LEGISLATION_KEYS;
 exports.DEFAULT_LEGISLATION_YEAR = DEFAULT_LEGISLATION_YEAR;
+exports.defaultLegislationYear = defaultLegislationYear;
 exports.LOCKED_KEYS = LOCKED_KEYS;
 exports.legislationKey = legislationKey;
 exports.legislationYearOf = legislationYearOf;

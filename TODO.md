@@ -5,24 +5,16 @@
 - 2026-09-23: Add DB tests that drive POST/PUT with the bodies eagle-admin actually sends.
 - 2026-09-24 eagle-api: `documentAggregator.js:97` `signedIn` repeats the isAuthenticated test at `search.js:227`; pass the flag in.
 - 2026-09-24 eagle-api: GET `/public/document/{id}` and `/fetch` serve an UPDATE image of a scheduled Update before it goes live (public at save); check the Update is live, or accept.
-- 2026-09-24 eagle-api: `updateImages.js:129` release saves a doc loaded earlier, so a concurrent save gets a VersionError. It is caught and the image stays public; say so in the log line.
 
 ## Sorting
 
-- 2026-09-24: `documentAggregator.js` rank prefetch hard-codes the collation `{ locale: 'en', strength: 2 }`, a copy of `aggregateCollation` in `search.js`. Rank order only matches the joined order while the two agree; share one constant.
-- 2026-09-24: The rank prefetch `.exec()` has no `maxTimeMS`; give it the same 45000 ms as the main query.
-- 2026-09-24: The List rank prefetch reads every List item, and a `type,milestone` sort runs it twice. Run it once per call, and filter to `doctype` / `label` once the data confirms Document type and milestone never point at other List types.
-- 2026-09-24: The Project rank prefetch runs the proponent `$lookup` for every key; only `project.proponent.*` needs it.
-- 2026-09-24: The `ponytail:` note on the rank sort names only collection size; cost is matched Documents times rank array length (`$indexOfArray` is a linear scan).
-- 2026-09-24: Rename the local `PROJECT_ROOT_FIELDS` in `search.js` (it adds `_id`, unlike `aggregateHelper.PROJECT_ROOT_FIELDS`), for example `PROJECT_ROOT_SORT_FIELDS`.
-- 2026-09-24: `utils.js` `exports.runDataQuery =async function` is missing a space after `=`.
+- 2026-09-24: The List rank prefetch reads every List item. Filter it to `doctype` / `label` once the data confirms Document type and milestone never point at other List types.
 
 ## Legislation registry: deferred review findings
 
 - 2026-10-01 api/controllers/project.js:634: a PUT with no `legislationYear` returns 404 when the stored `currentLegislationYear` is not an exact key (for example `'legislation_2018 '`, written by the old publish that did not trim) or is missing. Develop wrote the first case and threw on the second. Staff forms always send the year. Count such rows on test; if any exist, read the stored year suffix with `Number()`.
 - 2026-10-01 api/controllers/project.js:619: no test for a PUT that moves a 1996, 2002 or 2018 project to 2025 (allowed, and one-way after that).
 - 2026-10-01 api/dao/projectDAO.js:53: `publishProject` sets `currentLegislationYear` with no lock and no content check; its only caller is its own test. Delete it, or send it through the controller checks.
-- 2026-10-01 api/helpers/constants.js:54: nothing checks at load time that exactly one entry has `isDefault`; only a test does. Throw at load when the count is not 1.
 - 2026-10-01 api/controllers/project.js:741: the 409 for a project that moved under a locked Act before the write names every guarded locked Act joined with "or" (PUT and publish). Read the stored key back and name only that Act. test/controllers/project-locked-act.test.js:161 asserts the joined wording.
 - 2026-10-01 api/controllers/project.js:775: a non-numeric year on a locked project gets 404 from publish but 409 from PUT.
 - 2026-10-01 api/controllers/project.js:401, 627, 766: `Number()` reads `'0x7D2'` and `'2.018e3'` as 2018. Harmless.

@@ -143,8 +143,8 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
 const LIST_LABEL_FIELDS = ['type', 'milestone'];
 const SORT_RANK_ROOT = '_sortRank';
 
-// Shapes a joined `project` as Document rows show it: default legislation merged in, proponent joined.
-const projectShapeStages = () => [
+// Merges a joined `project`'s default legislation in, as Document rows show it.
+const projectDefaultStages = () => [
   ...setProjectDefault(false),
   // We need to merge the legislation key with the Project while preserving the _id and the rest of the document info
   {
@@ -167,7 +167,10 @@ const projectShapeStages = () => [
   },
   {
     '$project': {['project.default']: 0 }
-  },
+  }
+];
+
+const proponentStages = () => [
   {
     '$lookup': {
       from: 'epic',
@@ -184,6 +187,9 @@ const projectShapeStages = () => [
   }
 ];
 
+// Shapes a joined `project` as Document rows show it.
+const projectShapeStages = () => [...projectDefaultStages(), ...proponentStages()];
+
 // Ids grouped by sort value in ascending order; ids whose value is null or missing are left out.
 const groupIdsByValue = (modelName, shapeStages, valuePath, idPath) => mongoose.model(modelName)
   .aggregate([
@@ -193,22 +199,28 @@ const groupIdsByValue = (modelName, shapeStages, valuePath, idPath) => mongoose.
     { $match: { _id: { $ne: null } } },
     { $sort: { _id: 1 } }
   ])
-  .collation({ locale: 'en', strength: 2 })
+  .collation(aggregateHelper.AGGREGATE_COLLATION)
+  .option('maxTimeMS', aggregateHelper.AGGREGATE_MAX_TIME_MS)
   .exec();
 
-const rankGroups = (key, populate) => {
+// `listGroups` returns one List prefetch per call, so a type,milestone sort reads the List collection once.
+const rankGroups = (key, populate, listGroups) => {
   if (LIST_LABEL_FIELDS.includes(key)) {
-    return { idField: key, groups: groupIdsByValue('List', [], 'name', '_id') };
+    return { idField: key, groups: listGroups() };
   }
   // Without populate, project stays an id and a project.* sort has nothing to compare.
   if (populate && key.startsWith('project.')) {
-    const shape = [{ $replaceRoot: { newRoot: { project: '$$ROOT' } } }, ...projectShapeStages()];
+    const shape = [
+      { $replaceRoot: { newRoot: { project: '$$ROOT' } } },
+      ...projectDefaultStages(),
+      ...(key.split('.')[1] === 'proponent' ? proponentStages() : [])
+    ];
     return { idField: 'project', groups: groupIdsByValue('Project', shape, key, 'project._id') };
   }
   return null;
 };
 
-// ponytail: rank arrays hold every List item or Project; cache them if those collections reach tens of thousands.
+// ponytail: cost is matched Documents x rank array length ($indexOfArray scans); join a rank collection if both grow large.
 // Rank of the row's id among the groups; equal values share a rank, an unknown id ranks lowest.
 const rankExpression = (groups, idField) => {
   const ids = groups.flatMap(group => group.ids);
@@ -226,8 +238,10 @@ const withSortRanks = async (pagingAggregation, populate) => {
   const [facetStage, ...rest] = pagingAggregation;
   const { searchResults } = facetStage.$facet;
   const sortStage = searchResults.find(stage => stage.$sort);
+  let listPrefetch;
+  const listGroups = () => (listPrefetch = listPrefetch || groupIdsByValue('List', [], 'name', '_id'));
   const ranked = sortStage
-    ? Object.keys(sortStage.$sort).map(key => ({ key, rank: rankGroups(key, populate) })).filter(({ rank }) => rank)
+    ? Object.keys(sortStage.$sort).map(key => ({ key, rank: rankGroups(key, populate, listGroups) })).filter(({ rank }) => rank)
     : [];
   if (ranked.length === 0) {
     return pagingAggregation;

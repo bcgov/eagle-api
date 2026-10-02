@@ -299,7 +299,7 @@ describe('Legislation registry', () => {
 
   const {
     LEGISLATIONS, LEGISLATION_KEYS, DEFAULT_LEGISLATION_YEAR, LOCKED_KEYS,
-    legislationKey, legislationYearOf, legislationSwitch
+    legislationKey, legislationYearOf, legislationSwitch, defaultLegislationYear
   } = constants;
   const YEARS = Object.keys(LEGISLATIONS).map(Number);
 
@@ -324,6 +324,12 @@ describe('Legislation registry', () => {
   it('has exactly one default entry, 2002', () => {
     expect(YEARS.filter(year => LEGISLATIONS[year].isDefault)).to.deep.equal([2002]);
     expect(DEFAULT_LEGISLATION_YEAR).to.equal(2002);
+  });
+
+  it('refuses a registry without exactly one default entry', () => {
+    expect(defaultLegislationYear({ 2002: {}, 2018: { isDefault: true } })).to.equal(2018);
+    expect(() => defaultLegislationYear({ 2002: {}, 2018: {} })).to.throw('found 0');
+    expect(() => defaultLegislationYear({ 2002: { isDefault: true }, 2018: { isDefault: true } })).to.throw('found 2');
   });
 
   it('locks only the Building Canada Act', () => {
