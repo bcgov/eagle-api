@@ -995,6 +995,42 @@ describe('DemiPush Helper', () => {
         expect(doc).to.not.have.property('salt');
       });
 
+      // A push by id has no copy of its own, so falling back to the snapshot would blank DEMI's row.
+      [['group', 'groups', 'Group'], ['inspection', 'inspections', 'Inspection']].forEach(([kind, segment, modelName]) => {
+        [['fails', model => model.findById.rejects(new Error('mongo unreachable'))], ['misses', model => model.findById.resolves(null)]]
+          .forEach(([outcome, breakRead]) => {
+            it(`should send nothing and log a drop when the re-read of a ${kind} pushed by id ${outcome}`, async () => {
+              stubAllModels(null);
+              breakRead(rows[modelName]);
+              process.env.DEMI_PUSH_OPT_IN_KINDS = segment;
+
+              expect(await demiPush.pushIfMatched(demiPush[kind], { matchedCount: 1 }, 'x1')).to.be.false;
+
+              expect(fetchStub.called).to.be.false;
+              expect(errorStub.calledWithMatch(`[demiPush] push-dropped ${segment} x1: failed (no stored row to send)`)).to.be.true;
+            });
+          });
+      });
+
+      it('should push a group by id with the row Mongo holds once the write matched it', async () => {
+        stubAllModels({ _id: 'g1', name: 'Advisory', members: ['u1'] });
+        process.env.DEMI_PUSH_OPT_IN_KINDS = 'groups';
+
+        expect(await demiPush.pushIfMatched(demiPush.group, { matchedCount: 1 }, 'g1')).to.be.true;
+
+        expect(pushedDoc()).to.deep.equal({ _id: 'g1', name: 'Advisory', members: ['u1'] });
+      });
+
+      it('should neither read nor push by id when the write matched nothing', async () => {
+        stubAllModels({ _id: 'g1' });
+        process.env.DEMI_PUSH_OPT_IN_KINDS = 'groups';
+
+        expect(await demiPush.pushIfMatched(demiPush.group, { matchedCount: 0 }, 'g1')).to.be.true;
+
+        expect(rows.Group.findById.called).to.be.false;
+        expect(fetchStub.called).to.be.false;
+      });
+
       it('should resolve false and log a drop when the users of an organization cannot be read', async () => {
         sinon.stub(mongoose, 'model').withArgs('User').returns({
           find: () => ({ lean: () => Promise.reject(new Error('mongo unreachable')) })

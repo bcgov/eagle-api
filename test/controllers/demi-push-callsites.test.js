@@ -532,6 +532,28 @@ describe('DEMI push call sites', () => {
       expect(demiPush.inspection.calledOnceWithExactly(byId)).to.be.true;
     });
 
+    it('inspection.protectedPostElement does not push the inspection when no inspection matched', async () => {
+      models.Inspection.updateOne.resolves({ matchedCount: 0 });
+
+      await inspectionController.protectedPostElement(inspArgs(), res);
+      await responded;
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(demiPush.inspectionElement.calledOnceWithExactly(saved)).to.be.true;
+      expect(demiPush.inspection.called).to.be.false;
+    });
+
+    it('inspection.protectedPostElementItem does not push the element when no element matched', async () => {
+      models.InspectionElement.updateOne.resolves({ matchedCount: 0 });
+
+      await inspectionController.protectedPostElementItem(itemArgs(null), res);
+      await responded;
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(demiPush.inspectionItem.calledOnceWithExactly(saved)).to.be.true;
+      expect(demiPush.inspectionElement.called).to.be.false;
+    });
+
     [['text', null], ['file', upfile]].forEach(([label, file]) => {
       it(`inspection.protectedPostElementItem (${label}) pushes the saved item and its element by id`, async () => {
         await inspectionController.protectedPostElementItem(itemArgs(file), res);

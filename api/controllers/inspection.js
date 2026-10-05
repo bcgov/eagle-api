@@ -7,14 +7,6 @@ var uploadDir = process.env.UPLOAD_DIRECTORY || './uploads/';
 var MinioController = require('../helpers/minio');
 var demiPush = require('../helpers/demiPush');
 
-// The parent's child list changed through updateOne, which hands back no document; demiPush
-// re-reads the parent itself, and only when its kind is on.
-const pushParentById = (push, result, id) => {
-  if (result && result.matchedCount) {
-    push({ _id: id });
-  }
-};
-
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
 };
@@ -118,7 +110,7 @@ exports.protectedPostElement = async function (args, res) {
       .then(function (updated) {
         Utils.recordAction('Post', 'InspectionElement', args.swagger.params.auth_payload.preferred_username, theDoc._id);
         demiPush.inspectionElement(theDoc);
-        pushParentById(demiPush.inspection, updated, inspId);
+        demiPush.pushIfMatched(demiPush.inspection, updated, inspId);
         return Actions.sendResponse(res, 200, theDoc);
       })
       .catch(function (err) {
@@ -229,7 +221,7 @@ exports.protectedPostElementItem = async function (args, res) {
             }).then(function (theInspection) {
               defaultLog.debug('Updated InspectionElement after item push: %j', theInspection);
               demiPush.inspectionItem(savedDocument);
-              pushParentById(demiPush.inspectionElement, theInspection, elementId);
+              demiPush.pushIfMatched(demiPush.inspectionElement, theInspection, elementId);
               return theInspection;
             }).then(function () {
               return Actions.sendResponse(res, 200, savedDocument);
@@ -291,7 +283,7 @@ exports.protectedPostElementItem = async function (args, res) {
         }).then(function (theInspection) {
           defaultLog.debug('Updated InspectionElement after text item push: %j', theInspection);
           demiPush.inspectionItem(savedDocument);
-          pushParentById(demiPush.inspectionElement, theInspection, elementId);
+          demiPush.pushIfMatched(demiPush.inspectionElement, theInspection, elementId);
           return theInspection;
         }).then(function () {
           return Actions.sendResponse(res, 200, savedDocument);

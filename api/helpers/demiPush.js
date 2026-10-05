@@ -252,6 +252,15 @@ async function currentDoc(kind, id, snapshot) {
   return read.doc;
 }
 
+// Snapshots that carry nothing but an id, so the stored row is the only body there is.
+const idOnly = new WeakSet();
+
+function byId(id) {
+  const snapshot = { _id: id };
+  idOnly.add(snapshot);
+  return snapshot;
+}
+
 function push(kind, id, body) {
   // No /api segment: the APIM machine API's backend already carries it
   return client.push(`/eagle/${kind}/${id}`, body, `${kind} ${id}`);
@@ -267,6 +276,11 @@ function mirrorPush(kind, doc, extra, buildBody) {
   return serialize(`${kind}:${id}`, async () => {
     try {
       const current = await currentDoc(kind, id, doc);
+      // An id-only push has no copy of its own: without the stored row it would blank DEMI's.
+      if (current === doc && idOnly.has(doc)) {
+        dropped(kind, id, 'failed (no stored row to send)');
+        return false;
+      }
       // Pods push the same record independently, so DEMI keeps the newest stamp and drops an older body.
       const pushedAt = Date.now();
       const body = Object.assign(toPushBody(current), extra);
@@ -328,6 +342,15 @@ function optedIn(kind) {
 
 exports.optedIn = optedIn;
 
+// updateOne hands back no document, so the row is pushed by id once the write matched it, and the
+// push re-reads it for the body.
+exports.pushIfMatched = function (pushKind, result, id) {
+  if (!result || !result.matchedCount) {
+    return Promise.resolve(true);
+  }
+  return pushKind(byId(id));
+};
+
 function optInMirror(kind, buildBody) {
   return function (doc, extra) {
     if (!optedIn(kind)) {
@@ -353,7 +376,7 @@ exports.usersOfOrganization = function (orgId) {
   }
   const filter = { _schemaName: 'User', org: new mongoose.Types.ObjectId(String(orgId)) };
   return Promise.resolve(mongoose.model('User').find(filter, '_id').lean())
-    .then(users => Promise.all(users.map(user => exports.user(user))))
+    .then(users => Promise.all(users.map(user => exports.user(byId(user._id)))))
     .then(results => results.every(Boolean))
     .catch(err => {
       dropped('users', `of organization ${orgId}`, 'failed (user lookup failed)', { error: err.message });
