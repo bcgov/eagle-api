@@ -3,6 +3,7 @@ var defaultLog = require('winston').loggers.get('default');
 var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
+var demiPush = require('../helpers/demiPush');
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
@@ -47,6 +48,7 @@ exports.protectedPost = async function (args, res) {
     var u = await user.save();
     Utils.recordAction('Put', 'User', args.swagger.params.auth_payload.preferred_username, u._id);
     defaultLog.info('Saved new user object:', u);
+    demiPush.user(u);
     return Actions.sendResponse(res, 200, u);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
@@ -96,6 +98,7 @@ exports.protectedPut = async function (args, res) {
     var u = await User.findOneAndUpdate({ _id: objId }, user, { upsert: false, returnDocument: 'after' }).exec();
     Utils.recordAction('Put', 'User', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Organization updated:', u);
+    demiPush.user(u);
     return Actions.sendResponse(res, 200, u);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);

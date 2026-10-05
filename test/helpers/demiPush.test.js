@@ -51,6 +51,15 @@ const MIRRORED = [
   ['projectNotification', 'notifications']
 ];
 
+// Kinds gated by DEMI_PUSH_OPT_IN_KINDS: [export name, DEMI route segment, mongoose model]
+const OPT_IN = [
+  ['user', 'users', 'User'],
+  ['group', 'groups', 'Group'],
+  ['inspection', 'inspections', 'Inspection'],
+  ['inspectionElement', 'inspection-elements', 'InspectionElement'],
+  ['inspectionItem', 'inspection-items', 'InspectionItem']
+];
+
 const PERIOD = '5f4c7d1e2b3a4c5d6e7f0005';
 
 // Every field eagle-public reads off a published comment. No email: the Comment model has none.
@@ -887,6 +896,110 @@ describe('DemiPush Helper', () => {
       fetchStub.resolves(failResponse(404));
 
       expect(await demiPush.document({ _id: 'd1' })).to.be.false;
+    });
+
+    // DEMI has no route for these yet, so they stay off until DEMI_PUSH_OPT_IN_KINDS names them.
+    describe('opt-in kinds', () => {
+      let originalOptIn;
+      let rows;
+
+      const connected = (name, row) => ({
+        modelName: name,
+        db: { readyState: 1 },
+        findById: sinon.stub().resolves(row)
+      });
+
+      // Every model the push could reach, connected, so a read would show up on its findById.
+      function stubAllModels(row) {
+        rows = {};
+        const model = sinon.stub(mongoose, 'model');
+        OPT_IN.forEach(([, , modelName]) => {
+          rows[modelName] = connected(modelName, row);
+          model.withArgs(modelName).returns(rows[modelName]);
+        });
+      }
+
+      beforeEach(() => {
+        originalOptIn = process.env.DEMI_PUSH_OPT_IN_KINDS;
+        delete process.env.DEMI_PUSH_OPT_IN_KINDS;
+        fetchStub.resolves(okResponse());
+      });
+
+      afterEach(() => {
+        if (originalOptIn === undefined) { delete process.env.DEMI_PUSH_OPT_IN_KINDS; } else { process.env.DEMI_PUSH_OPT_IN_KINDS = originalOptIn; }
+      });
+
+      OPT_IN.forEach(([kind, segment, modelName]) => {
+        it(`should neither read Mongo nor call fetch for ${kind} while the opt-in list is unset`, async () => {
+          stubAllModels({ _id: 'x1' });
+
+          expect(await demiPush[kind]({ _id: 'x1' })).to.be.true;
+
+          expect(fetchStub.called).to.be.false;
+          expect(rows[modelName].findById.called).to.be.false;
+          expect(demiPush._pendingCount()).to.equal(0);
+        });
+
+        it(`should PUT the ${kind} as Mongo holds it to the APIM eagle ${segment} route once opted in`, async () => {
+          stubAllModels({ _id: 'x1', name: 'Stored', read: ['sysadmin'] });
+          process.env.DEMI_PUSH_OPT_IN_KINDS = segment;
+
+          expect(await demiPush[kind]({ _id: 'x1', name: 'Caller copy' })).to.be.true;
+
+          const [url, options] = fetchStub.firstCall.args;
+          expect(url).to.equal(`${BASE}/eagle/${segment}/x1`);
+          expect(options.method).to.equal('PUT');
+          expect(pushedBody(options.body)).to.deep.equal({ doc: { _id: 'x1', name: 'Stored', read: ['sysadmin'] } });
+        });
+      });
+
+      it('should skip a kind the opt-in list does not name, even with others on it', async () => {
+        stubAllModels({ _id: 'u1' });
+        process.env.DEMI_PUSH_OPT_IN_KINDS = 'groups,inspections';
+
+        await demiPush.user({ _id: 'u1' });
+
+        expect(fetchStub.called).to.be.false;
+        expect(rows.User.findById.called).to.be.false;
+      });
+
+      it('should read a spaced opt-in list', async () => {
+        stubAllModels(null);
+        process.env.DEMI_PUSH_OPT_IN_KINDS = ' users , inspection-items ';
+
+        await demiPush.inspectionItem({ _id: 'i1' });
+
+        expect(fetchStub.firstCall.args[0]).to.equal(`${BASE}/eagle/inspection-items/i1`);
+      });
+
+      it('should flag a deleted group with the caller\'s copy once the row is gone', async () => {
+        stubAllModels(null);
+        process.env.DEMI_PUSH_OPT_IN_KINDS = 'groups';
+        const group = { _id: 'g1', project: 'p1', members: ['u1'] };
+
+        await demiPush.group(group, { isDeleted: true });
+
+        expect(pushedDoc()).to.deep.equal({ _id: 'g1', project: 'p1', members: ['u1'], isDeleted: true });
+        expect(group).to.not.have.property('isDeleted');
+      });
+
+      it('should leave a password hash and salt out of a user push', async () => {
+        stubAllModels({ _id: 'u1', displayName: 'Jane', password: 'hash', salt: 'salt' });
+        process.env.DEMI_PUSH_OPT_IN_KINDS = 'users';
+
+        await demiPush.user({ _id: 'u1' });
+
+        const doc = pushedDoc();
+        expect(doc.displayName).to.equal('Jane');
+        expect(doc).to.not.have.property('password');
+        expect(doc).to.not.have.property('salt');
+      });
+
+      it('should keep pushing the existing kinds with the opt-in list unset', async () => {
+        await demiPush.comment({ _id: 'c1' });
+
+        expect(fetchStub.firstCall.args[0]).to.equal(`${BASE}/eagle/comments/c1`);
+      });
     });
   });
 });

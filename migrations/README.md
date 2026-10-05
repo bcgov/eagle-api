@@ -131,7 +131,8 @@ Options, in full under `--help`. A flag with a missing or empty value, or follow
 another flag (an unset `$IDS` in `--ids-file $IDS --live`), exits 2 rather than widening the run.
 
 - `--kind` — required, or `--kinds`: `project`, `document`, `commentPeriod`, `comment`,
-  `organization`, `projectNotification`, `recentActivity` (Updates). The `project` kind needs
+  `organization`, `projectNotification`, `recentActivity` (Updates), `user`, `group`,
+  `inspection`, `inspectionElement`, `inspectionItem`. The `project` kind needs
   `--concurrency 1`, and `--ids-file` when live.
 - `--kinds a,b` — several kinds, run one after another in the order given; not together with
   `--kind`. List parents first so they land before their children. The run stops after a kind with
@@ -145,8 +146,9 @@ another flag (an unset `$IDS` in `--ids-file $IDS --live`), exits 2 rather than 
   are not paced, and prod live traffic has not been measured, so start lower on prod (e.g.
   `--rate 60`) and raise it only while no `429` shows up.
 - `--since <ISO>` — only records stamped at or after the date. A project keeps its timestamps inside
-  the legislation blocks, so the filter is on `legislation_*.dateUpdated`; a projectNotification has
-  no update stamp and the script refuses `--since` for it rather than quietly matching everything.
+  the legislation blocks, so the filter is on `legislation_*.dateUpdated`; a projectNotification,
+  user or group has no update stamp and the script refuses `--since` for it rather than quietly
+  matching everything.
 - `--limit N` — stop after N records of each kind. Good for a first `--live` pass on a handful.
 - `--state <path>` — checkpoint file, written after every settled batch. A rerun with the same path
   starts after the last `_id` it holds, so an `oc exec` session that drops can be resumed instead of
@@ -160,7 +162,10 @@ another flag (an unset `$IDS` in `--ids-file $IDS --live`), exits 2 rather than 
   retry then starts a second update of the same project.
 
 Pushes need `DEMI_API_BASE` and `DEMI_APIM_KEY`, the same pair `demiPush` runs on. Without them the
-script exits 2 instead of reporting a run that sent nothing.
+script exits 2 instead of reporting a run that sent nothing. The `user`, `group`, `inspection`,
+`inspectionElement` and `inspectionItem` kinds also need `DEMI_PUSH_OPT_IN_KINDS` to list their
+DEMI route segment (`users`, `groups`, `inspections`, `inspection-elements`, `inspection-items`);
+the live pods push them only on the same condition. Without it the script exits 2 for that kind.
 
 A record DEMI does not accept is counted as failed, named in the log and listed under `failedIds` in
 the state file. The checkpoint then stops advancing: it holds at the last record with nothing failed

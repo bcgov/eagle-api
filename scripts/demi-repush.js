@@ -53,7 +53,7 @@ const PROGRESS_EVERY = 100;
 // sinceFields are the timestamp candidates for --since; only the ones the schema declares as a
 // Date are used, because the matching dateAdded fields are Strings and would compare as text.
 // A project keeps its dates inside the legislation blocks, not at the top level, and a
-// projectNotification has no update stamp at all, so --since is refused for that kind.
+// projectNotification, user or group has no update stamp at all, so --since is refused for those.
 const KINDS = {
   project: {
     model: 'Project',
@@ -66,7 +66,19 @@ const KINDS = {
   comment: { model: 'Comment', schemaName: 'Comment', push: 'comment', sinceFields: ['dateUpdated', 'dateAdded'] },
   organization: { model: 'Organization', schemaName: 'Organization', push: 'organization', sinceFields: ['dateUpdated', 'dateAdded'] },
   projectNotification: { model: 'ProjectNotification', schemaName: 'ProjectNotification', push: 'projectNotification', sinceFields: [] },
-  recentActivity: { model: 'RecentActivity', schemaName: 'RecentActivity', push: 'recentActivity', sinceFields: ['dateUpdated', 'dateAdded'] }
+  recentActivity: { model: 'RecentActivity', schemaName: 'RecentActivity', push: 'recentActivity', sinceFields: ['dateUpdated', 'dateAdded'] },
+  // optIn is the DEMI route segment DEMI_PUSH_OPT_IN_KINDS has to name before demiPush sends the kind.
+  user: { model: 'User', schemaName: 'User', push: 'user', sinceFields: [], optIn: 'users' },
+  group: { model: 'Group', schemaName: 'Group', push: 'group', sinceFields: [], optIn: 'groups' },
+  inspection: { model: 'Inspection', schemaName: 'Inspection', push: 'inspection', sinceFields: ['_updatedDate', '_createdDate'], optIn: 'inspections' },
+  inspectionElement: {
+    model: 'InspectionElement', schemaName: 'InspectionElement', push: 'inspectionElement',
+    sinceFields: ['_updatedDate', '_createdDate'], optIn: 'inspection-elements'
+  },
+  inspectionItem: {
+    model: 'InspectionItem', schemaName: 'InspectionItem', push: 'inspectionItem',
+    sinceFields: ['_updatedDate', '_createdDate'], optIn: 'inspection-items'
+  }
 };
 
 const USAGE = `Re-push existing eagle-api records to DEMI through api/helpers/demiPush.js.
@@ -99,7 +111,8 @@ A flag given with a missing or empty value, or followed straight by another flag
 
 Connection comes from the same env vars run_migration.js uses: MONGODB_SERVICE_HOST, MONGODB_PORT,
 MONGODB_DATABASE, MONGODB_USERNAME, MONGODB_PASSWORD, MONGODB_AUTHSOURCE. Pushes need DEMI_API_BASE
-and DEMI_APIM_KEY; without them the run exits 2 rather than reporting a silent success.
+and DEMI_APIM_KEY; without them the run exits 2 rather than reporting a silent success. The user, group
+and inspection kinds also need their DEMI route segment in DEMI_PUSH_OPT_IN_KINDS, else exit 2.
 
 Exit codes: 0 everything pushed, 1 the run itself failed, 2 bad arguments or DEMI not configured,
 3 the run finished with records DEMI did not accept.`;
@@ -434,6 +447,11 @@ function validate(args) {
   }
   if (args.kinds.length === 0) {
     return `--kind or --kinds is required: ${Object.keys(KINDS).join(', ')}`;
+  }
+  // Otherwise every record would count as pushed while demiPush sent nothing.
+  const offKind = args.kinds.find(kind => KINDS[kind].optIn && !demiPush.optedIn(KINDS[kind].optIn));
+  if (offKind !== undefined) {
+    return `--kind ${offKind} pushes nothing until DEMI_PUSH_OPT_IN_KINDS includes ${KINDS[offKind].optIn}`;
   }
   if (args.unknown.length > 0) {
     return `Unknown argument: ${args.unknown.join(' ')}`;

@@ -149,8 +149,18 @@ async function enrichProject(project) {
 
 const CONNECTED = 1;
 
+// DEMI route segment and Mongoose model of each kind that pushes only when named in
+// DEMI_PUSH_OPT_IN_KINDS, so a tag can ship before DEMI has the routes.
+const OPT_IN_KINDS = {
+  users: 'User',
+  groups: 'Group',
+  inspections: 'Inspection',
+  'inspection-elements': 'InspectionElement',
+  'inspection-items': 'InspectionItem'
+};
+
 // Mongoose model behind each DEMI route segment, for the re-read before a push.
-const MODEL_BY_KIND = {
+const MODEL_BY_KIND = Object.assign({
   projects: 'Project',
   documents: 'Document',
   commentperiods: 'CommentPeriod',
@@ -158,7 +168,7 @@ const MODEL_BY_KIND = {
   organizations: 'Organization',
   notifications: 'ProjectNotification',
   updates: 'RecentActivity'
-};
+}, OPT_IN_KINDS);
 const KIND_BY_MODEL = Object.fromEntries(Object.entries(MODEL_BY_KIND).map(([kind, model]) => [model, kind]));
 
 const dropped = (kind, id, reason, meta) => pushClient.logDropped('demiPush', `${kind} ${id}`, reason, meta);
@@ -291,15 +301,17 @@ exports.document = function (doc, extra) {
   });
 };
 
+const asDoc = body => ({ doc: body });
+
 exports.recentActivity = function (doc) {
-  return mirrorPush('updates', doc, null, body => ({ doc: body }));
+  return mirrorPush('updates', doc, null, asDoc);
 };
 
 // Kinds that need no lookup: the stored document is the whole payload, read[] included, and DEMI
 // derives visibility from it.
 function mirror(kind) {
   return function (doc, extra) {
-    return mirrorPush(kind, doc, extra, body => ({ doc: body }));
+    return mirrorPush(kind, doc, extra, asDoc);
   };
 }
 
@@ -307,6 +319,34 @@ exports.commentPeriod = mirror('commentperiods');
 exports.comment = mirror('comments');
 exports.organization = mirror('organizations');
 exports.projectNotification = mirror('notifications');
+
+// Comma-separated route segments, read per call so the gate needs no restart to test. The check
+// comes first: an unlisted kind costs no Mongo read and no HTTP call.
+function optedIn(kind) {
+  return (process.env.DEMI_PUSH_OPT_IN_KINDS || '').split(',').some(name => name.trim() === kind);
+}
+
+exports.optedIn = optedIn;
+
+function optInMirror(kind, buildBody) {
+  return function (doc, extra) {
+    if (!optedIn(kind)) {
+      return Promise.resolve(true);
+    }
+    return mirrorPush(kind, doc, extra, buildBody);
+  };
+}
+
+exports.user = optInMirror('users', body => {
+  // Legacy User rows can still hold a password hash and salt; neither leaves eagle-api.
+  delete body.password;
+  delete body.salt;
+  return { doc: body };
+});
+exports.group = optInMirror('groups', asDoc);
+exports.inspection = optInMirror('inspections', asDoc);
+exports.inspectionElement = optInMirror('inspection-elements', asDoc);
+exports.inspectionItem = optInMirror('inspection-items', asDoc);
 
 // One config document, one id, and `body` is already the payload GET /api/config served — no
 // `{ doc }` envelope, because there is no _id here for DEMI to match the path against.
