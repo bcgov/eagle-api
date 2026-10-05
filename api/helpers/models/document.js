@@ -36,6 +36,8 @@ module.exports = require ('../models')('Document', {
   internalURL      : { type:String, default:'' },
   internalExt      : { type:String, default:'' },
   internalSize     : { type:String, default:'' },
+  // sha256 hex of the bytes as uploaded; null on rows uploaded before it was recorded
+  internalOriginalSha256 : { type:String, default:null },
   passedAVCheck    : { type: Boolean, default: false },
   internalMime     : { type:String, default:'' },
 

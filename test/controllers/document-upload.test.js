@@ -1,6 +1,7 @@
 /**
  * Admin document upload (POST /document): images uploaded from the Update form (documentSource
- * 'UPDATE') must be a small web image; every other source keeps the old limits.
+ * 'UPDATE') must be a small web image; every other source keeps the old limits. Both admin and
+ * public uploads record the sha256 of the uploaded bytes.
  */
 
 'use strict';
@@ -18,6 +19,8 @@ const documentController = require('../../api/controllers/document');
 
 const PROJECT_ID = '5f4c7d1e2b3a4c5d6e7f8091';
 const MB = 1024 * 1024;
+// Known answer: sha256('abc'), so the test does not repeat the code under test.
+const ABC_SHA256 = 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
 // First bytes of each allowed image type; the upload check reads them.
 const HEADERS = {
   'image/jpeg': Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
@@ -52,6 +55,7 @@ describe('Document upload limits by source', () => {
     function MockDocument() {
       this.save = () => { stored = this; return Promise.resolve(this); };
     }
+    MockDocument.updateOne = () => Promise.resolve();
     sinon.stub(mongoose, 'model').returns(MockDocument);
     sinon.stub(MinioController, 'putDocument').resolves({ path: 'minio/file', extension: 'png' });
     sinon.stub(MinioController, 'deleteDocument').resolves();
@@ -172,5 +176,29 @@ describe('Document upload limits by source', () => {
 
     expect(res.status.calledWith(200)).to.be.true;
     expect(stored.documentSource).to.equal('PROJECT');
+  });
+
+  it('records the sha256 of the bytes an admin uploads', async () => {
+    await documentController.protectedPost(uploadArgs('PROJECT',
+      { mimetype: 'application/pdf', originalname: 'report.pdf', size: 3, buffer: Buffer.from('abc') }), res);
+
+    expect(res.status.calledWith(200)).to.be.true;
+    expect(stored.internalOriginalSha256).to.equal(ABC_SHA256);
+  });
+
+  it('records the sha256 of the bytes a member of the public uploads', async () => {
+    const args = {
+      swagger: { params: {
+        project: { value: PROJECT_ID },
+        _comment: { value: '5f4c7d1e2b3a4c5d6e7f8092' },
+        upfile: { value: { mimetype: 'application/pdf', originalname: 'letter.pdf', size: 3, buffer: Buffer.from('abc') } }
+      } },
+      body: { documentAuthor: 'A. Person', documentAuthorType: '5f4c7d1e2b3a4c5d6e7f8093' }
+    };
+
+    await documentController.unProtectedPost(args, res);
+
+    expect(res.status.calledWith(200)).to.be.true;
+    expect(stored.internalOriginalSha256).to.equal(ABC_SHA256);
   });
 });
