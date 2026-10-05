@@ -428,7 +428,7 @@ describe('DEMI push call sites', () => {
 
   // Opt-in kinds. Each stub never settles, so a handler that waited on its push would never answer.
   describe('opt-in kinds', () => {
-    const NEW_KINDS = ['user', 'group', 'inspection', 'inspectionElement', 'inspectionItem'];
+    const NEW_KINDS = ['user', 'group', 'inspection', 'inspectionElement', 'inspectionItem', 'usersOfOrganization'];
     const byId = { _id: OID };
     let responded;
 
@@ -467,6 +467,14 @@ describe('DEMI push call sites', () => {
         expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
         expect(demiPush[kind].calledOnceWithExactly(saved)).to.be.true;
       });
+    });
+
+    it('organization.protectedPut answers 200 without waiting on its push of the renamed org\'s users', async () => {
+      await organizationController.protectedPut(orgArgs(), res);
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(demiPush.usersOfOrganization.calledOnce).to.be.true;
+      expect(String(demiPush.usersOfOrganization.firstCall.args[0])).to.equal(OID);
     });
 
     it('group.protectedGroupDelete pushes the deleted group flagged isDeleted', async () => {
@@ -535,7 +543,7 @@ describe('DEMI push call sites', () => {
       });
     });
 
-    describe('with DEMI configured and the opt-in list unset', () => {
+    describe('with DEMI configured', () => {
       let originalEnv;
 
       beforeEach(() => {
@@ -544,6 +552,7 @@ describe('DEMI push call sites', () => {
         process.env.DEMI_APIM_KEY = 'test-key';
         delete process.env.DEMI_PUSH_OPT_IN_KINDS;
         demiPush.group.restore();
+        demiPush.usersOfOrganization.restore();
         sinon.stub(global, 'fetch').resolves({ ok: true, status: 200 });
       });
 
@@ -553,13 +562,36 @@ describe('DEMI push call sites', () => {
         });
       });
 
-      it('group.protectedAddGroupMembers makes no Mongo read and no HTTP call for DEMI', async () => {
+      it('group.protectedAddGroupMembers makes no Mongo read and no HTTP call for DEMI while the opt-in list is unset', async () => {
         await projectGroupController.protectedAddGroupMembers(groupArgs(), res);
         await new Promise(setImmediate);
 
         expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
         expect(models.Group.findById.called).to.be.false;
         expect(global.fetch.called).to.be.false;
+      });
+
+      it('organization.protectedPut makes no User read and no HTTP call for DEMI while the opt-in list is unset', async () => {
+        await organizationController.protectedPut(orgArgs(), res);
+        await new Promise(setImmediate);
+
+        expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+        expect(models.User.find.called).to.be.false;
+        expect(demiPush.user.called).to.be.false;
+        expect(global.fetch.called).to.be.false;
+      });
+
+      it('organization.protectedPut pushes each user of the org by id once users is opted in', async () => {
+        process.env.DEMI_PUSH_OPT_IN_KINDS = 'users';
+
+        await organizationController.protectedPut(orgArgs(), res);
+        await new Promise(setImmediate);
+
+        expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+        const [filter, projection] = models.User.find.firstCall.args;
+        expect(String(filter.org)).to.equal(OID);
+        expect(projection).to.equal('_id');
+        expect(demiPush.user.calledOnceWith(sinon.match({ _id: OID }))).to.be.true;
       });
     });
   });

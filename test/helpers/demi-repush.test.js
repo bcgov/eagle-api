@@ -5,6 +5,7 @@
  * push, so none of this needs Mongo or DEMI.
  */
 
+const childProcess = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -246,6 +247,48 @@ describe('demi-repush', () => {
       const query = buildQuery(KINDS.recentActivity, { model: fakeModel({}) });
 
       expect(query._schemaName).to.equal('RecentActivity');
+    });
+  });
+
+  // demiPush skips these kinds unless DEMI_PUSH_OPT_IN_KINDS names them, so a live run must not count
+  // records as pushed while nothing was sent.
+  describe('opt-in kinds', () => {
+    const SCRIPT = path.join(__dirname, '../../scripts/demi-repush.js');
+    let originalEnv;
+
+    beforeEach(() => {
+      originalEnv = Object.assign({}, process.env);
+      process.env.DEMI_API_BASE = 'https://demi.test';
+      process.env.DEMI_APIM_KEY = 'test-key';
+      delete process.env.DEMI_PUSH_OPT_IN_KINDS;
+    });
+
+    afterEach(() => {
+      ['DEMI_API_BASE', 'DEMI_APIM_KEY', 'DEMI_PUSH_OPT_IN_KINDS'].forEach(name => {
+        if (originalEnv[name] === undefined) { delete process.env[name]; } else { process.env[name] = originalEnv[name]; }
+      });
+    });
+
+    it('exits 2 before any push for a kind not opted in', () => {
+      // Port 9 is discard: had the run gone on to push, it would fail rather than exit 2.
+      const env = Object.assign({}, process.env, { DEMI_API_BASE: 'http://127.0.0.1:9' });
+      const result = childProcess.spawnSync(process.execPath, [SCRIPT, '--kind', 'group', '--live'], { env, encoding: 'utf8', timeout: 5000 });
+
+      expect(result.status).to.equal(2);
+      expect(result.stderr).to.contain('--kind group pushes nothing until DEMI_PUSH_OPT_IN_KINDS includes groups');
+    });
+
+    it('sends an opted-in kind to its DEMI route', async () => {
+      process.env.DEMI_PUSH_OPT_IN_KINDS = 'groups';
+      const fetchStub = sinon.stub(global, 'fetch').resolves(new Response(null, { status: 200 }));
+
+      expect(validate(parseArgs(['--kind', 'group', '--live']))).to.be.null;
+      const counts = await repush({
+        cursor: fakeCursor([{ _id: 'g1' }]), push: doc => demiPush[KINDS.group.push](doc), log: quietLog(), dryRun: false
+      });
+
+      expect(counts).to.include({ pushed: 1, failed: 0 });
+      expect(fetchStub.firstCall.args[0]).to.equal('https://demi.test/eagle/groups/g1');
     });
   });
 

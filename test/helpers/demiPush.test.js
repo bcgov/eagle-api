@@ -995,6 +995,18 @@ describe('DemiPush Helper', () => {
         expect(doc).to.not.have.property('salt');
       });
 
+      it('should resolve false and log a drop when the users of an organization cannot be read', async () => {
+        sinon.stub(mongoose, 'model').withArgs('User').returns({
+          find: () => ({ lean: () => Promise.reject(new Error('mongo unreachable')) })
+        });
+        process.env.DEMI_PUSH_OPT_IN_KINDS = 'users';
+
+        expect(await demiPush.usersOfOrganization('5f4c7d1e2b3a4c5d6e7f00aa')).to.be.false;
+
+        expect(fetchStub.called).to.be.false;
+        expect(errorStub.calledWithMatch('[demiPush] push-dropped users of organization 5f4c7d1e2b3a4c5d6e7f00aa: failed (user lookup failed)')).to.be.true;
+      });
+
       it('should keep pushing the existing kinds with the opt-in list unset', async () => {
         await demiPush.comment({ _id: 'c1' });
 

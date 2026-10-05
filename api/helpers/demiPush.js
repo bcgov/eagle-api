@@ -344,6 +344,22 @@ exports.user = optInMirror('users', body => {
   return { doc: body };
 });
 exports.group = optInMirror('groups', asDoc);
+
+// An organization rename rewrites orgName on its users through updateMany, which names no ids, so
+// they are looked up here: ids only, and only once the users kind is on.
+exports.usersOfOrganization = function (orgId) {
+  if (!optedIn('users') || !client.configured()) {
+    return Promise.resolve(true);
+  }
+  const filter = { _schemaName: 'User', org: new mongoose.Types.ObjectId(String(orgId)) };
+  return Promise.resolve(mongoose.model('User').find(filter, '_id').lean())
+    .then(users => Promise.all(users.map(user => exports.user(user))))
+    .then(results => results.every(Boolean))
+    .catch(err => {
+      dropped('users', `of organization ${orgId}`, 'failed (user lookup failed)', { error: err.message });
+      return false;
+    });
+};
 exports.inspection = optInMirror('inspections', asDoc);
 exports.inspectionElement = optInMirror('inspection-elements', asDoc);
 exports.inspectionItem = optInMirror('inspection-items', asDoc);
