@@ -149,8 +149,18 @@ async function enrichProject(project) {
 
 const CONNECTED = 1;
 
+// DEMI route segment and Mongoose model of each kind that pushes only when named in
+// DEMI_PUSH_OPT_IN_KINDS, so a tag can ship before DEMI has the routes.
+const OPT_IN_KINDS = {
+  users: 'User',
+  groups: 'Group',
+  inspections: 'Inspection',
+  'inspection-elements': 'InspectionElement',
+  'inspection-items': 'InspectionItem'
+};
+
 // Mongoose model behind each DEMI route segment, for the re-read before a push.
-const MODEL_BY_KIND = {
+const MODEL_BY_KIND = Object.assign({
   projects: 'Project',
   documents: 'Document',
   commentperiods: 'CommentPeriod',
@@ -158,7 +168,7 @@ const MODEL_BY_KIND = {
   organizations: 'Organization',
   notifications: 'ProjectNotification',
   updates: 'RecentActivity'
-};
+}, OPT_IN_KINDS);
 const KIND_BY_MODEL = Object.fromEntries(Object.entries(MODEL_BY_KIND).map(([kind, model]) => [model, kind]));
 
 const dropped = (kind, id, reason, meta) => pushClient.logDropped('demiPush', `${kind} ${id}`, reason, meta);
@@ -242,6 +252,15 @@ async function currentDoc(kind, id, snapshot) {
   return read.doc;
 }
 
+// Snapshots that carry nothing but an id, so the stored row is the only body there is.
+const idOnly = new WeakSet();
+
+function byId(id) {
+  const snapshot = { _id: id };
+  idOnly.add(snapshot);
+  return snapshot;
+}
+
 function push(kind, id, body) {
   // No /api segment: the APIM machine API's backend already carries it
   return client.push(`/eagle/${kind}/${id}`, body, `${kind} ${id}`);
@@ -257,6 +276,11 @@ function mirrorPush(kind, doc, extra, buildBody) {
   return serialize(`${kind}:${id}`, async () => {
     try {
       const current = await currentDoc(kind, id, doc);
+      // An id-only push has no copy of its own: without the stored row it would blank DEMI's.
+      if (current === doc && idOnly.has(doc)) {
+        dropped(kind, id, 'failed (no stored row to send)');
+        return false;
+      }
       // Pods push the same record independently, so DEMI keeps the newest stamp and drops an older body.
       const pushedAt = Date.now();
       const body = Object.assign(toPushBody(current), extra);
@@ -291,15 +315,17 @@ exports.document = function (doc, extra) {
   });
 };
 
+const asDoc = body => ({ doc: body });
+
 exports.recentActivity = function (doc) {
-  return mirrorPush('updates', doc, null, body => ({ doc: body }));
+  return mirrorPush('updates', doc, null, asDoc);
 };
 
 // Kinds that need no lookup: the stored document is the whole payload, read[] included, and DEMI
 // derives visibility from it.
 function mirror(kind) {
   return function (doc, extra) {
-    return mirrorPush(kind, doc, extra, body => ({ doc: body }));
+    return mirrorPush(kind, doc, extra, asDoc);
   };
 }
 
@@ -307,6 +333,59 @@ exports.commentPeriod = mirror('commentperiods');
 exports.comment = mirror('comments');
 exports.organization = mirror('organizations');
 exports.projectNotification = mirror('notifications');
+
+// Comma-separated route segments, read per call so the gate needs no restart to test. The check
+// comes first: an unlisted kind costs no Mongo read and no HTTP call.
+function optedIn(kind) {
+  return (process.env.DEMI_PUSH_OPT_IN_KINDS || '').split(',').some(name => name.trim() === kind);
+}
+
+exports.optedIn = optedIn;
+
+// updateOne hands back no document, so the row is pushed by id once the write matched it, and the
+// push re-reads it for the body.
+exports.pushIfMatched = function (pushKind, result, id) {
+  if (!result || !result.matchedCount) {
+    return Promise.resolve(true);
+  }
+  return pushKind(byId(id));
+};
+
+function optInMirror(kind, buildBody) {
+  return function (doc, extra) {
+    if (!optedIn(kind)) {
+      return Promise.resolve(true);
+    }
+    return mirrorPush(kind, doc, extra, buildBody);
+  };
+}
+
+exports.user = optInMirror('users', body => {
+  // Legacy User rows can still hold a password hash and salt; neither leaves eagle-api.
+  delete body.password;
+  delete body.salt;
+  return { doc: body };
+});
+exports.group = optInMirror('groups', asDoc);
+
+// An organization rename rewrites orgName on its users through updateMany, which names no ids, so
+// they are looked up here: ids only, and only once the users kind is on.
+exports.usersOfOrganization = function (orgId) {
+  if (!optedIn('users') || !client.configured()) {
+    return Promise.resolve(true);
+  }
+  const filter = { _schemaName: 'User', org: new mongoose.Types.ObjectId(String(orgId)) };
+  return Promise.resolve(mongoose.model('User').find(filter, '_id').lean())
+    .then(users => Promise.all(users.map(user => exports.user(byId(user._id)))))
+    .then(results => results.every(Boolean))
+    .catch(err => {
+      dropped('users', `of organization ${orgId}`, 'failed (user lookup failed)', { error: err.message });
+      return false;
+    });
+};
+exports.inspection = optInMirror('inspections', asDoc);
+exports.inspectionElement = optInMirror('inspection-elements', asDoc);
+exports.inspectionItem = optInMirror('inspection-items', asDoc);
 
 // One config document, one id, and `body` is already the payload GET /api/config served — no
 // `{ doc }` envelope, because there is no _id here for DEMI to match the path against.

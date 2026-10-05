@@ -166,6 +166,7 @@ exports.protectedPut = async function (args, res) {
     Utils.recordAction('Put', 'Organization', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Organization updated:', org);
     demiPush.organization(org);
+    demiPush.usersOfOrganization(objId);
     return Actions.sendResponse(res, 200, org);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);

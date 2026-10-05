@@ -20,6 +20,9 @@ const commentPeriodController = require('../../api/controllers/commentperiod');
 const commentController = require('../../api/controllers/comment');
 const organizationController = require('../../api/controllers/organization');
 const projectNotificationController = require('../../api/controllers/projectNotification');
+const userController = require('../../api/controllers/user');
+const projectGroupController = require('../../api/controllers/projectGroup');
+const inspectionController = require('../../api/controllers/inspection');
 
 const OID = '5f4c7d1e2b3a4c5d6e7f8091';
 const p = value => ({ value });
@@ -85,6 +88,32 @@ const pnArgs = () => ({
     params: {
       projectNotificationId: p(OID), projectNotification: p({ name: 'N', type: 'T' }),
       publish: p(false), auth_payload: auth
+    }
+  }
+});
+
+const userArgs = () => ({
+  swagger: { params: { userId: p(OID), user: p({ firstName: 'Jane', orgName: 'Acme' }), auth_payload: auth } }
+});
+
+const groupArgs = () => ({
+  swagger: {
+    params: {
+      projId: p(OID), groupId: p(OID), memberId: p(OID), group: p({ group: 'Advisory' }),
+      groupObject: p({ name: 'Renamed' }), members: p([OID]), auth_payload: auth
+    }
+  }
+});
+
+const inspArgs = () => ({
+  swagger: { params: { inspId: p(OID), inspection: p({ inspectionId: 'mobile-1', project: OID }), auth_payload: auth } }
+});
+
+const itemArgs = file => ({
+  swagger: {
+    params: {
+      upfile: p(file), itemId: p(OID), project: p(OID), elementId: p(OID), type: p('photo'),
+      timestamp: p(null), caption: p('c'), text: p('"note"'), geo: p('[1,2]'), auth_payload: auth
     }
   }
 });
@@ -394,6 +423,198 @@ describe('DEMI push call sites', () => {
       expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
       expect(demiPush.comment.calledOnceWithExactly(null)).to.be.true;
       expect(error.calledWithMatch(`[demiPush] push-dropped comments ${OID}: failed (not found on re-read)`)).to.be.true;
+    });
+  });
+
+  // Opt-in kinds. Each stub never settles, so a handler that waited on its push would never answer.
+  describe('opt-in kinds', () => {
+    const NEW_KINDS = ['user', 'group', 'inspection', 'inspectionElement', 'inspectionItem', 'usersOfOrganization'];
+    const byId = { _id: OID };
+    let responded;
+
+    // Group handlers push onto the ACL arrays a mongoose document starts with.
+    function withAcl(M) {
+      const Acl = function (init) { M.call(this, init); this.read = []; this.write = []; this.delete = []; };
+      Object.assign(Acl, M);
+      Acl.prototype = M.prototype;
+      return Acl;
+    }
+
+    beforeEach(() => {
+      NEW_KINDS.forEach(kind => sinon.stub(demiPush, kind).returns(new Promise(() => {})));
+      models.Group = withAcl(model('Group'));
+      ['Inspection', 'InspectionElement', 'InspectionItem'].forEach(name => {
+        models[name] = model(name);
+        // The mobile app's id is new, so every post saves rather than handing back a stored row.
+        models[name].findOne = sinon.stub().resolves(null);
+        models[name].updateOne = sinon.stub().resolves({ matchedCount: 1 });
+      });
+      models.InspectionItem.prototype.markModified = () => {};
+      models.Group.updateOne = sinon.stub().resolves({ matchedCount: 1 });
+      // Inspection handlers answer from a promise chain they do not return.
+      responded = new Promise(resolve => res.json.callsFake(resolve));
+    });
+
+    [
+      ['user', userController, 'protectedPost', userArgs],
+      ['user', userController, 'protectedPut', userArgs],
+      ['group', projectGroupController, 'protectedAddGroup', groupArgs],
+      ['group', projectGroupController, 'protectedGroupPut', groupArgs]
+    ].forEach(([kind, ctrl, handler, args]) => {
+      it(`${kind}.${handler} answers 200 without waiting on its push of the saved ${kind}`, async () => {
+        await ctrl[handler](args(), res);
+
+        expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+        expect(demiPush[kind].calledOnceWithExactly(saved)).to.be.true;
+      });
+    });
+
+    it('organization.protectedPut answers 200 without waiting on its push of the renamed org\'s users', async () => {
+      await organizationController.protectedPut(orgArgs(), res);
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(demiPush.usersOfOrganization.calledOnce).to.be.true;
+      expect(String(demiPush.usersOfOrganization.firstCall.args[0])).to.equal(OID);
+    });
+
+    it('group.protectedGroupDelete pushes the deleted group flagged isDeleted', async () => {
+      const gone = { _id: OID, project: OID, members: [] };
+      models.Group.findOneAndDelete.resolves(gone);
+
+      await projectGroupController.protectedGroupDelete(groupArgs(), res);
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(demiPush.group.calledOnceWithExactly(gone, { isDeleted: true })).to.be.true;
+    });
+
+    it('group.protectedGroupDelete still returns 200 when the DEMI push rejects', async () => {
+      const rejected = Promise.reject(new Error('demi unreachable'));
+      rejected.catch(() => {});
+      demiPush.group.returns(rejected);
+
+      await projectGroupController.protectedGroupDelete(groupArgs(), res);
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+    });
+
+    ['protectedAddGroupMembers', 'protectedDeleteGroupMembers'].forEach(handler => {
+      it(`group.${handler} pushes the group by id for demiPush to re-read`, async () => {
+        await projectGroupController[handler](groupArgs(), res);
+
+        expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+        expect(demiPush.group.calledOnceWithExactly(byId)).to.be.true;
+      });
+
+      it(`group.${handler} does not push when no group matched`, async () => {
+        models.Group.updateOne.resolves({ matchedCount: 0 });
+
+        await projectGroupController[handler](groupArgs(), res);
+
+        expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+        expect(demiPush.group.called).to.be.false;
+      });
+    });
+
+    it('inspection.protectedPostInspection answers 200 without waiting on its push of the saved inspection', async () => {
+      await inspectionController.protectedPostInspection(inspArgs(), res);
+      await responded;
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(demiPush.inspection.calledOnceWithExactly(saved)).to.be.true;
+    });
+
+    it('inspection.protectedPostElement pushes the saved element and its inspection by id', async () => {
+      await inspectionController.protectedPostElement(inspArgs(), res);
+      await responded;
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(demiPush.inspectionElement.calledOnceWithExactly(saved)).to.be.true;
+      expect(demiPush.inspection.calledOnceWithExactly(byId)).to.be.true;
+    });
+
+    it('inspection.protectedPostElement does not push the inspection when no inspection matched', async () => {
+      models.Inspection.updateOne.resolves({ matchedCount: 0 });
+
+      await inspectionController.protectedPostElement(inspArgs(), res);
+      await responded;
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(demiPush.inspectionElement.calledOnceWithExactly(saved)).to.be.true;
+      expect(demiPush.inspection.called).to.be.false;
+    });
+
+    it('inspection.protectedPostElementItem does not push the element when no element matched', async () => {
+      models.InspectionElement.updateOne.resolves({ matchedCount: 0 });
+
+      await inspectionController.protectedPostElementItem(itemArgs(null), res);
+      await responded;
+
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(demiPush.inspectionItem.calledOnceWithExactly(saved)).to.be.true;
+      expect(demiPush.inspectionElement.called).to.be.false;
+    });
+
+    [['text', null], ['file', upfile]].forEach(([label, file]) => {
+      it(`inspection.protectedPostElementItem (${label}) pushes the saved item and its element by id`, async () => {
+        await inspectionController.protectedPostElementItem(itemArgs(file), res);
+        await responded;
+
+        expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+        expect(demiPush.inspectionItem.calledOnceWithExactly(saved)).to.be.true;
+        expect(demiPush.inspectionElement.calledOnceWithExactly(byId)).to.be.true;
+      });
+    });
+
+    describe('with DEMI configured', () => {
+      let originalEnv;
+
+      beforeEach(() => {
+        originalEnv = { base: process.env.DEMI_API_BASE, key: process.env.DEMI_APIM_KEY, optIn: process.env.DEMI_PUSH_OPT_IN_KINDS };
+        process.env.DEMI_API_BASE = 'https://demi.test';
+        process.env.DEMI_APIM_KEY = 'test-key';
+        delete process.env.DEMI_PUSH_OPT_IN_KINDS;
+        demiPush.group.restore();
+        demiPush.usersOfOrganization.restore();
+        sinon.stub(global, 'fetch').resolves({ ok: true, status: 200 });
+      });
+
+      afterEach(() => {
+        [['DEMI_API_BASE', 'base'], ['DEMI_APIM_KEY', 'key'], ['DEMI_PUSH_OPT_IN_KINDS', 'optIn']].forEach(([name, key]) => {
+          if (originalEnv[key] === undefined) { delete process.env[name]; } else { process.env[name] = originalEnv[key]; }
+        });
+      });
+
+      it('group.protectedAddGroupMembers makes no Mongo read and no HTTP call for DEMI while the opt-in list is unset', async () => {
+        await projectGroupController.protectedAddGroupMembers(groupArgs(), res);
+        await new Promise(setImmediate);
+
+        expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+        expect(models.Group.findById.called).to.be.false;
+        expect(global.fetch.called).to.be.false;
+      });
+
+      it('organization.protectedPut makes no User read and no HTTP call for DEMI while the opt-in list is unset', async () => {
+        await organizationController.protectedPut(orgArgs(), res);
+        await new Promise(setImmediate);
+
+        expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+        expect(models.User.find.called).to.be.false;
+        expect(demiPush.user.called).to.be.false;
+        expect(global.fetch.called).to.be.false;
+      });
+
+      it('organization.protectedPut pushes each user of the org by id once users is opted in', async () => {
+        process.env.DEMI_PUSH_OPT_IN_KINDS = 'users';
+
+        await organizationController.protectedPut(orgArgs(), res);
+        await new Promise(setImmediate);
+
+        expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+        const [filter, projection] = models.User.find.firstCall.args;
+        expect(String(filter.org)).to.equal(OID);
+        expect(projection).to.equal('_id');
+        expect(demiPush.user.calledOnceWith(sinon.match({ _id: OID }))).to.be.true;
+      });
     });
   });
 
