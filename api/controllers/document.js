@@ -53,6 +53,11 @@ const ALLOWED_FIELDS = [
   'contentPageCount'
 ];
 
+// Kept so the stored object can later be checked against what was uploaded, even after it is rewritten.
+function sha256Of(buffer) {
+  return crypto.createHash('sha256').update(buffer).digest('hex');
+}
+
 // A stored documentFileName can hold anything an uploader typed, including CR, LF and quotes,
 // which Node rejects in a header value (ERR_INVALID_CHAR).
 function cleanFileNameForHeader(fileName) {
@@ -175,6 +180,7 @@ exports.unProtectedPost = async function (args, res) {
     doc.internalURL = minioFile.path;
     doc.internalExt = minioFile.extension;
     doc.internalSize = upfile.size;
+    doc.internalOriginalSha256 = sha256Of(upfile.buffer);
     doc.passedAVCheck = true;
     doc.internalMime = upfile.mimetype;
 
@@ -638,6 +644,7 @@ exports.protectedPost = async function (args, res) {
     doc.internalURL = minioFile.path;
     doc.internalExt = minioFile.extension;
     doc.internalSize = upfile.size;
+    doc.internalOriginalSha256 = sha256Of(upfile.buffer);
     doc.passedAVCheck = true;
     doc.internalMime = upfile.mimetype;
 
