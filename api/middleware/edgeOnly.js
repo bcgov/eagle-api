@@ -1,6 +1,13 @@
 'use strict';
 
-const defaultLog = require('winston').loggers.get('default');
+const winston = require('winston');
+const { consoleFormat } = require('../helpers/logFormat');
+
+// Own logger at a fixed level so refusals still show where LOG_LEVEL hides warn (prod runs error).
+const edgeLog = winston.loggers.get('edge-gate', {
+  level: 'info',
+  transports: [new winston.transports.Console({ level: 'info', format: consoleFormat() })]
+});
 
 // Raw Host header, not req.hostname: with `trust proxy` set, req.hostname reads X-Forwarded-Host,
 // which the caller controls.
@@ -9,8 +16,9 @@ function requestHost(req) {
 }
 
 /**
- * Refuses requests that reach the direct Route host without passing through Azure Front Door.
- * Off unless both EDGE_ONLY_HOST and FRONT_DOOR_ID are set. Other hosts (in-cluster callers,
+ * Guards the direct Route host so only requests that came through Azure Front Door get in.
+ * Off unless both EDGE_ONLY_HOST and FRONT_DOOR_ID are set. EDGE_ONLY_MODE=log serves and records
+ * would-be refusals; any other value refuses them with 403. Other hosts (in-cluster callers,
  * the console Route) and /api/health pass untouched.
  */
 module.exports = function edgeOnly(req, res, next) {
@@ -31,6 +39,19 @@ module.exports = function edgeOnly(req, res, next) {
     return next();
   }
 
-  defaultLog.warn('edgeOnly: refused request that skipped Front Door', { path: req.path, host });
+  const mode = process.env.EDGE_ONLY_MODE === 'log' ? 'log' : 'enforce';
+  // Object form keeps the path out of format.splat; the custom_event attribute makes the
+  // Azure Monitor exporter file this as an App Insights custom event, not a trace.
+  edgeLog.log({
+    level: 'warn',
+    message: `edge-gate: request skipped Front Door path=${req.path} host=${host} mode=${mode}`,
+    'microsoft.custom_event.name': 'edge-gate-refusal',
+    path: req.path,
+    host,
+    mode
+  });
+  if (mode === 'log') {
+    return next();
+  }
   return res.status(403).json({ message: 'Forbidden' });
 };

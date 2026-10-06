@@ -31,6 +31,7 @@ directRoute:
   enabled: true
   host: eagle-api-6cdc9e-prod.apps.silver.devops.gov.bc.ca
   edgeOnly: false  # Flips to true in the prod rollout, after the Front Door probe moves to /api/health
+  edgeOnlyMode: log  # Prod rollout turns edgeOnly on in log mode first, then flips to enforce after the soak
 
 resources:
   limits:
