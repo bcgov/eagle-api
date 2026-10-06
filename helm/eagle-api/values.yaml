@@ -36,6 +36,8 @@ route:
 directRoute:
   enabled: false
   host: ""  # Set in values-{env}.yaml
+  # Refuse requests to this host that lack Front Door's X-Azure-FDID. Needs secrets.frontDoorId.
+  edgeOnly: false
 
 resources:
   limits:

@@ -198,6 +198,13 @@ spec:
                   name: {{ .Values.secrets.frontDoorId.name }}
                   key: {{ .Values.secrets.frontDoorId.key }}
             {{- end }}
+            {{- if .Values.directRoute.edgeOnly }}
+            {{- if not (and .Values.directRoute.host .Values.secrets.frontDoorId) }}
+            {{- fail "directRoute.edgeOnly needs directRoute.host and secrets.frontDoorId" }}
+            {{- end }}
+            - name: EDGE_ONLY_HOST
+              value: {{ .Values.directRoute.host | quote }}
+            {{- end }}
             {{- if .Values.secrets.accessGatePassword }}
             # Access curtain password — dev/test only, never set in prod
             - name: ACCESS_GATE_PASSWORD

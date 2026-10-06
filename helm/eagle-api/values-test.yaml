@@ -16,6 +16,7 @@ route:
 directRoute:
   enabled: true
   host: eagle-api-6cdc9e-test.apps.silver.devops.gov.bc.ca
+  edgeOnly: true
 
 resources:
   limits:

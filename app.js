@@ -113,6 +113,8 @@ app.get('/api/health', function (req, res) {
   res.status(200).json({ status: 'ok' });
 });
 
+app.use(require('./api/middleware/edgeOnly'));
+
 // Analytics proxy — forwards /analytics/* to a local eagle-analytics service.
 // In production, nginx routes /analytics directly. This route serves local dev
 // where proxy.conf.js sends /analytics to eagle-api.
