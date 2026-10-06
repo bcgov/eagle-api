@@ -11,6 +11,9 @@ const THROTTLE_RETRIES = 3;
 const RETRY_AFTER_MIN_MS = 1000;
 const RETRY_AFTER_MAX_MS = 60000;
 const JITTER_MS = 1000;
+// Per client: pushes past the concurrency limit wait in a queue, and past its length are dropped.
+const DEFAULT_CONCURRENCY = 8;
+const DEFAULT_QUEUE_MAX = 1000;
 // The one line a push that never landed logs. The marker is what an --ids-file is grepped from,
 // so every drop goes through here.
 function logDropped(name, label, reason, meta) {
@@ -48,10 +51,27 @@ function retryAfterMs(header, now) {
   return Math.min(RETRY_AFTER_MAX_MS, Math.max(RETRY_AFTER_MIN_MS, ms));
 }
 
+function positiveIntEnv(name, env, fallback) {
+  const raw = process.env[env];
+  if (raw === undefined || raw === '') {
+    return fallback;
+  }
+  const value = Number(raw);
+  if (Number.isInteger(value) && value > 0) {
+    return value;
+  }
+  defaultLog.warn(`[${name}] ${env}=${raw} is not a positive whole number — using ${fallback}`);
+  return fallback;
+}
+
 // One outbound JSON push client per downstream service, gated on the env vars it needs: baseEnv
 // names the base URL, and keyEnv the API key, which is left out for an endpoint that takes none.
 function pushClient({ name, baseEnv, keyEnv, keyHeader, method }) {
   let keyWarned = false;
+  // Read on first push, not at require time, so a .env loaded after the require still counts.
+  let limits = null;
+  let active = 0;
+  const waiting = [];
 
   const base = () => process.env[baseEnv];
 
@@ -74,12 +94,41 @@ function pushClient({ name, baseEnv, keyEnv, keyHeader, method }) {
     if (!configured()) {
       return true;
     }
+    if (!limits) {
+      limits = {
+        concurrency: positiveIntEnv(name, 'DEMI_PUSH_CONCURRENCY', DEFAULT_CONCURRENCY),
+        queueMax: positiveIntEnv(name, 'DEMI_PUSH_QUEUE_MAX', DEFAULT_QUEUE_MAX)
+      };
+    }
+    if (active >= limits.concurrency && waiting.length >= limits.queueMax) {
+      logDropped(name, label, 'queue full');
+      return false;
+    }
     const entry = { name, label };
     unsent.add(entry);
     try {
-      return await send(path, body, label);
+      if (active < limits.concurrency) {
+        active++;
+      } else {
+        // release() hands its slot straight to the waiter, so active stays as it was.
+        await new Promise(resolve => waiting.push(resolve));
+      }
+      try {
+        return await send(path, body, label);
+      } finally {
+        release();
+      }
     } finally {
       unsent.delete(entry);
+    }
+  }
+
+  function release() {
+    const next = waiting.shift();
+    if (next) {
+      next();
+    } else {
+      active--;
     }
   }
 

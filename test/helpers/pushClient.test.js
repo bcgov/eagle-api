@@ -38,6 +38,8 @@ describe('pushClient', () => {
     sinon.restore();
     pushClient.setPacer(null);
     delete process.env[BASE_ENV];
+    delete process.env.DEMI_PUSH_CONCURRENCY;
+    delete process.env.DEMI_PUSH_QUEUE_MAX;
   });
 
   // Starts a push, then reports how many fetches had gone out just before and right at `ms`.
@@ -277,6 +279,95 @@ describe('pushClient', () => {
 
       expect(calls).to.include({ before: 1, at: 2 });
       expect(await calls.landed).to.be.true;
+    });
+  });
+
+  describe('concurrency limit', () => {
+    const idFor = n => ID.slice(0, -1) + n;
+    const pushNumber = n => client.push(`/eagle/projects/${idFor(n)}`, { doc: {} }, `projects ${idFor(n)}`);
+
+    // Every fetch answers 200 after `ms`, and the most ever open at once is kept.
+    function trackInFlight(ms) {
+      const seen = { now: 0, max: 0 };
+      fetchStub.callsFake(() => {
+        seen.now++;
+        seen.max = Math.max(seen.max, seen.now);
+        return new Promise(resolve => setTimeout(() => {
+          seen.now--;
+          resolve(reply(200));
+        }, ms));
+      });
+      return seen;
+    }
+
+    it('keeps at most the limit in flight and still sends every queued push', async () => {
+      process.env.DEMI_PUSH_CONCURRENCY = '2';
+      const seen = trackInFlight(100);
+
+      const pending = [1, 2, 3, 4, 5].map(pushNumber);
+      await clock.runAllAsync();
+
+      expect(await Promise.all(pending)).to.deep.equal([true, true, true, true, true]);
+      expect(seen.max).to.equal(2);
+      expect(fetchStub.callCount).to.equal(5);
+    });
+
+    it('drops the newest push and logs it when the queue is full', async () => {
+      process.env.DEMI_PUSH_CONCURRENCY = '1';
+      process.env.DEMI_PUSH_QUEUE_MAX = '1';
+      trackInFlight(100);
+
+      const pending = [1, 2, 3].map(pushNumber);
+
+      expect(await pending[2]).to.be.false;
+      expect(errorStub.args.map(args => args[0])).to.deep.equal([`[test] push-dropped projects ${idFor(3)}: queue full`]);
+      await clock.runAllAsync();
+      expect(await Promise.all(pending.slice(0, 2))).to.deep.equal([true, true]);
+      expect(fetchStub.callCount).to.equal(2);
+    });
+
+    it('frees the slot of a push that timed out', async () => {
+      process.env.DEMI_PUSH_CONCURRENCY = '1';
+      // AbortSignal.timeout runs on a real timer; this one runs on the fake clock.
+      sinon.stub(AbortSignal, 'timeout').callsFake(ms => {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(new DOMException('timed out', 'TimeoutError')), ms);
+        return controller.signal;
+      });
+      fetchStub.callsFake((url, init) => {
+        if (url.endsWith(idFor(2))) {
+          return Promise.resolve(reply(200));
+        }
+        return new Promise((resolve, reject) => init.signal.addEventListener('abort', () => reject(init.signal.reason)));
+      });
+
+      const first = pushNumber(1);
+      const second = pushNumber(2);
+      // Both tries of the first push time out, with the 1 s retry pause between them.
+      await clock.tickAsync(20999);
+      expect(fetchStub.callCount).to.equal(2);
+      await clock.tickAsync(1);
+
+      expect(await first).to.be.false;
+      expect(await second).to.be.true;
+      expect(fetchStub.lastCall.args[0]).to.match(new RegExp(`${idFor(2)}$`));
+    });
+
+    ['abc', '0', '-1', '2.5'].forEach(raw => {
+      it(`falls back to 8 in flight and warns once for DEMI_PUSH_CONCURRENCY=${raw}`, async () => {
+        process.env.DEMI_PUSH_CONCURRENCY = raw;
+        const warnStub = sinon.stub(defaultLog, 'warn');
+        const seen = trackInFlight(100);
+
+        const pending = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(pushNumber);
+        await clock.runAllAsync();
+        await Promise.all(pending);
+
+        expect(seen.max).to.equal(8);
+        expect(warnStub.args.map(args => args[0])).to.deep.equal([
+          `[test] DEMI_PUSH_CONCURRENCY=${raw} is not a positive whole number — using 8`
+        ]);
+      });
     });
   });
 
