@@ -202,8 +202,13 @@ spec:
             {{- if not (and .Values.directRoute.host .Values.secrets.frontDoorId) }}
             {{- fail "directRoute.edgeOnly needs directRoute.host and secrets.frontDoorId" }}
             {{- end }}
+            {{- if not (has .Values.directRoute.edgeOnlyMode (list "enforce" "log")) }}
+            {{- fail "directRoute.edgeOnlyMode must be enforce or log" }}
+            {{- end }}
             - name: EDGE_ONLY_HOST
               value: {{ .Values.directRoute.host | quote }}
+            - name: EDGE_ONLY_MODE
+              value: {{ .Values.directRoute.edgeOnlyMode | quote }}
             {{- end }}
             {{- if .Values.secrets.accessGatePassword }}
             # Access curtain password — dev/test only, never set in prod

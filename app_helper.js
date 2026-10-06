@@ -1,6 +1,7 @@
 const mongoose      = require('mongoose');
 const winston       = require('winston');
 const options       = require('./config/mongoose_options').mongooseOptions;
+const { consoleFormat } = require('./api/helpers/logFormat');
 
 // Logging middleware
 const { format, transports } = winston;
@@ -24,17 +25,7 @@ winston.loggers.add('default', {
     new transports.Console({
       level: logLevel,
       handleExceptions: true,
-      format: format.combine(
-        format.errors({ stack: true }),
-        format.splat(),
-        format.colorize(),
-        format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        format.printf(({ timestamp, level, message, stack }) =>
-          stack
-            ? `${timestamp} ${level}: ${message}\n${stack}`
-            : `${timestamp} ${level}: ${message}`
-        )
-      )
+      format: consoleFormat()
     })
   ]
 });
