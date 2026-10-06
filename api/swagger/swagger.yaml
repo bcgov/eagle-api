@@ -3492,6 +3492,23 @@ paths:
           schema:
             $ref: "#/definitions/Error"
 
+  # No `security` block: search engine crawlers fetch this anonymously.
+  /public/sitemap.xml:
+    x-swagger-router-controller: sitemap
+    get:
+      tags:
+        - sitemap
+      summary: "Sitemap of public project pages"
+      operationId: publicGet
+      description: "Sitemap protocol 0.9 XML listing the public site page of every project readable by the public role, with lastmod from the project's current legislation dateUpdated. Rebuilt at most once an hour per pod."
+      produces:
+        - application/xml
+      responses:
+        "200":
+          description: "Sitemap XML"
+          schema:
+            type: string
+
   /public/recentActivity:
     x-swagger-router-controller: recentActivity
     options:
