@@ -167,6 +167,9 @@ script exits 2 instead of reporting a run that sent nothing. The `user`, `group`
 DEMI route segment (`users`, `groups`, `inspections`, `inspection-elements`, `inspection-items`);
 the live pods push them only on the same condition. Without it the script exits 2 for that kind.
 
+- `DEMI_PUSH_CONCURRENCY` (default 8): pushes in flight per process, `--concurrency` included.
+- `DEMI_PUSH_QUEUE_MAX` (default 1000): pushes waiting; past it, `push-dropped <kind> <id>: queue full`.
+
 A record DEMI does not accept is counted as failed, named in the log and listed under `failedIds` in
 the state file. The checkpoint then stops advancing: it holds at the last record with nothing failed
 behind it, so a rerun starts before the gap rather than past it, re-pushing the records after it.
