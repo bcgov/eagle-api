@@ -64,9 +64,25 @@ function positiveIntEnv(name, env, fallback) {
   return fallback;
 }
 
+// The `code` of a refusal's small JSON body, or null when it has none or is not JSON.
+async function refusalCode(res) {
+  try {
+    const body = await res.json();
+    return (body && typeof body.code === 'string') ? body.code : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function queueMax(name) {
+  return positiveIntEnv(name, 'DEMI_PUSH_QUEUE_MAX', DEFAULT_QUEUE_MAX);
+}
+
 // One outbound JSON push client per downstream service, gated on the env vars it needs: baseEnv
 // names the base URL, and keyEnv the API key, which is left out for an endpoint that takes none.
-function pushClient({ name, baseEnv, keyEnv, keyHeader, method }) {
+// onRefused({ label, code }) is offered every 404; returning true means the caller took the
+// record and logs it itself, so no push-dropped line is written here.
+function pushClient({ name, baseEnv, keyEnv, keyHeader, method, onRefused }) {
   let keyWarned = false;
   // Read on first push, not at require time, so a .env loaded after the require still counts.
   let limits = null;
@@ -97,7 +113,7 @@ function pushClient({ name, baseEnv, keyEnv, keyHeader, method }) {
     if (!limits) {
       limits = {
         concurrency: positiveIntEnv(name, 'DEMI_PUSH_CONCURRENCY', DEFAULT_CONCURRENCY),
-        queueMax: positiveIntEnv(name, 'DEMI_PUSH_QUEUE_MAX', DEFAULT_QUEUE_MAX)
+        queueMax: queueMax(name)
       };
     }
     if (active >= limits.concurrency && waiting.length >= limits.queueMax) {
@@ -157,12 +173,20 @@ function pushClient({ name, baseEnv, keyEnv, keyHeader, method }) {
         if (res.ok) {
           return true;
         }
+        lastErr = null;
+        lastStatus = res.status;
+        if (res.status === 404 && onRefused) {
+          // Reading the body frees its connection as cancelling it would.
+          const code = await refusalCode(res);
+          if (onRefused({ label, code })) {
+            return false;
+          }
+          break;
+        }
         // An unread body keeps its connection busy until it is collected.
         if (res.body) {
           await res.body.cancel().catch(() => {});
         }
-        lastErr = null;
-        lastStatus = res.status;
         if (res.status === 429 && throttles < THROTTLE_RETRIES) {
           throttles++;
           const wait = retryAfterMs(res.headers && res.headers.get('retry-after'), Date.now());
@@ -210,5 +234,6 @@ pushClient.logUnsent = function () {
 };
 
 pushClient.logDropped = logDropped;
+pushClient.queueMax = queueMax;
 
 module.exports = pushClient;
