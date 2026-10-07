@@ -932,6 +932,18 @@ describe('DemiPush Helper', () => {
         expect(errorStub.called).to.be.false;
       });
 
+      it('should match a parked document to its project when the ref is an ObjectId', async () => {
+        const PROJECT = '5f4c7d1e2b3a4c5d6e7f00a1';
+        fetchStub.onCall(0).callsFake(parentMissing);
+        fetchStub.resolves(okResponse());
+
+        await demiPush.document({ _id: DOC, project: new mongoose.Types.ObjectId(PROJECT) });
+        await demiPush.project({ _id: PROJECT });
+        await settle();
+
+        expect(urls()).to.deep.equal([`${BASE}/eagle/documents/${DOC}`, `${BASE}/eagle/projects/${PROJECT}`, `${BASE}/eagle/documents/${DOC}`]);
+      });
+
       it('should leave a parked document alone when a different project lands', async () => {
         fetchStub.onCall(0).callsFake(parentMissing);
         fetchStub.resolves(okResponse());

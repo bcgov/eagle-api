@@ -294,7 +294,7 @@ describe('pushClient', () => {
       const landed = await client.push(`/eagle/documents/${ID}`, { doc: {} }, `documents ${ID}`);
 
       expect(landed).to.be.false;
-      expect(onRefused.firstCall.args[0]).to.deep.equal({ label: `documents ${ID}`, status: 404, code: 'PARENT_NOT_FOUND' });
+      expect(onRefused.firstCall.args[0]).to.deep.equal({ label: `documents ${ID}`, code: 'PARENT_NOT_FOUND' });
       expect(errorStub.called).to.be.false;
       expect(response.bodyUsed, 'the body is read, which frees its connection').to.be.true;
     });

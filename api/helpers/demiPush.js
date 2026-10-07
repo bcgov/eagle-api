@@ -291,10 +291,6 @@ const parked = new Map();
 const sending = new Map();
 let parkedMax = null;
 
-function parentIdOf(ref) {
-  return idOf(ref && typeof ref === 'object' && ref._id ? ref._id : ref);
-}
-
 function parkRefused({ label, code }) {
   const record = sending.get(label);
   if (!record || code !== PARENT_NOT_FOUND) {
@@ -372,7 +368,7 @@ function mirrorPush(kind, doc, extra, buildBody, attempts = 0) {
       const pushedAt = Date.now();
       const body = Object.assign(toPushBody(current), extra);
       if (PARENT_FIELD[kind]) {
-        const parentId = parentIdOf(body[PARENT_FIELD[kind]]);
+        const parentId = idOf(body[PARENT_FIELD[kind]]);
         sending.set(label, { kind, id: String(id), parentId, doc, extra, buildBody, attempts });
       }
       const landed = await push(kind, id, Object.assign(await buildBody(body), { pushedAt }));

@@ -80,7 +80,7 @@ function queueMax(name) {
 
 // One outbound JSON push client per downstream service, gated on the env vars it needs: baseEnv
 // names the base URL, and keyEnv the API key, which is left out for an endpoint that takes none.
-// onRefused({ label, status, code }) is offered every 404; returning true means the caller took the
+// onRefused({ label, code }) is offered every 404; returning true means the caller took the
 // record and logs it itself, so no push-dropped line is written here.
 function pushClient({ name, baseEnv, keyEnv, keyHeader, method, onRefused }) {
   let keyWarned = false;
@@ -178,7 +178,7 @@ function pushClient({ name, baseEnv, keyEnv, keyHeader, method, onRefused }) {
         if (res.status === 404 && onRefused) {
           // Reading the body frees its connection as cancelling it would.
           const code = await refusalCode(res);
-          if (onRefused({ label, status: res.status, code })) {
+          if (onRefused({ label, code })) {
             return false;
           }
           break;
