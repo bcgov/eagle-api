@@ -898,6 +898,153 @@ describe('DemiPush Helper', () => {
       expect(await demiPush.document({ _id: 'd1' })).to.be.false;
     });
 
+    describe('parked on a missing parent', () => {
+      const DOC = '5f4c7d1e2b3a4c5d6e7f00d1';
+      const OTHER_DOC = '5f4c7d1e2b3a4c5d6e7f00d2';
+      const GIVE_UP = `[demiPush] push-dropped documents ${DOC}: rejected 404 (parent not found)`;
+      const refused = code => new Response(JSON.stringify({ error: 'Parent project or notification not found', code }), { status: 404 });
+      const parentMissing = () => refused('PARENT_NOT_FOUND');
+      const urls = () => fetchStub.getCalls().map(call => call.args[0]);
+      // Let a retry started off a timer or a parent push run through to its fetch.
+      const settle = () => new Promise(setImmediate);
+      let clock;
+      let originalQueueMax;
+
+      beforeEach(() => {
+        stubModels([], []);
+        clock = sinon.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+        originalQueueMax = process.env.DEMI_PUSH_QUEUE_MAX;
+      });
+
+      afterEach(() => {
+        if (originalQueueMax === undefined) { delete process.env.DEMI_PUSH_QUEUE_MAX; } else { process.env.DEMI_PUSH_QUEUE_MAX = originalQueueMax; }
+      });
+
+      it('should re-push a parked document once a push of its project lands in this pod', async () => {
+        fetchStub.onCall(0).callsFake(parentMissing);
+        fetchStub.resolves(okResponse());
+
+        expect(await demiPush.document({ _id: DOC, project: 'p1' })).to.be.false;
+        expect(await demiPush.project({ _id: 'p1' })).to.be.true;
+        await settle();
+
+        expect(urls()).to.deep.equal([`${BASE}/eagle/documents/${DOC}`, `${BASE}/eagle/projects/p1`, `${BASE}/eagle/documents/${DOC}`]);
+        expect(errorStub.called).to.be.false;
+      });
+
+      it('should leave a parked document alone when a different project lands', async () => {
+        fetchStub.onCall(0).callsFake(parentMissing);
+        fetchStub.resolves(okResponse());
+
+        await demiPush.document({ _id: DOC, project: 'p1' });
+        await demiPush.project({ _id: 'p2' });
+        await settle();
+
+        expect(urls()).to.deep.equal([`${BASE}/eagle/documents/${DOC}`, `${BASE}/eagle/projects/p2`]);
+      });
+
+      it('should re-push a parked document after 30 s when another pod pushed its project', async () => {
+        fetchStub.onCall(0).callsFake(parentMissing);
+        fetchStub.resolves(okResponse());
+
+        await demiPush.document({ _id: DOC, project: 'p1' });
+        await clock.tickAsync(29999);
+        expect(fetchStub.callCount).to.equal(1);
+        await clock.tickAsync(1);
+        await settle();
+
+        expect(urls()).to.deep.equal([`${BASE}/eagle/documents/${DOC}`, `${BASE}/eagle/documents/${DOC}`]);
+        expect(errorStub.called).to.be.false;
+      });
+
+      it('should give up after the 5 min retry with the parent-not-found drop line', async () => {
+        fetchStub.callsFake(parentMissing);
+
+        await demiPush.document({ _id: DOC, project: 'p1' });
+        await clock.tickAsync(30000);
+        await settle();
+        expect(errorStub.called, 'not dropped while a retry is left').to.be.false;
+        await clock.tickAsync(300000);
+        await settle();
+
+        expect(fetchStub.callCount).to.equal(3);
+        expect(errorStub.args.map(args => args[0])).to.deep.equal([GIVE_UP]);
+      });
+
+      it('should drop a refusal that would park past DEMI_PUSH_QUEUE_MAX and keep the one parked', async () => {
+        process.env.DEMI_PUSH_QUEUE_MAX = '1';
+        fetchStub.onCall(0).callsFake(parentMissing);
+        fetchStub.onCall(1).callsFake(parentMissing);
+        fetchStub.resolves(okResponse());
+
+        await demiPush.document({ _id: DOC, project: 'p1' });
+        await demiPush.document({ _id: OTHER_DOC, project: 'p1' });
+        expect(errorStub.args.map(args => args[0])).to.deep.equal([`[demiPush] push-dropped documents ${OTHER_DOC}: rejected 404 (parent not found)`]);
+        await clock.tickAsync(30000);
+        await settle();
+
+        expect(urls()[2]).to.equal(`${BASE}/eagle/documents/${DOC}`);
+      });
+
+      it('should keep the isDeleted marker of a parked delete on its retry', async () => {
+        fetchStub.onCall(0).callsFake(parentMissing);
+        fetchStub.resolves(okResponse());
+
+        await demiPush.document({ _id: DOC, project: 'p1' }, { isDeleted: true });
+        await clock.tickAsync(30000);
+        await settle();
+
+        expect(JSON.parse(fetchStub.secondCall.args[1].body).doc).to.deep.equal({ _id: DOC, project: 'p1', isDeleted: true });
+      });
+
+      it('should not park a refusal for a malformed parent ref', async () => {
+        fetchStub.callsFake(() => refused('PARENT_REF_INVALID'));
+
+        await demiPush.document({ _id: DOC, project: 'not-an-id' });
+        await clock.tickAsync(30000);
+        await settle();
+
+        expect(fetchStub.callCount).to.equal(1);
+        expect(errorStub.args.map(args => args[0])).to.deep.equal([`[demiPush] push-dropped documents ${DOC}: rejected 404`]);
+      });
+
+      it('should not retry a parked document once a later push of it has landed', async () => {
+        fetchStub.onCall(0).callsFake(parentMissing);
+        fetchStub.resolves(okResponse());
+
+        await demiPush.document({ _id: DOC, project: 'p1' });
+        expect(await demiPush.document({ _id: DOC, project: 'p1' })).to.be.true;
+        await clock.tickAsync(30000);
+        await settle();
+
+        expect(fetchStub.callCount).to.equal(2);
+      });
+
+      it('should log a parked record as dropped at shutdown and not retry it', async () => {
+        fetchStub.onCall(0).callsFake(parentMissing);
+        fetchStub.resolves(okResponse());
+
+        await demiPush.document({ _id: DOC, project: 'p1' });
+        demiPush.logParked();
+        await clock.tickAsync(30000);
+        await settle();
+
+        expect(errorStub.args.map(args => args[0])).to.deep.equal([GIVE_UP]);
+        expect(fetchStub.callCount).to.equal(1);
+      });
+
+      it('should park a comment on its comment period and re-push it once that period lands', async () => {
+        fetchStub.onCall(0).callsFake(parentMissing);
+        fetchStub.resolves(okResponse());
+
+        await demiPush.comment({ _id: 'c1', period: PERIOD });
+        await demiPush.commentPeriod({ _id: PERIOD, project: 'p1' });
+        await settle();
+
+        expect(urls()).to.deep.equal([`${BASE}/eagle/comments/c1`, `${BASE}/eagle/commentperiods/${PERIOD}`, `${BASE}/eagle/comments/c1`]);
+      });
+    });
+
     // DEMI has no route for these yet, so they stay off until DEMI_PUSH_OPT_IN_KINDS names them.
     describe('opt-in kinds', () => {
       let originalOptIn;

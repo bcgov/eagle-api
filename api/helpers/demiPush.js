@@ -11,7 +11,8 @@ const client = pushClient({
   baseEnv: 'DEMI_API_BASE',
   keyEnv: 'DEMI_APIM_KEY',
   keyHeader: 'Ocp-Apim-Subscription-Key',
-  method: 'PUT'
+  method: 'PUT',
+  onRefused: parkRefused
 });
 
 const LABEL_FIELDS = ['type', 'milestone', 'projectPhase', 'documentAuthorType'];
@@ -266,14 +267,100 @@ function push(kind, id, body) {
   return client.push(`/eagle/${kind}/${id}`, body, `${kind} ${id}`);
 }
 
+// DEMI refuses a child whose parent it does not hold yet with this code, and a malformed ref with
+// another, which no retry can fix.
+const PARENT_NOT_FOUND = 'PARENT_NOT_FOUND';
+// Field naming the parent of each kind DEMI checks a parent for.
+const PARENT_FIELD = {
+  documents: 'project',
+  commentperiods: 'project',
+  comments: 'period',
+  groups: 'project',
+  inspections: 'project'
+};
+// A landed push of one of these may be the parent a parked record waits on.
+const PARENT_KINDS = new Set(['projects', 'notifications', 'commentperiods']);
+// Wait before each retry; the delay covers a parent pushed by another pod.
+const RETRY_DELAYS_MS = [30000, 300000];
+const PARENT_MISSING = 'rejected 404 (parent not found)';
+
+// Records DEMI refused for a missing parent, keyed `kind:id`, each waiting on a retry timer.
+const parked = new Map();
+// Pushes of a parent-checked kind on the wire, keyed by push label, so the refusal hook can park them.
+// serialize() keeps one per record, so the label is unique while it is here.
+const sending = new Map();
+let parkedMax = null;
+
+function parentIdOf(ref) {
+  return idOf(ref && typeof ref === 'object' && ref._id ? ref._id : ref);
+}
+
+function parkRefused({ label, code }) {
+  const record = sending.get(label);
+  if (!record || code !== PARENT_NOT_FOUND) {
+    return false;
+  }
+  const key = `${record.kind}:${record.id}`;
+  if (parkedMax === null) {
+    parkedMax = pushClient.queueMax('demiPush');
+  }
+  if (record.attempts >= RETRY_DELAYS_MS.length || (!parked.has(key) && parked.size >= parkedMax)) {
+    dropped(record.kind, record.id, PARENT_MISSING);
+    return true;
+  }
+  unpark(key);
+  record.timer = setTimeout(() => retry(key), RETRY_DELAYS_MS[record.attempts]).unref();
+  parked.set(key, record);
+  defaultLog.warn(`[demiPush] ${record.kind} ${record.id} parked: parent ${record.parentId} not in DEMI yet, retry ${record.attempts + 1}`);
+  return true;
+}
+
+function unpark(key) {
+  const record = parked.get(key);
+  if (record) {
+    clearTimeout(record.timer);
+    parked.delete(key);
+  }
+  return record;
+}
+
+function retry(key) {
+  const record = unpark(key);
+  if (record) {
+    mirrorPush(record.kind, record.doc, record.extra, record.buildBody, record.attempts + 1);
+  }
+}
+
+function retryChildrenOf(parentId) {
+  const id = String(parentId);
+  for (const [key, record] of parked) {
+    if (record.parentId === id) {
+      retry(key);
+    }
+  }
+}
+
+// For the shutdown path: a parked record still waiting on its retry is lost with the process.
+exports.logParked = function () {
+  for (const record of parked.values()) {
+    dropped(record.kind, record.id, PARENT_MISSING);
+  }
+  parked.clear();
+};
+
 // Every mirror runs through here. `extra` says what the stored document cannot: a hard delete
-// leaves nothing to re-read, so the caller's own copy carries the marker instead.
-function mirrorPush(kind, doc, extra, buildBody) {
+// leaves nothing to re-read, so the caller's own copy carries the marker instead. `attempts` counts
+// retries of a record DEMI refused for a missing parent.
+function mirrorPush(kind, doc, extra, buildBody, attempts = 0) {
   if (!client.configured() || !doc || !doc._id) {
     return Promise.resolve(true);
   }
   const id = doc._id;
-  return serialize(`${kind}:${id}`, async () => {
+  const key = `${kind}:${id}`;
+  return serialize(key, async () => {
+    // This push carries the newest state, so it replaces any parked copy of the record.
+    unpark(key);
+    const label = `${kind} ${id}`;
     try {
       const current = await currentDoc(kind, id, doc);
       // An id-only push has no copy of its own: without the stored row it would blank DEMI's.
@@ -284,10 +371,20 @@ function mirrorPush(kind, doc, extra, buildBody) {
       // Pods push the same record independently, so DEMI keeps the newest stamp and drops an older body.
       const pushedAt = Date.now();
       const body = Object.assign(toPushBody(current), extra);
-      return await push(kind, id, Object.assign(await buildBody(body), { pushedAt }));
+      if (PARENT_FIELD[kind]) {
+        const parentId = parentIdOf(body[PARENT_FIELD[kind]]);
+        sending.set(label, { kind, id: String(id), parentId, doc, extra, buildBody, attempts });
+      }
+      const landed = await push(kind, id, Object.assign(await buildBody(body), { pushedAt }));
+      if (landed && PARENT_KINDS.has(kind)) {
+        retryChildrenOf(id);
+      }
+      return landed;
     } catch (err) {
       dropped(kind, id, 'failed', { error: err.message, stack: err.stack });
       return false;
+    } finally {
+      sending.delete(label);
     }
   });
 }

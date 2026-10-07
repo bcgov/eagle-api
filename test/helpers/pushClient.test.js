@@ -282,6 +282,55 @@ describe('pushClient', () => {
     });
   });
 
+  describe('onRefused', () => {
+    const refused = code => new Response(JSON.stringify({ error: 'Parent project or notification not found', code }), { status: 404 });
+
+    it('hands a 404 with a parent-not-found code to the hook and logs no dropped push when it takes it', async () => {
+      const onRefused = sinon.stub().returns(true);
+      client = pushClient({ name: 'test', baseEnv: BASE_ENV, method: 'PUT', onRefused });
+      const response = refused('PARENT_NOT_FOUND');
+      fetchStub.resolves(response);
+
+      const landed = await client.push(`/eagle/documents/${ID}`, { doc: {} }, `documents ${ID}`);
+
+      expect(landed).to.be.false;
+      expect(onRefused.firstCall.args[0]).to.deep.equal({ label: `documents ${ID}`, status: 404, code: 'PARENT_NOT_FOUND' });
+      expect(errorStub.called).to.be.false;
+      expect(response.bodyUsed, 'the body is read, which frees its connection').to.be.true;
+    });
+
+    it('still logs rejected 404 when the hook declines a refusal with no code', async () => {
+      const onRefused = sinon.stub().returns(false);
+      client = pushClient({ name: 'test', baseEnv: BASE_ENV, method: 'PUT', onRefused });
+      fetchStub.resolves(reply(404));
+
+      await client.push(`/eagle/documents/${ID}`, { doc: {} }, `documents ${ID}`);
+
+      expect(onRefused.firstCall.args[0].code).to.be.null;
+      expect(errorStub.calledOnceWith(`[test] push-dropped documents ${ID}: rejected 404`)).to.be.true;
+    });
+
+    it('does not offer the hook a 409', async () => {
+      const onRefused = sinon.stub().returns(true);
+      client = pushClient({ name: 'test', baseEnv: BASE_ENV, method: 'PUT', onRefused });
+      fetchStub.resolves(reply(409));
+
+      await client.push(`/eagle/documents/${ID}`, { doc: {} }, `documents ${ID}`);
+
+      expect(onRefused.called).to.be.false;
+      expect(errorStub.calledOnceWith(`[test] push-dropped documents ${ID}: rejected 409`)).to.be.true;
+    });
+
+    it('leaves a client without the hook logging a parent-not-found 404 as dropped', async () => {
+      fetchStub.resolves(refused('PARENT_NOT_FOUND'));
+
+      const landed = await client.push(`/eagle/documents/${ID}`, { doc: {} }, `documents ${ID}`);
+
+      expect(landed).to.be.false;
+      expect(errorStub.calledOnceWith(`[test] push-dropped documents ${ID}: rejected 404`)).to.be.true;
+    });
+  });
+
   describe('concurrency limit', () => {
     const idFor = n => ID.slice(0, -1) + n;
     const pushNumber = n => client.push(`/eagle/projects/${idFor(n)}`, { doc: {} }, `projects ${idFor(n)}`);
