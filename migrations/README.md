@@ -64,6 +64,37 @@ db.changelog.find()
 db.changelog.deleteOne({ fileName: '20190625114200-myMigrationName.js' })
 ```
 
+### Migrations that touch DEMI mirrored records
+
+DEMI keeps a copy of most Eagle records. eagle-api sends that copy when a controller writes the
+record (`api/helpers/demiPush.js`). A migration writes Mongo directly, so nothing is sent. Each push
+carries the whole stored record, so a change to any field leaves DEMI behind until the record is
+pushed again.
+
+The mirrored types are the `schemaName` values in `KINDS` in `scripts/demi-repush.js`, plus `List`.
+A migration that names one of them carries a paragraph starting `DEMI:` in its header comment:
+
+- For a `KINDS` type, name `scripts/demi-repush.js` and each kind as `--kind <kind>` or
+  `--kinds a,b`. Add `--ids-file` or `--since` when the change is narrow.
+- For `List`, name eagle-demi's `seed-public-reads.js --only lists`. eagle-api never pushes List
+  rows, so that script is the only way DEMI gets them. When the migration renames List entries, also
+  re-push the projects and documents that use them (`--kinds project,document`): DEMI copies List
+  names into document labels and project fields.
+- When DEMI needs nothing, write `DEMI: none` and the reason.
+
+```js
+// DEMI: re-push with scripts/demi-repush.js --kind document --since 2026-10-01 once this has run.
+```
+
+`Config` needs no note: eagle-api pushes it again on the next `GET /api/config`.
+
+`test/migrations/demi-mirror-note.test.js` fails `yarn test` when a migration dated
+`20260923000000` or later names a mirrored type without a note that covers it. It reads the file
+text, so a type name built at run time slips past it. Older migrations are not checked.
+
+Run the re-push once the migration has run on that environment, with the order and warnings in the
+`scripts/demi-repush.js` section below.
+
 ## One-off scripts outside this directory
 
 `scripts/` holds data fixes too slow for the pre-upgrade hook, where a long update would stall the
@@ -187,6 +218,13 @@ out of retries, one that failed before it was sent (the re-read after the write,
 body), and one still in flight or waiting to retry when a pod shuts down cleanly. A pod that is
 killed without the shutdown path running logs nothing for its in-flight pushes.
 
+A `404` because the parent project, notification or comment period is not in DEMI yet is held, not
+dropped. The pod keeps the record in memory and sends it again once that pod pushes the parent, or
+after 30 s and again after 5 min, for a parent another pod pushed. Held records count toward
+`DEMI_PUSH_QUEUE_MAX`. When the last try is refused, or the pod shuts down cleanly with records
+still held, it logs `push-dropped <kind> <id>: rejected 404 (parent not found)`. A pod killed
+without the shutdown path loses held records with no log line.
+
 This script's lines are in its own output. Live pods log them too; collect them from every replica,
 since each pod only logs its own pushes:
 
@@ -205,3 +243,15 @@ environment ships eagle-api logs there.
 Exit codes, so a wrapper can tell a partial backfill from a clean one: 0 everything pushed, 1 the run
 itself failed, 2 bad arguments or DEMI not configured, 3 the run finished with records DEMI did not
 accept. The first log line names the database it connected to, without the password.
+
+### List entries — eagle-demi's seed-public-reads.js
+
+`demi-repush.js` has no List kind. eagle-api has no List write controller, so it pushes no List
+rows. After a migration that changes `List` rows, run eagle-demi's
+`src/scripts/seed-public-reads.js --only lists`. It is a dry run until `--live`, reads from
+`EAGLE_API_BASE` and writes the Cosmos database the process starts with; usage is in that file's
+header.
+
+When the migration renames List entries, restart eagle-api, then re-push the projects and documents
+that use them with `demi-repush.js --kinds project,document`. A running pod caches List entries until
+it restarts, so its pushes would send the old names until then.

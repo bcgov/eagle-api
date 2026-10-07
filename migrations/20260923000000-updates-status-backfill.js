@@ -9,6 +9,11 @@
 //
 // Seeds the updateCategory List entries. updateSubject starts empty: List.type is a free string,
 // so there is nothing to register for it.
+//
+// DEMI: re-push the backfilled Updates with scripts/demi-repush.js --kind recentActivity (read the
+// recentActivity email warning in migrations/README.md first), and run eagle-demi's
+// seed-public-reads.js --only lists for the new updateCategory entries. No List name changes, so
+// no project or document re-push.
 
 const winston = require('winston');
 
