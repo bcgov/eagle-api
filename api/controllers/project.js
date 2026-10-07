@@ -4,6 +4,7 @@ var qs = require('qs');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 var demiPush = require('../helpers/demiPush');
+const parentRead = require('../helpers/parentRead');
 const { LEGISLATIONS, DEFAULT_LEGISLATION_YEAR, LOCKED_KEYS, legislationKey, legislationYearOf } = require('../helpers/constants');
 var tagList = [
   'CEAAInvolvement',
@@ -1050,19 +1051,18 @@ var serializeProjectVirtuals = function (data) {
 
 exports.getFeaturedDocuments = async function (args, res) {
   try {
-    if (args.swagger.params.projId && args.swagger.params.projId.value && mongoose.Types.ObjectId.isValid(args.swagger.params.projId.value)) {
-      let projectModel = mongoose.model('Project');
-      const project = await projectModel.findOne({ _id: args.swagger.params.projId.value });
-      if (project) {
-        let featuredDocs = await fetchFeaturedDocuments(project);
+    const projId = args.swagger.params.projId && args.swagger.params.projId.value;
+    if (projId && mongoose.Types.ObjectId.isValid(projId)) {
+      const project = await mongoose.model('Project').findOne({ _id: projId });
+      const hiddenProjects = project ? await parentRead.unreadableParentIds(['public']) : [];
+      if (project && !hiddenProjects.some(hiddenId => hiddenId.equals(project._id))) {
+        const featuredDocs = await fetchFeaturedDocuments(project, { read: 'public' });
         return Actions.sendResponse(res, 200, featuredDocs);
-      } else {
-        return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found' });
       }
-    } else {
-      return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found' });
     }
+    return Actions.sendResponse(res, 404, { status: 404, message: 'Project not found' });
   } catch (e) {
+    defaultLog.error('Error getting public featured documents: %s', e.message);
     return Actions.sendResponse(res, 500, {});
   }
 };
@@ -1083,10 +1083,12 @@ exports.getFeaturedDocumentsSecure = async function (args, res) {
   }
 };
 
-var fetchFeaturedDocuments = async function (project) {
+var fetchFeaturedDocuments = async function (project, readFilter = {}) {
   try {
     if (mongoose.Types.ObjectId.isValid(project._id)) {
-      let documents = await mongoose.model('Document').find({ project: project._id, isFeatured: true });
+      let documents = await mongoose.model('Document')
+        .find({ project: project._id, isFeatured: true, ...readFilter })
+        .collation({ locale: 'en', strength: 2 });
 
       return documents;
     } else {
