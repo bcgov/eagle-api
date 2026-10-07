@@ -141,6 +141,22 @@ describe('migrations: DEMI re-push note', () => {
     ]);
   });
 
+  it('flags a note that names the kind but not the script', () => {
+    const body = `// DEMI: re-push with --kind document after this.\n${DOCUMENT_UPDATE}`;
+
+    expect(checkMirrorNotes(fixture({ '20261001000000-docs.js': body }))).to.deep.equal([
+      `20261001000000-docs.js: DEMI: note does not name ${REPUSH}`
+    ]);
+  });
+
+  it('reads only the DEMI: paragraph, up to the next blank comment line', () => {
+    const body = `// DEMI: run ${REPUSH} after this.\n//\n// Later paragraph: --kind document\n\n${DOCUMENT_UPDATE}`;
+
+    expect(checkMirrorNotes(fixture({ '20261001000000-docs.js': body }))).to.deep.equal([
+      '20261001000000-docs.js: DEMI: note does not name --kind document'
+    ]);
+  });
+
   it('takes the mirrored types from KINDS', () => {
     const body = "module.exports = { up: db => db.collection('epic').updateMany({ _schemaName: 'Widget' }, {}) };\n";
     const kinds = { widget: { schemaName: 'Widget' } };
@@ -150,6 +166,12 @@ describe('migrations: DEMI re-push note', () => {
 
   it('leaves migrations dated before the cutoff alone', () => {
     expect(checkMirrorNotes(fixture({ '20260922235959-docs.js': DOCUMENT_UPDATE }))).to.deep.equal([]);
+  });
+
+  it('checks a migration dated exactly at the cutoff', () => {
+    expect(checkMirrorNotes(fixture({ '20260923000000-docs.js': DOCUMENT_UPDATE }))).to.deep.equal([
+      `20260923000000-docs.js: no DEMI: note in the header comment; it needs ${REPUSH} --kind document`
+    ]);
   });
 
   it('flags a List migration whose note skips the List seed', () => {
