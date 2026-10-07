@@ -89,6 +89,20 @@ describe('project featured documents (requires MongoDB)', function () {
 
       expect(body.code).to.equal(404);
     });
+
+    it('answers 404 for a projId that is not an ObjectId', async () => {
+      const { res, body } = capture();
+      await projectController.getFeaturedDocuments(args('not-an-object-id'), res);
+
+      expect(body.code).to.equal(404);
+    });
+
+    it('answers 404 for a well-formed projId with no project', async () => {
+      const { res, body } = capture();
+      await projectController.getFeaturedDocuments(args('58990017d334ee001d60ffff'), res);
+
+      expect(body.code).to.equal(404);
+    });
   });
 
   describe('GET /project/{projId}/FeaturedDocuments', () => {
