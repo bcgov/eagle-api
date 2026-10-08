@@ -128,12 +128,13 @@ nobody has edited since.
 helper, so the enrichment is identical to a controller write. It is a dry run by default: it reports
 how many records match and sends nothing until `--live`.
 
-**Every push replaces DEMI's `read`.** Each kind, not only projects, rebuilds the row's access from
-Eagle's `read[]`. A re-push undoes any DEMI takedown or narrowed access on that record, and a project
-push also re-cascades its documents. Before any live run, remove from every id file, projects and
-children alike:
+**Every push sends Eagle's `read`.** Each kind rebuilds the DEMI row's access from Eagle's `read[]`,
+and a project push also re-cascades its documents. Since eagle-demi #545, a project or document that
+DEMI has narrowed or taken down keeps its lower access level through a push, so a re-push no longer
+undoes those takedowns. Other kinds have no such hold. Before any live run, remove from every id
+file:
 
-- ids with a `record.takedown` or `record.narrow` row in the DEMI audit log;
+- ids of other kinds with a `record.takedown` or `record.narrow` row in the DEMI audit log;
 - ids that are both a hidden notification in DEMI and a Track project id.
 
 **`recentActivity` sends email.** A pushed Update emails subscribers for every published update not
@@ -183,7 +184,8 @@ another flag (an unset `$IDS` in `--ids-file $IDS --live`), exits 2 rather than 
 - `--limit N` — stop after N records of each kind. Good for a first `--live` pass on a handful.
 - `--state <path>` — checkpoint file, written after every settled batch. A rerun with the same path
   starts after the last `_id` it holds, so an `oc exec` session that drops can be resumed instead of
-  restarted. Write it somewhere the pod can keep, e.g. `/tmp/demi-repush-project.json`; a pod
+  restarted. It also skips the ids under `failedIds`; retry those with `--ids-file` and another
+  `--state` path. Write it somewhere the pod can keep, e.g. `/tmp/demi-repush-project.json`; a pod
   restart loses it and the next run starts from the top, which is harmless. With `--kinds`, each
   kind gets its own file, named with the kind before the extension (`/tmp/r.project.json`), so a
   checkpoint from an earlier single-kind run is not reused. The checkpoint records a hash and count
@@ -202,10 +204,16 @@ the live pods push them only on the same condition. Without it the script exits 
 - `DEMI_PUSH_QUEUE_MAX` (default 1000): pushes waiting; past it, `push-dropped <kind> <id>: queue full`.
 
 A record DEMI does not accept is counted as failed, named in the log and listed under `failedIds` in
-the state file. The checkpoint then stops advancing: it holds at the last record with nothing failed
-behind it, so a rerun starts before the gap rather than past it, re-pushing the records after it.
-Every DEMI write is a PUT on the record id, so pushing a record twice lands the same row, and the run
-summary, `N seen, N pushed, N failed`, is the whole story.
+the state file. The run carries on, and the checkpoint still moves past it, so a rerun neither
+re-pushes the records that landed nor retries the failed ones. A resume keeps the earlier
+`failedIds` in the state file and skips them. To retry them, fix the cause (a parent kind not pushed
+yet, say) and pass them in an `--ids-file` with a `--state` path of its own: a run over a different
+id list starts its state file over, which would drop the first run's `failedIds`. The run summary, `N seen, N pushed, N failed`, counts
+this run only.
+
+The script reads each kind 100 records at a time, so the server cursor never sits idle long enough
+for Mongo's 10-minute timeout to drop it. If the server drops it anyway (`cursor id ... not found`),
+the script reopens it after the last `_id` read and logs a warning, up to 3 times in a row.
 
 A `429` from APIM is retried up to 3 times, waiting as long as its `Retry-After` header asks
 (at least 1 s, at most 60 s, plus up to 1 s of jitter). In this script no other push starts until
@@ -235,8 +243,8 @@ grep -o 'push-dropped [a-z]* [0-9a-f]\{24\}' eagle-api.log | awk '{print $3}' | 
 ```
 
 The line names DEMI's route (`projects`, `documents`, `commentperiods`, ...), so grep one route at a
-time to build a file per kind. Before feeding `ids.txt` back into a live run, remove the takedown,
-narrow and hidden-notification ids listed above: a dropped push is not proof the record should be
+time to build a file per kind. Before feeding `ids.txt` back into a live run, remove the ids listed
+above: a dropped push is not proof the record should be
 widened. Pod logs only reach back to the last restart. For older drops, query Log Analytics if the
 environment ships eagle-api logs there.
 

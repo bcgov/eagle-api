@@ -17,7 +17,9 @@ const mongoose = require('mongoose');
 const {
   buildQuery,
   KINDS,
+  MAX_CURSOR_REOPENS,
   kindJob,
+  kindQuery,
   pacerFor,
   parseArgs,
   planKind,
@@ -44,6 +46,20 @@ function fakeCursor(docs) {
       return Promise.resolve();
     }
   };
+}
+
+// A cursor the server dropped: yields `docs`, then next() rejects the way the driver does.
+function lostCursor(docs) {
+  const cursor = fakeCursor(docs);
+  const next = cursor.next;
+  cursor.next = function () {
+    return next.call(this).then(doc => doc || Promise.reject(cursorNotFound()));
+  };
+  return cursor;
+}
+
+function cursorNotFound() {
+  return Object.assign(new Error('cursor id 8427216537129683474 not found'), { name: 'MongoServerError', code: 43, codeName: 'CursorNotFound' });
 }
 
 function docs(count) {
@@ -155,35 +171,74 @@ describe('demi-repush', () => {
       expect(log.error.firstCall.args[0]).to.contain('id-3');
     });
 
-    it('holds the checkpoint before a failed record instead of advancing past it', async () => {
+    it('moves the checkpoint past a failed record, so a rerun pushes nothing twice', async () => {
       const onCheckpoint = sinon.stub().resolves();
       const push = sinon.stub().resolves(true);
       push.withArgs(sinon.match({ _id: 'id-3' })).resolves(false);
 
       await repush({ cursor: fakeCursor(docs(6)), push, onCheckpoint, log: quietLog(), dryRun: false, concurrency: 2 });
 
-      // Batches are [1,2] [3,4] [5,6]: id-3 fails, so nothing past id-2 is ever checkpointed.
-      expect(onCheckpoint.args.map(call => call[0])).to.deep.equal(['id-2', 'id-2', 'id-2']);
+      // Batches are [1,2] [3,4] [5,6].
+      expect(onCheckpoint.args.map(call => call[0])).to.deep.equal(['id-2', 'id-4', 'id-6']);
     });
 
-    it('checkpoints the record before the failed one when the failure lands mid-batch', async () => {
+    it('hands the failed id to the checkpoint', async () => {
       const onCheckpoint = sinon.stub().resolves();
       const push = sinon.stub().resolves(true);
-      push.withArgs(sinon.match({ _id: 'id-2' })).resolves(false);
+      push.withArgs(sinon.match({ _id: 'id-1' })).resolves(false);
 
-      await repush({ cursor: fakeCursor(docs(6)), push, onCheckpoint, log: quietLog(), dryRun: false, concurrency: 3 });
+      await repush({ cursor: fakeCursor(docs(4)), push, onCheckpoint, log: quietLog(), dryRun: false, concurrency: 2 });
 
-      // Batches are [1,2,3] [4,5,6]: id-2 fails at index 1, so the checkpoint stops at id-1.
-      expect(onCheckpoint.args.map(call => call[0])).to.deep.equal(['id-1', 'id-1']);
+      expect(onCheckpoint.lastCall.args[1].failedIds).to.deep.equal(['id-1']);
     });
 
-    it('keeps the previous run\'s checkpoint when the first record of a resumed run fails', async () => {
-      const onCheckpoint = sinon.stub().resolves();
-      const push = sinon.stub().resolves(false);
+    it('reopens a lost cursor after the last record read and finishes the kind', async () => {
+      const all = docs(6);
+      const reopen = sinon.spy(lastId => Promise.resolve(fakeCursor(all.slice(all.findIndex(doc => doc._id === lastId) + 1))));
+      const push = sinon.stub().resolves(true);
 
-      await repush({ cursor: fakeCursor(docs(2)), push, onCheckpoint, log: quietLog(), dryRun: false, concurrency: 2, startId: 'id-0' });
+      const counts = await repush({ cursor: lostCursor(all.slice(0, 3)), reopen, push, log: quietLog(), dryRun: false, concurrency: 2 });
 
-      expect(onCheckpoint.firstCall.args[0]).to.equal('id-0');
+      expect(reopen.args).to.deep.equal([['id-3']]);
+      expect(push.args.map(call => call[0]._id)).to.deep.equal(['id-1', 'id-2', 'id-3', 'id-4', 'id-5', 'id-6']);
+      expect(counts.pushed).to.equal(6);
+    });
+
+    it('gives up after MAX_CURSOR_REOPENS lost cursors in a row', async () => {
+      const reopen = sinon.spy(() => Promise.resolve(lostCursor([])));
+
+      const err = await repush({ cursor: lostCursor(docs(1)), reopen, push: sinon.stub().resolves(true), log: quietLog(), dryRun: false })
+        .then(() => null, rejected => rejected);
+
+      expect(err.code).to.equal(43);
+      expect(reopen.callCount).to.equal(MAX_CURSOR_REOPENS);
+    });
+
+    it('counts only lost cursors in a row, so a read between losses lets the run reopen again', async () => {
+      const all = docs(6);
+      const reopen = sinon.stub();
+      reopen.onCall(0).resolves(lostCursor([all[1]]));
+      reopen.onCall(1).resolves(lostCursor([all[2]]));
+      reopen.onCall(2).resolves(lostCursor([all[3]]));
+      reopen.onCall(3).resolves(fakeCursor(all.slice(4)));
+      const push = sinon.stub().resolves(true);
+
+      const counts = await repush({ cursor: lostCursor([all[0]]), reopen, push, log: quietLog(), dryRun: false });
+
+      expect(reopen.args).to.deep.equal([['id-1'], ['id-2'], ['id-3'], ['id-4']]);
+      expect(counts.pushed).to.equal(6);
+    });
+
+    it('does not reopen the cursor on any other read error', async () => {
+      const cursor = fakeCursor([]);
+      cursor.next = () => Promise.reject(new Error('connection reset'));
+      const reopen = sinon.spy();
+
+      const err = await repush({ cursor, reopen, push: sinon.stub().resolves(true), log: quietLog(), dryRun: false })
+        .then(() => null, rejected => rejected);
+
+      expect(err.message).to.equal('connection reset');
+      expect(reopen.called).to.be.false;
     });
 
     it('honours --limit and stops reading the cursor', async () => {
@@ -674,6 +729,77 @@ describe('demi-repush', () => {
 
       expect(state.since).to.equal('2026-01-01T00:00:00.000Z');
       expect(state.ids).to.be.null;
+    });
+  });
+
+  describe('resume after a failure', () => {
+    // Six comments in _id order; the first one is refused, as an orphan of a missing period would be.
+    const ids = Array.from({ length: 6 }, (_, i) => `5f9d88b9d1f2a40022a1b2c${i}`);
+    const args = parseArgs(['--kind', 'comment', '--state', '/tmp/r.json', '--live']);
+    const model = fakeModel({ dateUpdated: 'Date' });
+
+    // Runs the first four records, then stops as a dropped session would, and returns the state file.
+    async function firstRun() {
+      const files = {};
+      const job = kindJob(args, 'comment', planKind(args, 'comment', () => null), model);
+      const push = sinon.stub().resolves(true);
+      push.withArgs(sinon.match({ _id: ids[0] })).resolves(false);
+
+      await repush({
+        cursor: fakeCursor(ids.map(id => ({ _id: id }))),
+        push,
+        onCheckpoint: (id, running) => { files['/tmp/r.json'] = job.checkpoint(id, running); },
+        log: quietLog(),
+        dryRun: false,
+        concurrency: 2,
+        limit: 4
+      });
+      return file => files[file] || null;
+    }
+
+    it('starts after the last record read, not before the failed one', async () => {
+      const plan = planKind(args, 'comment', await firstRun());
+
+      expect(String(kindJob(args, 'comment', plan, model).query._id.$gt)).to.equal(ids[3]);
+    });
+
+    it('skips the failed id', async () => {
+      const plan = planKind(args, 'comment', await firstRun());
+
+      expect(kindJob(args, 'comment', plan, model).query._id.$nin.map(String)).to.deep.equal([ids[0]]);
+    });
+
+    it('keeps the earlier failed id in the next checkpoint', async () => {
+      const plan = planKind(args, 'comment', await firstRun());
+      const running = { seen: 2, pushed: 1, failed: 1, failedIds: [ids[5]] };
+
+      expect(kindJob(args, 'comment', plan, model).checkpoint(ids[5], running).failedIds).to.deep.equal([ids[0], ids[5]]);
+    });
+
+    it('skips the failedIds of a checkpoint written before lastId moved past failures', () => {
+      const old = { '/tmp/r.json': { kind: 'comment', lastId: ids[0], failedIds: [ids[1]] } };
+
+      const plan = planKind(args, 'comment', file => old[file] || null);
+
+      expect(kindJob(args, 'comment', plan, model).query._id.$nin.map(String)).to.deep.equal([ids[1]]);
+    });
+
+    it('reopens a lost cursor with the same filters, after the last record read', async () => {
+      const plan = planKind(args, 'comment', await firstRun());
+
+      const query = kindJob(args, 'comment', plan, model).queryAfter(ids[4]);
+
+      expect(String(query._id.$gt)).to.equal(ids[4]);
+      expect(query._id.$nin.map(String)).to.deep.equal([ids[0]]);
+    });
+  });
+
+  describe('kindQuery', () => {
+    // A batch the size of Mongo's default (16 MB) outlasts the server's idle cursor timeout at a paced rate.
+    it('reads the kind in batches of 100, in _id order', () => {
+      const options = kindQuery(mongoose.model('Comment'), { _schemaName: 'Comment' }).getOptions();
+
+      expect(options).to.deep.include({ batchSize: 100, sort: { _id: 1 } });
     });
   });
 
