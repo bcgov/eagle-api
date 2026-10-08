@@ -10,8 +10,24 @@
  * added in api/helpers/demiPush.js on the way out, not stored in Mongo. Nothing re-pushes a record
  * that has not been edited since, so this walks a collection and pushes every record once.
  *
- * Resumable: the state file holds the last `_id` a settled batch reached, so a rerun with the same
- * --state picks up after it. Safe to re-run; the DEMI write is a PUT on the record id.
+ * Resumable: after each settled batch the --state file is rewritten as
+ *
+ *   { kind, ids: { count, sha256 } | null, since: ISO | null, lastId, seen, pushed, failed,
+ *     failedIds, updatedAt }
+ *
+ * lastId is the last `_id` of the batch, whether its records landed or failed, so a rerun with the
+ * same --state starts after it and pushes nothing twice. failedIds holds every record DEMI refused,
+ * in this run and in the runs it resumed; a resume skips them. Retry them with an --ids-file and
+ * another --state path, since a run over a different id list starts its state file over. seen,
+ * pushed and failed count this run only. Earlier versions wrote the same shape but held lastId
+ * before the first failure; resuming such a file now skips its failedIds and carries them on.
+ *
+ * The kind is read through a cursor in batches of CURSOR_BATCH_SIZE. If the server drops the cursor
+ * anyway (CursorNotFound), it is reopened after the last `_id` read, up to MAX_CURSOR_REOPENS times
+ * in a row without a record read in between.
+ *
+ * A re-push no longer undoes a DEMI takedown: since eagle-demi #545 a narrowed or taken-down
+ * project or document keeps its DEMI access level through an Eagle push.
  *
  * Why it is a script and not a migration: migrations/README.md, 'One-off scripts outside this
  * directory'.
@@ -48,6 +64,10 @@ const DEFAULT_CONCURRENCY = 4;
 // The APIM machine product allows 300 calls per 60 s per subscription, shared with the live pods.
 const DEFAULT_RATE = 150;
 const PROGRESS_EVERY = 100;
+// Small batches, so the server cursor is touched every few pushes. Mongo's default first batch is
+// up to 16 MB, which at a paced rate outlasts the server's 10-minute idle cursor timeout.
+const CURSOR_BATCH_SIZE = 100;
+const MAX_CURSOR_REOPENS = 3;
 
 // Every model below shares the `epic` collection, so _schemaName is what separates them.
 // sinceFields are the timestamp candidates for --since; only the ones the schema declares as a
@@ -93,10 +113,11 @@ Usage: node scripts/demi-repush.js [options]
                    commas. Ids of another kind are skipped, so one file can serve every kind.
   --since <ISO>    Only records whose timestamp is at or after this date, e.g. 2026-01-01
   --limit <N>      Stop after N records of each kind.
-  --state <path>   Checkpoint file. Written after each settled batch; a rerun resumes after the
-                   last _id it holds, if it ran over the same ids and --since. With several
-                   kinds each gets its own file, the kind added before the extension:
-                   /tmp/r.json becomes /tmp/r.project.json. Default: no checkpoint.
+  --state <path>   Checkpoint file. Written after each settled batch with the last _id read and
+                   the ids DEMI refused (failedIds). A rerun over the same ids and --since resumes
+                   after that _id and skips the failedIds; retry those with --ids-file and
+                   another --state path. With several kinds each gets its own file, the kind
+                   added before the extension: /tmp/r.json becomes /tmp/r.project.json. Default: no checkpoint.
   --concurrency N  Pushes in flight (default: ${DEFAULT_CONCURRENCY}).
   --rate N         HTTP calls per minute, retries included, 1 or more (default: ${DEFAULT_RATE}).
                    The APIM subscription allows 300 a minute and the live pods share it.
@@ -113,6 +134,13 @@ Connection comes from the same env vars run_migration.js uses: MONGODB_SERVICE_H
 MONGODB_DATABASE, MONGODB_USERNAME, MONGODB_PASSWORD, MONGODB_AUTHSOURCE. Pushes need DEMI_API_BASE
 and DEMI_APIM_KEY; without them the run exits 2 rather than reporting a silent success. The user, group
 and inspection kinds also need their DEMI route segment in DEMI_PUSH_OPT_IN_KINDS, else exit 2.
+
+A failed record does not stop the kind: it is logged, listed at the end and in failedIds.
+If the server drops the read cursor, the run reopens it after the last _id read, up to
+${MAX_CURSOR_REOPENS} times in a row.
+
+DEMI keeps its takedowns through a re-push (eagle-demi #545), so a re-push does not republish a
+project or document DEMI has narrowed or taken down.
 
 Exit codes: 0 everything pushed, 1 the run itself failed, 2 bad arguments or DEMI not configured,
 3 the run finished with records DEMI did not accept.`;
@@ -136,6 +164,10 @@ function buildQuery(kind, options) {
 
   if (options.ids) {
     query._id = Object.assign(query._id || {}, { $in: options.ids.map(id => new mongoose.Types.ObjectId(id)) });
+  }
+
+  if (options.skipIds && options.skipIds.length > 0) {
+    query._id = Object.assign(query._id || {}, { $nin: options.skipIds.map(id => new mongoose.Types.ObjectId(String(id))) });
   }
 
   if (options.since) {
@@ -226,8 +258,9 @@ function idsDigest(ids) {
   return { count: ids.length, sha256: sha256 };
 }
 
-// Where a kind's checkpoint lives and the _id to resume after. A checkpoint from a run over a
-// different id list or --since is not resumed: it would skip records this run was asked for.
+// Where a kind's checkpoint lives, the _id to resume after and the failed ids to skip. A checkpoint
+// from a run over a different id list or --since is not resumed: it would skip records this run was
+// asked for.
 function planKind(args, name, read) {
   const statePath = statePathFor(args.state, name, args.kinds.length);
   const ids = idsDigest(args.ids);
@@ -236,13 +269,20 @@ function planKind(args, name, read) {
   const was = (previous && previous.ids) || null;
   const sameIds = was === null || ids === null ? was === ids : was.count === ids.count && was.sha256 === ids.sha256;
   const sameSince = ((previous && previous.since) || null) === since;
-  const lastId = previous && previous.kind === name && sameIds && sameSince ? previous.lastId || null : null;
-  return { statePath, ids, since, lastId };
+  const resume = !!previous && previous.kind === name && sameIds && sameSince;
+  const lastId = resume ? previous.lastId || null : null;
+  const failedIds = resume && Array.isArray(previous.failedIds) ? previous.failedIds.map(String) : [];
+  return { statePath, ids, since, lastId, failedIds };
 }
 
 // The query and checkpoint for one kind, kept apart from the connection so they can be checked.
+// queryAfter(id) is the same query resumed after `id`, for reopening a lost cursor.
 function kindJob(args, name, plan, model) {
-  const query = buildQuery(KINDS[name], { model: model, since: args.since, lastId: plan.lastId, ids: args.ids });
+  const carried = plan.failedIds || [];
+  const queryAfter = lastId => buildQuery(KINDS[name], {
+    model: model, since: args.since, lastId: lastId || plan.lastId, ids: args.ids, skipIds: carried
+  });
+  const query = queryAfter(null);
   const checkpoint = (lastId, running) => ({
     kind: name,
     ids: plan.ids,
@@ -251,10 +291,20 @@ function kindJob(args, name, plan, model) {
     seen: running.seen,
     pushed: running.pushed,
     failed: running.failed,
-    failedIds: running.failedIds,
+    failedIds: carried.concat(running.failedIds),
     updatedAt: new Date().toISOString()
   });
-  return { query, checkpoint };
+  return { query, queryAfter, checkpoint };
+}
+
+// The kind's records in _id order, fetched CURSOR_BATCH_SIZE at a time.
+function kindQuery(model, query) {
+  return model.find(query).sort({ _id: 1 }).batchSize(CURSOR_BATCH_SIZE);
+}
+
+// What the driver throws from next() once the server has dropped an idle cursor.
+function isCursorNotFound(err) {
+  return !!err && (err.code === 43 || err.codeName === 'CursorNotFound' || /cursor id .* not found/i.test(err.message || ''));
 }
 
 // Only a live run sends anything, so only a live run is paced.
@@ -268,13 +318,16 @@ function pacerFor(args) {
  * A push counts as failed when it rejects or resolves false, which is what demiPush returns for a
  * PUT DEMI did not accept. Failures are logged and their ids returned; the run carries on.
  *
- * The checkpoint fires once a whole batch has settled and only ever names a record with nothing
- * failed or unfinished behind it. After the first failure it stops advancing, so a rerun starts
- * before the hole rather than past it — at the cost of re-pushing the records after it, which is
- * harmless because the DEMI write is a PUT on the record id.
+ * The checkpoint fires once a whole batch has settled and names its last record, failed or not, so
+ * a rerun never pushes a record twice. Failed ids go to the checkpoint's failedIds instead.
+ *
+ * `reopen(lastId)`, when given, returns a fresh cursor for the records after lastId (null: the
+ * original start). It replaces a cursor the server dropped, at most MAX_CURSOR_REOPENS times in a
+ * row without a record read in between; any other cursor error ends the run.
  */
 async function repush(options) {
-  const cursor = options.cursor;
+  let cursor = options.cursor;
+  const reopen = options.reopen;
   const push = options.push;
   const log = options.log || defaultLog;
   const concurrency = options.concurrency || DEFAULT_CONCURRENCY;
@@ -285,14 +338,36 @@ async function repush(options) {
 
   const counts = { seen: 0, pushed: 0, failed: 0, failedIds: [] };
   let reported = 0;
-  let checkpointId = options.startId || null;
-  let frozen = false;
+  let lastRead = null;
+  let reopens = 0;
+
+  const next = async () => {
+    for (;;) {
+      try {
+        const doc = await cursor.next();
+        reopens = 0;
+        if (doc) {
+          lastRead = String(doc._id);
+        }
+        return doc;
+      } catch (err) {
+        if (!reopen || !isCursorNotFound(err) || reopens >= MAX_CURSOR_REOPENS) {
+          throw err;
+        }
+        reopens++;
+        log.warn(`[demi-repush] cursor lost (${err.message}); reopening after ${lastRead || 'the start'}, attempt ${reopens} of ${MAX_CURSOR_REOPENS}`);
+        // The server has already dropped it; closing only frees the driver side.
+        await Promise.resolve().then(() => cursor.close()).catch(() => {});
+        cursor = await reopen(lastRead);
+      }
+    }
+  };
 
   try {
     for (;;) {
       const batch = [];
       while (batch.length < concurrency && (limit === null || counts.seen + batch.length < limit)) {
-        const doc = await cursor.next();
+        const doc = await next();
         if (!doc) {
           break;
         }
@@ -328,21 +403,8 @@ async function repush(options) {
           }
         });
 
-        if (!frozen) {
-          const firstFailure = landed.indexOf(false);
-          if (firstFailure === -1) {
-            checkpointId = String(batch[batch.length - 1]._id);
-          } else {
-            frozen = true;
-            if (firstFailure > 0) {
-              checkpointId = String(batch[firstFailure - 1]._id);
-            }
-            log.warn(`[demi-repush] checkpoint held at ${checkpointId || 'the start'}: ${batch[firstFailure]._id} failed`);
-          }
-        }
-
         if (onCheckpoint) {
-          await onCheckpoint(checkpointId, counts);
+          await onCheckpoint(String(batch[batch.length - 1]._id), counts);
         }
       }
 
@@ -467,7 +529,7 @@ function validate(args) {
     return 'The project kind runs with --concurrency 1';
   }
   if (args.kinds.includes('project') && args.live && !args.idsFile) {
-    return 'A live project run needs --ids-file: pushing every project undoes DEMI takedowns';
+    return 'A live project run needs --ids-file: each project push makes DEMI update every document under it';
   }
   if (!Number.isFinite(args.rate) || args.rate < 1) {
     return '--rate takes a number of calls per minute, 1 or more';
@@ -492,15 +554,17 @@ async function runKind(args, name) {
   if (plan.lastId) {
     defaultLog.info(`[demi-repush] resuming ${name} after _id ${plan.lastId}`);
   }
+  if (plan.failedIds.length > 0) {
+    defaultLog.warn(`[demi-repush] skipping ${plan.failedIds.length} ${name} ids that failed in an earlier run; retry them with --ids-file and another --state: ${plan.failedIds.join(', ')}`);
+  }
 
   const job = kindJob(args, name, plan, model);
-  const cursor = model.find(job.query).sort({ _id: 1 }).cursor();
 
   const counts = await repush({
-    cursor: cursor,
+    cursor: kindQuery(model, job.query).cursor(),
+    reopen: lastId => kindQuery(model, job.queryAfter(lastId)).cursor(),
     push: doc => demiPush[kind.push](doc),
     log: defaultLog,
-    startId: plan.lastId,
     concurrency: args.concurrency,
     limit: args.limit,
     dryRun: !args.live,
@@ -588,9 +652,11 @@ if (require.main === module) {
 
 module.exports = {
   KINDS,
+  MAX_CURSOR_REOPENS,
   USAGE,
   buildQuery,
   dateFields,
+  kindQuery,
   pacerFor,
   parseArgs,
   kindJob,
