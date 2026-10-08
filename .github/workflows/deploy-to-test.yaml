@@ -58,6 +58,10 @@ jobs:
           if ! git rev-parse "${{ inputs.version }}" >/dev/null 2>&1; then
             echo "Tag ${{ inputs.version }} does not exist - will create tag and release"
             needs_release=true
+          elif [ "$(git rev-list -n 1 "${{ inputs.version }}")" != "${{ github.sha }}" ]; then
+            echo "Error: Tag ${{ inputs.version }} already exists at $(git rev-list -n 1 "${{ inputs.version }}"), but this run is for ${{ github.sha }}."
+            echo "Pick a new version, or dispatch on ref ${{ inputs.version }} to redeploy that tag."
+            exit 1
           elif ! gh release view "${{ inputs.version }}" >/dev/null 2>&1; then
             echo "Tag exists but no GitHub Release - will create release"
             needs_release=true
