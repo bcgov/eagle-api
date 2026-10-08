@@ -214,6 +214,21 @@ describe('demi-repush', () => {
       expect(reopen.callCount).to.equal(MAX_CURSOR_REOPENS);
     });
 
+    it('counts only lost cursors in a row, so a read between losses lets the run reopen again', async () => {
+      const all = docs(6);
+      const reopen = sinon.stub();
+      reopen.onCall(0).resolves(lostCursor([all[1]]));
+      reopen.onCall(1).resolves(lostCursor([all[2]]));
+      reopen.onCall(2).resolves(lostCursor([all[3]]));
+      reopen.onCall(3).resolves(fakeCursor(all.slice(4)));
+      const push = sinon.stub().resolves(true);
+
+      const counts = await repush({ cursor: lostCursor([all[0]]), reopen, push, log: quietLog(), dryRun: false });
+
+      expect(reopen.args).to.deep.equal([['id-1'], ['id-2'], ['id-3'], ['id-4']]);
+      expect(counts.pushed).to.equal(6);
+    });
+
     it('does not reopen the cursor on any other read error', async () => {
       const cursor = fakeCursor([]);
       cursor.next = () => Promise.reject(new Error('connection reset'));
