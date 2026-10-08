@@ -84,7 +84,16 @@ function listRefOf(value, lists, unresolved) {
 // Never mutate the caller's document: the push carries resolved fields the Mongo schema has no room for.
 function toPushBody(doc) {
   if (typeof doc.toObject === 'function') {
-    return doc.toObject();
+    const body = doc.toObject();
+    // A row read without a clock-stamped date gets "now" from the schema default; DEMI must get what Mongo holds.
+    if (typeof doc.$isDefault === 'function') {
+      doc.schema.eachPath((path, type) => {
+        if (type.instance === 'Date' && !path.includes('.') && body[path] != null && doc.$isDefault(path)) {
+          delete body[path];
+        }
+      });
+    }
+    return body;
   }
   const body = Object.assign({}, doc);
   for (const key of LEGISLATION_KEYS) {

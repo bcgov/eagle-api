@@ -18,8 +18,8 @@ module.exports = require ('../models')('Document', {
 
   // Tracking
   _comment        : { type:'ObjectId', ref:'CommentPeriod', default:null },
-  _createdDate    : { type: Date, default: Date.now() },
-  _updatedDate    : { type: Date, default: Date.now() },
+  _createdDate    : { type: Date, default: () => new Date() },
+  _updatedDate    : { type: Date, default: () => new Date() },
   _addedBy        : { type:String, default:'system' },
   _updatedBy      : { type:String, default:'system' },
   _deletedBy      : { type:String, default:'system' },
@@ -47,8 +47,8 @@ module.exports = require ('../models')('Document', {
   // Pre-filled with documentFileName in the UI
   displayName      : { type:String, default:'' },
   milestone        : { type:'ObjectId', default:null },
-  dateUploaded     : { type: Date, default: Date.now() },
-  datePosted       : { type: Date, default: Date.now() },
+  dateUploaded     : { type: Date, default: () => new Date() },
+  datePosted       : { type: Date, default: () => new Date() },
   type             : { type:'ObjectId', default:null },
   description      : { type:String, default:'' },
   documentAuthor   : { type: String, default: ''},
