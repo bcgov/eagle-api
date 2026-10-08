@@ -1,8 +1,8 @@
 const { STATUSES } = require('../updateRules');
 
 module.exports = require ('../models')('RecentActivity', {
-  dateUpdated               : { type: Date, default: Date.now() },
-  dateAdded                 : { type: Date, default: Date.now() },
+  dateUpdated               : { type: Date, default: () => new Date() },
+  dateAdded                 : { type: Date, default: () => new Date() },
   _addedBy                  : { type: String, default: null },
   _updatedBy                : { type: String, default: null },
 

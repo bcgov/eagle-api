@@ -598,6 +598,29 @@ describe('DemiPush Helper', () => {
       });
     });
 
+    describe('date the stored row does not hold', () => {
+      const Organization = require('../../api/helpers/models/organization');
+      const ORG_ID = '5f4c7d1e2b3a4c5d6e7f00aa';
+
+      it('should not push a date the schema made up for a row without one', async () => {
+        fetchStub.resolves(okResponse());
+        await demiPush.organization(Organization.hydrate({ _id: ORG_ID, name: 'Undated Org' }));
+
+        const doc = pushedDoc();
+        expect(doc.name).to.equal('Undated Org');
+        expect(doc).to.not.have.property('dateAdded');
+        expect(doc).to.not.have.property('dateUpdated');
+      });
+
+      it('should push the dates a row does hold', async () => {
+        fetchStub.resolves(okResponse());
+        const dateAdded = new Date('2020-01-02T03:04:05.000Z');
+        await demiPush.organization(Organization.hydrate({ _id: ORG_ID, name: 'Dated Org', dateAdded }));
+
+        expect(pushedDoc().dateAdded).to.equal(dateAdded.toISOString());
+      });
+    });
+
     it('should push every field the public comment read needs, and no email', async () => {
       fetchStub.resolves(okResponse());
       await demiPush.comment(commentDoc());

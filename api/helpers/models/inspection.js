@@ -1,8 +1,8 @@
 module.exports = require ('../models')('Inspection', {
   // Tracking
   _schemaName: { type: String, default: 'Inspection' },
-  _createdDate    : { type: Date, default: Date.now() },
-  _updatedDate    : { type: Date, default: Date.now() },
+  _createdDate    : { type: Date, default: () => new Date() },
+  _updatedDate    : { type: Date, default: () => new Date() },
   _addedBy        : { type:String, default:'system' },
   _updatedBy      : { type:String, default:'system' },
   _deletedBy      : { type:String, default:'system' },
@@ -18,8 +18,8 @@ module.exports = require ('../models')('Inspection', {
   label     : { type:String, default:'' },
   case      : { type:String, default:'' },
   email     : { type:String, default:'' },
-  startDate : { type: Date, default: Date.now() },
-  endDate   : { type: Date, default: Date.now() },
+  startDate : { type: Date, default: () => new Date() },
+  endDate   : { type: Date, default: () => new Date() },
   elements  : [{ type: 'ObjectId', ref:'InspectionElement', default:null }],
   customProjectName     : { type:String, default:'' },
   project   : { type:'ObjectId', ref:'Project', default:null },

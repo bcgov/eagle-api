@@ -4,8 +4,8 @@ var Mixed = mongoose.Schema.Types.Mixed;
 module.exports = require ('../models')('InspectionItem', {
   // Tracking
   _schemaName: { type: String, default: 'InspectionItem' },
-  _createdDate    : { type: Date, default: Date.now() },
-  _updatedDate    : { type: Date, default: Date.now() },
+  _createdDate    : { type: Date, default: () => new Date() },
+  _updatedDate    : { type: Date, default: () => new Date() },
   _addedBy        : { type:String, default:'system' },
   _updatedBy      : { type:String, default:'system' },
   _deletedBy      : { type:String, default:'system' },
@@ -21,7 +21,7 @@ module.exports = require ('../models')('InspectionItem', {
   uri  : { type:String, default:'' },
   geo  : { type: Mixed, default: {} },
   caption : { type: String, default: '' },
-  timestamp : { type: Date, default: Date.now() },
+  timestamp : { type: Date, default: () => new Date() },
 
   // Minio handler
   internalURL      : { type:String, default:'' },
