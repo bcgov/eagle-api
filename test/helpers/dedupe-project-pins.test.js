@@ -8,8 +8,9 @@ const path = require('path');
 const { expect } = require('chai');
 const sinon = require('sinon');
 const mongoose = require('mongoose');
+const winston = require('winston');
 
-const { dedupePins, parseArgs, validate } = require('../../scripts/dedupe-project-pins');
+const { dedupe, dedupePins, parseArgs, validate } = require('../../scripts/dedupe-project-pins');
 const demiPush = require('../../api/helpers/demiPush');
 
 describe('dedupe-project-pins script', () => {
@@ -69,6 +70,45 @@ describe('dedupe-project-pins script', () => {
       sinon.stub(demiPush, 'configured').returns(true);
 
       expect(validate(parseArgs(['--apply']))).to.be.null;
+    });
+  });
+
+  describe('dedupe --no-demi notice', () => {
+    const noProjects = { find: () => ({ sort: () => ({ lean: async () => [] }) }) };
+    const notRePushed = stub => stub.getCalls().filter(call => String(call.args[0]).includes('not re-pushed'));
+    let info;
+    let warn;
+
+    beforeEach(() => {
+      const scriptLog = winston.loggers.get('dedupe-project-pins');
+      info = sinon.stub(scriptLog, 'info');
+      warn = sinon.stub(scriptLog, 'warn');
+    });
+
+    afterEach(() => sinon.restore());
+
+    it('says nothing about skipped pushes on plain --apply', async () => {
+      sinon.stub(demiPush, 'configured').returns(true);
+
+      await dedupe(noProjects, true);
+
+      expect([notRePushed(info).length, notRePushed(warn).length]).to.deep.equal([0, 0]);
+    });
+
+    it('logs one info line on --apply --no-demi when DEMI is not configured', async () => {
+      sinon.stub(demiPush, 'configured').returns(false);
+
+      await dedupe(noProjects, true, { noDemi: true });
+
+      expect([notRePushed(info).length, notRePushed(warn).length]).to.deep.equal([1, 0]);
+    });
+
+    it('warns on --apply --no-demi when DEMI is configured', async () => {
+      sinon.stub(demiPush, 'configured').returns(true);
+
+      await dedupe(noProjects, true, { noDemi: true });
+
+      expect([notRePushed(info).length, notRePushed(warn).length]).to.deep.equal([0, 1]);
     });
   });
 
