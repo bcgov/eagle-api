@@ -113,6 +113,17 @@ function parseArgs(argv) {
   };
 }
 
+// Why the run must stop before it connects (exit 2), or null to go ahead.
+function validate(args) {
+  if (args.unknown.length > 0) {
+    return `Unknown argument: ${args.unknown.join(' ')}\n\n${USAGE}`;
+  }
+  if (args.apply && !demiPush.configured()) {
+    return 'DEMI pushes are off: set DEMI_API_BASE and DEMI_APIM_KEY, or run this where they are set.';
+  }
+  return null;
+}
+
 if (require.main === module) {
   const args = parseArgs(process.argv.slice(2));
 
@@ -120,12 +131,9 @@ if (require.main === module) {
     process.stdout.write(`${USAGE}\n`);
     process.exit(0);
   }
-  if (args.unknown.length > 0) {
-    process.stderr.write(`Unknown argument: ${args.unknown.join(' ')}\n\n${USAGE}\n`);
-    process.exit(2);
-  }
-  if (args.apply && !demiPush.configured()) {
-    process.stderr.write('DEMI pushes are off: set DEMI_API_BASE and DEMI_APIM_KEY, or run this where they are set.\n');
+  const problem = validate(args);
+  if (problem) {
+    process.stderr.write(`${problem}\n`);
     process.exit(2);
   }
 
@@ -139,4 +147,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { DUPLICATE_PINS, dedupe, dedupePins, parseArgs };
+module.exports = { DUPLICATE_PINS, dedupe, dedupePins, parseArgs, validate };
