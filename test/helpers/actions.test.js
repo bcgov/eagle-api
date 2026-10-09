@@ -625,6 +625,15 @@ describe('Actions Helper Functions', () => {
         expect(infoLog.called).to.be.false;
       });
 
+      it('logs the push that landed when a sibling push failed', async () => {
+        await actions.sendMirrored(res, 200, { _id: OID }, [push('organization', 'o1'), labelled(false)]);
+
+        expect(res.body.mirrored).to.equal(false);
+        expect(infoLog.calledOnce).to.be.true;
+        expect(infoLog.firstCall.args[0]).to.equal('[demiPush] mirrored organization o1');
+        expect(infoLog.firstCall.args[1]).to.deep.equal({ kind: 'organization', id: 'o1' });
+      });
+
       it('logs nothing for a value that is not a labelled push', async () => {
         await actions.sendMirrored(res, 200, {}, Promise.resolve(true));
 
