@@ -583,6 +583,63 @@ describe('Actions Helper Functions', () => {
         expect(res.code).to.equal(200);
         expect(res.body).to.deep.equal({ ok: 1 });
       });
+
+      it(`logs no mirrored line when the write had no push to wait for (${none})`, async () => {
+        const infoLog = sinon.stub(defaultLog, 'info');
+
+        await actions.sendMirrored(res, 200, { ok: 1 }, none);
+
+        expect(infoLog.called).to.be.false;
+      });
+    });
+
+    describe('mirrored log line', () => {
+      let infoLog;
+      const push = (kind, id) => Object.assign(Promise.resolve(true), { kind, id });
+
+      beforeEach(() => {
+        infoLog = sinon.stub(defaultLog, 'info');
+      });
+
+      it('logs one info line naming kind and id when one push landed', async () => {
+        await actions.sendMirrored(res, 200, {}, push('document', 'd1'));
+
+        expect(infoLog.calledOnce).to.be.true;
+        expect(infoLog.firstCall.args[0]).to.equal('[demiPush] mirrored document d1');
+        expect(infoLog.firstCall.args[1]).to.deep.equal({ kind: 'document', id: 'd1' });
+      });
+
+      it('logs one info line per landed push, in order', async () => {
+        await actions.sendMirrored(res, 200, {}, [push('organization', 'o1'), push('users', 'org:o1')]);
+
+        expect(infoLog.args.map(args => args[0])).to.deep.equal([
+          '[demiPush] mirrored organization o1',
+          '[demiPush] mirrored users org:o1'
+        ]);
+      });
+
+      it('logs no info line when a push failed', async () => {
+        await actions.sendMirrored(res, 200, { _id: OID }, labelled(false));
+
+        expect(res.body.mirrored).to.equal(false);
+        expect(infoLog.called).to.be.false;
+      });
+
+      it('logs the push that landed when a sibling push failed', async () => {
+        await actions.sendMirrored(res, 200, { _id: OID }, [push('organization', 'o1'), labelled(false)]);
+
+        expect(res.body.mirrored).to.equal(false);
+        expect(infoLog.calledOnce).to.be.true;
+        expect(infoLog.firstCall.args[0]).to.equal('[demiPush] mirrored organization o1');
+        expect(infoLog.firstCall.args[1]).to.deep.equal({ kind: 'organization', id: 'o1' });
+      });
+
+      it('logs nothing for a value that is not a labelled push', async () => {
+        await actions.sendMirrored(res, 200, {}, Promise.resolve(true));
+
+        expect(res.code).to.equal(200);
+        expect(infoLog.called).to.be.false;
+      });
     });
   });
 });

@@ -94,6 +94,9 @@ exports.sendMirrored = async function (res, code, data, pushes) {
   await demiPush.recordOutcome(result);
   const attempted = !result.mirrored || result.landed.length > 0;
   try {
+    for (const { kind, id } of result.landed) {
+      defaultLog.info(`[demiPush] mirrored ${kind} ${id}`, { kind, id });
+    }
     return exports.sendResponse(res, code, replyBody(data, attempted ? result.mirrored : undefined));
   } catch (err) {
     defaultLog.error(`[demiPush] could not send reply: ${err && err.message}`);
