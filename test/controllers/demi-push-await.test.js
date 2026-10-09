@@ -39,7 +39,6 @@ describe('DEMI push awaited before the reply', () => {
 
     sinon.stub(mongoose, 'model').callsFake(name => models[name] || stubModel(name, () => saved));
     sinon.stub(Utils, 'recordAction').resolves();
-    sinon.stub(Actions, 'sendResponse').callsFake((r, code, data) => r.status(code).json(data));
     sinon.stub(Actions, 'publish').resolves(saved);
     sinon.stub(Actions, 'unPublish').resolves(saved);
     sinon.stub(MinioController, 'putDocument').resolves({ path: 'minio/a.pdf', extension: 'pdf' });

@@ -275,6 +275,44 @@ describe('Actions Helper Functions', () => {
       actions.sendResponse(mockRes, 204, {});
       expect(mockRes.status.calledWith(204)).to.be.true;
     });
+
+    describe('pending push fields', () => {
+      const PENDING = { demiPushPending: true, demiPushFailedAt: new Date(), demiPushError: 'failed: connect ECONNREFUSED' };
+      let mockRes;
+      const sent = () => mockRes.json.firstCall.args[0];
+
+      beforeEach(() => {
+        mockRes = { status: sinon.stub().returnsThis(), json: sinon.stub() };
+      });
+
+      it('leaves them out of a search page, its rows and their populated parents', () => {
+        const parent = Object.assign({ _id: 'p1', name: 'Project' }, PENDING);
+        const page = [{ searchResults: [Object.assign({ _id: 'd1', project: parent }, PENDING)], meta: [{ searchResultsTotal: 1 }] }];
+
+        actions.sendResponse(mockRes, 200, page);
+
+        expect(sent()).to.deep.equal([{ searchResults: [{ _id: 'd1', project: { _id: 'p1', name: 'Project' } }], meta: [{ searchResultsTotal: 1 }] }]);
+        expect(page[0].searchResults[0]).to.include.keys('demiPushPending', 'demiPushError');
+      });
+
+      it('leaves them out of a document read by id, as its toJSON gives it', () => {
+        const doc = { toJSON: () => Object.assign({ _id: OID, name: 'a' }, PENDING) };
+
+        actions.sendResponse(mockRes, 200, [doc]);
+
+        expect(sent()).to.deep.equal([{ _id: OID, name: 'a' }]);
+      });
+
+      it('passes a reply that carries none through as the same object', () => {
+        const date = new Date();
+        const rows = [{ _id: OID, when: date, tags: [['public']] }];
+
+        actions.sendResponse(mockRes, 200, rows);
+
+        expect(sent()).to.equal(rows);
+        expect(sent()[0].when).to.equal(date);
+      });
+    });
   });
 
   describe('isPublished', () => {

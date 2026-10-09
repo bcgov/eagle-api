@@ -51,9 +51,45 @@ const KINDS = {
 
 // Row fields that record a push that did not land. They live on the row only and never go to DEMI.
 const PENDING_FIELDS = ['demiPushPending', 'demiPushFailedAt', 'demiPushError'];
+const PENDING = new Set(PENDING_FIELDS);
+
+/**
+ * `value` as JSON.stringify would see it, less the pending fields at any depth: rows nest inside
+ * search pages and populated parents. Returns `value` itself when it carries none, so a reply with
+ * nothing to drop is neither copied nor changed in type.
+ */
+function withoutPending(value, ancestors = new Set()) {
+  // A cycle goes back as it is, so JSON.stringify reports it rather than this overflowing the stack.
+  if (!value || typeof value !== 'object' || ancestors.has(value)) {
+    return value;
+  }
+  if (typeof value.toJSON === 'function') {
+    const json = value.toJSON();
+    if (json !== value) {
+      const out = withoutPending(json, ancestors);
+      return out === json ? value : out;
+    }
+  }
+  ancestors.add(value);
+  let copy;
+  const copyOf = () => copy || (copy = Array.isArray(value) ? value.slice() : Object.assign({}, value));
+  for (const key of Object.keys(value)) {
+    if (PENDING.has(key)) {
+      delete copyOf()[key];
+      continue;
+    }
+    const out = withoutPending(value[key], ancestors);
+    if (out !== value[key]) {
+      copyOf()[key] = out;
+    }
+  }
+  ancestors.delete(value);
+  return copy || value;
+}
 
 module.exports = {
   KINDS,
   PENDING_FIELDS,
+  withoutPending,
   pushedSchema: name => Object.values(KINDS).some(kind => kind.schemaName === name)
 };

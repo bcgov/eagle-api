@@ -16,9 +16,10 @@ require('../../app_helper');
 const demiPush = require('../../api/helpers/demiPush');
 const Utils = require('../../api/helpers/utils');
 const organizationController = require('../../api/controllers/organization');
+const searchController = require('../../api/controllers/search');
 const { sweep } = require('../../api/helpers/demiPushSweep');
 const { setEnv } = require('../support/demiPushHarness');
-const { TEST_URI, id } = require('./parentReadFixtures');
+const { TEST_URI, id, PUBLIC_READ, PUBLIC_PROJECT, PARENT_FIXTURES, capture, searchArgs, idsIn } = require('./parentReadFixtures');
 
 const DOC = id('58990017d334ee001d60fd01');
 const ORG = id('58990017d334ee001d60fd02');
@@ -208,5 +209,44 @@ describe('DEMI pending-push fields (MongoDB)', () => {
 
     expect(summary.document).to.deep.equal({ found: 1, pushed: 0, failed: 1 });
     expect(global.fetch.called).to.be.false;
+  });
+
+  describe('read replies', () => {
+    const LEAK = /demiPush/;
+    const anonymous = async (args) => {
+      const { res, body } = capture();
+      await searchController.publicGet(args, res);
+      expect(body.code).to.equal(200);
+      return body.data;
+    };
+
+    beforeEach(async () => {
+      const parent = PARENT_FIXTURES.find(p => p._id.equals(PUBLIC_PROJECT));
+      await epic().insertOne(Object.assign({}, parent, PENDING));
+      await epic().updateOne({ _id: DOC }, { $set: Object.assign({
+        read: PUBLIC_READ, project: PUBLIC_PROJECT, isPublished: true, documentFileName: 'a.pdf', datePosted: BEFORE
+      }, PENDING) });
+    });
+
+    it('leave the fields out of an anonymous search page and its populated parent, though the rows keep them', async () => {
+      const data = await anonymous(searchArgs({ dataset: 'Document', roles: ['public'] }));
+
+      expect(idsIn(data)).to.include(String(DOC));
+      expect(data[0].searchResults[0].project).to.have.property('_id');
+      expect(JSON.stringify(data)).to.not.match(LEAK);
+      expect(await row()).to.include({ demiPushPending: true, demiPushError: 'timeout' });
+      expect(await row(PUBLIC_PROJECT)).to.include({ demiPushPending: true });
+    });
+
+    it('leave the fields out of an anonymous item read by id', async () => {
+      const args = searchArgs({ dataset: 'Item', roles: ['public'] });
+      args.swagger.params._id = { value: String(DOC) };
+      args.swagger.params._schemaName = { value: 'Document' };
+
+      const data = await anonymous(args);
+
+      expect(idsIn(data)).to.deep.equal([String(DOC)]);
+      expect(JSON.stringify(data)).to.not.match(LEAK);
+    });
   });
 });

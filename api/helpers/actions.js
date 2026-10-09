@@ -2,7 +2,7 @@
 
 const defaultLog = require('winston').loggers.get('default');
 const demiPush = require('./demiPush');
-const { PENDING_FIELDS } = require('./demiPushKinds');
+const { withoutPending } = require('./demiPushKinds');
 
 exports.publish = async function (o, save = false) {
   let isModified = false;
@@ -62,23 +62,21 @@ exports.delete = async function (o) {
   }
 };
 
+// Every reply goes out here, so this is where rows lose the pending fields: they are the sweep's, never a client's.
 exports.sendResponse = function (res, code, object) {
-  return res.status(code).json(object);
+  return res.status(code).json(withoutPending(object));
 };
 
 const UNKNOWN = { kind: 'unknown', id: 'unknown' };
 
 // The saved record, plus `mirrored` when a push was attempted. An array or a scalar has no room for it
-// and goes as is. The pending fields go on every reply: they are the sweep's, and may predate this push.
+// and goes as is. sendResponse drops the pending fields, which may predate this push.
 function replyBody(data, mirrored) {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+  if (!data || typeof data !== 'object' || Array.isArray(data) || mirrored === undefined) {
     return data;
   }
   const body = typeof data.toJSON === 'function' ? data.toJSON() : Object.assign({}, data);
-  for (const field of PENDING_FIELDS) {
-    delete body[field];
-  }
-  return mirrored === undefined ? body : Object.assign(body, { mirrored });
+  return Object.assign(body, { mirrored });
 }
 
 /**
