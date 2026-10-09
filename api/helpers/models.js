@@ -2,6 +2,61 @@
 
 const defaultLog = require('winston').loggers.get('default');
 var mongoose = require ('mongoose');
+const { pushedSchema, PENDING_FIELDS } = require('./demiPushKinds');
+
+// Drops the pending fields from one update document or pipeline stage, in place.
+function stripPending(target) {
+  if (!target || typeof target !== 'object') {
+    return;
+  }
+  for (const key of Object.keys(target)) {
+    const value = target[key];
+    if (PENDING_FIELDS.includes(key)) {
+      delete target[key];
+    } else if (key === '$unset' && (typeof value === 'string' || Array.isArray(value))) {
+      // Pipeline form: { $unset: 'field' } or { $unset: ['field', ...] }
+      const kept = [].concat(value).filter(field => !PENDING_FIELDS.includes(field));
+      if (kept.length) {
+        target[key] = kept;
+      } else {
+        delete target[key];
+      }
+    } else if (key.startsWith('$') && value && typeof value === 'object') {
+      for (const field of PENDING_FIELDS) {
+        delete value[field];
+      }
+      if (Object.keys(value).length === 0) {
+        delete target[key];
+      }
+    }
+  }
+}
+
+// Only demiPush writes the pending fields, passing demiPushInternal. A client body that reaches a write
+// would otherwise clear the sweep's flag or forge one.
+function guardPendingFields(schema) {
+  schema.pre('save', function (options) {
+    if (options && options.demiPushInternal) {
+      return;
+    }
+    for (const field of PENDING_FIELDS) {
+      if (this.isNew) {
+        this.set(field, undefined);
+      } else if (this.isModified(field)) {
+        this.unmarkModified(field);
+      }
+    }
+  });
+  schema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], function () {
+    if (this.getOptions().demiPushInternal) {
+      return;
+    }
+    const update = this.getUpdate();
+    for (const stage of [].concat(update || [])) {
+      stripPending(stage);
+    }
+  });
+}
 
 var genSchema = function (name, definition) {
   //
@@ -57,6 +112,13 @@ var genSchema = function (name, definition) {
     definition._deletedBy = { type: String, default: 'system' };
   }
 
+  // Set when a DEMI push did not land; demi-push-sweep re-pushes these rows and clears them.
+  if (pushedSchema(name)) {
+    definition.demiPushPending = { type: Boolean, index: { sparse: true } };
+    definition.demiPushFailedAt = Date;
+    definition.demiPushError = String;
+  }
+
   //
   // create the schema
   //
@@ -67,6 +129,9 @@ var genSchema = function (name, definition) {
   // Postsave hook
   if (pre) {
     schema.pre('save', pre);
+  }
+  if (pushedSchema(name)) {
+    guardPendingFields(schema);
   }
   schema.pre('findOneAndUpdate', function() {
     const update = this.getUpdate();

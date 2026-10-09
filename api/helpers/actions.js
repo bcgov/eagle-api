@@ -2,6 +2,7 @@
 
 const defaultLog = require('winston').loggers.get('default');
 const demiPush = require('./demiPush');
+const { withoutPending } = require('./demiPushKinds');
 
 exports.publish = async function (o, save = false) {
   let isModified = false;
@@ -61,38 +62,39 @@ exports.delete = async function (o) {
   }
 };
 
+// Every reply goes out here, so this is where rows lose the pending fields: they are the sweep's, never a client's.
 exports.sendResponse = function (res, code, object) {
-  return res.status(code).json(object);
-};
-
-// Body for a write that saved in Mongo but whose DEMI push did not land.
-exports.NOT_MIRRORED = {
-  saved: true,
-  mirrored: false,
-  message: 'Saved, but the record could not be mirrored to DEMI; retry or run a re-push.'
+  return res.status(code).json(withoutPending(object));
 };
 
 const UNKNOWN = { kind: 'unknown', id: 'unknown' };
 
+// The saved record, plus `mirrored` when a push was attempted. An array or a scalar has no room for it
+// and goes as is. sendResponse drops the pending fields, which may predate this push.
+function replyBody(data, mirrored) {
+  if (!data || typeof data !== 'object' || Array.isArray(data) || mirrored === undefined) {
+    return data;
+  }
+  const body = typeof data.toJSON === 'function' ? data.toJSON() : Object.assign({}, data);
+  return Object.assign(body, { mirrored });
+}
+
 /**
- * Waits for the write's DEMI push(es), then answers `code` with `data`, or 502 NOT_MIRRORED with one
- * error line per failed push. Never rejects: the Mongo write already stands.
+ * Waits for the write's DEMI push(es) and answers `code` with `data`, plus `mirrored` whenever a push
+ * was attempted. A push that did not land flags its row for demi-push-sweep; the Mongo write stands
+ * either way, so a client never retries a write that saved. Never rejects.
  */
 exports.sendMirrored = async function (res, code, data, pushes) {
   let result;
   try {
     result = await demiPush.awaitMirror(pushes);
   } catch (err) {
-    result = { mirrored: false, failures: [{ ...UNKNOWN, reason: `failed: ${err && err.message}` }] };
+    result = { mirrored: false, landed: [], failures: [{ ...UNKNOWN, reason: `failed: ${err && err.message}` }] };
   }
+  await demiPush.recordOutcome(result);
+  const attempted = !result.mirrored || result.landed.length > 0;
   try {
-    if (result.mirrored) {
-      return exports.sendResponse(res, code, data);
-    }
-    for (const { kind, id, reason } of result.failures) {
-      defaultLog.error(`[demiPush] not-mirrored ${kind} ${id}: ${reason}`, { kind, id, reason });
-    }
-    return exports.sendResponse(res, 502, exports.NOT_MIRRORED);
+    return exports.sendResponse(res, code, replyBody(data, attempted ? result.mirrored : undefined));
   } catch (err) {
     defaultLog.error(`[demiPush] could not send reply: ${err && err.message}`);
     // A body that fails to serialize throws before anything is written; answer once so the request does not hang.

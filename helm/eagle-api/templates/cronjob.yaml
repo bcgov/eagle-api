@@ -33,10 +33,26 @@ spec:
             - name: {{ .name }}
               image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
               imagePullPolicy: {{ $.Values.image.pullPolicy }}
-              command: ["node", "worker/matview-worker.js"]
+              command: ["node", {{ .script | default "worker/matview-worker.js" | quote }}]
               env:
+                {{- if .subset }}
                 - name: SUBSET
                   value: {{ .subset | quote }}
+                {{- end }}
+                {{- if .demiPush }}
+                {{- range $key, $value := $.Values.env }}
+                {{- if hasPrefix "DEMI_" $key }}
+                - name: {{ $key }}
+                  value: {{ $value | quote }}
+                {{- end }}
+                {{- end }}
+                - name: DEMI_APIM_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: demi-push-secret
+                      key: DEMI_APIM_KEY
+                      optional: true
+                {{- end }}
                 - name: MONGODB_DATABASE
                   valueFrom:
                     secretKeyRef:

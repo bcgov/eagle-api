@@ -112,9 +112,24 @@ mongodb:
     pvc:
       existingClaim: eagle-api-mongodb-backup
 
-# Materialized view refresh cron jobs
+# Cron jobs (materialized views, DEMI push sweep)
 cronJobs:
   enabled: true
+  # Helm replaces a list whole, so every job is restated here to turn the DEMI sweep on.
+  jobs:
+    - name: eagle-cron-hot
+      subset: hot
+      schedule: "*/30 * * * *"
+      enabled: true
+    - name: eagle-cron-cold
+      subset: cold
+      schedule: "0 2 * * *"
+      enabled: true
+    - name: eagle-cron-demi-sweep
+      script: worker/demi-push-sweep.js
+      demiPush: true
+      schedule: "*/5 * * * *"
+      enabled: true
   resources:
     requests:
       cpu: 250m

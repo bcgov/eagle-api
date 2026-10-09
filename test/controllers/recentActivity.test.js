@@ -2,7 +2,7 @@
  * Unit Tests for RecentActivity Controller - DEMI mirror
  *
  * DEMI owns Updates; eagle-api mirrors the write and answers once the mirror
- * lands, or 502 when it does not. Mongoose, Utils and demiPush are stubbed - no database.
+ * settles, with mirrored false when it did not land. Mongoose, Utils and demiPush are stubbed - no database.
  */
 
 'use strict';
@@ -13,7 +13,6 @@ const mongoose   = require('mongoose');
 const Utils      = require('../../api/helpers/utils');
 const demiPush   = require('../../api/helpers/demiPush');
 const defaultLog = require('winston').loggers.get('default');
-const Actions    = require('../../api/helpers/actions');
 
 const recentActivity = require('../../api/controllers/recentActivity');
 
@@ -141,14 +140,15 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       expect(pushStub.calledOnceWithExactly(saved)).to.be.true;
     });
 
-    it('answers 502 and keeps the save when the push does not land', async () => {
+    it('answers 200 with the saved Update and mirrored false, without the pending fields, when the push does not land', async () => {
+      Object.assign(saved, { demiPushPending: true, demiPushFailedAt: new Date(0), demiPushError: 'timeout' });
       pushStub.resolves(false);
 
       await recentActivity.protectedPost(postArgs(true), res);
 
       expect(pushStub.calledOnceWithExactly(saved)).to.be.true;
-      expect(res.status.calledOnceWithExactly(502)).to.be.true;
-      expect(res.json.calledOnceWithExactly(Actions.NOT_MIRRORED)).to.be.true;
+      expect(res.status.calledOnceWithExactly(200)).to.be.true;
+      expect(res.json.firstCall.args[0]).to.deep.equal({ _id: ACTIVITY_ID, headline: 'Decision issued', active: true, mirrored: false });
     });
 
     it('does not mirror when the save fails', async () => {
@@ -202,13 +202,13 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       expect(res.status.calledWith(200)).to.be.true;
     });
 
-    it('answers 502 when the archived row does not reach DEMI', async () => {
+    it('answers 200 with mirrored false when the archived row does not reach DEMI', async () => {
       pushStub.resolves(false);
 
       await recentActivity.protectedDelete(deleteArgs(), res);
 
-      expect(res.status.calledOnceWithExactly(502)).to.be.true;
-      expect(res.json.calledOnceWithExactly(Actions.NOT_MIRRORED)).to.be.true;
+      expect(res.status.calledOnceWithExactly(200)).to.be.true;
+      expect(res.json.firstCall.args[0].mirrored).to.equal(false);
     });
 
     it('answers 404 and mirrors nothing when the Update does not exist', async () => {
@@ -635,7 +635,7 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       expect(isPublic(image)).to.be.true;
     });
 
-    it('answers 502, and leaves the image public, when its push does not land', async () => {
+    it('answers 200 with mirrored false, and leaves the image public, when its push does not land', async () => {
       const image = uploaded(UPLOAD);
       documents.push(image);
       docPush.resolves(false);
@@ -643,7 +643,8 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       await recentActivity.protectedPut(putArgs(true, { images: [{ document: UPLOAD, alt: 'Site' }] }), res);
 
       expect(docPush.calledWith(image)).to.be.true;
-      expect(res.status.calledOnceWithExactly(502)).to.be.true;
+      expect(res.status.calledOnceWithExactly(200)).to.be.true;
+      expect(res.json.firstCall.args[0].mirrored).to.equal(false);
       expect(isPublic(image)).to.be.true;
     });
 

@@ -259,8 +259,8 @@ mongodb:
         cpu: 500m
         memory: 2Gi
 
-# Materialized view refresh cron jobs
-# Two jobs: hot (frequent, recent data) and cold (nightly, full refresh)
+# Cron jobs: materialized view refresh, hot (frequent, recent data) and cold (nightly, full refresh),
+# and the DEMI push sweep. script defaults to worker/matview-worker.js; demiPush adds the DEMI env.
 cronJobs:
   enabled: false  # Enable in values-{env}.yaml
 
@@ -291,3 +291,9 @@ cronJobs:
       subset: cold
       schedule: "0 2 * * *"
       enabled: true
+    # Re-pushes rows whose DEMI push did not land. Needs DEMI_API_BASE, so off unless an env turns it on.
+    - name: eagle-cron-demi-sweep
+      script: worker/demi-push-sweep.js
+      demiPush: true
+      schedule: "*/5 * * * *"
+      enabled: false
