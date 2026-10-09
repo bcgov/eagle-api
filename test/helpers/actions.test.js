@@ -295,6 +295,18 @@ describe('Actions Helper Functions', () => {
         expect(page[0].searchResults[0]).to.include.keys('demiPushPending', 'demiPushError');
       });
 
+      it('leaves them out of a populated parent that two rows share', () => {
+        const parent = Object.assign({ _id: 'p1', name: 'Project' }, PENDING);
+        const rows = [{ _id: 'd1', project: parent }, { _id: 'd2', project: parent }];
+
+        actions.sendResponse(mockRes, 200, rows);
+
+        expect(sent()).to.deep.equal([
+          { _id: 'd1', project: { _id: 'p1', name: 'Project' } },
+          { _id: 'd2', project: { _id: 'p1', name: 'Project' } }
+        ]);
+      });
+
       it('leaves them out of a document read by id, as its toJSON gives it', () => {
         const doc = { toJSON: () => Object.assign({ _id: OID, name: 'a' }, PENDING) };
 
