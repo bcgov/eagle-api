@@ -175,6 +175,92 @@ describe('demiPushSweep', () => {
 
     expect(summary.project).to.deep.equal({ found: 1, pushed: 0, failed: 1 });
   });
+
+  describe('failed hard deletes', () => {
+    const GONE = '5f4c7d1e2b3a4c5d6e7f00d9';
+    const body = { _id: GONE, project: PROJECT, read: ['staff'] };
+    // Labelled the way demiPush labels a delete push.
+    const deletePush = landed => (row, extra) => Object.assign(Promise.resolve(landed), {
+      kind: 'documents', id: String(row._id),
+      outcome: { reason: landed ? null : 'PARENT_NOT_FOUND', deletedDoc: extra && extra.isDeleted ? row : null }
+    });
+    // Tombstones only for documents; every other kind reads none.
+    const tombstoneModel = rows => {
+      const model = pendingModel(rows);
+      const none = pendingModel([]).query;
+      model.find.callsFake(filter => (filter.kind === 'documents' ? model.query : none));
+      model.deleteOne = sinon.stub().resolves({ deletedCount: 1 });
+      return model;
+    };
+
+    beforeEach(() => {
+      models.Document = pendingModel([]);
+      models.Document.updateOne.resolves({ matchedCount: 0 });
+      models.DemiPushTombstone = tombstoneModel([{ kind: 'documents', targetId: GONE, body, failedAt: FAILED_AT }]);
+      demiPush.document.callsFake(deletePush(true));
+    });
+
+    it('resends the kept body as a delete, after the flagged rows', async () => {
+      await run();
+
+      expect(demiPush.document.calledOnce).to.be.true;
+      expect(demiPush.document.firstCall.args).to.deep.equal([body, { isDeleted: true }]);
+      expect(demiPush.project.calledBefore(demiPush.document)).to.be.true;
+    });
+
+    it('drops the tombstone once DEMI takes the delete', async () => {
+      const summary = await run();
+
+      expect(models.DemiPushTombstone.deleteOne.calledOnceWithExactly({ kind: 'documents', targetId: GONE })).to.be.true;
+      expect(models.DemiPushTombstone.updateOne.called).to.be.false;
+      expect(summary.tombstones).to.deep.equal({ found: 1, pushed: 1, failed: 0 });
+    });
+
+    it('keeps the tombstone with a newer failure time and reason when the resend fails', async () => {
+      demiPush.document.callsFake(deletePush(false));
+
+      const summary = await run();
+
+      const [filter, change, options] = models.DemiPushTombstone.updateOne.firstCall.args;
+      expect(filter).to.deep.equal({ kind: 'documents', targetId: GONE });
+      expect(change.$set).to.include({ error: 'PARENT_NOT_FOUND' });
+      expect(change.$set.failedAt.getTime()).to.be.greaterThan(FAILED_AT.getTime());
+      expect(options).to.deep.equal({ upsert: true });
+      expect(models.DemiPushTombstone.deleteOne.called).to.be.false;
+      expect(summary.tombstones).to.deep.equal({ found: 1, pushed: 0, failed: 1 });
+    });
+
+    it('reads tombstones per kind, oldest failure first, up to the limit', async () => {
+      await run({ limitPerKind: 7 });
+
+      expect(models.DemiPushTombstone.find.calledWith({ kind: 'documents' })).to.be.true;
+      expect(models.DemiPushTombstone.find.calledWith({ kind: 'users' })).to.be.false;
+      expect(models.DemiPushTombstone.query.sort.firstCall.args[0]).to.deep.equal({ failedAt: 1 });
+      expect(models.DemiPushTombstone.query.limit.firstCall.args[0]).to.equal(7);
+    });
+
+    it('waits minIntervalMs before a resend too', async () => {
+      const clock = sinon.useFakeTimers({ toFake: ['setTimeout', 'Date'] });
+      const pending = sweep({ minIntervalMs: 400 });
+
+      // The project row goes at once; the delete waits its turn behind it.
+      await clock.tickAsync(399);
+      expect(demiPush.document.called).to.be.false;
+
+      await clock.tickAsync(1);
+      await pending;
+      expect(demiPush.document.calledOnce).to.be.true;
+    });
+
+    it('marks tombstones it could not read and still returns the rows it swept', async () => {
+      models.DemiPushTombstone.query.lean.rejects(new Error('mongo down'));
+
+      const summary = await run();
+
+      expect(summary.tombstones).to.deep.equal({ found: 0, pushed: 0, failed: 0, unreadable: true });
+      expect(summary.project).to.deep.equal({ found: 1, pushed: 1, failed: 0 });
+    });
+  });
 });
 
 describe('demiPushKinds order', () => {

@@ -132,6 +132,7 @@ function stubModel(modelName, saved) {
   M.updateOne = sinon.stub().resolves({});
   M.find = sinon.stub().returns({ lean: () => Promise.resolve([{ _id: OID, active: true }]) });
   M.deleteMany = sinon.stub().resolves({ deletedCount: 1 });
+  M.deleteOne = sinon.stub().resolves({ deletedCount: 1 });
   return M;
 }
 

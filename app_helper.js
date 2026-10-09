@@ -67,6 +67,7 @@ require('./api/helpers/models/projectNotification');
 require('./api/helpers/models/cacUser');
 require('./api/helpers/models/list');
 require('./api/helpers/models/config');
+require('./api/helpers/models/demiPushTombstone');
 
 
 async function loadModels(dbConnection, options, logger) {

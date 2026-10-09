@@ -13,10 +13,9 @@ function enabled(kind) {
   return demiPush.configured() && (!kind.optIn || demiPush.optedIn(kind.optIn));
 }
 
-async function sweepRow(kind, id, counts) {
+async function sweepPush(kind, id, send, counts) {
   try {
-    // By id: a row deleted since the find drops as "no stored row to send" instead of being re-created.
-    const result = await demiPush.awaitMirror(demiPush[kind.push](demiPush.byId(id)));
+    const result = await demiPush.awaitMirror(send());
     await demiPush.recordOutcome(result);
     counts[result.mirrored ? 'pushed' : 'failed']++;
   } catch (err) {
@@ -54,23 +53,53 @@ async function sweepKind(kind, limitPerKind, pace) {
   // One at a time, so each push gets the whole awaitMirror deadline instead of queueing behind the rest.
   for (const row of rows) {
     await pace();
-    await sweepRow(kind, row._id, counts);
+    // By id: a row deleted since the find drops as "no stored row to send" instead of being re-created.
+    await sweepPush(kind, row._id, () => demiPush[kind.push](demiPush.byId(row._id)), counts);
+  }
+  return counts;
+}
+
+// Hard deletes whose push did not land. recordOutcome drops the tombstone once DEMI takes the delete
+// and rewrites its failedAt and error when it does not.
+async function drainTombstones(kinds, limitPerKind, pace) {
+  const counts = { found: 0, pushed: 0, failed: 0 };
+  for (const kind of kinds) {
+    let tombstones;
+    try {
+      tombstones = await mongoose.model('DemiPushTombstone')
+        .find({ kind: kind.route })
+        .sort({ failedAt: 1 })
+        .limit(limitPerKind)
+        .lean();
+    } catch (err) {
+      defaultLog.error(`[demi-push-sweep] ${kind.route}: failed deletes could not be read: ${err.message}`);
+      counts.unreadable = true;
+      continue;
+    }
+    counts.found += tombstones.length;
+    for (const { targetId, body } of tombstones) {
+      await pace();
+      await sweepPush(kind, targetId, () => demiPush[kind.push](Object.assign({}, body, { _id: targetId }), { isDeleted: true }), counts);
+    }
   }
   return counts;
 }
 
 /**
- * Re-pushes rows whose DEMI push did not land, oldest failure first, parents before children, one
- * push started per `minIntervalMs`. Returns `{ <kind>: { found, pushed, failed[, unreadable] } }` for
- * the kinds that push. Never rejects.
+ * Re-pushes rows whose DEMI push did not land, then resends hard deletes that did not, oldest failure
+ * first, parents before children, one push started per `minIntervalMs`. Returns
+ * `{ <kind>: counts, tombstones: counts }` for the kinds that push, counts being
+ * `{ found, pushed, failed[, unreadable] }`. Never rejects.
  */
 exports.sweep = async function ({ limitPerKind = 500, minIntervalMs = DEFAULT_MIN_INTERVAL_MS } = {}) {
   const pace = pacer(minIntervalMs);
   const summary = {};
-  for (const [name, kind] of Object.entries(KINDS)) {
-    if (enabled(kind)) {
-      summary[name] = await sweepKind(kind, limitPerKind, pace);
-    }
+  const kinds = Object.entries(KINDS).filter(([, kind]) => enabled(kind));
+  for (const [name, kind] of kinds) {
+    summary[name] = await sweepKind(kind, limitPerKind, pace);
+  }
+  if (kinds.length) {
+    summary.tombstones = await drainTombstones(kinds.map(([, kind]) => kind), limitPerKind, pace);
   }
   defaultLog.info(`[demi-push-sweep] done ${JSON.stringify(summary)}`, summary);
   return summary;

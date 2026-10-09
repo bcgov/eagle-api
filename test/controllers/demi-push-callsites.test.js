@@ -193,7 +193,7 @@ describe('DEMI push call sites', () => {
       expect(demiPush.document.calledOnceWithExactly(gone, { isDeleted: true })).to.be.true;
     });
 
-    // A hard delete leaves no row to flag, so the failure is only logged.
+    // The stub carries no delete body to keep, so the failure is only logged; demi-push-await covers the tombstone.
     it('document.protectedDelete answers 200 with mirrored false and logs the lost delete when the DEMI push rejects', async () => {
       const rejected = Object.assign(Promise.reject(new Error('demi unreachable')), { kind: 'documents', id: OID });
       rejected.catch(() => {});
