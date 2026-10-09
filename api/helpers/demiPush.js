@@ -5,6 +5,8 @@ const defaultLog = require('winston').loggers.get('default');
 
 const pushClient = require('./pushClient');
 const { LEGISLATION_KEYS } = require('./constants');
+const { KINDS, PENDING_FIELDS } = require('./demiPushKinds');
+require('./models/demiPushTombstone');
 
 const client = pushClient({
   name: 'demiPush',
@@ -12,7 +14,7 @@ const client = pushClient({
   keyEnv: 'DEMI_APIM_KEY',
   keyHeader: 'Ocp-Apim-Subscription-Key',
   method: 'PUT',
-  onRefused: parkRefused
+  onRefused: noteRefusal
 });
 
 const LABEL_FIELDS = ['type', 'milestone', 'projectPhase', 'documentAuthorType'];
@@ -83,8 +85,9 @@ function listRefOf(value, lists, unresolved) {
 
 // Never mutate the caller's document: the push carries resolved fields the Mongo schema has no room for.
 function toPushBody(doc) {
+  let body;
   if (typeof doc.toObject === 'function') {
-    const body = doc.toObject();
+    body = doc.toObject();
     // A row read without a clock-stamped date gets "now" from the schema default; DEMI must get what Mongo holds.
     if (typeof doc.$isDefault === 'function') {
       doc.schema.eachPath((path, type) => {
@@ -93,13 +96,16 @@ function toPushBody(doc) {
         }
       });
     }
-    return body;
-  }
-  const body = Object.assign({}, doc);
-  for (const key of LEGISLATION_KEYS) {
-    if (body[key] && typeof body[key] === 'object') {
-      body[key] = Object.assign({}, body[key]);
+  } else {
+    body = Object.assign({}, doc);
+    for (const key of LEGISLATION_KEYS) {
+      if (body[key] && typeof body[key] === 'object') {
+        body[key] = Object.assign({}, body[key]);
+      }
     }
+  }
+  for (const field of PENDING_FIELDS) {
+    delete body[field];
   }
   return body;
 }
@@ -160,26 +166,8 @@ async function enrichProject(project) {
 
 const CONNECTED = 1;
 
-// DEMI route segment and Mongoose model of each kind that pushes only when named in
-// DEMI_PUSH_OPT_IN_KINDS, so a tag can ship before DEMI has the routes.
-const OPT_IN_KINDS = {
-  users: 'User',
-  groups: 'Group',
-  inspections: 'Inspection',
-  'inspection-elements': 'InspectionElement',
-  'inspection-items': 'InspectionItem'
-};
-
 // Mongoose model behind each DEMI route segment, for the re-read before a push.
-const MODEL_BY_KIND = Object.assign({
-  projects: 'Project',
-  documents: 'Document',
-  commentperiods: 'CommentPeriod',
-  comments: 'Comment',
-  organizations: 'Organization',
-  notifications: 'ProjectNotification',
-  updates: 'RecentActivity'
-}, OPT_IN_KINDS);
+const MODEL_BY_KIND = Object.fromEntries(Object.values(KINDS).map(kind => [kind.route, kind.model]));
 
 const dropped = (kind, id, reason, meta) => pushClient.logDropped('demiPush', `${kind} ${id}`, reason, meta);
 
@@ -248,133 +236,78 @@ function byId(id) {
   return snapshot;
 }
 
+exports.byId = byId;
+
 function push(kind, id, body) {
   // No /api segment: the APIM machine API's backend already carries it
   return client.push(`/eagle/${kind}/${id}`, body, `${kind} ${id}`);
 }
 
-// DEMI refuses a child whose parent it does not hold yet with this code, and a malformed ref with
-// another, which no retry can fix.
-const PARENT_NOT_FOUND = 'PARENT_NOT_FOUND';
-// Field naming the parent of each kind DEMI checks a parent for.
-const PARENT_FIELD = {
-  documents: 'project',
-  commentperiods: 'project',
-  comments: 'period',
-  groups: 'project',
-  inspections: 'project'
-};
-// A landed push of one of these may be the parent a parked record waits on.
-const PARENT_KINDS = new Set(['projects', 'notifications', 'commentperiods']);
-// Wait before each retry; the delay covers a parent pushed by another pod.
-const RETRY_DELAYS_MS = [30000, 300000];
-const PARENT_MISSING = 'rejected 404 (parent not found)';
-
-// Records DEMI refused for a missing parent, keyed `kind:id`, each waiting on a retry timer.
-const parked = new Map();
-// Pushes of a parent-checked kind on the wire, keyed by push label, so the refusal hook can park them.
-// serialize() keeps one per record, so the label is unique while it is here.
+// What a push that did not land can say about why, keyed by push label while it is on the wire.
+// serialize() keeps one push per record in flight, so the label is unique while it is here.
 const sending = new Map();
-let parkedMax = null;
 
-function parkRefused({ label, code }) {
-  const record = sending.get(label);
-  if (!record || code !== PARENT_NOT_FOUND) {
-    return false;
+// A 404 carries DEMI's refusal code, e.g. PARENT_NOT_FOUND for a child whose parent it lacks.
+// Returning false lets pushClient log the drop as usual.
+function noteRefusal({ label, code }) {
+  const outcome = sending.get(label);
+  if (outcome && code) {
+    outcome.reason = code;
   }
-  const key = `${record.kind}:${record.id}`;
-  if (parkedMax === null) {
-    parkedMax = pushClient.queueMax('demiPush');
-  }
-  if (record.attempts >= RETRY_DELAYS_MS.length || (!parked.has(key) && parked.size >= parkedMax)) {
-    dropped(record.kind, record.id, PARENT_MISSING);
-    return true;
-  }
-  unpark(key);
-  record.timer = setTimeout(() => retry(key), RETRY_DELAYS_MS[record.attempts]).unref();
-  parked.set(key, record);
-  defaultLog.warn(`[demiPush] ${record.kind} ${record.id} parked: parent ${record.parentId} not in DEMI yet, retry ${record.attempts + 1}`);
-  return true;
+  return false;
 }
 
-function unpark(key) {
-  const record = parked.get(key);
-  if (record) {
-    clearTimeout(record.timer);
-    parked.delete(key);
-  }
-  return record;
-}
+const NOT_MIRRORED = 'not mirrored (see push-dropped line)';
 
-function retry(key) {
-  const record = unpark(key);
-  if (record) {
-    mirrorPush(record.kind, record.doc, record.extra, record.buildBody, record.attempts + 1);
-  }
-}
-
-function retryChildrenOf(parentId) {
-  const id = String(parentId);
-  for (const [key, record] of parked) {
-    if (record.parentId === id) {
-      retry(key);
-    }
-  }
-}
-
-// For the shutdown path: a parked record still waiting on its retry is lost with the process.
-exports.logParked = function () {
-  for (const record of parked.values()) {
-    dropped(record.kind, record.id, PARENT_MISSING);
-  }
-  parked.clear();
-};
-
-// The resolved value stays a bare boolean for the backfill scripts; awaitMirror reads these to
-// name a failure.
-function labelled(kind, id, promise) {
-  return Object.assign(promise, { kind, id });
+// The resolved value stays a bare boolean for the backfill scripts; awaitMirror reads kind, id and
+// outcome to name a failure and flag its row.
+function labelled(kind, id, promise, outcome) {
+  return Object.assign(promise, { kind, id, outcome });
 }
 
 // Every mirror runs through here. `extra` says what the stored document cannot: a hard delete
-// leaves nothing to re-read, so the caller's own copy carries the marker instead. `attempts` counts
-// retries of a record DEMI refused for a missing parent.
-function mirrorPush(kind, doc, extra, buildBody, attempts = 0) {
+// leaves nothing to re-read, so the caller's own copy carries the marker instead.
+function mirrorPush(kind, doc, extra, buildBody) {
   if (!client.configured() || !doc || !doc._id) {
     return Promise.resolve(true);
   }
   const id = doc._id;
-  const key = `${kind}:${id}`;
-  return labelled(kind, String(id), serialize(key, async () => {
-    // This push carries the newest state, so it replaces any parked copy of the record.
-    unpark(key);
+  // A delete keeps its own body: should the row be gone, that is all the sweep can resend.
+  const outcome = { reason: null, deletedDoc: extra && extra.isDeleted === true ? doc : null };
+  return labelled(kind, String(id), serialize(`${kind}:${id}`, async () => {
     const label = `${kind} ${id}`;
     try {
+      // Taken before the read: only a failure flagged before it is one this push's body covers.
+      const readAt = new Date();
       const current = await currentDoc(kind, id, doc);
+      // Only a row read back now can clear a flag: the caller's copy may hold one a newer failure replaced.
+      if (current !== doc) {
+        outcome.readAt = readAt;
+        outcome.pending = current.demiPushPending === true;
+      }
       // An id-only push has no copy of its own: without the stored row it would blank DEMI's.
       if (current === doc && idOnly.has(doc)) {
         dropped(kind, id, 'failed (no stored row to send)');
+        outcome.reason = 'no stored row to send';
         return false;
       }
       // Pods push the same record independently, so DEMI keeps the newest stamp and drops an older body.
       const pushedAt = Date.now();
       const body = Object.assign(toPushBody(current), extra);
-      if (PARENT_FIELD[kind]) {
-        const parentId = idOf(body[PARENT_FIELD[kind]]);
-        sending.set(label, { kind, id: String(id), parentId, doc, extra, buildBody, attempts });
-      }
+      sending.set(label, outcome);
       const landed = await push(kind, id, Object.assign(await buildBody(body), { pushedAt }));
-      if (landed && PARENT_KINDS.has(kind)) {
-        retryChildrenOf(id);
+      if (!landed && !outcome.reason) {
+        outcome.reason = NOT_MIRRORED;
       }
       return landed;
     } catch (err) {
       dropped(kind, id, 'failed', { error: err.message, stack: err.stack });
+      outcome.reason = `failed: ${err.message}`;
       return false;
     } finally {
       sending.delete(label);
     }
-  }));
+  }), outcome);
 }
 
 // Every export resolves true when the body landed or there was nothing to send, false when it did
@@ -462,13 +395,27 @@ exports.usersOfOrganization = function (orgId) {
   }
   const filter = { _schemaName: 'User', org: new mongoose.Types.ObjectId(String(orgId)) };
   const label = `of organization ${orgId}`;
-  return labelled('users', label, Promise.resolve(mongoose.model('User').find(filter, '_id').lean())
-    .then(users => Promise.all(users.map(user => exports.user(byId(user._id)))))
-    .then(results => results.every(Boolean))
+  // The label is no row id, so a failure flags every user of the organization through the filter.
+  // A landing clears only the users looked up here: one joining the organization later was not pushed.
+  const outcome = { reason: null, filter, readAt: new Date() };
+  return labelled('users', label, Promise.resolve(mongoose.model('User').find(filter, '_id demiPushPending').lean())
+    .then(users => {
+      outcome.pending = users.some(user => user.demiPushPending === true);
+      outcome.ids = users.map(user => user._id);
+      return Promise.all(users.map(user => exports.user(byId(user._id))));
+    })
+    .then(results => {
+      const landed = results.every(Boolean);
+      if (!landed) {
+        outcome.reason = NOT_MIRRORED;
+      }
+      return landed;
+    })
     .catch(err => {
       dropped('users', label, 'failed (user lookup failed)', { error: err.message });
+      outcome.reason = 'user lookup failed';
       return false;
-    }));
+    }), outcome);
 };
 exports.inspection = optInMirror('inspections', asDoc);
 exports.inspectionElement = optInMirror('inspection-elements', asDoc);
@@ -500,11 +447,12 @@ function awaitMs() {
 }
 
 function failureReason(push) {
-  return parked.has(`${push.kind}:${push.id}`) ? 'parked: parent not in DEMI yet' : 'not mirrored (see push-dropped line)';
+  return (push.outcome && push.outcome.reason) || NOT_MIRRORED;
 }
 
 // Waits on one push or an array of them, all under one deadline, and never rejects. A push still
-// pending at the deadline counts as failed but keeps running in its chain.
+// pending at the deadline counts as failed but keeps running in its chain. `landed` and `failures`
+// hold only labelled pushes, the ones with a row to flag or clear; `mirrored` counts every push.
 exports.awaitMirror = function (pushes) {
   const entries = [].concat(pushes).filter(push => push != null);
   let timer;
@@ -521,9 +469,125 @@ exports.awaitMirror = function (pushes) {
   ]));
   return Promise.all(reasons).then(results => {
     clearTimeout(timer);
-    const failures = results
-      .map((reason, i) => reason && { kind: entries[i].kind, id: entries[i].id, reason })
-      .filter(Boolean);
-    return { mirrored: failures.length === 0, failures };
+    const entry = i => {
+      const { kind, id, outcome } = entries[i];
+      const out = { kind, id };
+      if (outcome && outcome.filter) {
+        out.filter = outcome.filter;
+      }
+      if (outcome && outcome.deletedDoc) {
+        out.deletedDoc = outcome.deletedDoc;
+      }
+      return out;
+    };
+    // A landing carries readAt only when the row it read was flagged, so an unflagged row costs no clear.
+    const landing = i => {
+      const { kind, id, outcome } = entries[i];
+      if (!outcome || !outcome.pending) {
+        return entry(i);
+      }
+      return outcome.ids ? { kind, id, ids: outcome.ids, readAt: outcome.readAt } : Object.assign(entry(i), { readAt: outcome.readAt });
+    };
+    const failures = [];
+    const landed = [];
+    results.forEach((reason, i) => {
+      if (!entries[i].kind) {
+        return;
+      }
+      if (reason) {
+        failures.push(Object.assign(entry(i), { reason }));
+      } else {
+        landed.push(landing(i));
+      }
+    });
+    return { mirrored: results.every(reason => !reason), failures, landed };
   });
+};
+
+const ERROR_MAX_LENGTH = 200;
+const UNSET_PENDING = Object.fromEntries(PENDING_FIELDS.map(field => [field, '']));
+// readAt and demiPushFailedAt come from different pods' clocks; a failure this close to the read stays flagged.
+const CLOCK_SKEW_MS = 5000;
+// The models' write hooks drop the pending fields from any update without this option.
+const INTERNAL = { demiPushInternal: true };
+const TOMBSTONE = 'DemiPushTombstone';
+
+// updateOne and updateMany skip the save hooks: no audit row, and _updatedBy and dateUpdated stay put.
+function updateRows(model, many, filter, update) {
+  return many ? model.updateMany(filter, update, INTERNAL) : model.updateOne(filter, update, INTERNAL);
+}
+
+// A hard delete leaves no row to flag, so its body goes to a tombstone the sweep resends.
+async function keepFailedDelete({ kind, id, reason, deletedDoc }, failedAt) {
+  try {
+    await mongoose.model(TOMBSTONE).updateOne(
+      { kind, targetId: id },
+      { $set: { failedAt, error: String(reason).slice(0, ERROR_MAX_LENGTH), body: toPushBody(deletedDoc) } },
+      { upsert: true }
+    );
+  } catch (err) {
+    defaultLog.error(`[demiPush] ${kind} ${id}: could not keep the failed delete for the sweep: ${err.message}`, { kind, id, reason });
+  }
+}
+
+async function clearFailedDelete({ kind, id }) {
+  try {
+    await mongoose.model(TOMBSTONE).deleteOne({ kind, targetId: id });
+  } catch (err) {
+    defaultLog.warn(`[demiPush] ${kind} ${id}: could not clear the failed delete: ${err.message}`);
+  }
+}
+
+async function markPending(entry, failedAt) {
+  const { kind, id, reason } = entry;
+  const model = modelFor(kind);
+  if (!model || (!entry.filter && !mongoose.isValidObjectId(id))) {
+    defaultLog.error(`[demiPush] ${kind} ${id}: no row to flag for the sweep`, { kind, id, reason });
+    return;
+  }
+  const fields = { demiPushPending: true, demiPushFailedAt: failedAt, demiPushError: String(reason).slice(0, ERROR_MAX_LENGTH) };
+  try {
+    const result = await updateRows(model, Boolean(entry.filter), entry.filter || { _id: id }, { $set: fields });
+    if (!entry.filter && !(result && result.matchedCount)) {
+      if (entry.deletedDoc) {
+        await keepFailedDelete(entry, failedAt);
+      } else {
+        defaultLog.error(`[demiPush] ${kind} ${id}: row gone, nothing for the sweep to retry`, { kind, id, reason });
+      }
+    }
+  } catch (err) {
+    defaultLog.error(`[demiPush] ${kind} ${id}: could not flag the row for the sweep: ${err.message}`, { kind, id, reason });
+  }
+}
+
+// Only a failure flagged before the push read the row is cleared: a later one may be newer than DEMI's body.
+async function clearPending(entry) {
+  const model = modelFor(entry.kind);
+  if (!entry.readAt || !model || (!entry.ids && !mongoose.isValidObjectId(entry.id))) {
+    return;
+  }
+  const filter = Object.assign({}, entry.ids ? { _id: { $in: entry.ids } } : { _id: entry.id }, {
+    demiPushPending: true,
+    $or: [{ demiPushFailedAt: { $lt: new Date(new Date(entry.readAt).getTime() - CLOCK_SKEW_MS) } }, { demiPushFailedAt: { $exists: false } }]
+  });
+  try {
+    await updateRows(model, Boolean(entry.ids), filter, { $unset: UNSET_PENDING });
+  } catch (err) {
+    defaultLog.warn(`[demiPush] ${entry.kind} ${entry.id}: could not clear the pending flag: ${err.message}`);
+  }
+}
+
+/**
+ * Writes an awaitMirror result onto the rows: failures flagged for the sweep (a hard delete's as a
+ * tombstone), landings cleared. Never rejects.
+ */
+exports.recordOutcome = function (result, failedAt = new Date()) {
+  for (const { kind, id, reason } of result.failures) {
+    defaultLog.error(`[demiPush] not-mirrored ${kind} ${id}: ${reason}`, { kind, id, reason });
+  }
+  return Promise.all([
+    ...result.failures.map(entry => markPending(entry, failedAt)),
+    ...result.landed.map(clearPending),
+    ...result.landed.filter(entry => entry.deletedDoc).map(clearFailedDelete)
+  ]);
 };

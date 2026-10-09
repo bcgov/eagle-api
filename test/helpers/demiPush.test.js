@@ -922,162 +922,55 @@ describe('DemiPush Helper', () => {
       expect(await demiPush.document({ _id: 'd1' })).to.be.false;
     });
 
-    describe('parked on a missing parent', () => {
+    it('should keep the pending-push fields out of the body DEMI gets', async () => {
+      fetchStub.resolves(okResponse());
+
+      await demiPush.comment({ _id: 'c1', demiPushPending: true, demiPushFailedAt: new Date(), demiPushError: 'timeout', comment: 'x' });
+
+      expect(JSON.parse(fetchStub.firstCall.args[1].body).doc).to.deep.equal({ _id: 'c1', comment: 'x' });
+    });
+
+    // No in-process retry: the write flags its row and demi-push-sweep re-pushes it later.
+    describe('refused for a missing parent', () => {
       const DOC = '5f4c7d1e2b3a4c5d6e7f00d1';
-      const OTHER_DOC = '5f4c7d1e2b3a4c5d6e7f00d2';
-      const GIVE_UP = `[demiPush] push-dropped documents ${DOC}: rejected 404 (parent not found)`;
       const refused = code => new Response(JSON.stringify({ error: 'Parent project or notification not found', code }), { status: 404 });
       const parentMissing = () => refused('PARENT_NOT_FOUND');
       const urls = () => fetchStub.getCalls().map(call => call.args[0]);
-      // Let a retry started off a timer or a parent push run through to its fetch.
+      // Let anything started off a timer or a parent push run through to its fetch.
       const settle = () => new Promise(setImmediate);
-      let clock;
-      let originalQueueMax;
 
       beforeEach(() => {
         stubModels([], []);
-        clock = sinon.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-        originalQueueMax = process.env.DEMI_PUSH_QUEUE_MAX;
       });
 
-      afterEach(() => {
-        if (originalQueueMax === undefined) { delete process.env.DEMI_PUSH_QUEUE_MAX; } else { process.env.DEMI_PUSH_QUEUE_MAX = originalQueueMax; }
-      });
-
-      it('should re-push a parked document once a push of its project lands in this pod', async () => {
-        fetchStub.onCall(0).callsFake(parentMissing);
-        fetchStub.resolves(okResponse());
-
-        expect(await demiPush.document({ _id: DOC, project: 'p1' })).to.be.false;
-        expect(await demiPush.project({ _id: 'p1' })).to.be.true;
-        await settle();
-
-        expect(urls()).to.deep.equal([`${BASE}/eagle/documents/${DOC}`, `${BASE}/eagle/projects/p1`, `${BASE}/eagle/documents/${DOC}`]);
-        expect(errorStub.called).to.be.false;
-      });
-
-      it('should match a parked document to its project when the ref is an ObjectId', async () => {
-        const PROJECT = '5f4c7d1e2b3a4c5d6e7f00a1';
-        fetchStub.onCall(0).callsFake(parentMissing);
-        fetchStub.resolves(okResponse());
-
-        await demiPush.document({ _id: DOC, project: new mongoose.Types.ObjectId(PROJECT) });
-        await demiPush.project({ _id: PROJECT });
-        await settle();
-
-        expect(urls()).to.deep.equal([`${BASE}/eagle/documents/${DOC}`, `${BASE}/eagle/projects/${PROJECT}`, `${BASE}/eagle/documents/${DOC}`]);
-      });
-
-      it('should leave a parked document alone when a different project lands', async () => {
-        fetchStub.onCall(0).callsFake(parentMissing);
-        fetchStub.resolves(okResponse());
-
-        await demiPush.document({ _id: DOC, project: 'p1' });
-        await demiPush.project({ _id: 'p2' });
-        await settle();
-
-        expect(urls()).to.deep.equal([`${BASE}/eagle/documents/${DOC}`, `${BASE}/eagle/projects/p2`]);
-      });
-
-      it('should re-push a parked document after 30 s when another pod pushed its project', async () => {
-        fetchStub.onCall(0).callsFake(parentMissing);
-        fetchStub.resolves(okResponse());
-
-        await demiPush.document({ _id: DOC, project: 'p1' });
-        await clock.tickAsync(29999);
-        expect(fetchStub.callCount).to.equal(1);
-        await clock.tickAsync(1);
-        await settle();
-
-        expect(urls()).to.deep.equal([`${BASE}/eagle/documents/${DOC}`, `${BASE}/eagle/documents/${DOC}`]);
-        expect(errorStub.called).to.be.false;
-      });
-
-      it('should give up after the 5 min retry with the parent-not-found drop line', async () => {
+      it('should resolve false and name PARENT_NOT_FOUND as the reason', async () => {
         fetchStub.callsFake(parentMissing);
 
-        await demiPush.document({ _id: DOC, project: 'p1' });
-        await clock.tickAsync(30000);
-        await settle();
-        expect(errorStub.called, 'not dropped while a retry is left').to.be.false;
-        await clock.tickAsync(300000);
-        await settle();
+        const result = await demiPush.awaitMirror(demiPush.document({ _id: DOC, project: 'p1' }));
 
-        expect(fetchStub.callCount).to.equal(3);
-        expect(errorStub.args.map(args => args[0])).to.deep.equal([GIVE_UP]);
-      });
-
-      it('should drop a refusal that would park past DEMI_PUSH_QUEUE_MAX and keep the one parked', async () => {
-        process.env.DEMI_PUSH_QUEUE_MAX = '1';
-        fetchStub.onCall(0).callsFake(parentMissing);
-        fetchStub.onCall(1).callsFake(parentMissing);
-        fetchStub.resolves(okResponse());
-
-        await demiPush.document({ _id: DOC, project: 'p1' });
-        await demiPush.document({ _id: OTHER_DOC, project: 'p1' });
-        expect(errorStub.args.map(args => args[0])).to.deep.equal([`[demiPush] push-dropped documents ${OTHER_DOC}: rejected 404 (parent not found)`]);
-        await clock.tickAsync(30000);
-        await settle();
-
-        expect(urls()[2]).to.equal(`${BASE}/eagle/documents/${DOC}`);
-      });
-
-      it('should keep the isDeleted marker of a parked delete on its retry', async () => {
-        fetchStub.onCall(0).callsFake(parentMissing);
-        fetchStub.resolves(okResponse());
-
-        await demiPush.document({ _id: DOC, project: 'p1' }, { isDeleted: true });
-        await clock.tickAsync(30000);
-        await settle();
-
-        expect(JSON.parse(fetchStub.secondCall.args[1].body).doc).to.deep.equal({ _id: DOC, project: 'p1', isDeleted: true });
-      });
-
-      it('should not park a refusal for a malformed parent ref', async () => {
-        fetchStub.callsFake(() => refused('PARENT_REF_INVALID'));
-
-        await demiPush.document({ _id: DOC, project: 'not-an-id' });
-        await clock.tickAsync(30000);
-        await settle();
-
-        expect(fetchStub.callCount).to.equal(1);
+        expect(result.failures).to.deep.equal([{ kind: 'documents', id: DOC, reason: 'PARENT_NOT_FOUND' }]);
         expect(errorStub.args.map(args => args[0])).to.deep.equal([`[demiPush] push-dropped documents ${DOC}: rejected 404`]);
       });
 
-      it('should not retry a parked document once a later push of it has landed', async () => {
+      it('should not re-push the document when its project lands, nor after 5 min', async () => {
+        const clock = sinon.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
         fetchStub.onCall(0).callsFake(parentMissing);
         fetchStub.resolves(okResponse());
 
         await demiPush.document({ _id: DOC, project: 'p1' });
-        expect(await demiPush.document({ _id: DOC, project: 'p1' })).to.be.true;
-        await clock.tickAsync(30000);
+        await demiPush.project({ _id: 'p1' });
+        await clock.tickAsync(330000);
         await settle();
 
-        expect(fetchStub.callCount).to.equal(2);
+        expect(urls()).to.deep.equal([`${BASE}/eagle/documents/${DOC}`, `${BASE}/eagle/projects/p1`]);
       });
 
-      it('should log a parked record as dropped at shutdown and not retry it', async () => {
-        fetchStub.onCall(0).callsFake(parentMissing);
-        fetchStub.resolves(okResponse());
+      it('should name another refusal code as the reason', async () => {
+        fetchStub.callsFake(() => refused('PARENT_REF_INVALID'));
 
-        await demiPush.document({ _id: DOC, project: 'p1' });
-        demiPush.logParked();
-        await clock.tickAsync(30000);
-        await settle();
+        const result = await demiPush.awaitMirror(demiPush.document({ _id: DOC, project: 'not-an-id' }));
 
-        expect(errorStub.args.map(args => args[0])).to.deep.equal([GIVE_UP]);
-        expect(fetchStub.callCount).to.equal(1);
-      });
-
-      it('should park a comment on its comment period and re-push it once that period lands', async () => {
-        fetchStub.onCall(0).callsFake(parentMissing);
-        fetchStub.resolves(okResponse());
-
-        await demiPush.comment({ _id: 'c1', period: PERIOD });
-        await demiPush.commentPeriod({ _id: PERIOD, project: 'p1' });
-        await settle();
-
-        expect(urls()).to.deep.equal([`${BASE}/eagle/comments/c1`, `${BASE}/eagle/commentperiods/${PERIOD}`, `${BASE}/eagle/comments/c1`]);
+        expect(result.failures[0].reason).to.equal('PARENT_REF_INVALID');
       });
     });
 
@@ -1256,7 +1149,7 @@ describe('DemiPush Helper', () => {
 
       const result = await demiPush.awaitMirror(demiPush.project({ _id: 'p1' }));
 
-      expect(result).to.deep.equal({ mirrored: true, failures: [] });
+      expect(result).to.deep.equal({ mirrored: true, failures: [], landed: [{ kind: 'projects', id: 'p1' }] });
     });
 
     it('should name the record when the push is dropped after two 5xx', async () => {
@@ -1265,7 +1158,7 @@ describe('DemiPush Helper', () => {
       const pending = demiPush.awaitMirror(demiPush.project({ _id: 'p1' }));
       await clock.runAllAsync();
 
-      expect(await pending).to.deep.equal({ mirrored: false, failures: [{ kind: 'projects', id: 'p1', reason: NOT_MIRRORED }] });
+      expect(await pending).to.deep.equal({ mirrored: false, failures: [{ kind: 'projects', id: 'p1', reason: NOT_MIRRORED }], landed: [] });
       expect(fetchStub.callCount).to.equal(2);
     });
 
@@ -1285,7 +1178,7 @@ describe('DemiPush Helper', () => {
       const pending = demiPush.awaitMirror(push);
 
       await clock.tickAsync(50);
-      expect(await pending).to.deep.equal({ mirrored: false, failures: [{ kind: 'projects', id: 'p1', reason: 'timeout' }] });
+      expect(await pending).to.deep.equal({ mirrored: false, failures: [{ kind: 'projects', id: 'p1', reason: 'timeout' }], landed: [] });
 
       await clock.tickAsync(50);
       expect(await push).to.be.true;
@@ -1311,18 +1204,6 @@ describe('DemiPush Helper', () => {
       expect(clock.countTimers()).to.equal(0);
     });
 
-    it('should report a record DEMI parked for a missing parent as parked', async () => {
-      stubModels([], []);
-      sinon.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-      fetchStub.callsFake(() => new Response(JSON.stringify({ code: 'PARENT_NOT_FOUND' }), { status: 404 }));
-
-      const result = await demiPush.awaitMirror(demiPush.document({ _id: 'd1', project: 'p1' }));
-      // Parked records live in module state; leaving d1 behind would re-push it in a later test.
-      demiPush.logParked();
-
-      expect(result.failures).to.deep.equal([{ kind: 'documents', id: 'd1', reason: 'parked: parent not in DEMI yet' }]);
-    });
-
     it('should report mirrored when pushes are off', async () => {
       delete process.env.DEMI_API_BASE;
 
@@ -1343,7 +1224,7 @@ describe('DemiPush Helper', () => {
 
       const result = await demiPush.awaitMirror(demiPush.pushIfMatched(demiPush.comment, { matchedCount: 1 }, 'c1'));
 
-      expect(result.failures).to.deep.equal([{ kind: 'comments', id: 'c1', reason: NOT_MIRRORED }]);
+      expect(result.failures).to.deep.equal([{ kind: 'comments', id: 'c1', reason: 'no stored row to send' }]);
       expect(fetchStub.called).to.be.false;
     });
 
@@ -1352,7 +1233,16 @@ describe('DemiPush Helper', () => {
 
       const result = await demiPush.awaitMirror([null, demiPush.project({ _id: 'p1' }), undefined, demiPush.comment({ _id: 'c1' })]);
 
-      expect(result).to.deep.equal({ mirrored: false, failures: [{ kind: 'comments', id: 'c1', reason: NOT_MIRRORED }] });
+      expect(result).to.deep.equal({
+        mirrored: false, failures: [{ kind: 'comments', id: 'c1', reason: NOT_MIRRORED }], landed: [{ kind: 'projects', id: 'p1' }]
+      });
+    });
+
+    // An unlabelled push names no row: nothing to flag, but the write still did not reach DEMI.
+    it('should report not mirrored for an unlabelled push that resolved false, listing no failure to flag', async () => {
+      const result = await demiPush.awaitMirror(Promise.resolve(false));
+
+      expect(result).to.deep.equal({ mirrored: false, failures: [], landed: [] });
     });
 
     it('should report a rejected push with its message instead of rejecting', async () => {
@@ -1371,7 +1261,177 @@ describe('DemiPush Helper', () => {
 
       const result = await demiPush.awaitMirror(demiPush.usersOfOrganization('5f4c7d1e2b3a4c5d6e7f00aa'));
 
-      expect(result.failures).to.deep.equal([{ kind: 'users', id: 'of organization 5f4c7d1e2b3a4c5d6e7f00aa', reason: NOT_MIRRORED }]);
+      const [failure] = result.failures;
+      expect(failure).to.include({ kind: 'users', id: 'of organization 5f4c7d1e2b3a4c5d6e7f00aa', reason: 'user lookup failed' });
+      expect(String(failure.filter.org)).to.equal('5f4c7d1e2b3a4c5d6e7f00aa');
+    });
+  });
+
+  describe('recordOutcome', () => {
+    const ORG = '5f4c7d1e2b3a4c5d6e7f00aa';
+    let User;
+
+    beforeEach(() => {
+      User = { updateOne: sinon.stub().resolves({ matchedCount: 1 }), updateMany: sinon.stub().resolves({ matchedCount: 2 }) };
+      sinon.stub(mongoose, 'model').withArgs('User').returns(User);
+    });
+
+    it('flags every user of the organization when the users push of an organization fails', async () => {
+      const filter = { _schemaName: 'User', org: new mongoose.Types.ObjectId(ORG) };
+
+      await demiPush.recordOutcome({ mirrored: false, landed: [], failures: [{ kind: 'users', id: `of organization ${ORG}`, reason: 'timeout', filter }] });
+
+      expect(User.updateMany.calledOnce).to.be.true;
+      expect(User.updateMany.firstCall.args[0]).to.equal(filter);
+      expect(User.updateMany.firstCall.args[1].$set).to.include({ demiPushPending: true, demiPushError: 'timeout' });
+      expect(User.updateMany.firstCall.args[2]).to.deep.equal({ demiPushInternal: true });
+      expect(User.updateOne.called).to.be.false;
+    });
+
+    describe('after the users push of an organization lands', () => {
+      const USER = '5f4c7d1e2b3a4c5d6e7f00b1';
+
+      beforeEach(() => {
+        process.env.DEMI_API_BASE = BASE;
+        process.env.DEMI_APIM_KEY = 'test-key';
+        process.env.DEMI_PUSH_OPT_IN_KINDS = 'users';
+        fetchStub.resolves(okResponse());
+      });
+
+      afterEach(() => delete process.env.DEMI_PUSH_OPT_IN_KINDS);
+
+      const pushOrg = async users => {
+        User.find = sinon.stub().returns({ lean: () => Promise.resolve(users) });
+        User.db = { readyState: 1 };
+        User.findById = sinon.stub().resolves({ _id: USER });
+        await demiPush.recordOutcome(await demiPush.awaitMirror(demiPush.usersOfOrganization(ORG)));
+      };
+
+      // The read time is taken when the lookup starts, so a failure flagged while it runs stays flagged.
+      it('clears by id the users it looked up, of failures flagged before the lookup started', async () => {
+        const clock = sinon.useFakeTimers({ now: new Date('2026-10-01T00:00:00Z'), toFake: ['Date'] });
+        let resolveLookup;
+        User.find = sinon.stub().returns({ lean: () => new Promise(resolve => { resolveLookup = resolve; }) });
+        User.db = { readyState: 1 };
+        User.findById = sinon.stub().resolves({ _id: USER });
+        const push = demiPush.usersOfOrganization(ORG);
+        clock.tick(10000);
+        resolveLookup([{ _id: USER, demiPushPending: true }]);
+
+        await demiPush.recordOutcome(await demiPush.awaitMirror(push));
+
+        expect(User.updateMany.calledOnce).to.be.true;
+        const [filter, change, options] = User.updateMany.firstCall.args;
+        expect(filter).to.deep.equal({
+          _id: { $in: [USER] },
+          demiPushPending: true,
+          $or: [{ demiPushFailedAt: { $lt: new Date('2026-09-30T23:59:55Z') } }, { demiPushFailedAt: { $exists: false } }]
+        });
+        expect(change.$unset).to.have.all.keys('demiPushPending', 'demiPushFailedAt', 'demiPushError');
+        expect(options).to.deep.equal({ demiPushInternal: true });
+      });
+
+      it('writes nothing when none of its users was flagged', async () => {
+        await pushOrg([{ _id: USER }]);
+
+        expect(User.updateMany.called).to.be.false;
+      });
+    });
+
+    it('logs and flags nothing for a failure with no row id', async () => {
+      await demiPush.recordOutcome({ mirrored: false, landed: [], failures: [{ kind: 'users', id: 'not-an-id', reason: 'timeout' }] });
+
+      expect(User.updateOne.called).to.be.false;
+      expect(errorStub.calledWithMatch(/no row to flag/)).to.be.true;
+    });
+
+    describe('after a push of a stored row', () => {
+      const COMMENT = '5f4c7d1e2b3a4c5d6e7f00c1';
+      let Comment;
+      let originalAwaitMs;
+
+      beforeEach(() => {
+        process.env.DEMI_API_BASE = BASE;
+        process.env.DEMI_APIM_KEY = 'test-key';
+        originalAwaitMs = process.env.DEMI_PUSH_AWAIT_MS;
+        Comment = {
+          db: { readyState: 1 },
+          findById: sinon.stub().resolves({ _id: COMMENT, demiPushPending: true }),
+          updateOne: sinon.stub().resolves({ matchedCount: 1 })
+        };
+        mongoose.model.withArgs('Comment').returns(Comment);
+      });
+
+      afterEach(() => {
+        if (originalAwaitMs === undefined) { delete process.env.DEMI_PUSH_AWAIT_MS; } else { process.env.DEMI_PUSH_AWAIT_MS = originalAwaitMs; }
+      });
+
+      const pushAndRecord = async () => demiPush.recordOutcome(await demiPush.awaitMirror(demiPush.comment(demiPush.byId(COMMENT))));
+      const updates = op => Comment.updateOne.getCalls().filter(call => call.args[1][op]);
+
+      it('writes nothing when the row it read was not flagged', async () => {
+        Comment.findById.resolves({ _id: COMMENT });
+        fetchStub.resolves(okResponse());
+
+        await pushAndRecord();
+
+        expect(Comment.updateOne.called).to.be.false;
+      });
+
+      it('clears a flagged row only of a failure older than its read less the skew margin, or one with no failure time', async () => {
+        fetchStub.resolves(okResponse());
+        const before = Date.now();
+
+        await pushAndRecord();
+
+        const [[filter, , options]] = updates('$unset').map(call => call.args);
+        const cutoff = filter.$or[0].demiPushFailedAt.$lt;
+        expect(cutoff.getTime() + 5000).to.be.within(before, Date.now());
+        expect(filter).to.deep.equal({
+          _id: COMMENT, demiPushPending: true, $or: [{ demiPushFailedAt: { $lt: cutoff } }, { demiPushFailedAt: { $exists: false } }]
+        });
+        expect(options).to.deep.equal({ demiPushInternal: true });
+      });
+
+      // The caller's copy may carry a flag a newer failure has since replaced, so only a re-read row clears.
+      [['fails', () => Comment.findById.rejects(new Error('mongo unreachable'))], ['finds no row', () => Comment.findById.resolves(null)]]
+        .forEach(([outcome, breakRead]) => {
+          it(`clears nothing when the re-read ${outcome} and the caller's copy says flagged`, async () => {
+            breakRead();
+            fetchStub.resolves(okResponse());
+            const snapshot = { _id: COMMENT, demiPushPending: true, demiPushFailedAt: new Date(0) };
+
+            const result = await demiPush.awaitMirror(demiPush.comment(snapshot));
+            await demiPush.recordOutcome(result);
+
+            expect(result.mirrored).to.be.true;
+            expect(Comment.updateOne.called).to.be.false;
+          });
+        });
+
+      it('leaves the flag of a push that timed out, even once that push lands, for the next sweep to clear', async () => {
+        process.env.DEMI_PUSH_AWAIT_MS = '50';
+        const clock = sinon.useFakeTimers();
+        fetchStub.callsFake(() => new Promise(resolve => setTimeout(() => resolve(okResponse()), 100)));
+        const push = demiPush.comment(demiPush.byId(COMMENT));
+        const recorded = demiPush.awaitMirror(push).then(result => demiPush.recordOutcome(result));
+
+        await clock.tickAsync(50);
+        await recorded;
+        await clock.tickAsync(50);
+
+        expect(await push).to.be.true;
+        expect(updates('$set')).to.have.length(1);
+        expect(updates('$unset')).to.be.empty;
+      });
+    });
+
+    it('resolves even when the flag write fails', async () => {
+      User.updateOne.rejects(new Error('mongo down'));
+
+      await demiPush.recordOutcome({ mirrored: false, landed: [], failures: [{ kind: 'users', id: ORG, reason: 'timeout' }] });
+
+      expect(errorStub.calledWithMatch(/could not flag the row/)).to.be.true;
     });
   });
 });

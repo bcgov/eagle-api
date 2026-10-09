@@ -9,7 +9,7 @@ const sinon = require('sinon');
 const mongoose = require('mongoose');
 const actions = require('../../api/helpers/actions');
 const demiPush = require('../../api/helpers/demiPush');
-const { NOT_MIRRORED } = require('../support/demiPushHarness');
+const { OID } = require('../support/demiPushHarness');
 const defaultLog = require('winston').loggers.get('default');
 
 describe('Actions Helper Functions', () => {
@@ -275,6 +275,56 @@ describe('Actions Helper Functions', () => {
       actions.sendResponse(mockRes, 204, {});
       expect(mockRes.status.calledWith(204)).to.be.true;
     });
+
+    describe('pending push fields', () => {
+      const PENDING = { demiPushPending: true, demiPushFailedAt: new Date(), demiPushError: 'failed: connect ECONNREFUSED' };
+      let mockRes;
+      const sent = () => mockRes.json.firstCall.args[0];
+
+      beforeEach(() => {
+        mockRes = { status: sinon.stub().returnsThis(), json: sinon.stub() };
+      });
+
+      it('leaves them out of a search page, its rows and their populated parents', () => {
+        const parent = Object.assign({ _id: 'p1', name: 'Project' }, PENDING);
+        const page = [{ searchResults: [Object.assign({ _id: 'd1', project: parent }, PENDING)], meta: [{ searchResultsTotal: 1 }] }];
+
+        actions.sendResponse(mockRes, 200, page);
+
+        expect(sent()).to.deep.equal([{ searchResults: [{ _id: 'd1', project: { _id: 'p1', name: 'Project' } }], meta: [{ searchResultsTotal: 1 }] }]);
+        expect(page[0].searchResults[0]).to.include.keys('demiPushPending', 'demiPushError');
+      });
+
+      it('leaves them out of a populated parent that two rows share', () => {
+        const parent = Object.assign({ _id: 'p1', name: 'Project' }, PENDING);
+        const rows = [{ _id: 'd1', project: parent }, { _id: 'd2', project: parent }];
+
+        actions.sendResponse(mockRes, 200, rows);
+
+        expect(sent()).to.deep.equal([
+          { _id: 'd1', project: { _id: 'p1', name: 'Project' } },
+          { _id: 'd2', project: { _id: 'p1', name: 'Project' } }
+        ]);
+      });
+
+      it('leaves them out of a document read by id, as its toJSON gives it', () => {
+        const doc = { toJSON: () => Object.assign({ _id: OID, name: 'a' }, PENDING) };
+
+        actions.sendResponse(mockRes, 200, [doc]);
+
+        expect(sent()).to.deep.equal([{ _id: OID, name: 'a' }]);
+      });
+
+      it('passes a reply that carries none through as the same object', () => {
+        const date = new Date();
+        const rows = [{ _id: OID, when: date, tags: [['public']] }];
+
+        actions.sendResponse(mockRes, 200, rows);
+
+        expect(sent()).to.equal(rows);
+        expect(sent()[0].when).to.equal(date);
+      });
+    });
   });
 
   describe('isPublished', () => {
@@ -312,6 +362,7 @@ describe('Actions Helper Functions', () => {
   describe('sendMirrored', () => {
     let res;
     let errorLog;
+    let Document;
 
     // Records what the client would receive.
     const fakeRes = () => {
@@ -321,74 +372,186 @@ describe('Actions Helper Functions', () => {
       return sent;
     };
 
+    // A push labelled the way demiPush labels the promises it hands back.
+    const labelled = (value, reason) => Object.assign(Promise.resolve(value), { kind: 'documents', id: OID, outcome: { reason } });
+    const setCall = () => Document.updateOne.getCalls().find(call => call.args[1].$set);
+    const unsetCall = () => Document.updateOne.getCalls().find(call => call.args[1].$unset);
+
     beforeEach(() => {
       res = fakeRes();
       errorLog = sinon.stub(defaultLog, 'error');
+      Document = { updateOne: sinon.stub().resolves({ matchedCount: 1 }), updateMany: sinon.stub().resolves({ matchedCount: 1 }) };
+      sinon.stub(mongoose, 'model').withArgs('Document').returns(Document);
     });
 
     afterEach(() => {
       sinon.restore();
     });
 
-    it('answers with the original code and data once the push landed', async () => {
-      sinon.stub(demiPush, 'awaitMirror').resolves({ mirrored: true, failures: [] });
-      const doc = { _id: 'd1' };
-
-      await actions.sendMirrored(res, 201, doc, Promise.resolve(true));
+    it('answers the original code with the saved fields and mirrored true once the push landed', async () => {
+      await actions.sendMirrored(res, 201, { _id: OID, name: 'a' }, labelled(true));
 
       expect(res.code).to.equal(201);
-      expect(res.body).to.equal(doc);
+      expect(res.body).to.deep.equal({ _id: OID, name: 'a', mirrored: true });
+      expect(setCall()).to.be.undefined;
     });
 
-    it('replies through exports.sendResponse so a stub on the module sees it', async () => {
-      sinon.stub(demiPush, 'awaitMirror').resolves({ mirrored: true, failures: [] });
-      const send = sinon.stub(actions, 'sendResponse');
-      const doc = { _id: 'd1' };
+    it('clears the pending fields of a flagged row only where the failure predates the read by the clock-skew margin', async () => {
+      const readAt = new Date('2026-10-01T00:00:00Z');
+      const push = Object.assign(Promise.resolve(true), { kind: 'documents', id: OID, outcome: { reason: null, pending: true, readAt } });
 
-      await actions.sendMirrored(res, 200, doc, Promise.resolve(true));
+      await actions.sendMirrored(res, 200, { _id: OID }, push);
 
-      expect(send.calledOnceWithExactly(res, 200, doc)).to.be.true;
-    });
-
-    it('answers 502 with the NOT_MIRRORED body when a push failed', async () => {
-      sinon.stub(demiPush, 'awaitMirror').resolves({
-        mirrored: false, failures: [{ kind: 'document', id: 'd1', reason: 'timeout' }]
+      const [filter, update, options] = unsetCall().args;
+      expect(filter).to.deep.equal({
+        _id: OID,
+        demiPushPending: true,
+        $or: [{ demiPushFailedAt: { $lt: new Date('2026-09-30T23:59:55Z') } }, { demiPushFailedAt: { $exists: false } }]
       });
+      expect(update.$unset).to.have.all.keys('demiPushPending', 'demiPushFailedAt', 'demiPushError');
+      expect(options).to.deep.equal({ demiPushInternal: true });
+    });
 
-      await actions.sendMirrored(res, 200, { _id: 'd1' }, Promise.resolve(false));
+    it('writes nothing to a row that was not flagged when its push landed', async () => {
+      await actions.sendMirrored(res, 200, { _id: OID }, labelled(true));
 
-      expect(res.code).to.equal(502);
-      expect(res.body).to.deep.equal(NOT_MIRRORED);
+      expect(Document.updateOne.called).to.be.false;
+    });
+
+    it('leaves the pending fields out of the reply, so mirrored is the only push state a client sees', async () => {
+      const saved = { _id: OID, name: 'a', demiPushPending: true, demiPushFailedAt: new Date(), demiPushError: 'timeout' };
+
+      await actions.sendMirrored(res, 200, saved, labelled(true));
+
+      expect(res.body).to.deep.equal({ _id: OID, name: 'a', mirrored: true });
+    });
+
+    it('leaves the pending fields out of a mongoose document reply', async () => {
+      const doc = { toJSON: () => ({ _id: OID, demiPushPending: true, demiPushError: 'timeout' }) };
+
+      await actions.sendMirrored(res, 200, doc, labelled(false));
+
+      expect(res.body).to.deep.equal({ _id: OID, mirrored: false });
+    });
+
+    it('answers 200 with mirrored false and flags the row when the push was dropped', async () => {
+      await actions.sendMirrored(res, 200, { _id: OID }, labelled(false));
+
+      expect(res.code).to.equal(200);
+      expect(res.body.mirrored).to.equal(false);
+      const [filter, update] = setCall().args;
+      expect(filter).to.deep.equal({ _id: OID });
+      expect(update.$set.demiPushPending).to.equal(true);
+      expect(update.$set.demiPushFailedAt).to.be.instanceOf(Date);
+      expect(update.$set.demiPushError).to.equal('not mirrored (see push-dropped line)');
+    });
+
+    it('records PARENT_NOT_FOUND as the reason when DEMI lacked the parent', async () => {
+      await actions.sendMirrored(res, 200, { _id: OID }, labelled(false, 'PARENT_NOT_FOUND'));
+
+      expect(res.code).to.equal(200);
+      expect(res.body.mirrored).to.equal(false);
+      expect(setCall().args[1].$set.demiPushError).to.equal('PARENT_NOT_FOUND');
+    });
+
+    it('records a timeout when the push outlasts DEMI_PUSH_AWAIT_MS', async () => {
+      const clock = sinon.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      const pending = Object.assign(new Promise(() => {}), { kind: 'documents', id: OID });
+
+      const sent = actions.sendMirrored(res, 200, { _id: OID }, pending);
+      await clock.tickAsync(25000);
+      await sent;
+
+      expect(res.code).to.equal(200);
+      expect(res.body.mirrored).to.equal(false);
+      expect(setCall().args[1].$set.demiPushError).to.equal('timeout');
     });
 
     it('logs one error per failed push naming kind, id and reason', async () => {
-      sinon.stub(demiPush, 'awaitMirror').resolves({
-        mirrored: false,
-        failures: [
-          { kind: 'document', id: 'd1', reason: 'timeout' },
-          { kind: 'project', id: 'p1', reason: 'parked: parent not in DEMI yet' }
-        ]
-      });
+      await actions.sendMirrored(res, 200, {}, [labelled(false, 'PARENT_NOT_FOUND'), Promise.resolve(true)]);
 
-      await actions.sendMirrored(res, 200, {}, [Promise.resolve(false), Promise.resolve(false)]);
-
-      expect(errorLog.callCount).to.equal(2);
-      expect(errorLog.secondCall.args[0]).to.include('project p1').and.include('parked: parent not in DEMI yet');
-      expect(errorLog.secondCall.args[1]).to.deep.equal({ kind: 'project', id: 'p1', reason: 'parked: parent not in DEMI yet' });
+      expect(errorLog.callCount).to.equal(1);
+      expect(errorLog.firstCall.args[0]).to.include(`documents ${OID}`).and.include('PARENT_NOT_FOUND');
+      expect(errorLog.firstCall.args[1]).to.deep.equal({ kind: 'documents', id: OID, reason: 'PARENT_NOT_FOUND' });
     });
 
-    it('resolves with a 502 and logs the error when awaitMirror throws', async () => {
+    it('answers 200 with mirrored false and logs that no row is left after a hard delete', async () => {
+      Document.updateOne.resolves({ matchedCount: 0 });
+
+      await actions.sendMirrored(res, 200, {}, labelled(false));
+
+      expect(res.code).to.equal(200);
+      expect(res.body).to.deep.equal({ mirrored: false });
+      expect(errorLog.calledWithMatch(/row gone/)).to.be.true;
+    });
+
+    it('answers 200 with mirrored false and logs the error when awaitMirror throws', async () => {
       sinon.stub(demiPush, 'awaitMirror').throws(new Error('boom'));
 
       await actions.sendMirrored(res, 200, {}, Promise.resolve(true));
 
-      expect(res.code).to.equal(502);
-      expect(errorLog.calledOnce).to.be.true;
-      expect(errorLog.firstCall.args[1]).to.deep.equal({ kind: 'unknown', id: 'unknown', reason: 'failed: boom' });
+      expect(res.code).to.equal(200);
+      expect(res.body).to.deep.equal({ mirrored: false });
+      expect(errorLog.calledWithMatch(sinon.match.string, { kind: 'unknown', id: 'unknown', reason: 'failed: boom' })).to.be.true;
+    });
+
+    it('answers the data with no mirrored key and no row write when the push was off', async () => {
+      await actions.sendMirrored(res, 200, { _id: OID, name: 'a' }, Promise.resolve(true));
+
+      expect(res.body).to.deep.equal({ _id: OID, name: 'a' });
+      expect(Document.updateOne.called).to.be.false;
+    });
+
+    it('leaves the pending fields out of the reply when the push was off', async () => {
+      const saved = { _id: OID, name: 'a', demiPushPending: true, demiPushFailedAt: new Date(), demiPushError: 'timeout' };
+
+      await actions.sendMirrored(res, 200, saved, Promise.resolve(true));
+
+      expect(res.body).to.deep.equal({ _id: OID, name: 'a' });
+    });
+
+    it('leaves the pending fields out of a mongoose document reply when the push was off', async () => {
+      const doc = { toJSON: () => ({ _id: OID, demiPushPending: true, demiPushError: 'timeout' }) };
+
+      await actions.sendMirrored(res, 200, doc, Promise.resolve(true));
+
+      expect(res.body).to.deep.equal({ _id: OID });
+    });
+
+    it('answers mirrored false for a push with no label, without trying to flag a row it cannot name', async () => {
+      await actions.sendMirrored(res, 200, { _id: OID }, Promise.resolve(false));
+
+      expect(res.body).to.deep.equal({ _id: OID, mirrored: false });
+      expect(Document.updateOne.called).to.be.false;
+      expect(errorLog.called).to.be.false;
+    });
+
+    it('sends a mongoose document as its JSON plus mirrored, leaving the document itself alone', async () => {
+      const doc = { _id: OID, toJSON: () => ({ _id: OID, name: 'json' }) };
+
+      await actions.sendMirrored(res, 200, doc, labelled(true));
+
+      expect(res.body).to.deep.equal({ _id: OID, name: 'json', mirrored: true });
+      expect(doc).to.not.have.property('mirrored');
+    });
+
+    it('keeps an array body as it is', async () => {
+      const rows = [{ _id: OID }];
+
+      await actions.sendMirrored(res, 200, rows, labelled(true));
+
+      expect(res.body).to.equal(rows);
+    });
+
+    it('replies through exports.sendResponse so a stub on the module sees it', async () => {
+      const send = sinon.stub(actions, 'sendResponse');
+
+      await actions.sendMirrored(res, 200, { _id: OID }, Promise.resolve(true));
+
+      expect(send.calledOnceWithExactly(res, 200, { _id: OID })).to.be.true;
     });
 
     it('logs and sends nothing more when the reply throws after headers went out', async () => {
-      sinon.stub(demiPush, 'awaitMirror').resolves({ mirrored: true, failures: [] });
       const status = sinon.stub().throws(new Error('headers already sent'));
       res.status = status;
       res.headersSent = true;
@@ -400,7 +563,6 @@ describe('Actions Helper Functions', () => {
     });
 
     it('answers 500 once when the body cannot be serialized', async () => {
-      sinon.stub(demiPush, 'awaitMirror').resolves({ mirrored: true, failures: [] });
       res.json = body => { res.body = JSON.parse(JSON.stringify(body)); return res; };
       const send = sinon.spy(actions, 'sendResponse');
       const circular = { _id: 'd1' };
@@ -416,8 +578,6 @@ describe('Actions Helper Functions', () => {
 
     [null, undefined].forEach(none => {
       it(`answers normally when the write had no push to wait for (${none})`, async () => {
-        expect(await demiPush.awaitMirror(none)).to.deep.equal({ mirrored: true, failures: [] });
-
         await actions.sendMirrored(res, 200, { ok: 1 }, none);
 
         expect(res.code).to.equal(200);
@@ -459,11 +619,9 @@ describe('Actions Helper Functions', () => {
       });
 
       it('logs no info line when a push failed', async () => {
-        const failed = Object.assign(Promise.resolve(false), { kind: 'document', id: 'd1' });
+        await actions.sendMirrored(res, 200, { _id: OID }, labelled(false));
 
-        await actions.sendMirrored(res, 200, {}, failed);
-
-        expect(res.code).to.equal(502);
+        expect(res.body.mirrored).to.equal(false);
         expect(infoLog.called).to.be.false;
       });
 

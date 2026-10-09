@@ -57,7 +57,7 @@ describe('Project Extension Handlers', () => {
         await projectController[handler](args(), res);
 
         expect(res.status.args).to.deep.equal([[200]]);
-        expect(res.json.firstCall.args[0]).to.equal(MATCHED);
+        expect(res.json.firstCall.args[0]).to.deep.equal(MATCHED);
         expect(demiPush.project.calledOnce).to.be.true;
         expect(demiPush.project.firstCall.args[0]).to.deep.equal({ _id: PROJ_ID });
       });
@@ -72,13 +72,13 @@ describe('Project Extension Handlers', () => {
         expect(demiPush.project.called).to.be.false;
       });
 
-      it('answers 502 NOT_MIRRORED when the push does not land', async () => {
+      it('answers 200 with the write result and mirrored false when the push does not land', async () => {
         demiPush.project.resolves(false);
 
         await projectController[handler](args(), res);
 
-        expect(res.status.args).to.deep.equal([[502]]);
-        expect(res.json.firstCall.args[0]).to.deep.equal(Actions.NOT_MIRRORED);
+        expect(res.status.args).to.deep.equal([[200]]);
+        expect(res.json.firstCall.args[0]).to.deep.equal(Object.assign({}, MATCHED, { mirrored: false }));
       });
     });
   });

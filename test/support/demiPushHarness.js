@@ -10,13 +10,6 @@ const p = value => ({ value });
 const auth = { preferred_username: 'tester', realm_access: { roles: ['sysadmin'] } };
 const upfile = { size: 10, mimetype: 'application/pdf', buffer: Buffer.from('x'), originalname: 'a.pdf' };
 
-// Body of the 502 when a DEMI push did not land. Written out, not read from Actions, so drift fails.
-const NOT_MIRRORED = {
-  saved: true,
-  mirrored: false,
-  message: 'Saved, but the record could not be mirrored to DEMI; retry or run a re-push.'
-};
-
 const NULLABLE = ['documentFileName', 'internalOriginalName', 'legislation', 'documentSource', 'displayName',
   'eaoStatus', 'publish', 'milestone', 'type', 'documentAuthor', 'documentAuthorType', 'dateUploaded',
   'datePosted', 'description', 'projectPhase', 'keywords', 'sortOrder'];
@@ -139,6 +132,7 @@ function stubModel(modelName, saved) {
   M.updateOne = sinon.stub().resolves({});
   M.find = sinon.stub().returns({ lean: () => Promise.resolve([{ _id: OID, active: true }]) });
   M.deleteMany = sinon.stub().resolves({ deletedCount: 1 });
+  M.deleteOne = sinon.stub().resolves({ deletedCount: 1 });
   return M;
 }
 
@@ -155,6 +149,6 @@ function setEnv(vars) {
 }
 
 module.exports = {
-  OID, p, auth, upfile, NOT_MIRRORED, stubModel, setEnv,
+  OID, p, auth, upfile, stubModel, setEnv,
   docArgs, projArgs, pinArgs, raArgs, cpArgs, commentArgs, orgArgs, pnArgs, userArgs, groupArgs, inspArgs, itemArgs
 };

@@ -226,7 +226,7 @@ exports.protectedPostElementItem = async function (args, res) {
                 demiPush.pushIfMatched(demiPush.inspectionElement, theInspection, elementId)
               ];
             })
-            // Two-argument then: a 502 from the push wait must not fall into the undo path below.
+            // Two-argument then: a failed push answers 200 with mirrored: false and flags the row for the sweep, so it must not fall into the undo path below.
             .then(pushes => Actions.sendMirrored(res, 200, savedDocument, pushes), function (error) {
               defaultLog.error('Error saving InspectionItem:', error);
               // the model failed to be created - delete the document from minio so the database and minio remain in sync.
@@ -288,7 +288,7 @@ exports.protectedPostElementItem = async function (args, res) {
             demiPush.pushIfMatched(demiPush.inspectionElement, theInspection, elementId)
           ];
         })
-        // Two-argument then: a 502 from the push wait must not fall into the undo path below.
+        // Two-argument then: a failed push answers 200 with mirrored: false and flags the row for the sweep, so it must not fall into the undo path below.
         .then(pushes => Actions.sendMirrored(res, 200, savedDocument, pushes), function (error) {
           defaultLog.error('Error saving InspectionItem (text):', error);
           // the model failed to be created - delete the document from minio so the database and minio remain in sync.
