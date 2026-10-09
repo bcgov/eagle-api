@@ -6,6 +6,7 @@ const defaultLog = require('winston').loggers.get('default');
 const pushClient = require('./pushClient');
 const { LEGISLATION_KEYS } = require('./constants');
 const { KINDS, PENDING_FIELDS } = require('./demiPushKinds');
+require('./models/demiPushTombstone');
 
 const client = pushClient({
   name: 'demiPush',
@@ -271,7 +272,8 @@ function mirrorPush(kind, doc, extra, buildBody) {
     return Promise.resolve(true);
   }
   const id = doc._id;
-  const outcome = { reason: null };
+  // A delete keeps its own body: should the row be gone, that is all the sweep can resend.
+  const outcome = { reason: null, deletedDoc: extra && extra.isDeleted === true ? doc : null };
   return labelled(kind, String(id), serialize(`${kind}:${id}`, async () => {
     const label = `${kind} ${id}`;
     try {
@@ -469,7 +471,14 @@ exports.awaitMirror = function (pushes) {
     clearTimeout(timer);
     const entry = i => {
       const { kind, id, outcome } = entries[i];
-      return outcome && outcome.filter ? { kind, id, filter: outcome.filter } : { kind, id };
+      const out = { kind, id };
+      if (outcome && outcome.filter) {
+        out.filter = outcome.filter;
+      }
+      if (outcome && outcome.deletedDoc) {
+        out.deletedDoc = outcome.deletedDoc;
+      }
+      return out;
     };
     // A landing carries readAt only when the row it read was flagged, so an unflagged row costs no clear.
     const landing = i => {
@@ -501,10 +510,32 @@ const UNSET_PENDING = Object.fromEntries(PENDING_FIELDS.map(field => [field, '']
 const CLOCK_SKEW_MS = 5000;
 // The models' write hooks drop the pending fields from any update without this option.
 const INTERNAL = { demiPushInternal: true };
+const TOMBSTONE = 'DemiPushTombstone';
 
 // updateOne and updateMany skip the save hooks: no audit row, and _updatedBy and dateUpdated stay put.
 function updateRows(model, many, filter, update) {
   return many ? model.updateMany(filter, update, INTERNAL) : model.updateOne(filter, update, INTERNAL);
+}
+
+// A hard delete leaves no row to flag, so its body goes to a tombstone the sweep resends.
+async function keepFailedDelete({ kind, id, reason, deletedDoc }, failedAt) {
+  try {
+    await mongoose.model(TOMBSTONE).updateOne(
+      { kind, targetId: id },
+      { $set: { failedAt, error: String(reason).slice(0, ERROR_MAX_LENGTH), body: toPushBody(deletedDoc) } },
+      { upsert: true }
+    );
+  } catch (err) {
+    defaultLog.error(`[demiPush] ${kind} ${id}: could not keep the failed delete for the sweep: ${err.message}`, { kind, id, reason });
+  }
+}
+
+async function clearFailedDelete({ kind, id }) {
+  try {
+    await mongoose.model(TOMBSTONE).deleteOne({ kind, targetId: id });
+  } catch (err) {
+    defaultLog.warn(`[demiPush] ${kind} ${id}: could not clear the failed delete: ${err.message}`);
+  }
 }
 
 async function markPending(entry, failedAt) {
@@ -518,8 +549,11 @@ async function markPending(entry, failedAt) {
   try {
     const result = await updateRows(model, Boolean(entry.filter), entry.filter || { _id: id }, { $set: fields });
     if (!entry.filter && !(result && result.matchedCount)) {
-      // A hard delete leaves no row, so the sweep cannot resend its delete marker.
-      defaultLog.error(`[demiPush] ${kind} ${id}: row gone, nothing for the sweep to retry`, { kind, id, reason });
+      if (entry.deletedDoc) {
+        await keepFailedDelete(entry, failedAt);
+      } else {
+        defaultLog.error(`[demiPush] ${kind} ${id}: row gone, nothing for the sweep to retry`, { kind, id, reason });
+      }
     }
   } catch (err) {
     defaultLog.error(`[demiPush] ${kind} ${id}: could not flag the row for the sweep: ${err.message}`, { kind, id, reason });
@@ -543,13 +577,17 @@ async function clearPending(entry) {
   }
 }
 
-/** Writes an awaitMirror result onto the rows: failures flagged for the sweep, landings cleared. Never rejects. */
+/**
+ * Writes an awaitMirror result onto the rows: failures flagged for the sweep (a hard delete's as a
+ * tombstone), landings cleared. Never rejects.
+ */
 exports.recordOutcome = function (result, failedAt = new Date()) {
   for (const { kind, id, reason } of result.failures) {
     defaultLog.error(`[demiPush] not-mirrored ${kind} ${id}: ${reason}`, { kind, id, reason });
   }
   return Promise.all([
     ...result.failures.map(entry => markPending(entry, failedAt)),
-    ...result.landed.map(clearPending)
+    ...result.landed.map(clearPending),
+    ...result.landed.filter(entry => entry.deletedDoc).map(clearFailedDelete)
   ]);
 };

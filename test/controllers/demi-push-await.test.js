@@ -209,6 +209,62 @@ describe('DEMI push awaited before the reply', () => {
       expect(update).to.have.property('$unset');
     });
 
+    // A hard delete leaves no row to flag, so a delete DEMI did not take is kept as a tombstone.
+    describe('a hard delete', () => {
+      const gone = () => ({ _id: OID, project: OID, read: ['staff'] });
+
+      beforeEach(() => {
+        restoreEnv = setEnv(DEMI_ON);
+        models.Document.findOneAndDelete.resolves(gone());
+        models.CommentPeriod.findOneAndDelete.resolves(gone());
+        models.DemiPushTombstone = stubModel('DemiPushTombstone', () => saved);
+      });
+
+      [
+        ['document DELETE', 'documents', () => documentController.protectedDelete(docArgs(), res)],
+        ['commentperiod DELETE', 'commentperiods', () => commentPeriodController.protectedDelete(cpArgs(), res)]
+      ].forEach(([label, kind, run]) => {
+        it(`${label} answers 200 mirrored false and keeps one tombstone with the delete body when DEMI refuses it`, async () => {
+          global.fetch.resolves({ ok: false, status: 404, json: async () => ({ code: 'PARENT_NOT_FOUND' }) });
+
+          await run();
+
+          expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+          expect(res.json.firstCall.args[0]).to.deep.equal({ mirrored: false });
+          expect(models.DemiPushTombstone.updateOne.calledOnce).to.be.true;
+          const [filter, change, options] = models.DemiPushTombstone.updateOne.firstCall.args;
+          expect(filter).to.deep.equal({ kind, targetId: OID });
+          expect(change.$set).to.include({ error: 'PARENT_NOT_FOUND' });
+          expect(change.$set.failedAt).to.be.an.instanceOf(Date);
+          expect(change.$set.body).to.deep.equal(gone());
+          expect(options).to.deep.equal({ upsert: true });
+          expect(models.DemiPushTombstone.deleteOne.called).to.be.false;
+          expect(error.calledWithMatch(sinon.match.string, { kind, id: OID, reason: 'PARENT_NOT_FOUND' })).to.be.true;
+        });
+
+        it(`${label} answers mirrored true, keeps no tombstone and drops an earlier one once DEMI takes the delete`, async () => {
+          await run();
+
+          expect(res.json.firstCall.args[0]).to.deep.equal({ mirrored: true });
+          expect(JSON.parse(global.fetch.firstCall.args[1].body).doc.isDeleted).to.equal(true);
+          expect(models.DemiPushTombstone.updateOne.called).to.be.false;
+          expect(models.DemiPushTombstone.deleteOne.calledOnceWithExactly({ kind, targetId: OID })).to.be.true;
+        });
+      });
+
+      it('a soft delete that fails flags its row and keeps no tombstone', async () => {
+        global.fetch.resolves({ ok: false, status: 400 });
+        models.Project.updateOne.resolves({ matchedCount: 1 });
+        sinon.stub(Actions, 'delete').callsFake(async o => Object.assign(o, { isDeleted: true }));
+
+        await projectController.protectedDelete(projArgs(), res);
+
+        expect(res.json.firstCall.args[0].mirrored).to.equal(false);
+        expect(models.Project.updateOne.calledWithMatch({ _id: OID }, { $set: { demiPushPending: true } })).to.be.true;
+        expect(models.DemiPushTombstone.updateOne.called).to.be.false;
+      });
+    });
+
     // DEMI sync-out reads a 200 with matchedCount 0 on PUT as "Eagle lacks this record" and recreates
     // it, so a write that matched nothing must answer as it always did and push nothing.
     describe('an update that matches nothing', () => {
