@@ -128,12 +128,12 @@ exports.protectedAddPins = async function (args, res) {
   }
 
   var Project = mongoose.model('Project');
-  var pinsArr = args.swagger.params.pins.value.map(item => new mongoose.Types.ObjectId(item));
+  var pinsArr = [...new Set(args.swagger.params.pins.value.map(String))].map(item => new mongoose.Types.ObjectId(item));
 
   try {
     var doc = await Project.findOneAndUpdate(
       { _id: new mongoose.Types.ObjectId(objId) },
-      { $push: { pins: { $each: pinsArr } } },
+      { $addToSet: { pins: { $each: pinsArr } } },
       { returnDocument: 'after' }
     );
     if (doc) {
