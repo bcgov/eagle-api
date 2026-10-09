@@ -87,6 +87,10 @@ exports.sendMirrored = async function (res, code, data, pushes) {
   }
   try {
     if (result.mirrored) {
+      // Unlabelled values (null, a bare Promise.resolve(true) from pushIfMatched) are not pushes.
+      for (const { kind, id } of [].concat(pushes).filter(push => push && push.kind)) {
+        defaultLog.info(`[demiPush] mirrored ${kind} ${id}`, { kind, id });
+      }
       return exports.sendResponse(res, code, data);
     }
     for (const { kind, id, reason } of result.failures) {
