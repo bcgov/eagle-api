@@ -1,13 +1,8 @@
 'use strict';
 
-const winston = require('winston');
-const { consoleFormat } = require('../helpers/logFormat');
+const { infoConsoleLogger } = require('../helpers/logFormat');
 
-// Own logger at a fixed level so refusals still show where LOG_LEVEL hides warn (prod runs error).
-const edgeLog = winston.loggers.get('edge-gate', {
-  level: 'info',
-  transports: [new winston.transports.Console({ level: 'info', format: consoleFormat() })]
-});
+const edgeLog = infoConsoleLogger('edge-gate');
 
 // Raw Host header, not req.hostname: with `trust proxy` set, req.hostname reads X-Forwarded-Host,
 // which the caller controls.

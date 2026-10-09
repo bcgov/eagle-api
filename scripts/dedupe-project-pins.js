@@ -19,27 +19,31 @@
 
 const mongoose = require('mongoose');
 
-// Requiring app_helper registers the 'default' logger and every mongoose model, which demiPush
-// needs to resolve the pinned organizations.
-const appHelper = require('../app_helper');
+// Requiring app_helper registers every mongoose model, which demiPush needs to resolve the pinned
+// organizations.
+require('../app_helper');
 const demiPush = require('../api/helpers/demiPush');
 const { LEGISLATION_KEYS } = require('../api/helpers/constants');
+const { infoConsoleLogger } = require('../api/helpers/logFormat');
 const { buildMongoUri } = require('../config/mongo_uri');
 const { mongooseOptions } = require('../config/mongoose_options');
 
-const defaultLog = appHelper.defaultLog;
+// Not the app's 'default' logger: it follows LOG_LEVEL, and prod runs error.
+const scriptLog = infoConsoleLogger('dedupe-project-pins');
 
 const USAGE = `Remove repeated ids from project pins and re-push each fixed project to DEMI.
 
-Usage: node scripts/dedupe-project-pins.js [--apply]
+Usage: node scripts/dedupe-project-pins.js [--apply [--no-demi]]
 
   (no flag)   Dry run: list each project with repeated pins and its before and after counts.
   --apply     Write the deduped pins and re-push each fixed project to DEMI.
+  --no-demi   With --apply: write Mongo only, no DEMI re-push. For an environment with no DEMI.
   --help      This text.
 
 Connection comes from the same env vars run_migration.js uses: MONGODB_SERVICE_HOST, MONGODB_PORT,
 MONGODB_DATABASE, MONGODB_USERNAME, MONGODB_PASSWORD, MONGODB_AUTHSOURCE. --apply also needs
-DEMI_API_BASE and DEMI_APIM_KEY; without them it exits 2 rather than fix Mongo and leave DEMI stale.
+DEMI_API_BASE and DEMI_APIM_KEY; without them it exits 2 rather than fix Mongo and leave DEMI stale,
+unless --no-demi is given.
 
 Exit codes: 0 done, 1 the run failed, 2 bad arguments or DEMI not configured, 3 a project was not
 fixed or DEMI did not accept its push.`;
@@ -57,15 +61,23 @@ const nameOf = project => (project[project.currentLegislationYear] || {}).name |
 // A Set keeps first-insertion order, so each id stays where it was first pinned.
 const dedupePins = pins => [...new Set(pins.map(String))];
 
-async function dedupe(Project, apply) {
+async function dedupe(Project, apply, { noDemi = false } = {}) {
   const projects = await Project.find(DUPLICATE_PINS, READ_FIELDS).sort({ _id: 1 }).lean();
   const failed = [];
+
+  if (apply && noDemi) {
+    if (demiPush.configured()) {
+      scriptLog.warn('[dedupe-project-pins] --no-demi: DEMI is configured but fixed projects are not re-pushed; DEMI keeps the repeated pins');
+    } else {
+      scriptLog.info('[dedupe-project-pins] --no-demi: fixed projects are not re-pushed to DEMI');
+    }
+  }
 
   for (const project of projects) {
     const pins = dedupePins(project.pins);
     const label = `${project._id} "${nameOf(project)}": ${project.pins.length} pins, ${pins.length} distinct`;
     if (!apply) {
-      defaultLog.info(`[dedupe-project-pins] [dry-run] ${label}`);
+      scriptLog.info(`[dedupe-project-pins] [dry-run] ${label}`);
       continue;
     }
     // Matching on the pins as read skips a project an admin changed since, instead of undoing it.
@@ -75,31 +87,31 @@ async function dedupe(Project, apply) {
       { returnDocument: 'after' }
     );
     if (!doc) {
-      defaultLog.warn(`[dedupe-project-pins] ${project._id} changed since it was read; not fixed, rerun to pick it up`);
+      scriptLog.warn(`[dedupe-project-pins] ${project._id} changed since it was read; not fixed, rerun to pick it up`);
       failed.push(String(project._id));
       continue;
     }
-    if (await demiPush.project(doc) === false) {
-      defaultLog.error(`[dedupe-project-pins] ${label}: fixed in Mongo, DEMI did not accept the push`);
+    if (!noDemi && await demiPush.project(doc) === false) {
+      scriptLog.error(`[dedupe-project-pins] ${label}: fixed in Mongo, DEMI did not accept the push`);
       failed.push(String(project._id));
       continue;
     }
-    defaultLog.info(`[dedupe-project-pins] fixed ${label}`);
+    scriptLog.info(`[dedupe-project-pins] fixed ${label}`);
   }
 
-  defaultLog.info(`[dedupe-project-pins] ${projects.length} project(s) with repeated pins${apply ? `, ${projects.length - failed.length} fixed` : '; nothing written'}`);
+  scriptLog.info(`[dedupe-project-pins] ${projects.length} project(s) with repeated pins${apply ? `, ${projects.length - failed.length} fixed` : '; nothing written'}`);
   if (failed.length > 0) {
-    defaultLog.error(`[dedupe-project-pins] not fixed or not pushed: ${failed.join(', ')}`);
+    scriptLog.error(`[dedupe-project-pins] not fixed or not pushed: ${failed.join(', ')}`);
   }
   return { found: projects.length, failed };
 }
 
-async function run(apply) {
+async function run(apply, options) {
   const uri = buildMongoUri();
-  defaultLog.info(`[dedupe-project-pins] connecting to ${uri.replace(/\/\/[^@]+@/, '//')}`);
+  scriptLog.info(`[dedupe-project-pins] connecting to ${uri.replace(/\/\/[^@]+@/, '//')}`);
   await mongoose.connect(uri, mongooseOptions);
   try {
-    return await dedupe(mongoose.model('Project'), apply);
+    return await dedupe(mongoose.model('Project'), apply, options);
   } finally {
     await mongoose.disconnect();
   }
@@ -109,7 +121,8 @@ function parseArgs(argv) {
   return {
     help: argv.includes('--help') || argv.includes('-h'),
     apply: argv.includes('--apply'),
-    unknown: argv.filter(arg => !['--apply', '--help', '-h'].includes(arg))
+    noDemi: argv.includes('--no-demi'),
+    unknown: argv.filter(arg => !['--apply', '--no-demi', '--help', '-h'].includes(arg))
   };
 }
 
@@ -118,8 +131,8 @@ function validate(args) {
   if (args.unknown.length > 0) {
     return `Unknown argument: ${args.unknown.join(' ')}\n\n${USAGE}`;
   }
-  if (args.apply && !demiPush.configured()) {
-    return 'DEMI pushes are off: set DEMI_API_BASE and DEMI_APIM_KEY, or run this where they are set.';
+  if (args.apply && !args.noDemi && !demiPush.configured()) {
+    return 'DEMI pushes are off: set DEMI_API_BASE and DEMI_APIM_KEY, run this where they are set, or pass --no-demi.';
   }
   return null;
 }
@@ -137,12 +150,12 @@ if (require.main === module) {
     process.exit(2);
   }
 
-  run(args.apply).then(result => {
+  run(args.apply, { noDemi: args.noDemi }).then(result => {
     if (result.failed.length > 0) {
       process.exitCode = 3;
     }
   }).catch(err => {
-    defaultLog.error(`[dedupe-project-pins] run failed: ${err.message}`, { stack: err.stack });
+    scriptLog.error(`[dedupe-project-pins] run failed: ${err.message}`, { stack: err.stack });
     process.exit(1);
   });
 }

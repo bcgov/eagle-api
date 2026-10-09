@@ -274,9 +274,19 @@ oc --context epic-test -n 6cdc9e-test exec deploy/eagle-api -- node scripts/dedu
 oc --context epic-test -n 6cdc9e-test exec deploy/eagle-api -- node scripts/dedupe-project-pins.js --apply
 ```
 
-`--apply` needs `DEMI_API_BASE` and `DEMI_APIM_KEY`, else it exits 2 before any write. Exit codes:
-0 done, 1 the run failed, 2 bad arguments or DEMI not configured, 3 a project was skipped or DEMI did
-not accept its push.
+`--apply` needs `DEMI_API_BASE` and `DEMI_APIM_KEY`, else it exits 2 before any write. Where
+eagle-api has no DEMI, as on dev, add `--no-demi`: it fixes Mongo and skips the re-push, and says so
+once in the log. With DEMI set, `--no-demi` still skips the push and logs a warning, because DEMI then
+keeps the repeated pins. Exit codes: 0 done, 1 the run failed, 2 bad arguments or DEMI not
+configured, 3 a project was skipped or DEMI did not accept its push.
+
+```bash
+# dev: Mongo only
+oc --context epic-dev -n 6cdc9e-dev exec deploy/eagle-api -- node scripts/dedupe-project-pins.js --apply --no-demi
+```
+
+The script's lines go to stdout at `info` whatever `LOG_LEVEL` is set, so a run on prod
+(`LOG_LEVEL=error`) still shows them. `demi-repush.js` and `normalise-audit-action.js` do the same.
 
 ### List entries — eagle-demi's seed-public-reads.js
 

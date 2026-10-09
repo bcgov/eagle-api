@@ -12,23 +12,14 @@
  * outside this directory'.
  */
 
-const winston = require('winston');
 const { MongoClient } = require('mongodb');
 
+const { infoConsoleLogger } = require('../api/helpers/logFormat');
 const { buildMongoUri } = require('../config/mongo_uri');
 
-// The app registers the 'default' logger in app_helper.js, which also connects mongoose and loads
-// every model. A standalone script wants neither, so it registers its own console-only transport.
-winston.loggers.add('default', {
-  transports: [new winston.transports.Console({
-    level: process.env.LOG_LEVEL || 'info',
-    format: winston.format.combine(
-      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      winston.format.printf(({ timestamp, level, message }) => `${timestamp} ${level}: ${message}`)
-    )
-  })]
-});
-const defaultLog = winston.loggers.get('default');
+// Not app_helper's 'default' logger: requiring it connects mongoose and loads every model, and it
+// follows LOG_LEVEL, which prod sets to error.
+const scriptLog = infoConsoleLogger('normalise-audit-action');
 
 const USAGE = `Lowercase the action field on eagle-api audit rows.
 
@@ -51,20 +42,20 @@ async function backfill(audit, dryRun) {
   const mixedCase = values.filter(value => typeof value === 'string' && value !== value.toLowerCase());
 
   if (mixedCase.length === 0) {
-    defaultLog.info('No mixed-case action values left; nothing to do');
+    scriptLog.info('No mixed-case action values left; nothing to do');
     return;
   }
 
-  defaultLog.info(`Mixed-case action values: ${mixedCase.join(', ')}`);
+  scriptLog.info(`Mixed-case action values: ${mixedCase.join(', ')}`);
 
   if (dryRun) {
     const matched = await audit.countDocuments(mixedCaseFilter(mixedCase));
-    defaultLog.info(`[dry-run] matched ${matched} rows, modified 0`);
+    scriptLog.info(`[dry-run] matched ${matched} rows, modified 0`);
     return;
   }
 
   const result = await audit.updateMany(mixedCaseFilter(mixedCase), LOWERCASE_ACTION);
-  defaultLog.info(`matched ${result.matchedCount} rows, modified ${result.modifiedCount}`);
+  scriptLog.info(`matched ${result.matchedCount} rows, modified ${result.modifiedCount}`);
 }
 
 async function run(dryRun) {
@@ -100,7 +91,7 @@ if (require.main === module) {
   }
 
   run(args.dryRun).catch(err => {
-    defaultLog.error(`Backfill failed: ${err.message}`, { stack: err.stack });
+    scriptLog.error(`Backfill failed: ${err.message}`, { stack: err.stack });
     process.exit(1);
   });
 }
