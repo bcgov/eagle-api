@@ -433,6 +433,17 @@ describe('DemiPush Helper', () => {
       expect(errorStub.called).to.be.false;
     });
 
+    it('should push a pin stored more than once as one pin, in first-seen order', async () => {
+      stubModels(LISTS, ORGS);
+      fetchStub.resolves(okResponse());
+      const project = projectDoc();
+      project.pins = [PIN_B, PIN_A, PIN_B, PIN_A, PIN_B];
+
+      await demiPush.project(project);
+
+      expect(pushedDoc().pins.map(pin => pin._id)).to.deep.equal([PIN_B, PIN_A]);
+    });
+
     it('should drop a pin whose organization is gone and null a missing regulation', async () => {
       stubModels([], [{ _id: PIN_B, name: 'First Nation B', province: 'AB' }]);
       fetchStub.resolves(okResponse());

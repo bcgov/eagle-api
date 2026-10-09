@@ -189,6 +189,16 @@ describe('Pins Controller', () => {
       expect(Utils.recordAction.calledWith('Add', 'Pin', 'testuser', VALID_PROJ_ID)).to.be.true;
     });
 
+    // Mongo is stubbed here, so the update sent is what can be checked; test/db/projectPins.test.js runs it for real.
+    it('sends each pin id once, as $addToSet, when the request repeats an id', async () => {
+      const OTHER_PIN_ID = '507f1f77bcf86cd799439013';
+      projectModel.findOneAndUpdate.resolves({ _id: VALID_PROJ_ID, pins: [VALID_PIN_ID, OTHER_PIN_ID] });
+      await pins.protectedAddPins(makeArgs({ pins: { value: [VALID_PIN_ID, OTHER_PIN_ID, VALID_PIN_ID] } }), res);
+      const update = projectModel.findOneAndUpdate.firstCall.args[1];
+      expect(update).to.not.have.property('$push');
+      expect(update.$addToSet.pins.$each.map(String)).to.deep.equal([VALID_PIN_ID, OTHER_PIN_ID]);
+    });
+
     it('returns 404 when project not found', async () => {
       projectModel.findOneAndUpdate.resolves(null);
       await pins.protectedAddPins(makeArgs(), res);

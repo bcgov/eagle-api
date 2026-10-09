@@ -252,6 +252,32 @@ Exit codes, so a wrapper can tell a partial backfill from a clean one: 0 everyth
 itself failed, 2 bad arguments or DEMI not configured, 3 the run finished with records DEMI did not
 accept. The first log line names the database it connected to, without the password.
 
+### scripts/dedupe-project-pins.js — remove repeated project pins
+
+Adding pins to a project used `$push`, so a nation added twice was stored twice in `pins`. Eagle's
+pin list hides the repeats, but the DEMI push sent one pin per entry, so the public site listed the
+same nation more than once. Adding pins now uses `$addToSet`, and the push drops repeats too; this
+script repairs the projects stored before that.
+
+It finds every project whose `pins` holds an id more than once. With no flag it is a dry run: it logs
+each project's `_id`, name, and its pin count before and after. `--apply` sets `pins` to the list
+with each id once, the first copy kept in its place, and then pushes the project to DEMI through
+`api/helpers/demiPush.js`, the same helper `demi-repush.js` uses. Its only write is `$set` of `pins`;
+nothing is deleted. A project whose pins changed between the read and the write is skipped and
+logged, and a rerun picks it up.
+
+```bash
+# what would change
+oc --context epic-test -n 6cdc9e-test exec deploy/eagle-api -- node scripts/dedupe-project-pins.js
+
+# fix Mongo and DEMI
+oc --context epic-test -n 6cdc9e-test exec deploy/eagle-api -- node scripts/dedupe-project-pins.js --apply
+```
+
+`--apply` needs `DEMI_API_BASE` and `DEMI_APIM_KEY`, else it exits 2 before any write. Exit codes:
+0 done, 1 the run failed, 2 bad arguments or DEMI not configured, 3 a project was skipped or DEMI did
+not accept its push.
+
 ### List entries — eagle-demi's seed-public-reads.js
 
 `demi-repush.js` has no List kind. eagle-api has no List write controller, so it pushes no List

@@ -108,7 +108,8 @@ function toPushBody(doc) {
 // inside the block; pins and featuredDocuments are top-level in Mongo and stay there.
 async function enrichProject(project) {
   const blocks = LEGISLATION_KEYS.map(key => project[key]).filter(b => b && typeof b === 'object');
-  const pinIds = Array.isArray(project.pins) ? project.pins.map(idOf).filter(Boolean) : [];
+  // Older rows can hold one org several times; push each once, in first-seen order.
+  const pinIds = Array.isArray(project.pins) ? [...new Set(project.pins.map(idOf).filter(Boolean))] : [];
   const orgIds = new Set(pinIds);
   for (const block of blocks) {
     const id = idOf(block.proponent);
@@ -443,6 +444,7 @@ function optedIn(kind) {
 }
 
 exports.optedIn = optedIn;
+exports.configured = () => client.configured();
 
 // updateOne hands back no document, so the row is pushed by id once the write matched it, and the
 // push re-reads it for the body.

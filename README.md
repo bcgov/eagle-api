@@ -138,6 +138,8 @@ how to run them in-cluster with `oc exec`, and why that is preferred over the He
 One-off data scripts live in `scripts/` and are described in the same file, including
 `yarn demi:repush` (`scripts/demi-repush.js`), which re-sends existing records to DEMI through
 `api/helpers/demiPush.js` so rows seeded without the push-only enrichment get it.
+`scripts/dedupe-project-pins.js` removes repeated ids from project `pins` and re-pushes each
+fixed project to DEMI.
 
 ## Developing
 
