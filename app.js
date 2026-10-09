@@ -35,7 +35,6 @@ const rateLimit      = require('express-rate-limit');
 const rateLimitKey   = require('./api/helpers/rateLimitKey');
 const analytics      = require('./api/helpers/analytics');
 const pushClient     = require('./api/helpers/pushClient');
-const demiPush       = require('./api/helpers/demiPush');
 
 var api_default_port = 3000;
 
@@ -198,6 +197,9 @@ if (process.env.NODE_ENV !== 'test') {
     // Start Agenda job queue after MongoDB is connected
     const { startJobQueue } = require('./api/helpers/jobQueue');
     await startJobQueue().catch(err => defaultLog.error('[jobQueue] Failed to start:', err.message));
+    // Detached: rows a previous pod flagged get their retry without holding up listen.
+    // The sweep paces itself; every replica runs it, so startup takes a smaller batch than the cron job.
+    require('./api/helpers/demiPushSweep').sweep({ limitPerKind: 100 }).catch(err => defaultLog.error('[demi-push-sweep] startup run failed', { error: err.message }));
 
     express_server = app.listen(api_default_port, '0.0.0.0', function() {
       defaultLog.info('Started server on port ' + api_default_port);
@@ -236,7 +238,6 @@ async function shutdown() {
     express_server.close(() => {
       defaultLog.info('Closed out remaining connections');
       pushClient.logUnsent();
-      demiPush.logParked();
       process.exit(0);
     });
   }

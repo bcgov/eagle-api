@@ -44,7 +44,7 @@ const mongoose = require('mongoose');
 require('../app_helper');
 const demiPush = require('../api/helpers/demiPush');
 const pushClient = require('../api/helpers/pushClient');
-const { LEGISLATION_KEYS } = require('../api/helpers/constants');
+const { KINDS } = require('../api/helpers/demiPushKinds');
 const { infoConsoleLogger } = require('../api/helpers/logFormat');
 const { buildMongoUri } = require('../config/mongo_uri');
 const { mongooseOptions } = require('../config/mongoose_options');
@@ -70,38 +70,6 @@ const PROGRESS_EVERY = 100;
 // up to 16 MB, which at a paced rate outlasts the server's 10-minute idle cursor timeout.
 const CURSOR_BATCH_SIZE = 100;
 const MAX_CURSOR_REOPENS = 3;
-
-// Every model below shares the `epic` collection, so _schemaName is what separates them.
-// sinceFields are the timestamp candidates for --since; only the ones the schema declares as a
-// Date are used, because the matching dateAdded fields are Strings and would compare as text.
-// A project keeps its dates inside the legislation blocks, not at the top level, and a
-// projectNotification, user or group has no update stamp at all, so --since is refused for those.
-const KINDS = {
-  project: {
-    model: 'Project',
-    schemaName: 'Project',
-    push: 'project',
-    sinceFields: LEGISLATION_KEYS.map(key => key + '.dateUpdated')
-  },
-  document: { model: 'Document', schemaName: 'Document', push: 'document', sinceFields: ['_updatedDate', 'dateUploaded'] },
-  commentPeriod: { model: 'CommentPeriod', schemaName: 'CommentPeriod', push: 'commentPeriod', sinceFields: ['dateUpdated', 'dateAdded'] },
-  comment: { model: 'Comment', schemaName: 'Comment', push: 'comment', sinceFields: ['dateUpdated', 'dateAdded'] },
-  organization: { model: 'Organization', schemaName: 'Organization', push: 'organization', sinceFields: ['dateUpdated', 'dateAdded'] },
-  projectNotification: { model: 'ProjectNotification', schemaName: 'ProjectNotification', push: 'projectNotification', sinceFields: [] },
-  recentActivity: { model: 'RecentActivity', schemaName: 'RecentActivity', push: 'recentActivity', sinceFields: ['dateUpdated', 'dateAdded'] },
-  // optIn is the DEMI route segment DEMI_PUSH_OPT_IN_KINDS has to name before demiPush sends the kind.
-  user: { model: 'User', schemaName: 'User', push: 'user', sinceFields: [], optIn: 'users' },
-  group: { model: 'Group', schemaName: 'Group', push: 'group', sinceFields: [], optIn: 'groups' },
-  inspection: { model: 'Inspection', schemaName: 'Inspection', push: 'inspection', sinceFields: ['_updatedDate', '_createdDate'], optIn: 'inspections' },
-  inspectionElement: {
-    model: 'InspectionElement', schemaName: 'InspectionElement', push: 'inspectionElement',
-    sinceFields: ['_updatedDate', '_createdDate'], optIn: 'inspection-elements'
-  },
-  inspectionItem: {
-    model: 'InspectionItem', schemaName: 'InspectionItem', push: 'inspectionItem',
-    sinceFields: ['_updatedDate', '_createdDate'], optIn: 'inspection-items'
-  }
-};
 
 const USAGE = `Re-push existing eagle-api records to DEMI through api/helpers/demiPush.js.
 

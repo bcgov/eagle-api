@@ -71,7 +71,7 @@ record (`api/helpers/demiPush.js`). A migration writes Mongo directly, so nothin
 carries the whole stored record, so a change to any field leaves DEMI behind until the record is
 pushed again.
 
-The mirrored types are the `schemaName` values in `KINDS` in `scripts/demi-repush.js`, plus `List`.
+The mirrored types are the `schemaName` values in `KINDS` in `api/helpers/demiPushKinds.js`, plus `List`.
 A migration that names one of them carries a paragraph starting `DEMI:` in its header comment:
 
 - For a `KINDS` type, name `scripts/demi-repush.js` and each kind as `--kind <kind>` or

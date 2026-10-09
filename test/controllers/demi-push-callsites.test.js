@@ -6,6 +6,7 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 const mongoose = require('mongoose');
 const fs = require('fs');
+const winston = require('winston');
 
 const Actions = require('../../api/helpers/actions');
 const Utils = require('../../api/helpers/utils');
@@ -24,7 +25,7 @@ const projectGroupController = require('../../api/controllers/projectGroup');
 const inspectionController = require('../../api/controllers/inspection');
 
 const {
-  OID, upfile, NOT_MIRRORED, stubModel, setEnv,
+  OID, upfile, stubModel, setEnv,
   docArgs, projArgs, pinArgs, raArgs, cpArgs, commentArgs, orgArgs, pnArgs, userArgs, groupArgs, inspArgs, itemArgs
 } = require('../support/demiPushHarness');
 
@@ -192,16 +193,20 @@ describe('DEMI push call sites', () => {
       expect(demiPush.document.calledOnceWithExactly(gone, { isDeleted: true })).to.be.true;
     });
 
-    it('document.protectedDelete answers 502 not-mirrored when the DEMI push rejects', async () => {
-      const rejected = Promise.reject(new Error('demi unreachable'));
+    // A hard delete leaves no row to flag, so the failure is only logged.
+    it('document.protectedDelete answers 200 with mirrored false and logs the lost delete when the DEMI push rejects', async () => {
+      const rejected = Object.assign(Promise.reject(new Error('demi unreachable')), { kind: 'documents', id: OID });
       rejected.catch(() => {});
       demiPush.document.returns(rejected);
       models.Document.findOneAndDelete.resolves({ _id: OID, project: OID });
+      models.Document.updateOne.resolves({ matchedCount: 0 });
+      const error = sinon.stub(winston.loggers.get('default'), 'error');
 
       await documentController.protectedDelete(docArgs(), res);
 
-      expect(res.status.args, `expected 502, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[502]]);
-      expect(res.json.firstCall.args[0]).to.deep.equal(NOT_MIRRORED);
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(res.json.firstCall.args[0]).to.deep.equal({ mirrored: false });
+      expect(error.calledWithMatch(/row gone/)).to.be.true;
     });
 
     it('document.protectedDelete pushes before Minio, so a storage failure still reaches DEMI', async () => {
@@ -315,15 +320,15 @@ describe('DEMI push call sites', () => {
       expect(demiPush.group.calledOnceWithExactly(gone, { isDeleted: true })).to.be.true;
     });
 
-    it('group.protectedGroupDelete answers 502 not-mirrored when the DEMI push rejects', async () => {
-      const rejected = Promise.reject(new Error('demi unreachable'));
+    it('group.protectedGroupDelete answers 200 with mirrored false when the DEMI push rejects', async () => {
+      const rejected = Object.assign(Promise.reject(new Error('demi unreachable')), { kind: 'groups', id: OID });
       rejected.catch(() => {});
       demiPush.group.returns(rejected);
 
       await projectGroupController.protectedGroupDelete(groupArgs(), res);
 
-      expect(res.status.args, `expected 502, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[502]]);
-      expect(res.json.firstCall.args[0]).to.deep.equal(NOT_MIRRORED);
+      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
+      expect(res.json.firstCall.args[0]).to.deep.equal({ mirrored: false });
     });
 
     ['protectedAddGroupMembers', 'protectedDeleteGroupMembers'].forEach(handler => {
@@ -434,7 +439,7 @@ describe('DEMI push call sites', () => {
         expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
         const [filter, projection] = models.User.find.firstCall.args;
         expect(String(filter.org)).to.equal(OID);
-        expect(projection).to.equal('_id');
+        expect(projection).to.equal('_id demiPushPending');
         expect(demiPush.user.calledOnceWith(sinon.match({ _id: OID }))).to.be.true;
       });
     });
