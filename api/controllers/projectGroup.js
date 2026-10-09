@@ -27,8 +27,7 @@ exports.protectedAddGroup = async function (args, res) {
     var d = await doc.save();
     Utils.recordAction('Add', 'Group', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Saved new group object:', d);
-    demiPush.group(d);
-    return Actions.sendResponse(res, 200, d);
+    return Actions.sendMirrored(res, 200, d, demiPush.group(d));
   } catch (e) {
     defaultLog.error(`Error adding group to project: ${objId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
@@ -49,8 +48,7 @@ exports.protectedGroupPut = async function (args, res) {
     var group = await Group.findOneAndUpdate({ _id: groupId }, obj, { upsert: false, returnDocument: 'after' });
     Utils.recordAction('Put', 'Group', args.swagger.params.auth_payload.preferred_username, groupId);
     defaultLog.info('Updated group:', groupId);
-    demiPush.group(group);
-    return Actions.sendResponse(res, 200, group);
+    return Actions.sendMirrored(res, 200, group, demiPush.group(group));
   } catch (e) {
     defaultLog.error(`Error updating group: ${groupId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
@@ -69,10 +67,10 @@ exports.protectedGroupDelete = async function (args, res) {
   try {
     var doc = await Group.findOneAndDelete({ _id: groupId });
     defaultLog.info('Deleted group:', doc);
-    demiPush.group(doc, { isDeleted: true });
+    const pushed = demiPush.group(doc, { isDeleted: true });
     Utils.recordAction('Delete', 'Group', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Deleted group:', groupId, 'from project:', objId);
-    return Actions.sendResponse(res, 200, {});
+    return Actions.sendMirrored(res, 200, {}, pushed);
   } catch (e) {
     defaultLog.error(`Error deleting group: ${groupId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
@@ -98,8 +96,7 @@ exports.protectedAddGroupMembers = async function (args, res) {
     if (doc) {
       Utils.recordAction('Add', 'GroupMember', args.swagger.params.auth_payload.preferred_username, groupId);
       defaultLog.info('Added', membersArr.length, 'member(s) to group:', groupId);
-      demiPush.pushIfMatched(demiPush.group, doc, groupId);
-      return Actions.sendResponse(res, 200, doc);
+      return Actions.sendMirrored(res, 200, doc, demiPush.pushIfMatched(demiPush.group, doc, groupId));
     } else {
       defaultLog.info('Group not found:', groupId);
       return Actions.sendResponse(res, 404, {});
@@ -196,8 +193,7 @@ exports.protectedDeleteGroupMembers = async function (args, res) {
     );
     Utils.recordAction('Delete', 'GroupMember', args.swagger.params.auth_payload.preferred_username, groupId);
     defaultLog.info('Deleted group member:', memberId, 'from group:', groupId);
-    demiPush.pushIfMatched(demiPush.group, data, groupId);
-    return Actions.sendResponse(res, 200, data);
+    return Actions.sendMirrored(res, 200, data, demiPush.pushIfMatched(demiPush.group, data, groupId));
   } catch (e) {
     defaultLog.error(`Error deleting group member: ${memberId} from group: ${groupId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);

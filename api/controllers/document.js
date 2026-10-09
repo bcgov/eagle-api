@@ -198,8 +198,7 @@ exports.unProtectedPost = async function (args, res) {
       var Comment = mongoose.model('Comment');
       await Comment.updateOne({ _id: _comment }, { $addToSet: { documents: d._id } });
       Utils.recordAction('Post', 'Document', 'public', d._id);
-      demiPush.document(d);
-      return Actions.sendResponse(res, 200, d);
+      return Actions.sendMirrored(res, 200, d, demiPush.document(d));
     } catch (saveError) {
       defaultLog.error('Document save failed, rolling back MinIO:', saveError);
       MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
@@ -687,8 +686,7 @@ exports.protectedPost = async function (args, res) {
       var d = await doc.save();
       defaultLog.info('Saved new document object:', d._id);
       Utils.recordAction('Post', 'Document', args.swagger.params.auth_payload.preferred_username, d._id, args, d.project);
-      demiPush.document(d);
-      return Actions.sendResponse(res, 200, d);
+      return Actions.sendMirrored(res, 200, d, demiPush.document(d));
     } catch (saveError) {
       defaultLog.error('Document save failed, rolling back MinIO:', saveError);
       MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
@@ -719,8 +717,9 @@ exports.protectedPublish = async function (args, res) {
       }
 
       defaultLog.info('Document:', document);
-      const published = await documentPublish.publish(document, args.swagger.params.auth_payload.preferred_username, args);
-      return Actions.sendResponse(res, 200, published);
+      const pushes = [];
+      const published = await documentPublish.publish(document, args.swagger.params.auth_payload.preferred_username, args, pushes);
+      return Actions.sendMirrored(res, 200, published, pushes);
     } else {
       defaultLog.info('Couldn\'t find that document!');
       return Actions.sendResponse(res, 404, {});
@@ -748,8 +747,9 @@ exports.protectedUnPublish = async function (args, res) {
       }
 
       defaultLog.info('Document:', document);
-      const unPublished = await documentPublish.unPublish(document, args.swagger.params.auth_payload.preferred_username, args);
-      return Actions.sendResponse(res, 200, unPublished);
+      const pushes = [];
+      const unPublished = await documentPublish.unPublish(document, args.swagger.params.auth_payload.preferred_username, args, undefined, pushes);
+      return Actions.sendMirrored(res, 200, unPublished, pushes);
     } else {
       defaultLog.info('Couldn\'t find that document!');
       return Actions.sendResponse(res, 404, {});
@@ -851,8 +851,7 @@ exports.protectedPut = async function (args, res) {
     if (doc) {
       Utils.recordAction('Put', 'Document', args.swagger.params.auth_payload.preferred_username, objId, args, doc.project);
       defaultLog.info('Document updated:', doc);
-      demiPush.document(doc);
-      return Actions.sendResponse(res, 200, doc);
+      return Actions.sendMirrored(res, 200, doc, demiPush.document(doc));
     } else {
       defaultLog.info('Couldn\'t find that object!');
       return Actions.sendResponse(res, 404, {});
@@ -886,11 +885,11 @@ exports.protectedDelete = async function (args, res) {
     var doc = await Document.findOneAndDelete({ _id: objId });
     // A hard delete is invisible to the mirror otherwise: there is no later write to push. Sent
     // before the Minio delete so a storage failure cannot leave DEMI serving a document Mongo lost.
-    demiPush.document(doc, { isDeleted: true });
+    const push = demiPush.document(doc, { isDeleted: true });
     defaultLog.info('Deleting document %s from minio', doc && doc.internalURL);
     await MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
     Utils.recordAction('Delete', 'Document', args.swagger.params.auth_payload.preferred_username, objId, args, doc.project);
-    return Actions.sendResponse(res, 200, {});
+    return Actions.sendMirrored(res, 200, {}, push);
   } catch (e) {
     defaultLog.error('Error deleting document %s: %s', objId, e.message);
     return Actions.sendResponse(res, 400, e);
@@ -924,8 +923,7 @@ exports.featureDocument = async function (args, res) {
           document.isFeatured = true;
           let result = await document.save();
 
-          demiPush.document(result);
-          return Actions.sendResponse(res, 200, result);
+          return Actions.sendMirrored(res, 200, result, demiPush.document(result));
         } else {
           return Actions.sendResponse(res, 403, { status: 403, message: 'Feature document limit reached', limit: constants.MAX_FEATURE_DOCS});
         }
@@ -958,8 +956,7 @@ exports.unfeatureDocument = async function (args, res) {
       document.isFeatured = false;
       let result = await document.save();
 
-      demiPush.document(result);
-      return Actions.sendResponse(res, 200, result);
+      return Actions.sendMirrored(res, 200, result, demiPush.document(result));
     }
 
     return Actions.sendResponse(res, 404, {});

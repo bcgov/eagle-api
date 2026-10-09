@@ -284,6 +284,61 @@ describe('Update images (requires MongoDB)', function () {
     });
   });
 
+  // The controller awaits these before it answers, so each must be the promise demiPush handed back.
+  describe('DEMI pushes go onto the caller\'s pushes', () => {
+    const draft = () => ({ _id: DRAFT_UPDATE, project: PUBLIC_PROJECT, featuredImage: { document: UPLOAD_B }, images: [image(UPLOAD_A)] });
+    const archiveLiveUpdate = () => mongoose.connection.collection('epic').updateOne(
+      { _id: LIVE_UPDATE }, { $set: { status: 'archived', active: false } });
+
+    it('publishFor puts one push per image it publishes', async () => {
+      const pushes = [];
+
+      await updateImages.publishFor(draft(), 'staff-user', pushes);
+
+      expect(pushes).to.have.lengthOf(2);
+      expect(pushes).to.have.members(demiPush.document.returnValues);
+    });
+
+    it('republish puts one push per image it publishes', async () => {
+      const pushes = [];
+
+      await updateImages.republish(draft(), 'staff-user', pushes);
+
+      expect(pushes).to.have.lengthOf(2);
+      expect(pushes).to.have.members(demiPush.document.returnValues);
+    });
+
+    it('release puts the push of each image it unpublishes', async () => {
+      await archiveLiveUpdate();
+      const pushes = [];
+
+      await updateImages.release([KEPT], LIVE_UPDATE, 'staff-user', pushes);
+
+      expect(await isPublic(KEPT)).to.be.false;
+      expect(pushes).to.have.lengthOf(1);
+      expect(pushes[0]).to.equal(demiPush.document.firstCall.returnValue);
+    });
+
+    it('release also puts the push of an image it publishes back', async () => {
+      await archiveLiveUpdate();
+      const unPublish = documentPublish.unPublish;
+      sinon.stub(documentPublish, 'unPublish').callsFake(async (...args) => {
+        await mongoose.connection.collection('epic').updateOne(
+          { _id: LATE_UPDATE },
+          { $setOnInsert: update(LATE_UPDATE, { status: 'published', images: [image(KEPT)] }) },
+          { upsert: true });
+        return unPublish(...args);
+      });
+      const pushes = [];
+
+      await updateImages.release([KEPT], LIVE_UPDATE, 'staff-user', pushes);
+
+      expect(await isPublic(KEPT)).to.be.true;
+      expect(pushes).to.have.lengthOf(2);
+      expect(pushes).to.have.members(demiPush.document.returnValues);
+    });
+  });
+
   describe('document listings leave uploads out', () => {
     it('search?dataset=Document lists project and unsourced documents but no Update uploads', async () => {
       const { res, body } = capture();

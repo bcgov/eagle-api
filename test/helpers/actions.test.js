@@ -6,7 +6,11 @@
 
 const { expect } = require('chai');
 const sinon = require('sinon');
+const mongoose = require('mongoose');
 const actions = require('../../api/helpers/actions');
+const demiPush = require('../../api/helpers/demiPush');
+const { NOT_MIRRORED } = require('../support/demiPushHarness');
+const defaultLog = require('winston').loggers.get('default');
 
 describe('Actions Helper Functions', () => {
   
@@ -169,61 +173,46 @@ describe('Actions Helper Functions', () => {
     });
   });
 
+  // The real Project schema declares neither tags nor isDeleted, so a stand-in object would hide
+  // what strict mode drops.
   describe('delete', () => {
-    it('should set isDeleted to true', async () => {
-      const mockObject = {
-        tags: [['public']],
-        isDeleted: false,
-        markModified: sinon.stub(),
-        save: sinon.stub().resolves({ isDeleted: true })
-      };
+    const Project = require('../../api/helpers/models/project');
+    let saved;
 
-      await actions.delete(mockObject);
-      
-      expect(mockObject.isDeleted).to.be.true;
+    // A stored project as Mongo hands it back; save records the update it would send.
+    const storedProject = fields => {
+      const row = Project.hydrate({ _id: new mongoose.Types.ObjectId(), read: ['public', 'staff'], ...fields });
+      row.save = function () {
+        saved = this.$getChanges().$set;
+        return Promise.resolve(this);
+      };
+      return row;
+    };
+
+    it('should write isDeleted on a project with no tags', async () => {
+      const deleted = await actions.delete(storedProject({}));
+
+      expect(saved.isDeleted).to.equal(true);
+      expect(saved).to.not.have.property('tags');
+      expect(deleted.get('isDeleted')).to.equal(true);
     });
 
-    it('should call markModified for tags and isDeleted', async () => {
-      const mockObject = {
-        tags: [],
-        isDeleted: false,
-        markModified: sinon.stub(),
-        save: sinon.stub().resolves()
-      };
+    it('should drop only the public tag from a project that still holds tags', async () => {
+      await actions.delete(storedProject({ tags: [['public'], ['sysadmin']] }));
 
-      await actions.delete(mockObject);
-      
-      expect(mockObject.markModified.calledWith('tags')).to.be.true;
-      expect(mockObject.markModified.calledWith('isDeleted')).to.be.true;
+      expect(saved.tags).to.deep.equal([['sysadmin']]);
+      expect(saved.isDeleted).to.equal(true);
     });
 
-    it('should call save', async () => {
-      const mockObject = {
-        tags: [],
-        isDeleted: false,
-        markModified: sinon.stub(),
-        save: sinon.stub().resolves()
-      };
-
-      await actions.delete(mockObject);
-      
-      expect(mockObject.save.calledOnce).to.be.true;
-    });
-
-    it('should reject with error message on save failure', async () => {
-      const mockObject = {
-        tags: [],
-        isDeleted: false,
-        markModified: sinon.stub(),
-        save: sinon.stub().rejects(new Error('Database error'))
-      };
+    it('should reject with code 400 on save failure', async () => {
+      const row = storedProject({});
+      row.save = sinon.stub().rejects(new Error('Database error'));
 
       try {
-        await actions.delete(mockObject);
+        await actions.delete(row);
         expect.fail('Should have thrown an error');
       } catch (error) {
-        expect(error).to.have.property('code', 400);
-        expect(error).to.have.property('message');
+        expect(error).to.deep.equal({ code: 400, message: 'Database error' });
       }
     });
   });
@@ -315,8 +304,125 @@ describe('Actions Helper Functions', () => {
       };
 
       const result = await actions.isPublished(mockObject);
-      
+
       expect(result).to.be.undefined;
+    });
+  });
+
+  describe('sendMirrored', () => {
+    let res;
+    let errorLog;
+
+    // Records what the client would receive.
+    const fakeRes = () => {
+      const sent = {};
+      sent.status = code => { sent.code = code; return sent; };
+      sent.json = body => { sent.body = body; return sent; };
+      return sent;
+    };
+
+    beforeEach(() => {
+      res = fakeRes();
+      errorLog = sinon.stub(defaultLog, 'error');
+    });
+
+    afterEach(() => {
+      sinon.restore();
+    });
+
+    it('answers with the original code and data once the push landed', async () => {
+      sinon.stub(demiPush, 'awaitMirror').resolves({ mirrored: true, failures: [] });
+      const doc = { _id: 'd1' };
+
+      await actions.sendMirrored(res, 201, doc, Promise.resolve(true));
+
+      expect(res.code).to.equal(201);
+      expect(res.body).to.equal(doc);
+    });
+
+    it('replies through exports.sendResponse so a stub on the module sees it', async () => {
+      sinon.stub(demiPush, 'awaitMirror').resolves({ mirrored: true, failures: [] });
+      const send = sinon.stub(actions, 'sendResponse');
+      const doc = { _id: 'd1' };
+
+      await actions.sendMirrored(res, 200, doc, Promise.resolve(true));
+
+      expect(send.calledOnceWithExactly(res, 200, doc)).to.be.true;
+    });
+
+    it('answers 502 with the NOT_MIRRORED body when a push failed', async () => {
+      sinon.stub(demiPush, 'awaitMirror').resolves({
+        mirrored: false, failures: [{ kind: 'document', id: 'd1', reason: 'timeout' }]
+      });
+
+      await actions.sendMirrored(res, 200, { _id: 'd1' }, Promise.resolve(false));
+
+      expect(res.code).to.equal(502);
+      expect(res.body).to.deep.equal(NOT_MIRRORED);
+    });
+
+    it('logs one error per failed push naming kind, id and reason', async () => {
+      sinon.stub(demiPush, 'awaitMirror').resolves({
+        mirrored: false,
+        failures: [
+          { kind: 'document', id: 'd1', reason: 'timeout' },
+          { kind: 'project', id: 'p1', reason: 'parked: parent not in DEMI yet' }
+        ]
+      });
+
+      await actions.sendMirrored(res, 200, {}, [Promise.resolve(false), Promise.resolve(false)]);
+
+      expect(errorLog.callCount).to.equal(2);
+      expect(errorLog.secondCall.args[0]).to.include('project p1').and.include('parked: parent not in DEMI yet');
+      expect(errorLog.secondCall.args[1]).to.deep.equal({ kind: 'project', id: 'p1', reason: 'parked: parent not in DEMI yet' });
+    });
+
+    it('resolves with a 502 and logs the error when awaitMirror throws', async () => {
+      sinon.stub(demiPush, 'awaitMirror').throws(new Error('boom'));
+
+      await actions.sendMirrored(res, 200, {}, Promise.resolve(true));
+
+      expect(res.code).to.equal(502);
+      expect(errorLog.calledOnce).to.be.true;
+      expect(errorLog.firstCall.args[1]).to.deep.equal({ kind: 'unknown', id: 'unknown', reason: 'failed: boom' });
+    });
+
+    it('logs and sends nothing more when the reply throws after headers went out', async () => {
+      sinon.stub(demiPush, 'awaitMirror').resolves({ mirrored: true, failures: [] });
+      const status = sinon.stub().throws(new Error('headers already sent'));
+      res.status = status;
+      res.headersSent = true;
+
+      await actions.sendMirrored(res, 200, {}, Promise.resolve(true));
+
+      expect(errorLog.firstCall.args[0]).to.include('headers already sent');
+      expect(status.calledOnce).to.be.true;
+    });
+
+    it('answers 500 once when the body cannot be serialized', async () => {
+      sinon.stub(demiPush, 'awaitMirror').resolves({ mirrored: true, failures: [] });
+      res.json = body => { res.body = JSON.parse(JSON.stringify(body)); return res; };
+      const send = sinon.spy(actions, 'sendResponse');
+      const circular = { _id: 'd1' };
+      circular.self = circular;
+
+      await actions.sendMirrored(res, 200, circular, Promise.resolve(true));
+
+      expect(send.getCalls().filter(call => call.args[1] === 500)).to.have.lengthOf(1);
+      expect(res.code).to.equal(500);
+      expect(res.body).to.deep.equal({ message: 'Could not send the reply.' });
+      expect(errorLog.firstCall.args[0]).to.include('circular');
+    });
+
+    [null, undefined].forEach(none => {
+      it(`answers normally when the write had no push to wait for (${none})`, async () => {
+        expect(await demiPush.awaitMirror(none)).to.deep.equal({ mirrored: true, failures: [] });
+
+        await actions.sendMirrored(res, 200, { ok: 1 }, none);
+
+        expect(res.code).to.equal(200);
+        expect(res.body).to.deep.equal({ ok: 1 });
+      });
     });
   });
 });

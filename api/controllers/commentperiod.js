@@ -301,8 +301,7 @@ exports.protectedPost = async function (args, res) {
     var cp = await commentPeriod.save();
     Utils.recordAction('Post', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, cp._id, args, cp.project);
     defaultLog.info('Saved new comment period object:', cp);
-    demiPush.commentPeriod(cp);
-    return Actions.sendResponse(res, 200, cp);
+    return Actions.sendMirrored(res, 200, cp, demiPush.commentPeriod(cp));
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
@@ -355,9 +354,8 @@ exports.protectedPut = async function (args, res) {
     // input, which an audit row must not present as fact.
     Utils.recordAction('Put', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId, args);
     defaultLog.info('Comment period updated:', cp);
-    const fresh = await demiPush.freshDoc(CommentPeriod, objId);
-    demiPush.commentPeriod(fresh);
-    return Actions.sendResponse(res, 200, cp);
+    // An unknown id answers 200 with matchedCount 0: DEMI sync-out reads that as "recreate it".
+    return Actions.sendMirrored(res, 200, cp, demiPush.pushIfMatched(demiPush.commentPeriod, cp, objId));
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
@@ -378,8 +376,7 @@ exports.protectedDelete = async function (args, res) {
     const deleted = await CommentPeriod.findOneAndDelete({ _id: objId });
     Utils.recordAction('Delete', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId, args, deleted && deleted.project);
     // A hard delete is invisible to the mirror otherwise: there is no later write to push.
-    demiPush.commentPeriod(deleted, { isDeleted: true });
-    return Actions.sendResponse(res, 200, {});
+    return Actions.sendMirrored(res, 200, {}, demiPush.commentPeriod(deleted, { isDeleted: true }));
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
@@ -402,8 +399,7 @@ exports.protectedPublish = async function (args, res) {
     defaultLog.info('Comment period object:', commentPeriod);
     var published = await Actions.publish(commentPeriod);
     Utils.recordAction('Publish', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId, args, commentPeriod.project);
-    demiPush.commentPeriod(published);
-    return Actions.sendResponse(res, 200, published);
+    return Actions.sendMirrored(res, 200, published, demiPush.commentPeriod(published));
   } catch (e) {
     return Actions.sendResponse(res, 400, e);
   }
@@ -424,8 +420,7 @@ exports.protectedUnPublish = async function (args, res) {
     defaultLog.info('Comment period object:', commentPeriod);
     var unpublished = await Actions.unPublish(commentPeriod);
     Utils.recordAction('Unpublish', 'CommentPeriod', args.swagger.params.auth_payload.preferred_username, objId, args, commentPeriod.project);
-    demiPush.commentPeriod(unpublished);
-    return Actions.sendResponse(res, 200, unpublished);
+    return Actions.sendMirrored(res, 200, unpublished, demiPush.commentPeriod(unpublished));
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);

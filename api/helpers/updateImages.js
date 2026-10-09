@@ -44,7 +44,7 @@ const updateImageDocs = (ids, filter) => mongoose.model('Document').find({
 });
 
 // Private again means back to the state it was uploaded in, not Rejected.
-const unPublish = (doc, username) => documentPublish.unPublish(doc, username, null, null);
+const unPublish = (doc, username, pushes) => documentPublish.unPublish(doc, username, null, null, pushes);
 
 /**
  * Makes documents this request published private again after a failed Update save, unless another
@@ -55,9 +55,9 @@ exports.revert = (docs, username) => exports.release(docs.map(doc => doc._id), '
 /**
  * Publishes the Update's own uploaded images (same project) that are still private. Call before
  * saving the Update, so it is never live with a private image. On failure, reverts what it
- * published and throws.
+ * published and throws. DEMI pushes go onto `pushes` when given.
  */
-exports.publishFor = async (update, username) => {
+exports.publishFor = async (update, username, pushes = null) => {
   const ids = updateRules.imageDocumentIds(update);
   if (!ids.length) {
     return [];
@@ -66,7 +66,7 @@ exports.publishFor = async (update, username) => {
   const published = [];
   try {
     for (const doc of docs) {
-      published.push(await documentPublish.publish(doc, username));
+      published.push(await documentPublish.publish(doc, username, null, pushes));
       defaultLog.info(`Published Update image ${doc._id} for Update ${update._id || '(new)'}`);
     }
   } catch (e) {
@@ -81,9 +81,9 @@ exports.publishFor = async (update, username) => {
  * publishFor again once a published Update is saved: a concurrent release may have unpublished a
  * shared image between publishFor and the save. Never throws: the Update change already stands.
  */
-exports.republish = async (update, username) => {
+exports.republish = async (update, username, pushes = null) => {
   try {
-    await exports.publishFor(update, username);
+    await exports.publishFor(update, username, pushes);
   } catch (e) {
     defaultLog.error(`Update ${update._id} is saved published but its images could not be republished: ${e.message}`);
   }
@@ -113,7 +113,7 @@ const shownIds = async (docIds) => {
  * Unpublishes uploaded images among `ids` that no published Update shows. Call after the Update is
  * saved, so its own new state counts. Never throws: the Update change already stands.
  */
-exports.release = async (ids, updateId, username) => {
+exports.release = async (ids, updateId, username, pushes = null) => {
   if (!ids.length) {
     return;
   }
@@ -126,7 +126,7 @@ exports.release = async (ids, updateId, username) => {
     const unpublished = [];
     for (const doc of docs.filter(doc => !shown.has(String(doc._id)))) {
       try {
-        await unPublish(doc, username);
+        await unPublish(doc, username, pushes);
         unpublished.push(doc);
         defaultLog.info(`Unpublished Update image ${doc._id}; Update ${updateId} no longer shows it published`);
       } catch (e) {
@@ -139,7 +139,7 @@ exports.release = async (ids, updateId, username) => {
     // An Update that saved published after the query above skipped these as public; publish them back.
     const nowShown = await shownIds(unpublished.map(doc => doc._id));
     for (const doc of unpublished.filter(doc => nowShown.has(String(doc._id)))) {
-      await documentPublish.publish(doc, username);
+      await documentPublish.publish(doc, username, null, pushes);
       defaultLog.warn(`Republished Update image ${doc._id}: a published Update started showing it while Update ${updateId} released it`);
     }
   } catch (e) {

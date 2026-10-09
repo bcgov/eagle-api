@@ -90,8 +90,7 @@ exports.protectedPost = async function (args, res) {
     Utils.recordAction('Post', 'ProjectNotification', args.swagger.params.auth_payload.preferred_username, saveProjectNotification._id);
 
     defaultLog.info('Saved new project notification object:', saveProjectNotification);
-    demiPush.projectNotification(saveProjectNotification);
-    return Actions.sendResponse(res, 201, saveProjectNotification);
+    return Actions.sendMirrored(res, 201, saveProjectNotification, demiPush.projectNotification(saveProjectNotification));
   } catch (e) {
     defaultLog.error(`Error:: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
@@ -147,8 +146,7 @@ exports.protectedPut = async function (args, res) {
     const updatedRecord = await projectNotification.save();
     Utils.recordAction('Put', 'ProjectNotification', args.swagger.params.auth_payload.preferred_username, projectNotificationId);
     defaultLog.info('Project Notification updated:', updatedRecord);
-    demiPush.projectNotification(updatedRecord);
-    return Actions.sendResponse(res, 200, updatedRecord);
+    return Actions.sendMirrored(res, 200, updatedRecord, demiPush.projectNotification(updatedRecord));
   } catch (e) {
     defaultLog.error(`Error:: ${e.message}`);
     return Actions.sendResponse(res, 400, e);

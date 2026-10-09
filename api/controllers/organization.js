@@ -116,8 +116,7 @@ exports.protectedPost = async function (args, res) {
     var org = await organization.save();
     Utils.recordAction('Post', 'Organization', args.swagger.params.auth_payload.preferred_username, org._id);
     defaultLog.info('Saved new organization object:', org);
-    demiPush.organization(org);
-    return Actions.sendResponse(res, 200, org);
+    return Actions.sendMirrored(res, 200, org, demiPush.organization(org));
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
@@ -165,9 +164,7 @@ exports.protectedPut = async function (args, res) {
 
     Utils.recordAction('Put', 'Organization', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Organization updated:', org);
-    demiPush.organization(org);
-    demiPush.usersOfOrganization(objId);
-    return Actions.sendResponse(res, 200, org);
+    return Actions.sendMirrored(res, 200, org, [demiPush.organization(org), demiPush.usersOfOrganization(objId)]);
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
@@ -193,8 +190,7 @@ exports.protectedPublish = async function (args, res) {
       try {
         const published = await Actions.publish(o);
         // Published successfully
-        demiPush.organization(published);
-        return Actions.sendResponse(res, 200, published);
+        return Actions.sendMirrored(res, 200, published, demiPush.organization(published));
       } catch (err) {
         // Error
         return Actions.sendResponse(res, err.code, err);
@@ -226,8 +222,7 @@ exports.protectedUnPublish = async function (args, res) {
         const unpublished = await Actions.unPublish(o);
         Utils.recordAction('Unpublish', 'Organization', args.swagger.params.auth_payload.preferred_username, objId);
         // UnPublished successfully
-        demiPush.organization(unpublished);
-        return Actions.sendResponse(res, 200, unpublished);
+        return Actions.sendMirrored(res, 200, unpublished, demiPush.organization(unpublished));
       } catch (err) {
         // Error
         return Actions.sendResponse(res, err.code, err);

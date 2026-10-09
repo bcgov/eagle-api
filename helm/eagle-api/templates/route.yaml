@@ -5,6 +5,8 @@ metadata:
   name: {{ include "eagle-api.fullname" . }}
   labels:
     {{- include "eagle-api.labels" . | nindent 4 }}
+  annotations:
+    haproxy.router.openshift.io/timeout: {{ .Values.routerTimeout | quote }}
 spec:
   {{- if .Values.route.host }}
   host: {{ .Values.route.host }}
@@ -31,6 +33,8 @@ metadata:
   name: {{ include "eagle-api.fullname" . }}-direct
   labels:
     {{- include "eagle-api.labels" . | nindent 4 }}
+  annotations:
+    haproxy.router.openshift.io/timeout: {{ .Values.routerTimeout | quote }}
 spec:
   host: {{ .Values.directRoute.host }}
   port:

@@ -162,16 +162,6 @@ describe('DemiPush Helper', () => {
       });
     });
 
-    it('should not log a dropped push when a re-read misses or fails with DEMI_API_BASE unset', async () => {
-      delete process.env.DEMI_API_BASE;
-      const missing = { modelName: 'Document', findById: sinon.stub().resolves(null) };
-      const failing = { modelName: 'Document', findById: sinon.stub().rejects(new Error('boom')) };
-
-      expect(await demiPush.freshDoc(missing, 'd1')).to.be.null;
-      expect(await demiPush.freshDoc(failing, 'd2')).to.be.null;
-      expect(errorStub.called).to.be.false;
-    });
-
     it('should stay dark and warn once per process when DEMI_APIM_KEY is unset', async () => {
       process.env.DEMI_API_BASE = BASE;
       delete process.env.DEMI_APIM_KEY;
@@ -1241,6 +1231,147 @@ describe('DemiPush Helper', () => {
 
         expect(fetchStub.firstCall.args[0]).to.equal(`${BASE}/eagle/comments/c1`);
       });
+    });
+  });
+
+  describe('awaitMirror', () => {
+    const NOT_MIRRORED = 'not mirrored (see push-dropped line)';
+    let originalAwaitMs;
+    let originalOptIn;
+
+    beforeEach(() => {
+      process.env.DEMI_API_BASE = BASE;
+      process.env.DEMI_APIM_KEY = 'test-key';
+      originalAwaitMs = process.env.DEMI_PUSH_AWAIT_MS;
+      originalOptIn = process.env.DEMI_PUSH_OPT_IN_KINDS;
+    });
+
+    afterEach(() => {
+      if (originalAwaitMs === undefined) { delete process.env.DEMI_PUSH_AWAIT_MS; } else { process.env.DEMI_PUSH_AWAIT_MS = originalAwaitMs; }
+      if (originalOptIn === undefined) { delete process.env.DEMI_PUSH_OPT_IN_KINDS; } else { process.env.DEMI_PUSH_OPT_IN_KINDS = originalOptIn; }
+    });
+
+    it('should report mirrored when the push lands', async () => {
+      fetchStub.resolves(okResponse());
+
+      const result = await demiPush.awaitMirror(demiPush.project({ _id: 'p1' }));
+
+      expect(result).to.deep.equal({ mirrored: true, failures: [] });
+    });
+
+    it('should name the record when the push is dropped after two 5xx', async () => {
+      fetchStub.resolves(failResponse(500));
+      const clock = sinon.useFakeTimers();
+      const pending = demiPush.awaitMirror(demiPush.project({ _id: 'p1' }));
+      await clock.runAllAsync();
+
+      expect(await pending).to.deep.equal({ mirrored: false, failures: [{ kind: 'projects', id: 'p1', reason: NOT_MIRRORED }] });
+      expect(fetchStub.callCount).to.equal(2);
+    });
+
+    it('should report a push DEMI refused with a 409 as not mirrored', async () => {
+      fetchStub.resolves(failResponse(409));
+
+      const result = await demiPush.awaitMirror(demiPush.comment({ _id: 'c1' }));
+
+      expect(result.failures).to.deep.equal([{ kind: 'comments', id: 'c1', reason: NOT_MIRRORED }]);
+    });
+
+    it('should give up at the deadline and leave the push running', async () => {
+      process.env.DEMI_PUSH_AWAIT_MS = '50';
+      const clock = sinon.useFakeTimers();
+      fetchStub.callsFake(() => new Promise(resolve => setTimeout(() => resolve(okResponse()), 100)));
+      const push = demiPush.project({ _id: 'p1' });
+      const pending = demiPush.awaitMirror(push);
+
+      await clock.tickAsync(50);
+      expect(await pending).to.deep.equal({ mirrored: false, failures: [{ kind: 'projects', id: 'p1', reason: 'timeout' }] });
+
+      await clock.tickAsync(50);
+      expect(await push).to.be.true;
+    });
+
+    // setTimeout fires at once for a delay above 2^31-1, which would time out every write.
+    [['2147483647', 2147483647], ['2147483648', 25000]].forEach(([env, expected]) => {
+      it(`should wait ${expected} ms when DEMI_PUSH_AWAIT_MS is ${env}`, async () => {
+        process.env.DEMI_PUSH_AWAIT_MS = env;
+        const timeout = sinon.spy(global, 'setTimeout');
+
+        await demiPush.awaitMirror(Promise.resolve(true));
+
+        expect(timeout.calledOnceWith(sinon.match.func, expected, 'timeout')).to.be.true;
+      });
+    });
+
+    it('should clear its deadline timer once every push settles', async () => {
+      const clock = sinon.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+
+      await demiPush.awaitMirror(Promise.resolve(true));
+
+      expect(clock.countTimers()).to.equal(0);
+    });
+
+    it('should report a record DEMI parked for a missing parent as parked', async () => {
+      stubModels([], []);
+      sinon.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      fetchStub.callsFake(() => new Response(JSON.stringify({ code: 'PARENT_NOT_FOUND' }), { status: 404 }));
+
+      const result = await demiPush.awaitMirror(demiPush.document({ _id: 'd1', project: 'p1' }));
+      // Parked records live in module state; leaving d1 behind would re-push it in a later test.
+      demiPush.logParked();
+
+      expect(result.failures).to.deep.equal([{ kind: 'documents', id: 'd1', reason: 'parked: parent not in DEMI yet' }]);
+    });
+
+    it('should report mirrored when pushes are off', async () => {
+      delete process.env.DEMI_API_BASE;
+
+      expect((await demiPush.awaitMirror(demiPush.project({ _id: 'p1' }))).mirrored).to.be.true;
+      expect(fetchStub.called).to.be.false;
+    });
+
+    it('should report mirrored for an opt-in kind that is not turned on', async () => {
+      delete process.env.DEMI_PUSH_OPT_IN_KINDS;
+
+      expect((await demiPush.awaitMirror(demiPush.user({ _id: 'u1' }))).mirrored).to.be.true;
+      expect(fetchStub.called).to.be.false;
+    });
+
+    it('should report not mirrored when a matched write is pushed by id and the push finds no row', async () => {
+      const missing = { modelName: 'Comment', db: { readyState: 1 }, findById: sinon.stub().resolves(null) };
+      sinon.stub(mongoose, 'model').returns(missing);
+
+      const result = await demiPush.awaitMirror(demiPush.pushIfMatched(demiPush.comment, { matchedCount: 1 }, 'c1'));
+
+      expect(result.failures).to.deep.equal([{ kind: 'comments', id: 'c1', reason: NOT_MIRRORED }]);
+      expect(fetchStub.called).to.be.false;
+    });
+
+    it('should skip null entries and report only the push that failed', async () => {
+      fetchStub.callsFake(url => (url.includes('/comments/') ? failResponse(409) : okResponse()));
+
+      const result = await demiPush.awaitMirror([null, demiPush.project({ _id: 'p1' }), undefined, demiPush.comment({ _id: 'c1' })]);
+
+      expect(result).to.deep.equal({ mirrored: false, failures: [{ kind: 'comments', id: 'c1', reason: NOT_MIRRORED }] });
+    });
+
+    it('should report a rejected push with its message instead of rejecting', async () => {
+      const push = Object.assign(Promise.reject(new Error('boom')), { kind: 'projects', id: 'p1' });
+
+      const result = await demiPush.awaitMirror(push);
+
+      expect(result.failures).to.deep.equal([{ kind: 'projects', id: 'p1', reason: 'failed: boom' }]);
+    });
+
+    it('should name the organization when its users cannot be looked up', async () => {
+      sinon.stub(mongoose, 'model').withArgs('User').returns({
+        find: () => ({ lean: () => Promise.reject(new Error('mongo unreachable')) })
+      });
+      process.env.DEMI_PUSH_OPT_IN_KINDS = 'users';
+
+      const result = await demiPush.awaitMirror(demiPush.usersOfOrganization('5f4c7d1e2b3a4c5d6e7f00aa'));
+
+      expect(result.failures).to.deep.equal([{ kind: 'users', id: 'of organization 5f4c7d1e2b3a4c5d6e7f00aa', reason: NOT_MIRRORED }]);
     });
   });
 });

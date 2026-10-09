@@ -47,9 +47,9 @@ exports.protectedPostInspection = async function (args, res) {
       inspection.save()
         .then(function (doc) {
           Utils.recordAction('Post', 'Inspection', args.swagger.params.auth_payload.preferred_username, doc._id);
-          demiPush.inspection(doc);
+          const push = demiPush.inspection(doc);
           doc.status = 'Uploading';
-          return Actions.sendResponse(res, 200, doc);
+          return Actions.sendMirrored(res, 200, doc, push);
         })
         .catch(function (err) {
           defaultLog.error('Error saving inspection:', err);
@@ -109,9 +109,10 @@ exports.protectedPostElement = async function (args, res) {
       })
       .then(function (updated) {
         Utils.recordAction('Post', 'InspectionElement', args.swagger.params.auth_payload.preferred_username, theDoc._id);
-        demiPush.inspectionElement(theDoc);
-        demiPush.pushIfMatched(demiPush.inspection, updated, inspId);
-        return Actions.sendResponse(res, 200, theDoc);
+        return Actions.sendMirrored(res, 200, theDoc, [
+          demiPush.inspectionElement(theDoc),
+          demiPush.pushIfMatched(demiPush.inspection, updated, inspId)
+        ]);
       })
       .catch(function (err) {
         defaultLog.error('Error saving inspection element:', err);
@@ -220,13 +221,13 @@ exports.protectedPostElementItem = async function (args, res) {
               );
             }).then(function (theInspection) {
               defaultLog.debug('Updated InspectionElement after item push: %j', theInspection);
-              demiPush.inspectionItem(savedDocument);
-              demiPush.pushIfMatched(demiPush.inspectionElement, theInspection, elementId);
-              return theInspection;
-            }).then(function () {
-              return Actions.sendResponse(res, 200, savedDocument);
+              return [
+                demiPush.inspectionItem(savedDocument),
+                demiPush.pushIfMatched(demiPush.inspectionElement, theInspection, elementId)
+              ];
             })
-            .catch(function (error) {
+            // Two-argument then: a 502 from the push wait must not fall into the undo path below.
+            .then(pushes => Actions.sendMirrored(res, 200, savedDocument, pushes), function (error) {
               defaultLog.error('Error saving InspectionItem:', error);
               // the model failed to be created - delete the document from minio so the database and minio remain in sync.
               MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
@@ -282,13 +283,13 @@ exports.protectedPostElementItem = async function (args, res) {
           );
         }).then(function (theInspection) {
           defaultLog.debug('Updated InspectionElement after text item push: %j', theInspection);
-          demiPush.inspectionItem(savedDocument);
-          demiPush.pushIfMatched(demiPush.inspectionElement, theInspection, elementId);
-          return theInspection;
-        }).then(function () {
-          return Actions.sendResponse(res, 200, savedDocument);
+          return [
+            demiPush.inspectionItem(savedDocument),
+            demiPush.pushIfMatched(demiPush.inspectionElement, theInspection, elementId)
+          ];
         })
-        .catch(function (error) {
+        // Two-argument then: a 502 from the push wait must not fall into the undo path below.
+        .then(pushes => Actions.sendMirrored(res, 200, savedDocument, pushes), function (error) {
           defaultLog.error('Error saving InspectionItem (text):', error);
           // the model failed to be created - delete the document from minio so the database and minio remain in sync.
           MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);

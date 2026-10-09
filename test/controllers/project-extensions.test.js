@@ -1,5 +1,5 @@
 /**
- * Extension/suspension handlers: DEMI push after a successful write.
+ * Extension/suspension handlers: DEMI push by id after a matched write.
  */
 
 const { expect } = require('chai');
@@ -13,9 +13,10 @@ const projectController = require('../../api/controllers/project');
 
 const PROJ_ID = '5f4c7d1e2b3a4c5d6e7f8091';
 const EXTENSION = { type: 'Extension', start: '2026-01-01' };
+const MATCHED = { acknowledged: true, matchedCount: 1, modifiedCount: 1 };
 
 describe('Project Extension Handlers', () => {
-  let res, projectModel, fresh;
+  let res, projectModel;
 
   function makeArgs(extra) {
     return {
@@ -36,17 +37,12 @@ describe('Project Extension Handlers', () => {
 
   beforeEach(() => {
     res = { status: sinon.stub().returnsThis(), json: sinon.stub() };
-    fresh = { _id: PROJ_ID, name: 'Test Project' };
-
-    projectModel = {
-      updateOne: sinon.stub().resolves({ modifiedCount: 1 }),
-      findById: sinon.stub().resolves(fresh)
-    };
+    projectModel = { updateOne: sinon.stub().resolves(MATCHED) };
 
     sinon.stub(mongoose, 'model').callsFake(name => (name === 'Project' ? projectModel : {}));
     sinon.stub(Utils, 'recordAction').resolves();
     sinon.stub(Actions, 'sendResponse').callsFake((r, code, data) => r.status(code).json(data));
-    sinon.stub(demiPush, 'project').resolves();
+    sinon.stub(demiPush, 'project').resolves(true);
   });
 
   afterEach(() => sinon.restore());
@@ -56,21 +52,34 @@ describe('Project Extension Handlers', () => {
     ['protectedExtensionDelete', deleteArgs],
     ['protectedExtensionUpdate', updateArgs]
   ].forEach(([handler, args]) => {
-    it(`${handler} pushes the re-read project to DEMI and returns 200`, async () => {
-      await projectController[handler](args(), res);
+    describe(handler, () => {
+      it('pushes the project by id for DEMI to re-read and returns the write result', async () => {
+        await projectController[handler](args(), res);
 
-      expect(res.status.calledWith(200)).to.be.true;
-      expect(projectModel.findById.calledOnceWith(PROJ_ID)).to.be.true;
-      expect(demiPush.project.calledOnceWithExactly(fresh)).to.be.true;
+        expect(res.status.args).to.deep.equal([[200]]);
+        expect(res.json.firstCall.args[0]).to.equal(MATCHED);
+        expect(demiPush.project.calledOnce).to.be.true;
+        expect(demiPush.project.firstCall.args[0]).to.deep.equal({ _id: PROJ_ID });
+      });
+
+      // An unacknowledged write carries no counts, so there is no matched row to push.
+      it('does not push when the write reports no match', async () => {
+        projectModel.updateOne.resolves({ acknowledged: false });
+
+        await projectController[handler](args(), res);
+
+        expect(res.status.args).to.deep.equal([[200]]);
+        expect(demiPush.project.called).to.be.false;
+      });
+
+      it('answers 502 NOT_MIRRORED when the push does not land', async () => {
+        demiPush.project.resolves(false);
+
+        await projectController[handler](args(), res);
+
+        expect(res.status.args).to.deep.equal([[502]]);
+        expect(res.json.firstCall.args[0]).to.deep.equal(Actions.NOT_MIRRORED);
+      });
     });
-  });
-
-  it('still returns 200 and pushes null when the re-read fails', async () => {
-    projectModel.findById.rejects(new Error('mongo down'));
-
-    await projectController.protectedExtensionAdd(addArgs(), res);
-
-    expect(res.status.calledWith(200)).to.be.true;
-    expect(demiPush.project.calledOnceWithExactly(null)).to.be.true;
   });
 });

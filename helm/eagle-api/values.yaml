@@ -18,6 +18,10 @@ service:
   type: ClusterIP
   port: 3000
 
+# haproxy timeout on both chart Routes. Writes wait up to DEMI_PUSH_AWAIT_MS (25 s) for the DEMI push
+# after their own Mongo and MinIO work, so the router's 30 s default is too close.
+routerTimeout: 60s
+
 route:
   # OFF BY DEFAULT, and the default is the safety. Production is the one environment where a route
   # from this chart is never right — `prod-external` already serves that host through rproxy and
