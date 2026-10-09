@@ -140,8 +140,7 @@ exports.protectedAddPins = async function (args, res) {
       Utils.recordAction('Add', 'Pin', args.swagger.params.auth_payload.preferred_username, objId);
       defaultLog.info('Added', pinsArr.length, 'pin(s) to project:', objId);
       // returnDocument: 'after' above already gives the post-update project, so no re-read
-      demiPush.project(doc);
-      return Actions.sendResponse(res, 200, { pins: doc.pins });
+      return Actions.sendMirrored(res, 200, { pins: doc.pins }, demiPush.project(doc));
     } else {
       defaultLog.info('Project not found:', objId);
       return Actions.sendResponse(res, 404, {});
@@ -169,9 +168,7 @@ exports.protectedPublishPin = async function (args, res) {
       );
       Utils.recordAction('Publish', 'PIN', args.swagger.params.auth_payload.preferred_username, projId);
       defaultLog.info('Published pins for project:', projId);
-      const fresh = await demiPush.freshDoc(Project, projId);
-      demiPush.project(fresh);
-      return Actions.sendResponse(res, 200, published);
+      return Actions.sendMirrored(res, 200, published, demiPush.pushIfMatched(demiPush.project, published, projId));
     } else {
       defaultLog.info('Project not found or has no pins:', projId);
       return Actions.sendResponse(res, 404, {});
@@ -198,9 +195,7 @@ exports.protectedUnPublishPin = async function (args, res) {
       );
       Utils.recordAction('Unpublish', 'PIN', args.swagger.params.auth_payload.preferred_username, projId);
       defaultLog.info('Unpublished pins for project:', projId);
-      const fresh = await demiPush.freshDoc(Project, projId);
-      demiPush.project(fresh);
-      return Actions.sendResponse(res, 200, updated);
+      return Actions.sendMirrored(res, 200, updated, demiPush.pushIfMatched(demiPush.project, updated, projId));
     } else {
       defaultLog.info('Project not found or has no pins:', projId);
       return Actions.sendResponse(res, 404, {});
@@ -228,9 +223,7 @@ exports.protectedPinDelete = async function (args, res) {
     );
     Utils.recordAction('Delete', 'Pin', args.swagger.params.auth_payload.preferred_username, pinId);
     defaultLog.info('Deleted pin:', pinId, 'from project:', projId);
-    const fresh = await demiPush.freshDoc(Project, projId);
-    demiPush.project(fresh);
-    return Actions.sendResponse(res, 200, data);
+    return Actions.sendMirrored(res, 200, data, demiPush.pushIfMatched(demiPush.project, data, projId));
   } catch (e) {
     defaultLog.error(`Error deleting pin: ${pinId} from project: ${projId}: ${e.message}`);
     return Actions.sendResponse(res, 400, e);

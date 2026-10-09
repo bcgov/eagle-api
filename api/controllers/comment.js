@@ -354,8 +354,7 @@ exports.protectedPost = async function (args, res) {
     var c = await comment.save();
     Utils.recordAction('Post', 'Comment', args.swagger.params.auth_payload.preferred_username, c._id);
     defaultLog.info('Saved new comment object:', c);
-    demiPush.comment(c);
-    return Actions.sendResponse(res, 200, c);
+    return Actions.sendMirrored(res, 200, c, demiPush.comment(c));
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
@@ -425,8 +424,7 @@ exports.unProtectedPost = async function (args, res) {
     const c = await cmt.save();
     Utils.recordAction('Post', 'Comment', 'public', c._id);
     defaultLog.info('Saved new comment object: %s', c._id);
-    demiPush.comment(c);
-    return Actions.sendResponse(res, 200, c);
+    return Actions.sendMirrored(res, 200, c, demiPush.comment(c));
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
@@ -467,9 +465,7 @@ exports.protectedPut = async function (args, res) {
     var c = await Comment.updateOne({ _id: objId }, { $set: comment });
     Utils.recordAction('Put', 'Comment', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Comment updated:', c);
-    const fresh = await demiPush.freshDoc(Comment, objId);
-    demiPush.comment(fresh);
-    return Actions.sendResponse(res, 200, c);
+    return Actions.sendMirrored(res, 200, c, demiPush.pushIfMatched(demiPush.comment, c, objId));
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
@@ -496,9 +492,7 @@ exports.protectedStatus = async function (args, res) {
     var c = await Comment.updateOne({ _id: objId }, { $set: comment });
     Utils.recordAction('Status', 'Comment', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Comment updated:', c);
-    const fresh = await demiPush.freshDoc(Comment, objId);
-    demiPush.comment(fresh);
-    return Actions.sendResponse(res, 200, c);
+    return Actions.sendMirrored(res, 200, c, demiPush.pushIfMatched(demiPush.comment, c, objId));
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);

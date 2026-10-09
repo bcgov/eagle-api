@@ -180,7 +180,6 @@ const MODEL_BY_KIND = Object.assign({
   notifications: 'ProjectNotification',
   updates: 'RecentActivity'
 }, OPT_IN_KINDS);
-const KIND_BY_MODEL = Object.fromEntries(Object.entries(MODEL_BY_KIND).map(([kind, model]) => [model, kind]));
 
 const dropped = (kind, id, reason, meta) => pushClient.logDropped('demiPush', `${kind} ${id}`, reason, meta);
 
@@ -204,31 +203,6 @@ function serialize(key, run) {
 // Test-only view of the queue: a chain entry left behind means a later push would skip the queue.
 exports._pendingCount = () => chains.size;
 
-async function readById(model, id) {
-  try {
-    return { doc: await model.findById(id) };
-  } catch (err) {
-    return { error: err };
-  }
-}
-
-// A mirror push re-reads the stored document after the write. A miss or a failed read leaves DEMI
-// on the pre-write state, so it is logged; the caller's own HTTP response is unaffected.
-exports.freshDoc = async function (model, id) {
-  const read = await readById(model, id);
-  // With pushes off nothing would have been sent, so a miss is not a dropped push.
-  if (!client.configured()) {
-    return read.doc || null;
-  }
-  const kind = KIND_BY_MODEL[model.modelName] || model.modelName;
-  if (read.error) {
-    dropped(kind, id, 'failed (re-read failed)', { error: read.error.message });
-  } else if (!read.doc) {
-    dropped(kind, id, 'failed (not found on re-read)');
-  }
-  return read.doc || null;
-};
-
 function modelFor(kind) {
   const name = MODEL_BY_KIND[kind];
   if (!name) {
@@ -249,18 +223,20 @@ async function currentDoc(kind, id, snapshot) {
   if (!model || !model.db || model.db.readyState !== CONNECTED) {
     return snapshot;
   }
-  const read = await readById(model, id);
-  if (read.error) {
-    defaultLog.warn(`[demiPush] ${kind} ${id} re-read failed, pushing the caller's copy`, { error: read.error.message });
+  let doc;
+  try {
+    doc = await model.findById(id);
+  } catch (err) {
+    defaultLog.warn(`[demiPush] ${kind} ${id} re-read failed, pushing the caller's copy`, { error: err.message });
     return snapshot;
   }
-  if (!read.doc) {
+  if (!doc) {
     // Row is gone, so the snapshot is the last state DEMI can be told about — and on a delete
     // mirror it is the body carrying the marker the row itself never held.
     defaultLog.debug(`[demiPush] ${kind} ${id} gone from Mongo, pushing the caller's copy`);
     return snapshot;
   }
-  return read.doc;
+  return doc;
 }
 
 // Snapshots that carry nothing but an id, so the stored row is the only body there is.
@@ -354,6 +330,12 @@ exports.logParked = function () {
   parked.clear();
 };
 
+// The resolved value stays a bare boolean for the backfill scripts; awaitMirror reads these to
+// name a failure.
+function labelled(kind, id, promise) {
+  return Object.assign(promise, { kind, id });
+}
+
 // Every mirror runs through here. `extra` says what the stored document cannot: a hard delete
 // leaves nothing to re-read, so the caller's own copy carries the marker instead. `attempts` counts
 // retries of a record DEMI refused for a missing parent.
@@ -363,7 +345,7 @@ function mirrorPush(kind, doc, extra, buildBody, attempts = 0) {
   }
   const id = doc._id;
   const key = `${kind}:${id}`;
-  return serialize(key, async () => {
+  return labelled(kind, String(id), serialize(key, async () => {
     // This push carries the newest state, so it replaces any parked copy of the record.
     unpark(key);
     const label = `${kind} ${id}`;
@@ -392,13 +374,13 @@ function mirrorPush(kind, doc, extra, buildBody, attempts = 0) {
     } finally {
       sending.delete(label);
     }
-  });
+  }));
 }
 
 // Every export resolves true when the body landed or there was nothing to send, false when it did
-// not. Controllers ignore it — they never await — but a backfill has to know what to retry.
-exports.project = function (doc) {
-  return mirrorPush('projects', doc, null, async body => {
+// not. Controllers await it through Actions.sendMirrored; a backfill counts it to know what to retry.
+exports.project = function (doc, extra) {
+  return mirrorPush('projects', doc, extra, async body => {
     await enrichProject(body);
     return { doc: body };
   });
@@ -479,13 +461,14 @@ exports.usersOfOrganization = function (orgId) {
     return Promise.resolve(true);
   }
   const filter = { _schemaName: 'User', org: new mongoose.Types.ObjectId(String(orgId)) };
-  return Promise.resolve(mongoose.model('User').find(filter, '_id').lean())
+  const label = `of organization ${orgId}`;
+  return labelled('users', label, Promise.resolve(mongoose.model('User').find(filter, '_id').lean())
     .then(users => Promise.all(users.map(user => exports.user(byId(user._id)))))
     .then(results => results.every(Boolean))
     .catch(err => {
-      dropped('users', `of organization ${orgId}`, 'failed (user lookup failed)', { error: err.message });
+      dropped('users', label, 'failed (user lookup failed)', { error: err.message });
       return false;
-    });
+    }));
 };
 exports.inspection = optInMirror('inspections', asDoc);
 exports.inspectionElement = optInMirror('inspection-elements', asDoc);
@@ -504,5 +487,43 @@ exports.config = function (body) {
       dropped('config', 'public', 'failed', { error: err.message, stack: err.stack });
       return false;
     }
+  });
+};
+
+const DEFAULT_AWAIT_MS = 25000;
+// setTimeout fires at once for any delay above this.
+const MAX_AWAIT_MS = 2147483647;
+
+function awaitMs() {
+  const ms = Number(process.env.DEMI_PUSH_AWAIT_MS);
+  return Number.isInteger(ms) && ms > 0 && ms <= MAX_AWAIT_MS ? ms : DEFAULT_AWAIT_MS;
+}
+
+function failureReason(push) {
+  return parked.has(`${push.kind}:${push.id}`) ? 'parked: parent not in DEMI yet' : 'not mirrored (see push-dropped line)';
+}
+
+// Waits on one push or an array of them, all under one deadline, and never rejects. A push still
+// pending at the deadline counts as failed but keeps running in its chain.
+exports.awaitMirror = function (pushes) {
+  const entries = [].concat(pushes).filter(push => push != null);
+  let timer;
+  const deadline = new Promise(resolve => {
+    timer = setTimeout(resolve, awaitMs(), 'timeout');
+    timer.unref();
+  });
+  const reasons = entries.map(push => Promise.race([
+    Promise.resolve(push).then(
+      landed => (landed === false ? failureReason(push) : null),
+      err => `failed: ${(err && err.message) || err}`
+    ),
+    deadline
+  ]));
+  return Promise.all(reasons).then(results => {
+    clearTimeout(timer);
+    const failures = results
+      .map((reason, i) => reason && { kind: entries[i].kind, id: entries[i].id, reason })
+      .filter(Boolean);
+    return { mirrored: failures.length === 0, failures };
   });
 };

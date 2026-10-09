@@ -1,8 +1,8 @@
 /**
  * Unit Tests for RecentActivity Controller - DEMI mirror
  *
- * DEMI owns Updates; eagle-api only mirrors the write. The mirror must never
- * hold up the response. Mongoose, Utils and demiPush are stubbed - no database.
+ * DEMI owns Updates; eagle-api mirrors the write and answers once the mirror
+ * lands, or 502 when it does not. Mongoose, Utils and demiPush are stubbed - no database.
  */
 
 'use strict';
@@ -13,6 +13,7 @@ const mongoose   = require('mongoose');
 const Utils      = require('../../api/helpers/utils');
 const demiPush   = require('../../api/helpers/demiPush');
 const defaultLog = require('winston').loggers.get('default');
+const Actions    = require('../../api/helpers/actions');
 
 const recentActivity = require('../../api/controllers/recentActivity');
 
@@ -115,8 +116,7 @@ describe('RecentActivity Controller - DEMI mirror', () => {
 
     sinon.stub(mongoose, 'model').callsFake(name => ({ RecentActivity: model, Document: documentModel }[name] || {}));
     sinon.stub(Utils, 'recordAction').resolves();
-    // Never settles: a handler that awaits the mirror would hang instead of answering
-    pushStub = sinon.stub(demiPush, 'recentActivity').returns(new Promise(() => {}));
+    pushStub = sinon.stub(demiPush, 'recentActivity').resolves(true);
 
     sinon.stub(defaultLog, 'info');
     sinon.stub(defaultLog, 'warn');
@@ -126,7 +126,7 @@ describe('RecentActivity Controller - DEMI mirror', () => {
   afterEach(() => sinon.restore());
 
   describe('protectedPost', () => {
-    it('mirrors the saved Update and answers without waiting for the push', async () => {
+    it('mirrors the saved Update and answers 200 once the push lands', async () => {
       await recentActivity.protectedPost(postArgs(true), res);
 
       expect(pushStub.calledOnceWithExactly(saved)).to.be.true;
@@ -141,6 +141,16 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       expect(pushStub.calledOnceWithExactly(saved)).to.be.true;
     });
 
+    it('answers 502 and keeps the save when the push does not land', async () => {
+      pushStub.resolves(false);
+
+      await recentActivity.protectedPost(postArgs(true), res);
+
+      expect(pushStub.calledOnceWithExactly(saved)).to.be.true;
+      expect(res.status.calledOnceWithExactly(502)).to.be.true;
+      expect(res.json.calledOnceWithExactly(Actions.NOT_MIRRORED)).to.be.true;
+    });
+
     it('does not mirror when the save fails', async () => {
       saveResult = () => Promise.reject(new Error('mongo down'));
 
@@ -152,7 +162,7 @@ describe('RecentActivity Controller - DEMI mirror', () => {
   });
 
   describe('protectedPut', () => {
-    it('mirrors the updated Update and answers without waiting for the push', async () => {
+    it('mirrors the updated Update and answers 200 once the push lands', async () => {
       await recentActivity.protectedPut(putArgs(true), res);
 
       expect(pushStub.calledOnceWithExactly(saved)).to.be.true;
@@ -190,6 +200,15 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       expect(pushStub.calledOnceWithExactly(saved)).to.be.true;
       expect(Utils.recordAction.firstCall.args.slice(0, 2)).to.deep.equal(['Archive', 'RecentActivity']);
       expect(res.status.calledWith(200)).to.be.true;
+    });
+
+    it('answers 502 when the archived row does not reach DEMI', async () => {
+      pushStub.resolves(false);
+
+      await recentActivity.protectedDelete(deleteArgs(), res);
+
+      expect(res.status.calledOnceWithExactly(502)).to.be.true;
+      expect(res.json.calledOnceWithExactly(Actions.NOT_MIRRORED)).to.be.true;
     });
 
     it('answers 404 and mirrors nothing when the Update does not exist', async () => {
@@ -613,6 +632,18 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       }), res);
 
       expect(res.status.calledWith(200)).to.be.true;
+      expect(isPublic(image)).to.be.true;
+    });
+
+    it('answers 502, and leaves the image public, when its push does not land', async () => {
+      const image = uploaded(UPLOAD);
+      documents.push(image);
+      docPush.resolves(false);
+
+      await recentActivity.protectedPut(putArgs(true, { images: [{ document: UPLOAD, alt: 'Site' }] }), res);
+
+      expect(docPush.calledWith(image)).to.be.true;
+      expect(res.status.calledOnceWithExactly(502)).to.be.true;
       expect(isPublic(image)).to.be.true;
     });
 

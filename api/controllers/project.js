@@ -383,8 +383,7 @@ exports.protectedDelete = async function (args, res) {
       try {
         const deleted = await Actions.delete(o);
         Utils.recordAction('Delete', 'Project', args.swagger.params.auth_payload.preferred_username, projId, args);
-        // Deleted successfully
-        return Actions.sendResponse(res, 200, deleted);
+        return Actions.sendMirrored(res, 200, deleted, demiPush.project(deleted, { isDeleted: true }));
       } catch (err) {
         // Error
         return Actions.sendResponse(res, 400, err);
@@ -471,11 +470,10 @@ exports.protectedPost = async function (args, res) {
   // Currently this will save based on the entire project model.
   // Meaning there will be one project legislation key per year in LEGISLATIONS, only one of which will be populated with data.
   // The other keys will be full of null values, as well as any other fields that are in the project model and are not explicitly defined above.
-  project.save()
+  return project.save()
     .then(function (theProject) {
       Utils.recordAction('Post', 'Project', args.swagger.params.auth_payload.preferred_username, theProject._id, args);
-      demiPush.project(theProject);
-      return Actions.sendResponse(res, 200, theProject);
+      return Actions.sendMirrored(res, 200, theProject, demiPush.project(theProject));
     })
     .catch(function (err) {
       defaultLog.error('Error saving project:', err);
@@ -506,9 +504,7 @@ exports.protectedExtensionAdd = async function (args, res) {
     }
     // Fall through if successful
     Utils.recordAction('Post', 'Extension', args.swagger.params.auth_payload.preferred_username, projId);
-    const fresh = await Project.findById(projId).catch(() => null);
-    demiPush.project(fresh);
-    return Actions.sendResponse(res, 200, data);
+    return Actions.sendMirrored(res, 200, data, demiPush.pushIfMatched(demiPush.project, data, projId));
   } catch (e) {
     defaultLog.info('Couldn\'t find that object!');
     return Actions.sendResponse(res, 404, {});
@@ -535,9 +531,7 @@ exports.protectedExtensionDelete = async function (args, res) {
     }
     // Fall through if successful
     Utils.recordAction('Delete', 'Extension', args.swagger.params.auth_payload.preferred_username, projId);
-    const fresh = await Project.findById(projId).catch(() => null);
-    demiPush.project(fresh);
-    return Actions.sendResponse(res, 200, data);
+    return Actions.sendMirrored(res, 200, data, demiPush.pushIfMatched(demiPush.project, data, projId));
   } catch (e) {
     defaultLog.info('Couldn\'t find that object!');
     return Actions.sendResponse(res, 404, {});
@@ -575,9 +569,7 @@ exports.protectedExtensionUpdate = async function (args, res) {
       return Actions.sendResponse(res, 404, {});
     }
     Utils.recordAction('Put', 'Extension', args.swagger.params.auth_payload.preferred_username, projId);
-    const fresh = await Project.findById(projId).catch(() => null);
-    demiPush.project(fresh);
-    return Actions.sendResponse(res, 200, dataAdded);
+    return Actions.sendMirrored(res, 200, dataAdded, demiPush.pushIfMatched(demiPush.project, dataAdded, projId));
   } catch (e) {
     defaultLog.info('Couldn\'t find that object!');
     return Actions.sendResponse(res, 404, {});
@@ -755,8 +747,7 @@ exports.protectedPut = async function (args, res) {
   var doc = await Project.findOneAndUpdate(filter, { $set: update }, { upsert: false, returnDocument: 'after' });
   if (doc) {
     Utils.recordAction('Put', 'Project', args.swagger.params.auth_payload.preferred_username, objId, args);
-    demiPush.project(doc);
-    return Actions.sendResponse(res, 200, doc);
+    return Actions.sendMirrored(res, 200, doc, demiPush.project(doc));
   }
   if (await movedUnderLockedAct(Project, filter._id, guardedKeys)) {
     defaultLog.warn('protectedPut refused: project %s moved under %s before the write', objId, actLabels(guardedKeys));
@@ -814,8 +805,7 @@ exports.protectedPublish = async function (args, res) {
       try {
         const published = await Actions.publish(o, true);
         Utils.recordAction('Publish', 'Project', args.swagger.params.auth_payload.preferred_username, objId, args);
-        demiPush.project(published);
-        return Actions.sendResponse(res, 200, published);
+        return Actions.sendMirrored(res, 200, published, demiPush.project(published));
       } catch (err) {
         if (saveMatchedNothing(err) && await movedUnderLockedAct(Project, o._id, guardedKeys)) {
           defaultLog.warn('protectedPublish refused: project %s moved under %s before the write', objId, actLabels(guardedKeys));
@@ -846,8 +836,7 @@ exports.protectedUnPublish = async function (args, res) {
       try {
         const unpublished = await Actions.unPublish(o);
         Utils.recordAction('Unpublish', 'Project', args.swagger.params.auth_payload.preferred_username, objId, args);
-        demiPush.project(unpublished);
-        return Actions.sendResponse(res, 200, unpublished);
+        return Actions.sendMirrored(res, 200, unpublished, demiPush.project(unpublished));
       } catch (err) {
         return Actions.sendResponse(res, err.code, err);
       }

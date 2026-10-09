@@ -48,8 +48,7 @@ exports.protectedPost = async function (args, res) {
     var u = await user.save();
     Utils.recordAction('Put', 'User', args.swagger.params.auth_payload.preferred_username, u._id);
     defaultLog.info('Saved new user object:', u);
-    demiPush.user(u);
-    return Actions.sendResponse(res, 200, u);
+    return Actions.sendMirrored(res, 200, u, demiPush.user(u));
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
@@ -98,8 +97,7 @@ exports.protectedPut = async function (args, res) {
     var u = await User.findOneAndUpdate({ _id: objId }, user, { upsert: false, returnDocument: 'after' }).exec();
     Utils.recordAction('Put', 'User', args.swagger.params.auth_payload.preferred_username, objId);
     defaultLog.info('Organization updated:', u);
-    demiPush.user(u);
-    return Actions.sendResponse(res, 200, u);
+    return Actions.sendMirrored(res, 200, u, demiPush.user(u));
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
