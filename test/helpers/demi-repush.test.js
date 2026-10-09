@@ -13,6 +13,7 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 
 const mongoose = require('mongoose');
+const winston = require('winston');
 
 const {
   buildQuery,
@@ -77,6 +78,12 @@ function fakeModel(paths) {
 
 describe('demi-repush', () => {
   afterEach(() => sinon.restore());
+
+  it('logs at info on the console, independent of LOG_LEVEL', () => {
+    const scriptLog = winston.loggers.get('demi-repush');
+    const consoleTransport = scriptLog.transports.find(t => t instanceof winston.transports.Console);
+    expect([scriptLog.level, consoleTransport.level]).to.deep.equal(['info', 'info']);
+  });
 
   describe('buildQuery', () => {
     it('resumes after the checkpoint id', () => {

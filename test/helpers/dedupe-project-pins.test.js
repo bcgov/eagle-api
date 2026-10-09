@@ -8,8 +8,9 @@ const path = require('path');
 const { expect } = require('chai');
 const sinon = require('sinon');
 const mongoose = require('mongoose');
+const winston = require('winston');
 
-const { dedupePins, parseArgs, validate } = require('../../scripts/dedupe-project-pins');
+const { dedupe, dedupePins, parseArgs, validate } = require('../../scripts/dedupe-project-pins');
 const demiPush = require('../../api/helpers/demiPush');
 
 describe('dedupe-project-pins script', () => {
@@ -36,6 +37,12 @@ describe('dedupe-project-pins script', () => {
     it('reports an argument it does not know', () => {
       expect(parseArgs(['--apply', '--live']).unknown).to.deep.equal(['--live']);
     });
+
+    it('reads --no-demi', () => {
+      const args = parseArgs(['--apply', '--no-demi']);
+
+      expect([args.noDemi, args.unknown]).to.deep.equal([true, []]);
+    });
   });
 
   describe('validate', () => {
@@ -53,10 +60,55 @@ describe('dedupe-project-pins script', () => {
       expect(validate(parseArgs([]))).to.be.null;
     });
 
+    it('lets --apply --no-demi go ahead when DEMI is not configured', () => {
+      sinon.stub(demiPush, 'configured').returns(false);
+
+      expect(validate(parseArgs(['--apply', '--no-demi']))).to.be.null;
+    });
+
     it('lets --apply go ahead when DEMI is configured', () => {
       sinon.stub(demiPush, 'configured').returns(true);
 
       expect(validate(parseArgs(['--apply']))).to.be.null;
+    });
+  });
+
+  describe('dedupe --no-demi notice', () => {
+    const noProjects = { find: () => ({ sort: () => ({ lean: async () => [] }) }) };
+    const notRePushed = stub => stub.getCalls().filter(call => String(call.args[0]).includes('not re-pushed'));
+    let info;
+    let warn;
+
+    beforeEach(() => {
+      const scriptLog = winston.loggers.get('dedupe-project-pins');
+      info = sinon.stub(scriptLog, 'info');
+      warn = sinon.stub(scriptLog, 'warn');
+    });
+
+    afterEach(() => sinon.restore());
+
+    it('says nothing about skipped pushes on plain --apply', async () => {
+      sinon.stub(demiPush, 'configured').returns(true);
+
+      await dedupe(noProjects, true);
+
+      expect([notRePushed(info).length, notRePushed(warn).length]).to.deep.equal([0, 0]);
+    });
+
+    it('logs one info line on --apply --no-demi when DEMI is not configured', async () => {
+      sinon.stub(demiPush, 'configured').returns(false);
+
+      await dedupe(noProjects, true, { noDemi: true });
+
+      expect([notRePushed(info).length, notRePushed(warn).length]).to.deep.equal([1, 0]);
+    });
+
+    it('warns on --apply --no-demi when DEMI is configured', async () => {
+      sinon.stub(demiPush, 'configured').returns(true);
+
+      await dedupe(noProjects, true, { noDemi: true });
+
+      expect([notRePushed(info).length, notRePushed(warn).length]).to.deep.equal([0, 1]);
     });
   });
 
@@ -73,6 +125,16 @@ describe('dedupe-project-pins script', () => {
 
       expect(result.status).to.equal(2);
       expect(result.stderr).to.contain('DEMI pushes are off');
+    });
+
+    it('prints its summary on stdout when LOG_LEVEL hides info', () => {
+      const env = Object.assign({}, process.env, { LOG_LEVEL: 'error' });
+      const noProjects = '{ find: () => ({ sort: () => ({ lean: async () => [] }) }) }';
+      const code = `require(${JSON.stringify(SCRIPT)}).dedupe(${noProjects}, false)`;
+
+      const result = childProcess.spawnSync(process.execPath, ['-e', code], { env, encoding: 'utf8', timeout: 10000 });
+
+      expect(result.stdout).to.contain('0 project(s) with repeated pins; nothing written');
     });
   });
 });

@@ -15,6 +15,7 @@ const mongoose = require('mongoose');
 require('../../app_helper');
 
 const pinsController = require('../../api/controllers/pins');
+const demiPush = require('../../api/helpers/demiPush');
 const { dedupe } = require('../../scripts/dedupe-project-pins');
 const { TEST_URI, id, capture } = require('./parentReadFixtures');
 
@@ -112,6 +113,24 @@ describe('project pins (requires MongoDB)', function () {
       await dedupe(Project(), true);
 
       expect(await storedPins(CLEAN)).to.deep.equal([String(A), String(B)]);
+    });
+
+    it('re-pushes each fixed project to DEMI with --apply', async () => {
+      const push = sinon.stub(demiPush, 'project').resolves(true);
+
+      await dedupe(Project(), true);
+
+      expect(push.args.map(([doc]) => String(doc._id))).to.deep.equal([String(REPEATED)]);
+    });
+
+    it('fixes Mongo without a DEMI push with --apply --no-demi', async () => {
+      const push = sinon.stub(demiPush, 'project').resolves(true);
+
+      const result = await dedupe(Project(), true, { noDemi: true });
+
+      expect(push.called).to.be.false;
+      expect(result.failed).to.deep.equal([]);
+      expect(await storedPins(REPEATED)).to.deep.equal([String(B), String(A), String(C)]);
     });
 
     it('skips a project whose pins changed after the read', async () => {

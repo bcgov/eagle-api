@@ -14,7 +14,7 @@ function auditStub(distinctValues) {
 
 describe('normalise-audit-action backfill', () => {
   // The script registers its own console logger on require; keep its output out of the test run.
-  beforeEach(() => sinon.stub(winston.loggers.get('default'), 'info'));
+  beforeEach(() => sinon.stub(winston.loggers.get('normalise-audit-action'), 'info'));
   afterEach(() => sinon.restore());
 
   it('rewrites only the distinct values that differ from their lowercase form', async () => {
@@ -56,6 +56,14 @@ describe('normalise-audit-action backfill', () => {
 
     expect(audit.updateMany.called).to.equal(false);
     expect(audit.countDocuments.firstCall.args[0]).to.deep.equal({ action: { $in: ['Get'] } });
+  });
+});
+
+describe('normalise-audit-action logging', () => {
+  it('logs at info on the console, independent of LOG_LEVEL', () => {
+    const scriptLog = winston.loggers.get('normalise-audit-action');
+    const consoleTransport = scriptLog.transports.find(t => t instanceof winston.transports.Console);
+    expect([scriptLog.level, consoleTransport.level]).to.deep.equal(['info', 'info']);
   });
 });
 

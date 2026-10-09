@@ -38,17 +38,19 @@ const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 
-// Requiring app_helper registers the 'default' logger and every mongoose model, which demiPush
-// needs to resolve List and Organization. Its connect is not used: it builds a URI with no port, so
-// MONGODB_PORT would be ignored.
-const appHelper = require('../app_helper');
+// Requiring app_helper registers every mongoose model, which demiPush needs to resolve List and
+// Organization. Its connect is not used: it builds a URI with no port, so MONGODB_PORT would be
+// ignored.
+require('../app_helper');
 const demiPush = require('../api/helpers/demiPush');
 const pushClient = require('../api/helpers/pushClient');
 const { LEGISLATION_KEYS } = require('../api/helpers/constants');
+const { infoConsoleLogger } = require('../api/helpers/logFormat');
 const { buildMongoUri } = require('../config/mongo_uri');
 const { mongooseOptions } = require('../config/mongoose_options');
 
-const defaultLog = appHelper.defaultLog;
+// Not the app's 'default' logger: it follows LOG_LEVEL, and prod runs error.
+const scriptLog = infoConsoleLogger('demi-repush');
 
 // Same gate demiPush is built on (api/helpers/demiPush.js), so the script is off exactly when the
 // helper's pushes are off.
@@ -329,7 +331,7 @@ async function repush(options) {
   let cursor = options.cursor;
   const reopen = options.reopen;
   const push = options.push;
-  const log = options.log || defaultLog;
+  const log = options.log || scriptLog;
   const concurrency = options.concurrency || DEFAULT_CONCURRENCY;
   const limit = typeof options.limit === 'number' ? options.limit : null;
   const dryRun = options.dryRun !== false;
@@ -552,10 +554,10 @@ async function runKind(args, name) {
 
   const model = mongoose.model(kind.model);
   if (plan.lastId) {
-    defaultLog.info(`[demi-repush] resuming ${name} after _id ${plan.lastId}`);
+    scriptLog.info(`[demi-repush] resuming ${name} after _id ${plan.lastId}`);
   }
   if (plan.failedIds.length > 0) {
-    defaultLog.warn(`[demi-repush] skipping ${plan.failedIds.length} ${name} ids that failed in an earlier run; retry them with --ids-file and another --state: ${plan.failedIds.join(', ')}`);
+    scriptLog.warn(`[demi-repush] skipping ${plan.failedIds.length} ${name} ids that failed in an earlier run; retry them with --ids-file and another --state: ${plan.failedIds.join(', ')}`);
   }
 
   const job = kindJob(args, name, plan, model);
@@ -564,7 +566,7 @@ async function runKind(args, name) {
     cursor: kindQuery(model, job.query).cursor(),
     reopen: lastId => kindQuery(model, job.queryAfter(lastId)).cursor(),
     push: doc => demiPush[kind.push](doc),
-    log: defaultLog,
+    log: scriptLog,
     concurrency: args.concurrency,
     limit: args.limit,
     dryRun: !args.live,
@@ -572,12 +574,12 @@ async function runKind(args, name) {
   });
 
   if (args.live) {
-    defaultLog.info(`[demi-repush] ${name} done: ${counts.seen} seen, ${counts.pushed} pushed, ${counts.failed} failed`);
+    scriptLog.info(`[demi-repush] ${name} done: ${counts.seen} seen, ${counts.pushed} pushed, ${counts.failed} failed`);
     if (counts.failed > 0) {
-      defaultLog.error(`[demi-repush] ${name} failed ids: ${counts.failedIds.join(', ')}`);
+      scriptLog.error(`[demi-repush] ${name} failed ids: ${counts.failedIds.join(', ')}`);
     }
   } else {
-    defaultLog.info(`[demi-repush] [dry-run] ${counts.seen} ${name} records would be pushed; nothing sent`);
+    scriptLog.info(`[demi-repush] [dry-run] ${counts.seen} ${name} records would be pushed; nothing sent`);
   }
   return counts;
 }
@@ -601,11 +603,11 @@ async function runKinds(args, runOne, log) {
 async function run(args) {
   const uri = buildMongoUri();
   // Naming the target guards against backfilling from the wrong database; the password stays out.
-  defaultLog.info(`[demi-repush] connecting to ${uri.replace(/\/\/[^@]+@/, '//')}`);
+  scriptLog.info(`[demi-repush] connecting to ${uri.replace(/\/\/[^@]+@/, '//')}`);
   await mongoose.connect(uri, mongooseOptions);
 
   pushClient.setPacer(pacerFor(args));
-  const counts = await runKinds(args, runKind, defaultLog);
+  const counts = await runKinds(args, runKind, scriptLog);
 
   await mongoose.disconnect();
   return counts;
@@ -645,7 +647,7 @@ if (require.main === module) {
       process.exitCode = 3;
     }
   }).catch(err => {
-    defaultLog.error(`[demi-repush] run failed: ${err.message}`, { stack: err.stack });
+    scriptLog.error(`[demi-repush] run failed: ${err.message}`, { stack: err.stack });
     process.exit(1);
   });
 }
