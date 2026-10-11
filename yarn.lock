@@ -3074,7 +3074,7 @@ __metadata:
     csv: "npm:~5.1.1"
     express: "npm:^4.21.2"
     express-rate-limit: "npm:^8.5.2"
-    js-yaml: "npm:^5.2.2"
+    js-yaml: "npm:^5.4.1"
     jsonwebtoken: "npm:^9.0.2"
     jwks-rsa: "npm:^3.2.2"
     luxon: "npm:^3.7.2"
@@ -4020,14 +4020,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"js-yaml@npm:^5.2.2":
-  version: 5.2.2
-  resolution: "js-yaml@npm:5.2.2"
+"js-yaml@npm:^5.4.1":
+  version: 5.4.3
+  resolution: "js-yaml@npm:5.4.3"
   dependencies:
     argparse: "npm:^2.0.1"
   bin:
     js-yaml: bin/js-yaml.mjs
-  checksum: 10c0/e8ded203b235b3d562818c67bf362122abbcee89e507b62bddcdd3085b2f2dd866071e5e78f8e617d41d1a0c0baa1cec12a8fdec5859c571bf862adf585e2684
+  checksum: 10c0/7180bf35feef9815a06cb2f8845c1196f1e4264430a04623884d87c3d21475de7d46a86c9c5142dcc1646c788bc0e676eb09ba817810707e0b4e984f7cf93a5f
   languageName: node
   linkType: hard
 
