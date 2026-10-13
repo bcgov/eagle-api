@@ -22,11 +22,10 @@ const organizationController = require('../../api/controllers/organization');
 const projectNotificationController = require('../../api/controllers/projectNotification');
 const userController = require('../../api/controllers/user');
 const projectGroupController = require('../../api/controllers/projectGroup');
-const inspectionController = require('../../api/controllers/inspection');
 
 const {
-  OID, upfile, stubModel, setEnv,
-  docArgs, projArgs, pinArgs, raArgs, cpArgs, commentArgs, orgArgs, pnArgs, userArgs, groupArgs, inspArgs, itemArgs
+  OID, stubModel, setEnv,
+  docArgs, projArgs, pinArgs, raArgs, cpArgs, commentArgs, orgArgs, pnArgs, userArgs, groupArgs
 } = require('../support/demiPushHarness');
 
 describe('DEMI push call sites', () => {
@@ -261,9 +260,8 @@ describe('DEMI push call sites', () => {
 
   // Opt-in kinds. Each stub resolves true: the handler answers once its push lands.
   describe('opt-in kinds', () => {
-    const NEW_KINDS = ['user', 'group', 'inspection', 'inspectionElement', 'inspectionItem', 'usersOfOrganization'];
+    const NEW_KINDS = ['user', 'group', 'usersOfOrganization'];
     const byId = { _id: OID };
-    let responded;
 
     // Group handlers push onto the ACL arrays a mongoose document starts with.
     function withAcl(M) {
@@ -276,16 +274,7 @@ describe('DEMI push call sites', () => {
     beforeEach(() => {
       NEW_KINDS.forEach(kind => sinon.stub(demiPush, kind).resolves(true));
       models.Group = withAcl(model('Group'));
-      ['Inspection', 'InspectionElement', 'InspectionItem'].forEach(name => {
-        models[name] = model(name);
-        // The mobile app's id is new, so every post saves rather than handing back a stored row.
-        models[name].findOne = sinon.stub().resolves(null);
-        models[name].updateOne = sinon.stub().resolves({ matchedCount: 1 });
-      });
-      models.InspectionItem.prototype.markModified = () => {};
       models.Group.updateOne = sinon.stub().resolves({ matchedCount: 1 });
-      // Inspection handlers answer from a promise chain they do not return.
-      responded = new Promise(resolve => res.json.callsFake(resolve));
     });
 
     [
@@ -346,56 +335,6 @@ describe('DEMI push call sites', () => {
 
         expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
         expect(demiPush.group.called).to.be.false;
-      });
-    });
-
-    it('inspection.protectedPostInspection answers 200 once its push of the saved inspection lands', async () => {
-      await inspectionController.protectedPostInspection(inspArgs(), res);
-      await responded;
-
-      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
-      expect(demiPush.inspection.calledOnceWithExactly(saved)).to.be.true;
-    });
-
-    it('inspection.protectedPostElement pushes the saved element and its inspection by id', async () => {
-      await inspectionController.protectedPostElement(inspArgs(), res);
-      await responded;
-
-      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
-      expect(demiPush.inspectionElement.calledOnceWithExactly(saved)).to.be.true;
-      expect(demiPush.inspection.calledOnceWithExactly(byId)).to.be.true;
-    });
-
-    it('inspection.protectedPostElement does not push the inspection when no inspection matched', async () => {
-      models.Inspection.updateOne.resolves({ matchedCount: 0 });
-
-      await inspectionController.protectedPostElement(inspArgs(), res);
-      await responded;
-
-      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
-      expect(demiPush.inspectionElement.calledOnceWithExactly(saved)).to.be.true;
-      expect(demiPush.inspection.called).to.be.false;
-    });
-
-    it('inspection.protectedPostElementItem does not push the element when no element matched', async () => {
-      models.InspectionElement.updateOne.resolves({ matchedCount: 0 });
-
-      await inspectionController.protectedPostElementItem(itemArgs(null), res);
-      await responded;
-
-      expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
-      expect(demiPush.inspectionItem.calledOnceWithExactly(saved)).to.be.true;
-      expect(demiPush.inspectionElement.called).to.be.false;
-    });
-
-    [['text', null], ['file', upfile]].forEach(([label, file]) => {
-      it(`inspection.protectedPostElementItem (${label}) pushes the saved item and its element by id`, async () => {
-        await inspectionController.protectedPostElementItem(itemArgs(file), res);
-        await responded;
-
-        expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
-        expect(demiPush.inspectionItem.calledOnceWithExactly(saved)).to.be.true;
-        expect(demiPush.inspectionElement.calledOnceWithExactly(byId)).to.be.true;
       });
     });
 

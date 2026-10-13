@@ -173,11 +173,7 @@ app.use(projectRedirectMiddleware());
 // Auto-wired API router — reads swagger.yaml and registers one Express route per
 // operation, populates req.swagger.params, enforces Bearer auth, and calls the
 // matching controller function.
-var controllerDirs = [
-  path.join(__dirname, 'api/controllers'),
-  path.join(__dirname, 'api/tasks')
-];
-app.use('/api', createRouter(swaggerSpec, controllerDirs));
+app.use('/api', createRouter(swaggerSpec, [path.join(__dirname, 'api/controllers')]));
 
 app.use(require('./api/middleware/errorHandler'));
 

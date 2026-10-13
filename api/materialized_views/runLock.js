@@ -68,11 +68,6 @@ async function releaseLock(lockId, defaultLog, stats) {
   }
 }
 
-async function isLocked(lockId) {
-  const lock = await col().findOne({ _id: lockId });
-  return !!(lock && lock.running && lock.startedAt > staleThreshold());
-}
-
 async function getLockInfo(lockId) {
   const lock = await col().findOne({ _id: lockId });
   if (!lock) return { running: false };
@@ -85,13 +80,4 @@ async function getLockInfo(lockId) {
   };
 }
 
-async function forceRelease(lockId, defaultLog) {
-  try {
-    await col().updateOne({ _id: lockId }, { $set: { running: false } });
-    defaultLog.warn(`[mat-view] lock '${lockId}' force-released`);
-  } catch (err) {
-    defaultLog.error(`[mat-view] failed to force-release lock '${lockId}': ${err.message}`);
-  }
-}
-
-module.exports = { acquireLock, releaseLock, isLocked, getLockInfo, forceRelease };
+module.exports = { acquireLock, releaseLock, getLockInfo };

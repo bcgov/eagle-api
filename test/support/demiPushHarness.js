@@ -86,19 +86,6 @@ const groupArgs = () => ({
   }
 });
 
-const inspArgs = () => ({
-  swagger: { params: { inspId: p(OID), inspection: p({ inspectionId: 'mobile-1', project: OID }), auth_payload: auth } }
-});
-
-const itemArgs = file => ({
-  swagger: {
-    params: {
-      upfile: p(file), itemId: p(OID), project: p(OID), elementId: p(OID), type: p('photo'),
-      timestamp: p(null), caption: p('c'), text: p('"note"'), geo: p('[1,2]'), auth_payload: auth
-    }
-  }
-});
-
 /**
  * A mongoose model stand-in. `saved()` is read per call, so a spec can swap the write result in its
  * beforeEach and every save and findOneAndUpdate hands that back.
@@ -150,5 +137,5 @@ function setEnv(vars) {
 
 module.exports = {
   OID, p, auth, upfile, stubModel, setEnv,
-  docArgs, projArgs, pinArgs, raArgs, cpArgs, commentArgs, orgArgs, pnArgs, userArgs, groupArgs, inspArgs, itemArgs
+  docArgs, projArgs, pinArgs, raArgs, cpArgs, commentArgs, orgArgs, pnArgs, userArgs, groupArgs
 };
