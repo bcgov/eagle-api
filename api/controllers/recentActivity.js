@@ -109,20 +109,11 @@ exports.publicGet = async function (args, res) {
 };
 
 exports.protectedDelete = async function (args, res) {
-  defaultLog.info('Deleting a RecentActivity(s)');
+  defaultLog.info('Deleting a RecentActivity');
   defaultLog.info('args.swagger.params:', args.swagger.operation['x-security-scopes']);
 
-  var RecentActivity = mongoose.model('RecentActivity');
-  var query = {};
-  // Build match query if on recentActivityId route
-  if (args.swagger.params.recentActivityId) {
-    query = Utils.buildQuery('_id', args.swagger.params.recentActivityId.value, { _schemaName: 'RecentActivity' });
-  }
-
-  if (!query._id) {
-    // Don't allow unilateral delete.
-    return Actions.sendResponse(res, 400, 'Can\'t delete entire collection.');
-  }
+  const RecentActivity = mongoose.model('RecentActivity');
+  const query = Utils.buildQuery('_id', args.swagger.params.recentActivityId.value, { _schemaName: 'RecentActivity' });
 
   // Archive, never delete: a published Update keeps its public URL answerable ("no longer available").
   let rec;

@@ -17,8 +17,6 @@ const YAML = require('js-yaml');
 
 const createRouter = require('../../api/middleware/swagger-router');
 
-// /audit is deliberately absent: its controller is not loaded, so the router never registers the
-// path and it answers 404 rather than 403.
 const CLOSED = [
   '/vc',
   '/topic',
@@ -36,10 +34,7 @@ describe('anonymous routing through the real router', () => {
       fs.readFileSync(path.join(__dirname, '../../api/swagger/swagger.yaml'), 'utf8')
     );
     app = express();
-    app.use('/api', createRouter(spec, [
-      path.join(__dirname, '../../api/controllers'),
-      path.join(__dirname, '../../api/tasks')
-    ]));
+    app.use('/api', createRouter(spec, [path.join(__dirname, '../../api/controllers')]));
   });
 
   CLOSED.forEach((route) => {
@@ -50,7 +45,7 @@ describe('anonymous routing through the real router', () => {
   });
 
   it('refuses a write without a token', async () => {
-    const res = await request(app).post('/api/vc').send({});
+    const res = await request(app).post('/api/project').send({});
     expect(res.status).to.equal(403);
   });
 });

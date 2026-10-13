@@ -1,5 +1,3 @@
-var defaultLog = require('winston').loggers.get('default');
-var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 const ALLOWED_FIELDS = [
@@ -16,25 +14,6 @@ const ALLOWED_FIELDS = [
 
 exports.protectedOptions = function (args, res) {
   res.status(200).send();
-};
-
-//  Create a new vc
-exports.protectedPost = async function (args, res) {
-  var obj = args.swagger.params.vc.value;
-
-  defaultLog.info('Incoming new object:', obj);
-
-  var Vc = mongoose.model('Vc');
-  var vc = new Vc(obj);
-  vc._schemaName = 'Vc';
-  vc.read = ['public', 'project-system-admin', 'staff'];
-  vc.write = ['project-system-admin', 'staff'];
-  vc.delete = ['project-system-admin', 'staff'];
-
-  // Define security tag defaults
-  var theVc = await vc.save();
-  Utils.recordAction('Post', 'Vc', args.swagger.params.auth_payload.preferred_username, theVc._id);
-  return Actions.sendResponse(res, 200, theVc);
 };
 
 exports.protectedGet = async function (args, res) {
@@ -77,40 +56,5 @@ exports.protectedGet = async function (args, res) {
     limit, // limit
     true); // count
   Utils.recordAction('Get', 'Vc', args.swagger.params.auth_payload.preferred_username, args.swagger.params.vcId && args.swagger.params.vcId.value ? args.swagger.params.vcId.value : null);
-  return Actions.sendResponse(res, 200, data);
-};
-
-exports.protectedPut = async function (args, res) {
-  var objId;
-  try {
-    objId = Utils.getValidObjectId(args.swagger.params.vcId);
-  } catch (e) {
-    return Actions.sendResponse(res, 400, {});
-  }
-  defaultLog.info('ObjectID:', objId);
-  var obj = args.swagger.params.cp.value;
-
-  // Strip security tags - these will not be updated on this route.
-  delete obj.tags;
-
-  defaultLog.info('Incoming updated object:', obj);
-
-  var valuedComponent = require('mongoose').model('Vc');
-  var data = await valuedComponent.findOneAndUpdate({ _id: objId }, obj, { upsert: false, returnDocument: 'after' }).exec();
-  Utils.recordAction('Put', 'Vc', args.swagger.params.auth_payload.preferred_username, objId);
-  return Actions.sendResponse(res, 200, data);
-};
-
-exports.protectedDelete = async function (args, res) {
-  var objId;
-  try {
-    objId = Utils.getValidObjectId(args.swagger.params.vcId);
-  } catch (e) {
-    return Actions.sendResponse(res, 400, {});
-  }
-  defaultLog.info('Delete Vc:', objId);
-  var commentperiod = require('mongoose').model('Vc');
-  var data = await commentperiod.deleteOne({ _id: objId });
-  Utils.recordAction('Delete', 'Vc', args.swagger.params.auth_payload.preferred_username, objId);
   return Actions.sendResponse(res, 200, data);
 };

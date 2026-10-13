@@ -24,8 +24,6 @@ const unauth = (method, path, body) =>
       }
     });
 
-
-
 describe('WRITE ENDPOINT AUTH GATES (no token — all expect 401 or 403)', () => {
   describe('Project write endpoints', () => {
     it('POST /project — requires auth', async () => {
@@ -54,21 +52,6 @@ describe('WRITE ENDPOINT AUTH GATES (no token — all expect 401 or 403)', () =>
     });
     it('PUT /project/:projId/pin/unpublish — requires auth', async () => {
       await unauth('put', '/project/000000000000000000000000/pin/unpublish');
-    });
-    it('POST /project/:projId/cac — requires auth', async () => {
-      await unauth('post', '/project/000000000000000000000000/cac');
-    });
-    it('PUT /project/:projId/cac — requires auth', async () => {
-      await unauth('put', '/project/000000000000000000000000/cac');
-    });
-    it('DELETE /project/:projId/cac — requires auth', async () => {
-      await unauth('delete', '/project/000000000000000000000000/cac');
-    });
-    it('PUT /project/:projId/cac/publish — requires auth', async () => {
-      await unauth('put', '/project/000000000000000000000000/cac/publish');
-    });
-    it('PUT /project/:projId/cac/unpublish — requires auth', async () => {
-      await unauth('put', '/project/000000000000000000000000/cac/unpublish');
     });
     it('POST /project/:projId/group — requires auth', async () => {
       await unauth('post', '/project/000000000000000000000000/group');
@@ -163,9 +146,6 @@ describe('WRITE ENDPOINT AUTH GATES (no token — all expect 401 or 403)', () =>
     it('DELETE /recentActivity/:id — requires auth', async () => {
       await unauth('delete', '/recentActivity/000000000000000000000000');
     });
-    it('DELETE /recentActivity — requires auth (applicationID param)', async () => {
-      await unauth('delete', '/recentActivity').query({ applicationID: '000000000000000000000000' });
-    });
   });
 
   describe('User write endpoints', () => {
@@ -177,51 +157,12 @@ describe('WRITE ENDPOINT AUTH GATES (no token — all expect 401 or 403)', () =>
     });
   });
 
-  describe('Topic write endpoints', () => {
-    it('POST /topic — requires auth', async () => {
-      await unauth('post', '/topic');
-    });
-    it('PUT /topic/:topicId — requires auth', async () => {
-      await unauth('put', '/topic/000000000000000000000000');
-    });
-    it('DELETE /topic/:topicId — requires auth', async () => {
-      await unauth('delete', '/topic/000000000000000000000000');
-    });
-  });
-
-  describe('Valued component write endpoints', () => {
-    it('POST /vc — requires auth', async () => {
-      await unauth('post', '/vc');
-    });
-    it('PUT /vc/:vcId — requires auth', async () => {
-      await unauth('put', '/vc/000000000000000000000000');
-    });
-    it('DELETE /vc/:vcId — requires auth', async () => {
-      await unauth('delete', '/vc/000000000000000000000000');
-    });
-  });
-
   describe('Project notification write endpoints', () => {
     it('POST /projectNotification — requires auth', async () => {
       await unauth('post', '/projectNotification');
     });
     it('PUT /projectNotification/:id — requires auth', async () => {
       await unauth('put', '/projectNotification/000000000000000000000000');
-    });
-  });
-
-  describe('Task write endpoints', () => {
-    it('POST /task — requires auth', async () => {
-      await unauth('post', '/task');
-    });
-  });
-
-  describe('Inspection write endpoints', () => {
-    it('POST /inspection — requires auth', async () => {
-      await unauth('post', '/inspection');
-    });
-    it('POST /inspection/:id/element — requires auth', async () => {
-      await unauth('post', '/inspection/000000000000000000000000/element');
     });
   });
 

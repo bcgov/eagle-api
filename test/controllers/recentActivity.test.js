@@ -219,17 +219,6 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       expect(pushStub.called).to.be.false;
       expect(res.status.calledWith(404)).to.be.true;
     });
-
-    it('refuses to delete the whole collection', async () => {
-      const args = deleteArgs();
-      delete args.swagger.params.recentActivityId;
-
-      await recentActivity.protectedDelete(args, res);
-
-      expect(model.findOneAndUpdate.called).to.be.false;
-      expect(pushStub.called).to.be.false;
-      expect(res.status.calledWith(400)).to.be.true;
-    });
   });
 
   describe('field checks', () => {
