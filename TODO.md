@@ -28,3 +28,4 @@
 - 2026-10-01 scripts/demi-repush.js:62: `--since` misses projects changed by PUT.
 - 2026-10-01 api/materialized_views/reports/documentTaggingProgressByProject.js:156: report views still read the root `$name` (also projectStatsFull.js:19, projectsWithCompletelyTaggedDocs.js:12 and 150, whoPublishedUnpublishedAllUsers.js:112).
 - 2026-09-25: no test covers the `pushClient.logUnsent()` call in `app.js` `shutdown()`. Needs an `app.js` change first: `exports.shutdown` at `app.js:246` is unreachable because `module.exports = app` replaces the exports object.
+- 2026-10-13 eagle-api: remove the jobs feature: Agenda queue (api/helpers/jobQueue.js, startJobQueue app.js:194), GET /jobs routes, project-doc-export handler, job.js CSV code. Nothing queues a job since #945; the queue polls Mongo every 5 s per pod. Delete wiki Async-Jobs.md too
