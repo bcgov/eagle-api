@@ -1325,7 +1325,9 @@ paths:
           schema:
             $ref: "#/definitions/Error"
         "404":
-          description: "Project not found, or legislationYear is not a known legislation year"
+          description: "Project not found, or legislationYear is not a known legislation year. A project under a locked Act gets 409 first when legislationYear names any other year"
+          schema:
+            $ref: "#/definitions/Error"
         "409":
           description: "Project's current Act is locked (today the Building Canada Act, 2025) and legislationYear names another year"
           schema:
@@ -1415,7 +1417,9 @@ paths:
           schema:
             $ref: "#/definitions/Error"
         "404":
-          description: "Project not found, or legislationYear is not a known legislation year"
+          description: "Project not found, or legislationYear is not a known legislation year. A project under a locked Act gets 409 first when legislationYear names any other year"
+          schema:
+            $ref: "#/definitions/Error"
         "409":
           description: "Project's current Act is locked (today the Building Canada Act, 2025) and legislationYear names another year, or legislationYear is not the current year and the project has no content under it"
           schema:

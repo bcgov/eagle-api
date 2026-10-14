@@ -33,7 +33,7 @@ const PROJECT_JOINED_FIELDS = ['proponent', 'currentPhaseName', 'eacDecision', '
 // Project fields still on the root before the page is cut; unwindProjectData copies them into default after it.
 const PROJECT_ROOT_SORT_FIELDS = ['_id', ...aggregateHelper.PROJECT_ROOT_FIELDS];
 
-const searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue, categorized, fuzzy) {
+const searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue, categorized, fuzzy, signedIn) {
   defaultLog.debug('collation:', aggregateHelper.AGGREGATE_COLLATION);
   defaultLog.debug('populate:', populate);
 
@@ -49,7 +49,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   let parentGateAggregation = [];
   switch (schemaName) {
   case constants.DOCUMENT: {
-    matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, categorized, roles, fuzzy);
+    matchAggregation = await documentAggregator.createMatchAggr(schemaName, project, decodedKeywords, caseSensitive, or, and, categorized, roles, signedIn);
     const unreadableParentIds = await parentRead.unreadableParentIds(roles);
     schemaAggregation = await documentAggregator.createDocumentAggr(populate, roles, sortingValue, sortField, sortDirection, pageNum, pageSize, unreadableParentIds);
     break;
@@ -342,7 +342,7 @@ const executeQuery = async function (args, res) {
   }
 
   if (dataset !== constants.ITEM) {
-    const collectionData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue, categorized, fuzzy);
+    const collectionData = await searchCollection(roles, keywords, dataset, pageNum, pageSize, project, projectLegislation, sortField, sortDirection, caseSensitive, populate, and, or, sortingValue, categorized, fuzzy, isAuthenticated);
 
     // Only a keyword search counts: this endpoint also serves plain browse and filter requests, and
     // those would drown the searches someone actually typed.

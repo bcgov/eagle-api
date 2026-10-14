@@ -776,7 +776,7 @@ exports.protectedPublish = async function (args, res) {
 
       if (ProjObject && ProjObject.legislationYear) {
         const year = Number(ProjObject.legislationYear);
-        if (refusesLegislationChange(o, year)) {
+        if (refusesLegislationChange(o, ProjObject.legislationYear)) {
           const current = [o.currentLegislationYear];
           defaultLog.warn('protectedPublish refused: project %s is under %s, request named %s', objId, actLabels(current), ProjObject.legislationYear);
           return Actions.sendResponse(res, 409, lockedActRefusal(current));

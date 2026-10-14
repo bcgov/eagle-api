@@ -225,6 +225,25 @@ describe('Project protectedPut', () => {
     expect(projectModel.findOneAndUpdate.called).to.be.false;
   });
 
+  [1996, 2002, 2018].forEach(year => {
+    it(`moves a ${year} project to the Building Canada Act`, async () => {
+      storedProject.currentLegislationYear = 'legislation_' + year;
+      storedProject.legislationYearList = [year];
+      storedProject['legislation_' + year] = { name: 'Old Project', phaseHistory: [] };
+      storedProject.legislation_2025 = { name: 'Old Project', phaseHistory: [] };
+      const args = putArgs();
+      args.swagger.params.ProjObject.value.legislationYear = 2025;
+
+      await projectController.protectedPut(args, res);
+
+      const fields = updateArg().$set;
+      expect(res.status.firstCall.args[0]).to.equal(200);
+      expect(fields.currentLegislationYear).to.equal('legislation_2025');
+      expect(fields.legislation_2025.name).to.equal('Renamed Project');
+      expect(fields.legislationYearList).to.have.members([year, 2025]);
+    });
+  });
+
   describe('on a Building Canada Act project', () => {
     beforeEach(() => {
       storedProject.currentLegislationYear = 'legislation_2025';
@@ -263,7 +282,7 @@ describe('Project protectedPut', () => {
       expect(fields.legislation_2025.name).to.equal('Renamed Project');
     });
 
-    [2018, 2019].forEach(year => {
+    [1996, 2002, 2018, 2019].forEach(year => {
       it(`refuses with 409 and writes nothing when the request names ${year}`, async () => {
         const args = putArgs();
         args.swagger.params.ProjObject.value.legislationYear = year;
