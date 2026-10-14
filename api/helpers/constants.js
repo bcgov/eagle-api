@@ -20,8 +20,40 @@ exports.MAX_FEATURE_DOCS = 5;
 exports.PUBLIC_ROLES = ['public'];
 exports.SECURE_ROLES = ['sysadmin', 'staff'];
 
+// Comment fields the comment routes may return.
+const COMMENT_FIELDS = Object.freeze([
+  'author',
+  'comment',
+  'commentId',
+  'dateAdded',
+  'datePosted',
+  'dateUpdated',
+  'documents',
+  'eaoNotes',
+  'eaoStatus',
+  'submittedCAC',
+  'isAnonymous',
+  'location',
+  'period',
+  'proponentNotes',
+  'proponentStatus',
+  'publishedNotes',
+  'rejectedNotes',
+  'rejectedReason',
+  'valuedComponents',
+  'read',
+  'write',
+  'delete'
+]);
+exports.COMMENT_FIELDS = COMMENT_FIELDS;
+
 // Comment fields only signed-in staff may read.
-exports.COMMENT_STAFF_FIELDS = Object.freeze(['eaoNotes', 'eaoStatus', 'proponentNotes', 'rejectedNotes', 'rejectedReason']);
+const COMMENT_STAFF_FIELDS = Object.freeze(['eaoNotes', 'eaoStatus', 'proponentNotes', 'rejectedNotes', 'rejectedReason']);
+exports.COMMENT_STAFF_FIELDS = COMMENT_STAFF_FIELDS;
+
+// Comment fields the public routes may return. write and delete name the staff roles that may edit it.
+const COMMENT_HIDDEN_FROM_PUBLIC = [...COMMENT_STAFF_FIELDS, 'write', 'delete'];
+exports.COMMENT_PUBLIC_FIELDS = Object.freeze(COMMENT_FIELDS.filter(f => !COMMENT_HIDDEN_FROM_PUBLIC.includes(f)));
 
 // Legislation registry, keyed by year. A project keeps one sub-document per year under `legislation_<year>`.
 // Adding an Act: add its entry here and its year to the project POST and publish prose in swagger.yaml (a test checks).

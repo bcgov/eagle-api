@@ -3,35 +3,16 @@ var mongoose = require('mongoose');
 var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 const demiPush = require('../helpers/demiPush');
+const parentRead = require('../helpers/parentRead');
 const { DateTime } = require('luxon');
-const { COMMENT_STAFF_FIELDS } = require('../helpers/constants');
+const { COMMENT_FIELDS: ALLOWED_FIELDS, COMMENT_PUBLIC_FIELDS: PUBLIC_FIELDS, PUBLIC_ROLES } = require('../helpers/constants');
 
-const ALLOWED_FIELDS = [
-  'author',
-  'comment',
-  'commentId',
-  'dateAdded',
-  'datePosted',
-  'dateUpdated',
-  'documents',
-  'eaoNotes',
-  'eaoStatus',
-  'submittedCAC',
-  'isAnonymous',
-  'location',
-  'period',
-  'proponentNotes',
-  'proponentStatus',
-  'publishedNotes',
-  'rejectedNotes',
-  'rejectedReason',
-  'valuedComponents',
-  'read',
-  'write',
-  'delete'
-];
-// Staff review fields stay off the public routes.
-const PUBLIC_FIELDS = ALLOWED_FIELDS.filter(f => !COMMENT_STAFF_FIELDS.includes(f));
+// A comment's own read[] stays Published when staff unpublish its period or project, so the
+// public routes keep only comments under a period the public can read, as dataset=Item does.
+const publicPeriodGate = async () => parentRead.readablePeriodMatch(await parentRead.readablePeriodIds(PUBLIC_ROLES));
+
+// Sorting on a field the reply hides would leak its order, so the public sorts on these only.
+const PUBLIC_SORT_FIELDS = ['commentId', 'dateAdded'];
 
 // Hiding an anonymous author needs isAnonymous: read it with author, drop it when the caller did not ask.
 const publicCommentQuery = fields => {
@@ -110,7 +91,8 @@ exports.publicHead = async function (args, res) {
     null, // sort
     null, // skip
     null, // limit
-    true); // count
+    true, // count
+    await publicPeriodGate()); // pre-query pipeline steps
   Utils.recordAction('Head', 'CommentPeriod', 'public');
   // /api/comment/ route, return 200 OK with 0 items if necessary
   if (!(args.swagger.params.period && args.swagger.params.period.value) || (data && data.length > 0)) {
@@ -133,13 +115,15 @@ exports.publicGet = async function (args, res) {
     if (args.swagger.params.period && args.swagger.params.period.value) {
       query = Utils.buildQuery('period', args.swagger.params.period.value, query);
     }
-    // Sort
     if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
-      args.swagger.params.sortBy.value.forEach(function (value) {
-        var order_by = value.charAt(0) == '-' ? -1 : 1;
-        var sort_by = value.slice(1);
-        sort[sort_by] = order_by;
-      }, this);
+      args.swagger.params.sortBy.value.forEach(value => {
+        const sortBy = value.slice(1);
+        if (PUBLIC_SORT_FIELDS.includes(sortBy)) {
+          sort[sortBy] = value.charAt(0) === '-' ? -1 : 1;
+        } else {
+          defaultLog.debug('publicGet: ignoring sort on %s', sortBy);
+        }
+      });
     }
 
     var processedParameters = Utils.getSkipLimitParameters(args.swagger.params.pageSize, args.swagger.params.pageNum);
@@ -159,7 +143,8 @@ exports.publicGet = async function (args, res) {
     sort, // sort
     skip, // skip
     limit, // limit
-    true); // count
+    true, // count
+    await publicPeriodGate()); // pre-query pipeline steps
 
   const results = data[0] ? data[0].results : [];
   results.forEach(commentQuery.redact);
@@ -299,7 +284,7 @@ exports.protectedGet = async function (args, res) {
       limit, // limit
       count); // count
     Utils.recordAction('Get', 'Comment', args.swagger.params.auth_payload.preferred_username, args.swagger.params.commentId && args.swagger.params.commentId.value ? args.swagger.params.commentId.value : null);
-    defaultLog.info('Got comment(s):', data);
+    defaultLog.info('Got %d comment(s)', count ? (data[0] ? data[0].total_items : 0) : data.length);
 
     // This is to get the next pending comment information.
     if (args.swagger.params.populateNextComment && args.swagger.params.populateNextComment.value) {
@@ -332,7 +317,7 @@ exports.protectedGet = async function (args, res) {
 //  Create a new Comment
 exports.protectedPost = async function (args, res) {
   var obj = args.swagger.params.comment.value;
-  defaultLog.info('Incoming new comment:', obj);
+  defaultLog.info('Incoming new comment for period: %s', obj.period);
 
   var Comment = mongoose.model('Comment');
 
@@ -383,7 +368,7 @@ exports.protectedPost = async function (args, res) {
   try {
     var c = await comment.save();
     Utils.recordAction('Post', 'Comment', args.swagger.params.auth_payload.preferred_username, c._id);
-    defaultLog.info('Saved new comment object:', c);
+    defaultLog.info('Saved new comment object: %s', c._id);
     return Actions.sendMirrored(res, 200, c, demiPush.comment(c));
   } catch (e) {
     defaultLog.error(`Error: ${e.message}`);
@@ -401,7 +386,7 @@ async function getNextCommentIdCount(period) {
 exports.unProtectedPost = async function (args, res) {
   try {
     const obj = args.swagger.params.comment.value;
-    defaultLog.info('Incoming new object:', obj);
+    defaultLog.info('Incoming new comment for period: %s', obj.period);
     if (args.swagger.params.period && args.swagger.params.period.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.period.value)) {
       return Actions.sendResponse(res, 400, { });
     }
@@ -411,7 +396,7 @@ exports.unProtectedPost = async function (args, res) {
     const commentPeriodModel = mongoose.model('CommentPeriod');
     const period = await commentPeriodModel.findOne({ _id: new mongoose.Types.ObjectId(obj.period) });
 
-    defaultLog.info('Period:', period);
+    defaultLog.info('Period: %s', period && period._id);
 
     if (DateTime.now() > DateTime.fromJSDate(new Date(period.dateCompleted))) {
       // Past the specified time
@@ -489,7 +474,7 @@ exports.protectedPut = async function (args, res) {
   };
   comment = setPermissionsFromEaoStatus(obj.eaoStatus, comment);
 
-  defaultLog.info('Incoming updated object:', comment);
+  defaultLog.info('Updating comment %s to status %s', objId, comment.eaoStatus);
 
   try {
     var c = await Comment.updateOne({ _id: objId }, { $set: comment });

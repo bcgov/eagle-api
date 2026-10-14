@@ -28,7 +28,10 @@ exports.resolveParentGate = async (schemaName, roles) => {
   }
 
   if (schemaName === constants.COMMENT) {
-    return { unreadablePeriodIds: await parentRead.unreadablePeriodIds(roles) };
+    // The public sees a comment only under a period it can read; staff also see one whose period is gone.
+    return updateRules.isPublicCaller(roles)
+      ? { readablePeriodIds: await parentRead.readablePeriodIds(roles) }
+      : { unreadablePeriodIds: await parentRead.unreadablePeriodIds(roles) };
   }
 
   return {};
@@ -57,7 +60,8 @@ exports.createItemAggr = (itemId, schemaName, roles, gate) => {
 
   aggregation.push(
     {
-      '$match': { _id: new mongoose.Types.ObjectId(itemId) }
+      // Every model shares the epic collection: without the schema name, any allowed name reads any record.
+      '$match': { _id: new mongoose.Types.ObjectId(itemId), _schemaName: schemaName }
     },
     {
       $redact: {
@@ -95,8 +99,10 @@ exports.createItemAggr = (itemId, schemaName, roles, gate) => {
     aggregation.push(...parentRead.parentReadMatch(gate.unreadableParentIds));
   } else if (schemaName === constants.COMMENT) {
     // A comment hangs off a comment period, which hangs off a project. Both levels gate it, and
-    // unreadablePeriodIds already folds the project level into the period set.
-    aggregation.push(...parentRead.parentReadMatch(gate.unreadablePeriodIds, 'period'));
+    // both period sets already fold the project level in.
+    aggregation.push(...(gate.readablePeriodIds
+      ? parentRead.readablePeriodMatch(gate.readablePeriodIds)
+      : parentRead.parentReadMatch(gate.unreadablePeriodIds, 'period')));
   }
 
   if (schemaName === constants.INSPECTION) {

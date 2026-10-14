@@ -491,8 +491,6 @@ definitions:
       - 'publishedNotes'
       - 'valuedComponents'
       - 'read'
-      - 'write'
-      - 'delete'
   CommentSortByFields:
     type: string
     description: "Optional fields to sort by (prefixed with + or - for order)"
@@ -500,6 +498,14 @@ definitions:
     enum: &commentSortByFields
       - +author
       - -author
+      - +dateAdded
+      - -dateAdded
+  PublicCommentSortByFields:
+    type: string
+    description: "Fields the public comment routes sort by. Other fields are ignored."
+    enum: &publicCommentSortByFields
+      - +commentId
+      - -commentId
       - +dateAdded
       - -dateAdded
 
@@ -5387,12 +5393,12 @@ paths:
           description: "Number of results per page (if 'pageNum' is specified)."
         - in: query
           name: sortBy
-          description: "Comment fields to sort by."
+          description: "Comment fields to sort by: commentId or dateAdded. Other fields are ignored."
           required: false
           type: array
           items:
             type: string
-            enum: *commentSortByFields
+            enum: *publicCommentSortByFields
       responses:
         "200":
           description: "Success"

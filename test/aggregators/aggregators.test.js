@@ -700,6 +700,14 @@ describe('Item Aggregator', () => {
       expect(gateIndex).to.be.lessThan(lookupIndex);
     });
 
+    it('should keep a comment only under the readable periods it is given', () => {
+      const period = new mongoose.Types.ObjectId();
+      const result = itemAggregator.createItemAggr(new mongoose.Types.ObjectId().toString(), 'Comment', ['public'], { readablePeriodIds: [period] });
+
+      const gateStage = result.find(stage => stage.$match && stage.$match.period);
+      expect(gateStage.$match.period).to.deep.equal({ $in: [period] });
+    });
+
     it('should refuse to build a pipeline with no gate object', () => {
       expect(() => itemAggregator.createItemAggr(new mongoose.Types.ObjectId().toString(), 'Item', ['public']))
         .to.throw(TypeError, /resolveParentGate/);

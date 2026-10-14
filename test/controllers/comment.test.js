@@ -9,8 +9,10 @@
 const { expect } = require('chai');
 const sinon      = require('sinon');
 const mongoose   = require('mongoose');
+const util       = require('util');
 const { DateTime } = require('luxon');
 const Utils      = require('../../api/helpers/utils');
+const parentRead = require('../../api/helpers/parentRead');
 const Actions    = require('../../api/helpers/actions');
 const defaultLog = require('winston').loggers.get('default');
 
@@ -120,6 +122,9 @@ describe('Comment Controller', () => {
     });
 
     sinon.stub(Utils, 'runDataQuery');
+    // The period gate reads the epic collection; what it returns is covered against a real MongoDB
+    // by test/db/commentParentRead.test.js.
+    sinon.stub(parentRead, 'readablePeriodIds').resolves([]);
     sinon.stub(Utils, 'recordAction').resolves();
     sinon.stub(Utils, 'buildQuery').callsFake((prop, val, q) => {
       q[prop] = val;
@@ -256,6 +261,145 @@ describe('Comment Controller', () => {
           expect(Utils.recordAction.called).to.be.false;
         });
       });
+    });
+  });
+
+  describe('public routes keep only comments under a period the public can read', () => {
+    const SHOWN_PERIOD = new mongoose.Types.ObjectId('507f1f77bcf86cd799439055');
+    // runDataQuery's tenth argument: stages put ahead of its $match.
+    const preQuerySteps = () => Utils.runDataQuery.firstCall.args[9];
+
+    beforeEach(() => {
+      parentRead.readablePeriodIds.resolves([SHOWN_PERIOD]);
+      Utils.runDataQuery.resolves([{ total_items: 0, results: [] }]);
+    });
+
+    const routes = [
+      ['publicHead on a period', () => commentController.publicHead(makeArgs(), res)],
+      ['publicGet on a period', () => {
+        const args = makeArgs();
+        delete args.swagger.params.commentId;
+        return commentController.publicGet(args, res);
+      }],
+      ['publicGet by id', () => commentController.publicGet({
+        swagger: { params: { commentId: { value: VALID_COMM_ID }, fields: { value: ['comment'] } } }
+      }, res)]
+    ];
+
+    routes.forEach(([label, call]) => {
+      it(`on ${label}`, async () => {
+        await call();
+
+        expect(parentRead.readablePeriodIds.calledOnceWithExactly(['public'])).to.be.true;
+        expect(preQuerySteps()).to.deep.equal([{ $match: { period: { $in: [SHOWN_PERIOD] } } }]);
+      });
+    });
+
+    it('matches nothing when the public can read no period', async () => {
+      parentRead.readablePeriodIds.resolves([]);
+
+      await commentController.publicHead(makeArgs(), res);
+
+      expect(preQuerySteps()).to.deep.equal([{ $match: { period: { $in: [] } } }]);
+    });
+  });
+
+  describe('public sort and fields', () => {
+    const listArgs = (overrides) => {
+      const args = makeArgs(overrides);
+      delete args.swagger.params.commentId;
+      return args;
+    };
+
+    beforeEach(() => Utils.runDataQuery.resolves([{ total_items: 0, results: [] }]));
+
+    it('sorts only on commentId and dateAdded, never on a hidden field such as author', async () => {
+      await commentController.publicGet(listArgs({ sortBy: { value: ['+author', '-dateAdded', '+eaoStatus', '-commentId'] } }), res);
+
+      expect(Utils.runDataQuery.firstCall.args[5]).to.deep.equal({ dateAdded: -1, commentId: -1 });
+    });
+
+    it('never reads write or delete for a public caller', async () => {
+      await commentController.publicGet(listArgs({ fields: { value: ['comment', 'write', 'delete'] } }), res);
+
+      expect(Utils.runDataQuery.firstCall.args[3]).to.deep.equal(['comment']);
+    });
+  });
+
+  describe('logs', () => {
+    const BODY = {
+      author: 'Jane Private',
+      comment: 'My private words',
+      location: 'Smalltown',
+      period: VALID_CP_ID,
+      isAnonymous: true,
+      eaoStatus: 'Pending',
+      eaoNotes: 'Staff note text',
+      rejectedNotes: 'Rejected note text',
+      valuedComponents: [],
+      documents: []
+    };
+    const SECRETS = ['Jane Private', 'My private words', 'Smalltown', 'Staff note text', 'Rejected note text'];
+    const logged = () => [defaultLog.info, defaultLog.debug, defaultLog.error]
+      .flatMap(spy => spy.args)
+      .map(args => util.format(...args))
+      .join('\n');
+    const expectNoBody = () => SECRETS.forEach(secret => expect(logged()).to.not.include(secret));
+    const withComment = () => makeArgs({ comment: { value: { ...BODY } } });
+
+    function useMockComment() {
+      function MockComment(obj) {
+        Object.assign(this, obj);
+        this.save = sinon.stub().resolves({ _id: VALID_COMM_ID, ...obj });
+      }
+      mongoose.model.restore();
+      sinon.stub(mongoose, 'model').callsFake(name => {
+        if (name === 'Comment') return MockComment;
+        if (name === 'CommentPeriod') return cpModel;
+        return {};
+      });
+    }
+
+    beforeEach(() => {
+      sinon.stub(defaultLog, 'debug');
+      cpModel.findOne.resolves({ _id: VALID_CP_ID, dateCompleted: DateTime.now().plus({ days: 2 }).toJSDate() });
+      cpModel.findOneAndUpdate.resolves({ commentIdCount: 15 });
+    });
+
+    it('logs a public submission without its author, location or text', async () => {
+      useMockComment();
+
+      await commentController.unProtectedPost(withComment(), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+      expectNoBody();
+    });
+
+    it('logs a staff-entered comment without its body', async () => {
+      useMockComment();
+
+      await commentController.protectedPost(withComment(), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+      expectNoBody();
+    });
+
+    it('logs a staff read by count, not by the comments read', async () => {
+      Utils.runDataQuery.resolves([{ _id: VALID_COMM_ID, ...BODY }]);
+
+      await commentController.protectedGet(makeArgs(), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+      expectNoBody();
+    });
+
+    it('logs a staff update without the notes it writes', async () => {
+      commentModel.updateOne.resolves({ modifiedCount: 1 });
+
+      await commentController.protectedPut(withComment(), res);
+
+      expect(res.status.calledWith(200)).to.be.true;
+      expectNoBody();
     });
   });
 

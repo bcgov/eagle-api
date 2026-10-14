@@ -81,6 +81,7 @@ describe('Search Controller', () => {
     // is covered against a real MongoDB by test/db/*ParentRead.test.js.
     sinon.stub(parentRead, 'unreadableParentIds').resolves([]);
     sinon.stub(parentRead, 'unreadablePeriodIds').resolves([]);
+    sinon.stub(parentRead, 'readablePeriodIds').resolves([]);
 
     sinon.stub(Actions, 'sendResponse').callsFake((r, code, data) => {
       r.status(code).json(data);
@@ -263,6 +264,67 @@ describe('Search Controller', () => {
       expect(res.status.firstCall.args[0]).to.equal(200);
       expect(res.json.firstCall.args[0][0]).to.include(staffFields);
     });
+
+    const HIDDEN_FIELDS = {
+      ...staffFields,
+      demiPushPending: true,
+      demiPushFailedAt: new Date(),
+      demiPushError: 'push error',
+      write: ['staff'],
+      delete: ['staff'],
+      _addedBy: 'staff-user',
+      _updatedBy: 'staff-user',
+      _deletedBy: 'staff-user'
+    };
+    const SHOWN_FIELDS = { _id: 'a', _schemaName: 'Comment', comment: 'Hi', commentId: 7, period: 'p1', read: ['public'], isAnonymous: false, author: 'Lee' };
+    const publicCaller = { auth_payload: { realm_access: { roles: ['public'] }, preferred_username: 'public' } };
+
+    it('returns only the public comment fields to a public caller', async () => {
+      modelStub.aggregate.returns({ allowDiskUse: () => Promise.resolve([{ ...SHOWN_FIELDS, ...HIDDEN_FIELDS }]) });
+
+      await searchController.publicGet(commentItem(publicCaller), res);
+
+      expect(res.json.firstCall.args[0]).to.deep.equal([SHOWN_FIELDS]);
+    });
+
+    it('cleans a stored comment even when another schema name was asked for', async () => {
+      modelStub.aggregate.returns({ allowDiskUse: () => Promise.resolve([{ ...SHOWN_FIELDS, isAnonymous: true, ...HIDDEN_FIELDS }]) });
+
+      await searchController.publicGet(commentItem({ ...publicCaller, _schemaName: { value: 'Document' } }), res);
+
+      const expected = { ...SHOWN_FIELDS, isAnonymous: true };
+      delete expected.author;
+      expect(res.json.firstCall.args[0]).to.deep.equal([expected]);
+    });
+  });
+
+  describe('Item schema name', () => {
+    const itemArgs = (schemaName, overrides = {}) => makeArgs({
+      dataset: { value: 'Item' },
+      _schemaName: { value: schemaName },
+      _id: { value: '507f1f77bcf86cd799439011' },
+      auth_payload: { realm_access: { roles: ['public'] }, preferred_username: 'public' },
+      ...overrides
+    });
+
+    it('matches on the requested schema name as well as the id', async () => {
+      aggregateStub.allowDiskUse.resolves([]);
+
+      await searchController.publicGet(itemArgs('Document'), res);
+
+      const firstStage = modelStub.aggregate.firstCall.args[0][0];
+      expect(String(firstStage.$match._id)).to.equal('507f1f77bcf86cd799439011');
+      expect(firstStage.$match._schemaName).to.equal('Document');
+    });
+
+    it('strips the staff project fields from a stored project asked for under another name', async () => {
+      Utils.filterData.restore();
+      aggregateStub.allowDiskUse.resolves([{ _id: 'p', _schemaName: 'Project', name: 'Mine', review180Start: 'x', reviewExtensions: ['y'] }]);
+
+      await searchController.publicGet(itemArgs('Document'), res);
+
+      expect(res.json.firstCall.args[0]).to.deep.equal([{ _id: 'p', _schemaName: 'Project', name: 'Mine' }]);
+    });
   });
 
   describe('Document search signed-in flag', () => {
@@ -297,7 +359,7 @@ describe('Search Controller', () => {
         _id: { value: '507f1f77bcf86cd799439011' }
       });
 
-      aggregateStub.exec.resolves([{ _id: '123' }]);
+      aggregateStub.allowDiskUse.resolves([{ _id: '123' }]);
 
       await searchController.publicGet(args, res);
       expect(res.status.calledWith(200)).to.be.true;
@@ -448,7 +510,7 @@ describe('Search Controller', () => {
           _schemaName: { value: schemaName },
           _id: { value: '507f1f77bcf86cd799439011' }
         });
-        aggregateStub.exec.resolves([]);
+        aggregateStub.allowDiskUse.resolves([]);
 
         await searchController.publicGet(args, res);
 
