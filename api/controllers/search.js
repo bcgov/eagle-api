@@ -6,7 +6,7 @@ const Actions = require('../helpers/actions');
 const Utils = require('../helpers/utils');
 const analytics = require('../helpers/analytics');
 const constants = require('../helpers/constants').schemaTypes;
-const { COMMENT_STAFF_FIELDS } = require('../helpers/constants');
+const { COMMENT_PUBLIC_FIELDS } = require('../helpers/constants');
 
 const documentAggregator = require('../aggregators/documentAggregator');
 const projectAggregator = require('../aggregators/projectAggregator');
@@ -33,6 +33,19 @@ const PAGE_SIZE_MAX_LIST   = 500;  // List dataset (reference/dropdown data)
 const PROJECT_JOINED_FIELDS = ['proponent', 'currentPhaseName', 'eacDecision', 'CEAAInvolvement', 'applicableRegulation'];
 // Project fields still on the root before the page is cut; unwindProjectData copies them into default after it.
 const PROJECT_ROOT_SORT_FIELDS = ['_id', ...aggregateHelper.PROJECT_ROOT_FIELDS];
+
+const PUBLIC_COMMENT_ITEM_FIELDS = ['_id', '_schemaName', ...COMMENT_PUBLIC_FIELDS];
+
+// A public caller gets only the public comment fields; the author stays hidden unless the commenter chose to show it.
+const commentItemView = (item, isAuthenticated) => {
+  const view = isAuthenticated
+    ? { ...item }
+    : Object.fromEntries(PUBLIC_COMMENT_ITEM_FIELDS.filter(f => f in item).map(f => [f, item[f]]));
+  if (item.isAnonymous !== false) {
+    delete view.author;
+  }
+  return view;
+};
 
 const searchCollection = async function (roles, keywords, schemaName, pageNum, pageSize, project, projectLegislation, sortField = undefined, sortDirection = undefined, caseSensitive, populate = false, and, or, sortingValue, categorized, fuzzy, signedIn) {
   defaultLog.debug('collation:', aggregateHelper.AGGREGATE_COLLATION);
@@ -355,16 +368,6 @@ const executeQuery = async function (args, res) {
       );
     }
 
-    // TODO: this should be moved into the aggregation.
-    if (dataset === constants.COMMENT) {
-      // Filter
-      collectionData[0].searchResults.forEach(function (item) {
-        if (item.isAnonymous !== false) {
-          delete item.author;
-        }
-      });
-    }
-
     return Actions.sendResponse(res, 200, collectionData);
 
   } else if (dataset === constants.ITEM) {
@@ -379,26 +382,18 @@ const executeQuery = async function (args, res) {
     const collectionObj = mongoose.model(schemaNameVal);
     const gate = await itemAggregator.resolveParentGate(schemaNameVal, roles);
     const aggregation = itemAggregator.createItemAggr(args.swagger.params._id.value, schemaNameVal, roles, gate);
-    let data = await collectionObj.aggregate(aggregation).allowDiskUse(true);
+    const data = await collectionObj.aggregate(aggregation).allowDiskUse(true);
 
-    if (schemaNameVal === constants.COMMENT) {
-      // Filter
-      data.forEach(function (item) {
-        if (item.isAnonymous !== false) {
-          delete item.author;
-        }
-        if (!isAuthenticated) {
-          COMMENT_STAFF_FIELDS.forEach(field => delete item[field]);
-        }
-      });
-    }
+    // Keyed on each record's own schema as well as the requested one, in case a record of another
+    // schema ever gets past the $match.
+    const isSchema = (item, schemaName) => schemaNameVal === schemaName || item._schemaName === schemaName;
 
-    if (schemaNameVal === constants.PROJECT) {
-      // If we are a project, and we are not authed, we need to sanitize some fields.
-      data = Utils.filterData(schemaNameVal, data, roles);
-    }
+    // filterData strips fields in place.
+    Utils.filterData(constants.PROJECT, data.filter(item => isSchema(item, constants.PROJECT)), roles);
 
-    return Actions.sendResponse(res, 200, data);
+    const results = data.map(item => (isSchema(item, constants.COMMENT) ? commentItemView(item, isAuthenticated) : item));
+
+    return Actions.sendResponse(res, 200, results);
   } else {
     defaultLog.warn('search.js executeQuery: bad request — missing schemaName');
     return Actions.sendResponse(res, 400, {});

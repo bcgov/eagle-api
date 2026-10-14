@@ -50,6 +50,31 @@ const COMMENT_UNDER_PUBLIC_PROJECT = id('58990017d334ee001d609c01');
 const COMMENT_UNDER_PRIVATE_PROJECT = id('58990017d334ee001d609c02');
 const COMMENT_UNDER_STAFF_PERIOD = id('58990017d334ee001d609c03');
 const COMMENT_WITH_NO_PERIOD = id('58990017d334ee001d609c04');
+const COMMENT_UNDER_DELETED_PERIOD = id('58990017d334ee001d609c06');
+const DELETED_PERIOD = id('58990017d334ee001d609bff');
+
+// Published, under a public period and project, carrying every field a public caller must not see.
+const COMMENT_WITH_STAFF_FIELDS = id('58990017d334ee001d609c05');
+const COMMENT_HIDDEN_FIELDS = {
+  author: 'Jane Private',
+  isAnonymous: true,
+  eaoNotes: 'staff note',
+  eaoStatus: 'Published',
+  proponentNotes: 'proponent note',
+  rejectedNotes: 'rejected note',
+  rejectedReason: 'rejected reason',
+  demiPushPending: true,
+  demiPushFailedAt: new Date('2026-10-01T00:00:00Z'),
+  demiPushError: 'push error',
+  _addedBy: 'staff-user',
+  _updatedBy: 'staff-user',
+  _deletedBy: 'staff-user'
+};
+
+// Records eagle-admin opens through dataset=Item, staff-only so only a staff caller reads them.
+const ADMIN_USER = id('58990017d334ee001d609e01');
+const ADMIN_ORGANIZATION = id('58990017d334ee001d609e02');
+const ADMIN_UPDATE = id('58990017d334ee001d609e03');
 
 const VC_UNDER_PUBLIC_PROJECT = id('58990017d334ee001d609d01');
 const VC_UNDER_PRIVATE_PROJECT = id('58990017d334ee001d609d02');
@@ -77,8 +102,13 @@ const FIXTURES = [
   child(COMMENT_UNDER_PRIVATE_PROJECT, 'Comment', 'period', CP_UNDER_PRIVATE_PROJECT),
   child(COMMENT_UNDER_STAFF_PERIOD, 'Comment', 'period', STAFF_CP_UNDER_PUBLIC_PROJECT),
   child(COMMENT_WITH_NO_PERIOD, 'Comment', 'period', null),
+  child(COMMENT_UNDER_DELETED_PERIOD, 'Comment', 'period', DELETED_PERIOD),
+  { ...child(COMMENT_WITH_STAFF_FIELDS, 'Comment', 'period', CP_UNDER_PUBLIC_PROJECT), comment: 'Hello', ...COMMENT_HIDDEN_FIELDS },
   child(VC_UNDER_PUBLIC_PROJECT, 'Vc', 'project', PUBLIC_PROJECT),
-  child(VC_UNDER_PRIVATE_PROJECT, 'Vc', 'project', PRIVATE_PROJECT)
+  child(VC_UNDER_PRIVATE_PROJECT, 'Vc', 'project', PRIVATE_PROJECT),
+  { _id: ADMIN_USER, _schemaName: 'User', read: STAFF_ONLY, firstName: 'Ada' },
+  { _id: ADMIN_ORGANIZATION, _schemaName: 'Organization', read: STAFF_ONLY, name: 'Org' },
+  { ...child(ADMIN_UPDATE, 'RecentActivity', 'project', PUBLIC_PROJECT, STAFF_ONLY), status: 'draft' }
 ];
 
 function itemArgs(roles, schemaName, itemId) {
@@ -222,10 +252,14 @@ describe('item parent visibility (requires MongoDB)', function () {
       expect(idsIn(body.data)).to.deep.equal([String(COMMENT_UNDER_PUBLIC_PROJECT)]);
     });
 
-    it('keeps a comment whose period reference resolves to nothing', async () => {
-      const body = await anonymousGet('Comment', COMMENT_WITH_NO_PERIOD);
+    [['no period', COMMENT_WITH_NO_PERIOD], ['a deleted period', COMMENT_UNDER_DELETED_PERIOD]].forEach(([label, commentId]) => {
+      it(`hides a comment with ${label} from an anonymous caller, and still returns it to staff`, async () => {
+        const anonymous = await anonymousGet('Comment', commentId);
+        const staff = await staffGet('Comment', commentId);
 
-      expect(idsIn(body.data)).to.deep.equal([String(COMMENT_WITH_NO_PERIOD)]);
+        expect(idsIn(anonymous.data)).to.be.empty;
+        expect(idsIn(staff.data)).to.deep.equal([String(commentId)]);
+      });
     });
   });
 
@@ -247,6 +281,54 @@ describe('item parent visibility (requires MongoDB)', function () {
       const body = await anonymousGet('Vc', VC_UNDER_PUBLIC_PROJECT);
 
       expect(idsIn(body.data)).to.deep.equal([String(VC_UNDER_PUBLIC_PROJECT)]);
+    });
+  });
+
+  // Every model shares the epic collection, so the requested name must match the stored one.
+  describe('a _schemaName that is not the stored record\'s', () => {
+    ['List', 'Organization', 'Topic', 'Document'].forEach(schemaName => {
+      it(`returns nothing when a comment is asked for as ${schemaName}`, async () => {
+        const body = await anonymousGet(schemaName, COMMENT_WITH_STAFF_FIELDS);
+
+        expect(body.code).to.equal(200);
+        expect(body.data).to.deep.equal([]);
+      });
+    });
+
+    it('returns nothing for a comment under an unpublished project asked for as List', async () => {
+      const body = await anonymousGet('List', COMMENT_UNDER_PRIVATE_PROJECT);
+
+      expect(body.data).to.deep.equal([]);
+    });
+
+    it('returns nothing when a project is asked for as List', async () => {
+      const body = await anonymousGet('List', PUBLIC_PROJECT);
+
+      expect(body.data).to.deep.equal([]);
+    });
+
+    it('still returns the comment asked for under its own name, without the hidden fields', async () => {
+      const body = await anonymousGet('Comment', COMMENT_WITH_STAFF_FIELDS);
+
+      expect(idsIn(body.data)).to.deep.equal([String(COMMENT_WITH_STAFF_FIELDS)]);
+      expect(body.data[0].comment).to.equal('Hello');
+      expect(body.data[0]).to.not.have.any.keys('write', 'delete', ...Object.keys(COMMENT_HIDDEN_FIELDS).filter(f => f !== 'isAnonymous'));
+    });
+  });
+
+  describe('staff reads of the schemas eagle-admin opens by id', () => {
+    [
+      ['User', ADMIN_USER],
+      ['Organization', ADMIN_ORGANIZATION],
+      ['RecentActivity', ADMIN_UPDATE],
+      ['ProjectNotification', PRIVATE_NOTIFICATION]
+    ].forEach(([schemaName, itemId]) => {
+      it(`returns a ${schemaName} asked for under its own name`, async () => {
+        const body = await staffGet(schemaName, itemId);
+
+        expect(body.code).to.equal(200);
+        expect(idsIn(body.data)).to.deep.equal([String(itemId)]);
+      });
     });
   });
 

@@ -122,6 +122,7 @@ describe('Analytics call sites', () => {
     // is covered against a real MongoDB by test/db/*ParentRead.test.js.
     sinon.stub(parentRead, 'unreadableParentIds').resolves([]);
     sinon.stub(parentRead, 'unreadablePeriodIds').resolves([]);
+    sinon.stub(parentRead, 'readablePeriodIds').resolves([]);
 
     sinon.stub(analytics, 'auditEvent');
     sinon.stub(analytics, 'trackEvent');

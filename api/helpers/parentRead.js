@@ -49,17 +49,29 @@ exports.unreadableParentIds = async (roles) => {
   return ids;
 };
 
+// A period hides its comments on its own read[] or because its project is unreadable.
+const hidesComments = (roles, unreadableProjects) => [unreadableBy(roles), { project: { $in: unreadableProjects } }];
+
 /**
  * Ids of the comment periods that hide their comments, either on their own `read[]` or because
  * their project hides them. Folding both levels in here keeps the comment gate a single $match.
  */
 exports.unreadablePeriodIds = async (roles) => {
   const parents = await exports.unreadableParentIds(roles);
-  const ids = await idsMatching({
-    _schemaName: 'CommentPeriod',
-    $or: [unreadableBy(roles), { project: { $in: parents } }]
-  });
+  const ids = await idsMatching({ _schemaName: 'CommentPeriod', $or: hidesComments(roles, parents) });
   defaultLog.debug('parent read gate: %d unreadable comment periods', ids.length);
+
+  return ids;
+};
+
+/**
+ * Ids of the comment periods whose comments the caller may see: every period unreadablePeriodIds
+ * leaves out. Matching a comment against this set also hides one whose period is unset or gone.
+ */
+exports.readablePeriodIds = async (roles) => {
+  const parents = await exports.unreadableParentIds(roles);
+  const ids = await idsMatching({ _schemaName: 'CommentPeriod', $nor: hidesComments(roles, parents) });
+  defaultLog.debug('parent read gate: %d readable comment periods', ids.length);
 
   return ids;
 };
@@ -80,4 +92,15 @@ exports.parentReadMatch = (unreadableIds, parentField = 'project') => {
   }
 
   return [{ $match: { [parentField]: { $nin: unreadableIds } } }];
+};
+
+/**
+ * The strict comment gate: keeps only comments whose period is in readablePeriodIds.
+ */
+exports.readablePeriodMatch = (readableIds) => {
+  if (!Array.isArray(readableIds)) {
+    throw new TypeError('comment period gate needs an array of readable ids from helpers/parentRead');
+  }
+
+  return [{ $match: { period: { $in: readableIds } } }];
 };
