@@ -2,7 +2,6 @@ const defaultLog = require('winston').loggers.get('default');
 const mongoose   = require('mongoose');
 const Actions    = require('../helpers/actions');
 const Utils      = require('../helpers/utils');
-const { legislationKey } = require('../helpers/constants');
 
 exports.projectHateoas = function(project, roles) {
   project.links =
@@ -48,23 +47,6 @@ exports.deleteProject = async function(user, project) {
   }, function (err) {
     throw Error('Failed to delete project: ', err);
   });
-};
-
-exports.publishProject = async function(user, project) {
-  const key = project && project.legislationYear ? legislationKey(project.legislationYear) : null;
-  if (key) {
-    project.currentLegislationYear = key;
-  }
-
-  return Actions.publish(project, true)
-    .then(function (published) {
-      Utils.recordAction('Publish', 'Project', user, project._id);
-
-      return published;
-    })
-    .catch(function (err) {
-      throw Error('Failed to publish project', err);
-    });
 };
 
 exports.unPublishProject = async function(user, project) {

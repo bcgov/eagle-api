@@ -199,6 +199,16 @@ describe('Registry with a made-up locked Act (2031)', () => {
         expect(stored.save.called).to.be.false;
       });
 
+      it('refuses a non-numeric year on a 2031 project with 409, as PUT does', async () => {
+        storeUnder(2031, { 2031: { name: 'Coastal' } });
+
+        await controller.protectedPublish(publishArgs('abc'), res);
+
+        expect(res.status.firstCall.args[0]).to.equal(409);
+        expect(res.json.firstCall.args[0]).to.deep.equal({ message: 'Project is under the Coastal Review Act' });
+        expect(stored.save.called).to.be.false;
+      });
+
       it('refuses to move a 2018 project to 2031 when it has no 2031 content', async () => {
         storeUnder(2018, { 2018: { name: 'Old' } });
 

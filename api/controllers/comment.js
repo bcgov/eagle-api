@@ -4,6 +4,7 @@ var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 const demiPush = require('../helpers/demiPush');
 const { DateTime } = require('luxon');
+const { COMMENT_STAFF_FIELDS } = require('../helpers/constants');
 
 const ALLOWED_FIELDS = [
   'author',
@@ -29,6 +30,24 @@ const ALLOWED_FIELDS = [
   'write',
   'delete'
 ];
+// Staff review fields stay off the public routes.
+const PUBLIC_FIELDS = ALLOWED_FIELDS.filter(f => !COMMENT_STAFF_FIELDS.includes(f));
+
+// Hiding an anonymous author needs isAnonymous: read it with author, drop it when the caller did not ask.
+const publicCommentQuery = fields => {
+  const readsAnonymity = fields.includes('author') && !fields.includes('isAnonymous');
+  return {
+    fields: readsAnonymity ? [...fields, 'isAnonymous'] : fields,
+    redact: item => {
+      if (item.isAnonymous !== false) {
+        delete item.author;
+      }
+      if (readsAnonymity) {
+        delete item.isAnonymous;
+      }
+    }
+  };
+};
 
 var setPermissionsFromEaoStatus = function (status, comment) {
   defaultLog.debug('setPermissionsFromEaoStatus: %s', status);
@@ -78,7 +97,7 @@ exports.publicHead = async function (args, res) {
     query = Utils.buildQuery('period', args.swagger.params.period.value, query);
   }
 
-  const fields = Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS);
+  const fields = Utils.sanitizeFields(args.swagger.params.fields.value, PUBLIC_FIELDS);
 
   // Set query type
   Object.assign(query, { '_schemaName': 'Comment' });
@@ -103,10 +122,13 @@ exports.publicHead = async function (args, res) {
 exports.publicGet = async function (args, res) {
   var query = {}, sort = {};
   var skip = null, limit = null;
+  const commentId = args.swagger.params.commentId && args.swagger.params.commentId.value;
+  // The by-id route declares no `count` parameter.
+  const wantsCount = Boolean(args.swagger.params.count && args.swagger.params.count.value);
 
   // Build match query if on commentId route.
-  if (args.swagger.params.commentId && args.swagger.params.commentId.value) {
-    query = Utils.buildQuery('_id', args.swagger.params.commentId.value, query);
+  if (commentId) {
+    query = Utils.buildQuery('_id', commentId, query);
   } else {
     if (args.swagger.params.period && args.swagger.params.period.value) {
       query = Utils.buildQuery('period', args.swagger.params.period.value, query);
@@ -125,34 +147,42 @@ exports.publicGet = async function (args, res) {
     limit = processedParameters.limit;
   }
 
-  const fields = Utils.sanitizeFields(args.swagger.params.fields.value, ALLOWED_FIELDS);
+  const commentQuery = publicCommentQuery(Utils.sanitizeFields(args.swagger.params.fields.value, PUBLIC_FIELDS));
   // Set query type
   Object.assign(query, { '_schemaName': 'Comment' });
 
   var data = await Utils.runDataQuery('Comment',
     ['public'],
     query,
-    fields, // Fields
+    commentQuery.fields, // Fields
     null,
     sort, // sort
     skip, // skip
     limit, // limit
     true); // count
 
+  const results = data[0] ? data[0].results : [];
+  results.forEach(commentQuery.redact);
+
+  // An array, empty when not found: eagle-public tags v2.7.36 and older and the DEMI parity check both read it so.
+  if (commentId) {
+    if (results.length === 0) {
+      defaultLog.info('publicGet: comment %s not found', commentId);
+    } else {
+      Utils.recordAction('Get', 'Comment', 'public', commentId);
+    }
+    return Actions.sendResponse(res, 200, results);
+  }
+
   if (data[0] == null) {
-    if (args.swagger.params.count.value) {
+    if (wantsCount) {
       res.setHeader('x-total-count', 0);
     }
     return Actions.sendResponse(res, 200, data);
   }
 
-  data[0].results.forEach(function (item) {
-    if (item.isAnonymous === true) {
-      delete item.author;
-    }
-  });
-  if (args.swagger.params.count.value) {
-    Utils.recordAction('Get', 'Comment', 'public', args.swagger.params.commentId && args.swagger.params.commentId.value ? args.swagger.params.commentId.value : null);
+  if (wantsCount) {
+    Utils.recordAction('Get', 'Comment', 'public', null);
     res.setHeader('x-total-count', data && data.length > 0 ? data[0].total_items : 0);
     return Actions.sendResponse(res, 200, data.length !== 0 ? data[0].results : []);
   } else {

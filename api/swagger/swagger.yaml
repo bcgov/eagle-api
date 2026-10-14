@@ -474,6 +474,25 @@ definitions:
       - 'read'
       - 'write'
       - 'delete'
+  PublicCommentFields:
+    type: string
+    description: "Optional fields to return on the public routes: no staff review fields."
+    enum: &publicCommentFields
+      - 'author'
+      - 'comment'
+      - 'commentId'
+      - 'dateAdded'
+      - 'datePosted'
+      - 'dateUpdated'
+      - 'isAnonymous'
+      - 'location'
+      - 'period'
+      - 'proponentStatus'
+      - 'publishedNotes'
+      - 'valuedComponents'
+      - 'read'
+      - 'write'
+      - 'delete'
   CommentSortByFields:
     type: string
     description: "Optional fields to sort by (prefixed with + or - for order)"
@@ -1306,7 +1325,9 @@ paths:
           schema:
             $ref: "#/definitions/Error"
         "404":
-          description: "Project not found, or legislationYear is not a known legislation year"
+          description: "Project not found, or legislationYear is not a known legislation year. A project under a locked Act gets 409 first when legislationYear names any other year"
+          schema:
+            $ref: "#/definitions/Error"
         "409":
           description: "Project's current Act is locked (today the Building Canada Act, 2025) and legislationYear names another year"
           schema:
@@ -1396,7 +1417,9 @@ paths:
           schema:
             $ref: "#/definitions/Error"
         "404":
-          description: "Project not found, or legislationYear is not a known legislation year"
+          description: "Project not found, or legislationYear is not a known legislation year. A project under a locked Act gets 409 first when legislationYear names any other year"
+          schema:
+            $ref: "#/definitions/Error"
         "409":
           description: "Project's current Act is locked (today the Building Canada Act, 2025) and legislationYear names another year, or legislationYear is not the current year and the project has no content under it"
           schema:
@@ -5310,7 +5333,7 @@ paths:
           collectionFormat: pipes
           items:
             type: string
-            enum: *commentFields
+            enum: *publicCommentFields
       responses:
         "200":
           description: "Success"
@@ -5351,7 +5374,7 @@ paths:
           collectionFormat: pipes
           items:
             type: string
-            enum: *commentFields
+            enum: *publicCommentFields
         - in: query
           name: pageNum
           type: number
@@ -5422,12 +5445,14 @@ paths:
           collectionFormat: pipes
           items:
             type: string
-            enum: *commentFields
+            enum: *publicCommentFields
       responses:
         "200":
-          description: "Success"
+          description: "An array holding the one comment, empty when no public comment has this id"
           schema:
-            $ref: "#/definitions/CommentObject"
+            type: array
+            items:
+              $ref: "#/definitions/CommentObject"
         "403":
           description: "Access Denied"
           schema:

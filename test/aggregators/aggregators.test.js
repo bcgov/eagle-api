@@ -79,6 +79,18 @@ describe('Document Aggregator', () => {
       expect(result[0].$match).to.have.property('milestone');
       expect(result[0].$match).to.have.property('documentAuthorType');
     });
+
+    it('keeps Update images when a signed-in caller filters on documentSource, even one with no roles', async () => {
+      const result = await documentAggregator.createMatchAggr('Document', null, null, false, null, 'documentSource=UPDATE', null, [], true);
+
+      expect(result[0].$match).to.not.have.property('documentSource');
+    });
+
+    it('hides Update images from a caller who is not signed in, even when it filters on documentSource', async () => {
+      const result = await documentAggregator.createMatchAggr('Document', null, null, false, null, 'documentSource=UPDATE', null, ['public'], false);
+
+      expect(result[0].$match.documentSource).to.deep.equal({ $ne: 'UPDATE' });
+    });
   });
 
   describe('createDocumentAggr', () => {

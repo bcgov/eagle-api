@@ -1,9 +1,9 @@
 # =============================================================================
 # Deploy to Production
 # =============================================================================
-# Manually triggered workflow to deploy a tested version to production.
+# Manually triggered workflow to deploy a version tag to production.
 # Requires semantic version tag (v1.2.3).
-# Validates that version was deployed to test first.
+# Checks that the git tag and its image tag exist; it does not check that the version ran on test.
 # =============================================================================
 
 name: Deploy to Prod

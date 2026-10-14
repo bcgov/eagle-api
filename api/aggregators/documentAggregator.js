@@ -15,11 +15,13 @@ const { IMAGE_SOURCE } = require('../helpers/updateRules');
  * @param {boolean} caseSensitive Case sensitive search?
  * @param {array} orModifier Search criteria for an 'or' search
  * @param {array} andModifier Search criteria for an 'and' search
+ * @param {boolean} categorized true: categorized only, false: uncategorized only, unset: all
  * @param {array} roles User's roles
+ * @param {boolean} signedIn Caller is signed in (search.js isAuthenticated)
  *
  * @returns {array} Aggregation for a document match
  */
-exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, categorized, roles) => {
+exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive, orModifier, andModifier, categorized, roles, signedIn = false) => {
   const aggregation = [];
   let projectModifier;
   let keywordModifier;
@@ -94,7 +96,6 @@ exports.createMatchAggr = async (schemaName, projectId, keywords, caseSensitive,
 
   // Update form images belong to their Update, not the document lists, unless a signed-in caller asks
   // for a source. A scheduled Update's images are public before it is live, so the public never gets them here.
-  const signedIn = Array.isArray(roles) && roles.some(role => role !== 'public');
   const asksForSource = [andModifier, orModifier].some(m => Object.keys(qs.parse(m)).includes('documentSource'));
   const sourceModifier = asksForSource && signedIn
     ? undefined

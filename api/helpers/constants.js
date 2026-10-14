@@ -20,6 +20,9 @@ exports.MAX_FEATURE_DOCS = 5;
 exports.PUBLIC_ROLES = ['public'];
 exports.SECURE_ROLES = ['sysadmin', 'staff'];
 
+// Comment fields only signed-in staff may read.
+exports.COMMENT_STAFF_FIELDS = Object.freeze(['eaoNotes', 'eaoStatus', 'proponentNotes', 'rejectedNotes', 'rejectedReason']);
+
 // Legislation registry, keyed by year. A project keeps one sub-document per year under `legislation_<year>`.
 // Adding an Act: add its entry here and its year to the project POST and publish prose in swagger.yaml (a test checks).
 // `label`: the `legislation` string written on the project; eagle-public matches on it.
