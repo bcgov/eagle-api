@@ -4,6 +4,7 @@ var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 const demiPush = require('../helpers/demiPush');
 const { DateTime } = require('luxon');
+const { COMMENT_STAFF_FIELDS } = require('../helpers/constants');
 
 const ALLOWED_FIELDS = [
   'author',
@@ -30,7 +31,7 @@ const ALLOWED_FIELDS = [
   'delete'
 ];
 // Staff review fields stay off the public routes.
-const PUBLIC_FIELDS = ALLOWED_FIELDS.filter(f => !['eaoNotes', 'eaoStatus', 'proponentNotes', 'rejectedNotes', 'rejectedReason'].includes(f));
+const PUBLIC_FIELDS = ALLOWED_FIELDS.filter(f => !COMMENT_STAFF_FIELDS.includes(f));
 
 // Hiding an anonymous author needs isAnonymous: read it with author, drop it when the caller did not ask.
 const publicCommentQuery = fields => {

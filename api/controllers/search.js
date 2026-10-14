@@ -6,6 +6,7 @@ const Actions = require('../helpers/actions');
 const Utils = require('../helpers/utils');
 const analytics = require('../helpers/analytics');
 const constants = require('../helpers/constants').schemaTypes;
+const { COMMENT_STAFF_FIELDS } = require('../helpers/constants');
 
 const documentAggregator = require('../aggregators/documentAggregator');
 const projectAggregator = require('../aggregators/projectAggregator');
@@ -385,6 +386,9 @@ const executeQuery = async function (args, res) {
       data.forEach(function (item) {
         if (item.isAnonymous !== false) {
           delete item.author;
+        }
+        if (!isAuthenticated) {
+          COMMENT_STAFF_FIELDS.forEach(field => delete item[field]);
         }
       });
     }

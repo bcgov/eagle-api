@@ -14,6 +14,8 @@ const Actions    = require('../../api/helpers/actions');
 const defaultLog = require('winston').loggers.get('default');
 
 const parentRead = require('../../api/helpers/parentRead');
+const { COMMENT_STAFF_FIELDS } = require('../../api/helpers/constants');
+const documentAggregator = require('../../api/aggregators/documentAggregator');
 const searchController = require('../../api/controllers/search');
 
 describe('Search Controller', () => {
@@ -232,6 +234,58 @@ describe('Search Controller', () => {
 
       expect(res.status.firstCall.args[0]).to.equal(200);
       expect(res.json.firstCall.args[0].map(row => row.author)).to.deep.equal([undefined, undefined, 'Lee']);
+    });
+
+    const staffFields = Object.fromEntries(COMMENT_STAFF_FIELDS.map(field => [field, `${field} value`]));
+    const commentItem = (overrides) => makeArgs({
+      dataset: { value: 'Item' },
+      _schemaName: { value: 'Comment' },
+      _id: { value: '507f1f77bcf86cd799439011' },
+      ...overrides
+    });
+
+    beforeEach(() => {
+      modelStub.aggregate.returns({ allowDiskUse: () => Promise.resolve([{ _id: 'a', comment: 'Hi', ...staffFields }]) });
+    });
+
+    it('drops every staff field for a public caller', async () => {
+      await searchController.publicGet(commentItem({
+        auth_payload: { realm_access: { roles: ['public'] }, preferred_username: 'public' }
+      }), res);
+
+      expect(res.status.firstCall.args[0]).to.equal(200);
+      expect(res.json.firstCall.args[0][0]).to.deep.equal({ _id: 'a', comment: 'Hi' });
+    });
+
+    it('keeps the staff fields for signed-in staff', async () => {
+      await searchController.protectedGet(commentItem(), res);
+
+      expect(res.status.firstCall.args[0]).to.equal(200);
+      expect(res.json.firstCall.args[0][0]).to.include(staffFields);
+    });
+  });
+
+  describe('Document search signed-in flag', () => {
+    // createMatchAggr takes signedIn as its ninth argument.
+    const signedInArg = () => documentAggregator.createMatchAggr.firstCall.args[8];
+
+    beforeEach(() => {
+      sinon.stub(documentAggregator, 'createMatchAggr').resolves([{ $match: {} }]);
+    });
+
+    it('passes signedIn true for a signed-in caller', async () => {
+      await searchController.protectedGet(makeArgs({ dataset: { value: 'Document' } }), res);
+
+      expect(signedInArg()).to.equal(true);
+    });
+
+    it('passes signedIn false for a public caller', async () => {
+      await searchController.publicGet(makeArgs({
+        dataset: { value: 'Document' },
+        auth_payload: { realm_access: { roles: ['public'] }, preferred_username: 'public' }
+      }), res);
+
+      expect(signedInArg()).to.equal(false);
     });
   });
 
