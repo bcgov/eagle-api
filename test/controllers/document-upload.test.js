@@ -250,7 +250,9 @@ describe('Document upload limits by source', () => {
     'a 12-character project id': { project: 'abcdefghijkl' },
     'a comment id that is not hex': { _comment: 'zzzzzzzzzzzzzzzzzzzzzzzz' },
     'a milestone sent as an object': { milestone: { _bsontype: 'ObjectId' } },
-    'a type id with extra characters': { type: `${PROJECT_ID}0` }
+    'a type id with extra characters': { type: `${PROJECT_ID}0` },
+    'the string "null" as the project': { project: 'null' },
+    'the string "null" as the comment id': { _comment: 'null' }
   };
 
   Object.entries(badIds).forEach(([label, overrides]) => {

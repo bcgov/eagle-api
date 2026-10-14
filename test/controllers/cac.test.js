@@ -214,6 +214,7 @@ describe('CAC Controller', () => {
       'an array as email': { cac: { value: { email: ['test@example.com'] } } },
       'an email that is not an address': { cac: { value: { email: 'not-an-address' } } },
       'an email over 254 characters': { cac: { value: { email: `${'a'.repeat(250)}@example.com` } } },
+      'an email of exactly 255 characters': { cac: { value: { email: `${'a'.repeat(243)}@example.com` } } },
       'no email': { cac: { value: {} } },
       'a 12-character project id': { projId: { value: 'abcdefghijkl' } }
     };
@@ -238,6 +239,18 @@ describe('CAC Controller', () => {
 
         expect(res.status.args).to.deep.equal([[200]]);
         expect(cacUserModel.findOne.firstCall.args[0].email).to.equal('test@example.com');
+      });
+
+      it(`${name} accepts an email of exactly 254 characters`, async () => {
+        const email = `${'a'.repeat(242)}@example.com`;
+        cacUserModel.findOne.resolves({ _id: VALID_MEMBER_ID, email });
+        projectModel.findOneAndUpdate.resolves(null);
+        projectModel.updateOne.resolves({ modifiedCount: 1 });
+
+        await handler(makeArgs({ cac: { value: { email } } }), res);
+
+        expect(res.status.args).to.deep.equal([[200]]);
+        expect(cacUserModel.findOne.firstCall.args[0].email).to.equal(email);
       });
     });
   });
