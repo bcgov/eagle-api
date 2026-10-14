@@ -10,7 +10,6 @@ const { expect } = require('chai');
 const sinon      = require('sinon');
 const mongoose   = require('mongoose');
 const util       = require('util');
-const { DateTime } = require('luxon');
 const Utils      = require('../../api/helpers/utils');
 const parentRead = require('../../api/helpers/parentRead');
 const Actions    = require('../../api/helpers/actions');
@@ -362,17 +361,7 @@ describe('Comment Controller', () => {
 
     beforeEach(() => {
       sinon.stub(defaultLog, 'debug');
-      cpModel.findOne.resolves({ _id: VALID_CP_ID, dateCompleted: DateTime.now().plus({ days: 2 }).toJSDate() });
       cpModel.findOneAndUpdate.resolves({ commentIdCount: 15 });
-    });
-
-    it('logs a public submission without its author, location or text', async () => {
-      useMockComment();
-
-      await commentController.unProtectedPost(withComment(), res);
-
-      expect(res.status.calledWith(200)).to.be.true;
-      expectNoBody();
     });
 
     it('logs a staff-entered comment without its body', async () => {
@@ -434,40 +423,6 @@ describe('Comment Controller', () => {
       await commentController.protectedPost(args, res);
       expect(cpModel.findOneAndUpdate.calledOnce).to.be.true;
       expect(res.status.calledWith(200)).to.be.true;
-    });
-  });
-
-  describe('unProtectedPost', () => {
-    it('accepts comment before end date', async () => {
-      const args = makeArgs();
-      // Future date completion
-      const futureDate = DateTime.now().plus({ days: 2 }).toJSDate();
-      cpModel.findOne.resolves({ dateCompleted: futureDate });
-      cpModel.findOneAndUpdate.resolves({ commentIdCount: 15 });
-
-      function MockComment(obj) {
-        Object.assign(this, obj);
-        this.save = sinon.stub().resolves({ _id: VALID_COMM_ID });
-      }
-      mongoose.model.restore();
-      sinon.stub(mongoose, 'model').callsFake(name => {
-        if (name === 'Comment') return MockComment;
-        if (name === 'CommentPeriod') return cpModel;
-        return {};
-      });
-
-      await commentController.unProtectedPost(args, res);
-      expect(res.status.calledWith(200)).to.be.true;
-    });
-
-    it('rejects comment after end date', async () => {
-      const args = makeArgs();
-      // Past date completion
-      const pastDate = DateTime.now().minus({ days: 2 }).toJSDate();
-      cpModel.findOne.resolves({ dateCompleted: pastDate });
-
-      await commentController.unProtectedPost(args, res);
-      expect(res.status.calledWith(400)).to.be.true;
     });
   });
 

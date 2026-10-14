@@ -8,19 +8,33 @@ exports.protectedOptions = function (args, res) {
   res.status(200).send();
 };
 
-exports.publicCACSignUp = async function (args, res) {
-  const CACUser = mongoose.model('CACUser');
-  const Project = mongoose.model('Project');
+const MAX_EMAIL_LENGTH = 254;
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  let cacObject = args.swagger.params.cac.value;
+// These routes are anonymous, so anything but a plain address string (an operator object such as
+// {"$ne": ""}) must never reach a query. Returns the trimmed address, or null.
+function cleanEmail(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const email = value.trim();
+  return email.length <= MAX_EMAIL_LENGTH && EMAIL_SHAPE.test(email) ? email : null;
+}
+
+exports.publicCACSignUp = async function (args, res) {
+  const cacObject = args.swagger.params.cac.value;
   const projectId = args.swagger.params.projId.value;
   defaultLog.info('publicCACSignUp for project:', projectId);
-  if (!mongoose.Types.ObjectId.isValid(projectId)) {
+  const email = cleanEmail(cacObject && cacObject.email);
+  if (!Utils.isObjectIdString(projectId) || !email) {
     return Actions.sendResponse(res, 400, {});
   }
+  const CACUser = mongoose.model('CACUser');
+  const Project = mongoose.model('Project');
   delete cacObject.read;
   delete cacObject.write;
 
+  cacObject.email = email;
   cacObject.project = projectId;
 
   try {
@@ -60,20 +74,20 @@ exports.publicCACSignUp = async function (args, res) {
 };
 
 exports.publicCACRemoveMember = async function (args, res) {
-  const Project = mongoose.model('Project');
-  const CACUser = mongoose.model('CACUser');
-
   const projId = args.swagger.params.projId.value;
   defaultLog.info('publicCACRemoveMember for project:', projId);
-  if (!mongoose.Types.ObjectId.isValid(projId)) {
+  const cac = args.swagger.params.cac.value;
+  const email = cleanEmail(cac && cac.email);
+  if (!Utils.isObjectIdString(projId) || !email) {
     return Actions.sendResponse(res, 400, {});
   }
-  const cac = args.swagger.params.cac.value;
+  const Project = mongoose.model('Project');
+  const CACUser = mongoose.model('CACUser');
 
   try {
     const member = await CACUser.findOne({
       _schemaName: 'CACUser',
-      email: cac.email,
+      email: email,
       project: new mongoose.Types.ObjectId(projId)
     });
 
@@ -85,10 +99,10 @@ exports.publicCACRemoveMember = async function (args, res) {
       await CACUser.deleteOne({ _id: member._id });
 
       Utils.recordAction('Delete', 'CACMemberFromProject', 'public', member._id);
-      defaultLog.info('Removed CAC member email:', cac.email, 'from project:', projId);
+      defaultLog.info('Removed CAC member %s from project %s', member._id, projId);
       return Actions.sendResponse(res, 200, {});
     } else {
-      defaultLog.info('CAC member not found with email:', cac.email, 'in project:', projId);
+      defaultLog.info('CAC member to remove not found in project %s', projId);
       return Actions.sendResponse(res, 404, {});
     }
   } catch (e) {

@@ -110,107 +110,6 @@ exports.publicGet = async function (args, res,) {
   }
 };
 
-exports.unProtectedPost = async function (args, res) {
-  defaultLog.info('Creating new public document object');
-  if (args.swagger.params._comment && args.swagger.params._comment.value && !mongoose.Types.ObjectId.isValid(args.swagger.params._comment.value)) {
-    return Actions.sendResponse(res, 400, { });
-  }
-  if (args.swagger.params.project && args.swagger.params.project.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.project.value)) {
-    return Actions.sendResponse(res, 400, { });
-  }
-
-  var _comment = args.swagger.params._comment.value;
-  var project = args.swagger.params.project.value;
-  var upfile = args.swagger.params.upfile.value;
-
-  // Enforce file size limit of 10MB in RAM
-  const MAX_FILE_SIZE = 10 * 1024 * 1024;
-  if (upfile.size > MAX_FILE_SIZE) {
-    defaultLog.warn('File upload rejected: exceeds 10MB limit (%d bytes)', upfile.size);
-    return Actions.sendResponse(res, 400, { message: 'File size exceeds 10MB limit.' });
-  }
-
-  // Enforce MIME allow-list
-  const allowedMimeTypes = [
-    'application/pdf',
-    'image/png',
-    'image/jpeg',
-    'image/jpg',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-  ];
-  if (!allowedMimeTypes.includes(upfile.mimetype)) {
-    defaultLog.warn('File upload rejected: unallowed MIME type (%s)', upfile.mimetype);
-    return Actions.sendResponse(res, 400, { message: 'MIME type is not allowed.' });
-  }
-
-  var guid = crypto.randomUUID();
-  var ext = mime.extension(upfile.mimetype);
-  var tempFilePath = uploadDir + guid + '.' + ext;
-
-  try {
-    // Virus scan
-    if (ENABLE_VIRUS_SCANNING) {
-      var scanPassed = await Utils.avScan(upfile.buffer);
-      if (!scanPassed) {
-        defaultLog.warn('File failed virus check.');
-        return Actions.sendResponse(res, 400, { 'message': 'File failed virus check.' });
-      }
-    }
-
-    // Write to temp file and upload to MinIO
-    fs.writeFileSync(tempFilePath, upfile.buffer);
-    var minioFile = await MinioController.putDocument(
-      MinioController.BUCKETS.DOCUMENTS_BUCKET, project, upfile.originalname, tempFilePath
-    );
-    fs.unlinkSync(tempFilePath);
-
-    // Save document to MongoDB
-    var Document = mongoose.model('Document');
-    var doc = new Document();
-    doc.project = new mongoose.Types.ObjectId(project);
-    doc._comment = new mongoose.Types.ObjectId(_comment);
-    doc._addedBy = 'public';
-    doc._createdDate = new Date();
-    doc.read = ['sysadmin', 'staff'];
-    doc.write = ['sysadmin', 'staff'];
-    doc.delete = ['sysadmin', 'staff'];
-
-    doc.internalOriginalName = upfile.originalname;
-    doc.internalURL = minioFile.path;
-    doc.internalExt = minioFile.extension;
-    doc.internalSize = upfile.size;
-    doc.internalOriginalSha256 = sha256Of(upfile.buffer);
-    doc.passedAVCheck = true;
-    doc.internalMime = upfile.mimetype;
-
-    doc.documentSource = 'COMMENT';
-    doc.displayName = upfile.originalname;
-    doc.documentFileName = upfile.originalname;
-    doc.dateUploaded = new Date();
-    doc.datePosted = new Date();
-    doc.documentAuthor = args.body.documentAuthor;
-    doc.documentAuthorType = new mongoose.Types.ObjectId(args.body.documentAuthorType);
-
-    try {
-      var d = await doc.save();
-      defaultLog.info('Saved new document object:', d._id);
-      var Comment = mongoose.model('Comment');
-      await Comment.updateOne({ _id: _comment }, { $addToSet: { documents: d._id } });
-      Utils.recordAction('Post', 'Document', 'public', d._id);
-      return Actions.sendMirrored(res, 200, d, demiPush.document(d));
-    } catch (saveError) {
-      defaultLog.error('Document save failed, rolling back MinIO:', saveError);
-      MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
-      return Actions.sendResponse(res, 400, saveError);
-    }
-  } catch (e) {
-    defaultLog.error(`Error in unProtectedPost: ${e.message}`);
-    delete e['path'];
-    return Actions.sendResponse(res, 400, e);
-  }
-};
-
 exports.protectedHead = function (args, res) {
   defaultLog.debug('Roles:', args.swagger.params.auth_payload.realm_access.roles);
 
@@ -575,15 +474,23 @@ exports.protectedOpen = function (args, res) {
 };
 
 //  Create a new document
+// The admin upload form sends the string "null" for these when they are empty.
+const NULLABLE_ID_FIELDS = ['milestone', 'type', 'documentAuthorType', 'projectPhase'];
+
 exports.protectedPost = async function (args, res) {
   defaultLog.info('Creating new protected document object');
   var project = args.swagger.params.project.value;
   var _comment = args.swagger.params._comment.value;
 
-  if (args.swagger.params._comment && args.swagger.params._comment.value && !mongoose.Types.ObjectId.isValid(_comment)) {
-    return Actions.sendResponse(res, 400, { });
-  }
-  if (args.swagger.params.project && args.swagger.params.project.value && !mongoose.Types.ObjectId.isValid(project)) {
+  const badId = ['project', '_comment', ...NULLABLE_ID_FIELDS].find(name => {
+    const value = args.swagger.params[name] && args.swagger.params[name].value;
+    if (!value || (value === 'null' && NULLABLE_ID_FIELDS.includes(name))) {
+      return false;
+    }
+    return !Utils.isObjectIdString(value);
+  });
+  if (badId) {
+    defaultLog.warn('Protected file upload rejected: %s is not an id', badId);
     return Actions.sendResponse(res, 400, { });
   }
 
@@ -622,10 +529,14 @@ exports.protectedPost = async function (args, res) {
 
     // Write to temp file and upload to MinIO
     fs.writeFileSync(tempFilePath, upfile.buffer);
-    var minioFile = await MinioController.putDocument(
-      MinioController.BUCKETS.DOCUMENTS_BUCKET, project, args.swagger.params.documentFileName.value, tempFilePath
-    );
-    fs.unlinkSync(tempFilePath);
+    let minioFile;
+    try {
+      minioFile = await MinioController.putDocument(
+        MinioController.BUCKETS.DOCUMENTS_BUCKET, project, args.swagger.params.documentFileName.value, tempFilePath
+      );
+    } finally {
+      fs.unlinkSync(tempFilePath);
+    }
 
     // Build document model
     var Document = mongoose.model('Document');
@@ -689,7 +600,17 @@ exports.protectedPost = async function (args, res) {
       return Actions.sendMirrored(res, 200, d, demiPush.document(d));
     } catch (saveError) {
       defaultLog.error('Document save failed, rolling back MinIO:', saveError);
-      MinioController.deleteDocument(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.project, doc.internalURL);
+      try {
+        // A save can report failure after the write landed (a write timeout); then the file is in use.
+        if (await Document.exists({ _id: doc._id })) {
+          defaultLog.warn('Document %s was stored despite the save error; keeping its file', doc._id);
+        } else {
+          // internalURL already starts with the project, so it is the whole object key.
+          await MinioController.deleteObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, doc.internalURL);
+        }
+      } catch (rollbackError) {
+        defaultLog.error('MinIO rollback of %s failed: %s', doc.internalURL, rollbackError);
+      }
       return Actions.sendResponse(res, 400, saveError);
     }
   } catch (e) {

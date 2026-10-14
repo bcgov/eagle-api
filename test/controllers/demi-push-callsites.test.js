@@ -67,7 +67,6 @@ describe('DEMI push call sites', () => {
   afterEach(() => sinon.restore());
 
   [
-    ['document', documentController, 'unProtectedPost', docArgs],
     ['document', documentController, 'protectedPost', docArgs],
     ['document', documentController, 'protectedPut', docArgs],
     ['document', documentController, 'protectedPublish', docArgs],
@@ -84,7 +83,6 @@ describe('DEMI push call sites', () => {
     ['commentPeriod', commentPeriodController, 'protectedPublish', cpArgs],
     ['commentPeriod', commentPeriodController, 'protectedUnPublish', cpArgs],
     ['comment', commentController, 'protectedPost', commentArgs],
-    ['comment', commentController, 'unProtectedPost', commentArgs],
     ['organization', organizationController, 'protectedPost', orgArgs],
     ['organization', organizationController, 'protectedPut', orgArgs],
     ['organization', organizationController, 'protectedPublish', orgArgs],

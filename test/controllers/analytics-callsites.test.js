@@ -172,13 +172,6 @@ describe('Analytics call sites', () => {
     });
   });
 
-  it('document.unProtectedPost audits nothing, so a public write cannot land as a staff row', async () => {
-    await documentController.unProtectedPost(docArgs(), res);
-
-    expect(res.status.args, `expected 200, got ${JSON.stringify(res.status.args)}`).to.deep.equal([[200]]);
-    expect(analytics.auditEvent.called).to.be.false;
-  });
-
   it('document.protectedGet is a read path and audits nothing', async () => {
     sinon.stub(Utils, 'runDataQuery').resolves([{ _id: OID }]);
     const args = docArgs();

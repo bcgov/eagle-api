@@ -93,6 +93,14 @@ exports.getValidObjectId = function (param) {
   return new mongoose.Types.ObjectId(val);
 };
 
+/**
+ * True only for a 24-hex-digit string. ObjectId.isValid also passes any 12-character string and
+ * some objects, which lets a request body steer a query.
+ */
+exports.isObjectIdString = function (value) {
+  return typeof value === 'string' && /^[0-9a-f]{24}$/i.test(value);
+};
+
 exports.getBasePath = function (protocol, host) {
   return protocol + '://' + host;
 };

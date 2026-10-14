@@ -154,16 +154,18 @@ exports.putFileDirect = putFileDirect;
  * @param fileName the name of the file
  */
 var deleteDocument = function (bucket, projectCode, fileName) {
-  if(isMockService()) return Promise.resolve(() => { return {}; });
-  return minioClient.removeObject(bucket, projectCode + '/' + fileName)
-    .then(function (result, err) {
-      if (err) {
-        throw err;
-      }
-      return result;
-    });
+  return deleteObject(bucket, projectCode + '/' + fileName);
 };
 exports.deleteDocument = deleteDocument;
+
+/**
+ * Delete a file from Minio by its full object key, which is what a document's internalURL holds.
+ */
+const deleteObject = function (bucket, objectName) {
+  if(isMockService()) return Promise.resolve();
+  return minioClient.removeObject(bucket, objectName);
+};
+exports.deleteObject = deleteObject;
 
 /**
  * Get a Minio presigned url, for a specific file object, that permits GET operations.

@@ -1,7 +1,7 @@
 /**
  * Admin document upload (POST /document): images uploaded from the Update form (documentSource
- * 'UPDATE') must be a small web image; every other source keeps the old limits. Both admin and
- * public uploads record the sha256 of the uploaded bytes.
+ * 'UPDATE') must be a small web image; every other source keeps the old limits. An upload records
+ * the sha256 of the uploaded bytes, and a failed save removes the stored file.
  */
 
 'use strict';
@@ -32,6 +32,8 @@ const HEADERS = {
 describe('Document upload limits by source', () => {
   let res;
   let stored;
+  let saveError;
+  let writtenDespiteError;
 
   function uploadArgs(documentSource, upfile, overrides = {}) {
     const params = {
@@ -52,13 +54,17 @@ describe('Document upload limits by source', () => {
   beforeEach(() => {
     res = { status: sinon.stub().returnsThis(), json: sinon.stub() };
     stored = null;
+    saveError = null;
+    writtenDespiteError = false;
     function MockDocument() {
-      this.save = () => { stored = this; return Promise.resolve(this); };
+      this._id = new mongoose.Types.ObjectId();
+      this.save = () => saveError ? Promise.reject(saveError) : (stored = this, Promise.resolve(this));
     }
     MockDocument.updateOne = () => Promise.resolve();
+    MockDocument.exists = () => Promise.resolve(writtenDespiteError ? { _id: 'x' } : null);
     sinon.stub(mongoose, 'model').returns(MockDocument);
     sinon.stub(MinioController, 'putDocument').resolves({ path: 'minio/file', extension: 'png' });
-    sinon.stub(MinioController, 'deleteDocument').resolves();
+    sinon.stub(MinioController, 'deleteObject').resolves();
     sinon.stub(fs, 'writeFileSync');
     sinon.stub(fs, 'unlinkSync');
     sinon.stub(Utils, 'recordAction').resolves();
@@ -186,19 +192,85 @@ describe('Document upload limits by source', () => {
     expect(stored.internalOriginalSha256).to.equal(ABC_SHA256);
   });
 
-  it('records the sha256 of the bytes a member of the public uploads', async () => {
-    const args = {
-      swagger: { params: {
-        project: { value: PROJECT_ID },
-        _comment: { value: '5f4c7d1e2b3a4c5d6e7f8092' },
-        upfile: { value: { mimetype: 'application/pdf', originalname: 'letter.pdf', size: 3, buffer: Buffer.from('abc') } }
-      } },
-      body: { documentAuthor: 'A. Person', documentAuthorType: '5f4c7d1e2b3a4c5d6e7f8093' }
-    };
+  it('deletes the stored file by its full key when the document save fails', async () => {
+    const key = `${PROJECT_ID}/0a1b2c3d.pdf`;
+    MinioController.putDocument.resolves({ path: key, extension: 'pdf' });
+    saveError = new Error('save failed');
 
-    await documentController.unProtectedPost(args, res);
+    await documentController.protectedPost(uploadArgs('PROJECT',
+      { mimetype: 'application/pdf', originalname: 'report.pdf', size: 3, buffer: Buffer.from('abc') }), res);
 
-    expect(res.status.calledWith(200)).to.be.true;
-    expect(stored.internalOriginalSha256).to.equal(ABC_SHA256);
+    expect(res.status.calledWith(400)).to.be.true;
+    expect(MinioController.deleteObject.args).to.deep.equal([[MinioController.BUCKETS.DOCUMENTS_BUCKET, key]]);
+  });
+
+  it('keeps the stored file when the document was written despite the save error', async () => {
+    saveError = new Error('write timeout');
+    writtenDespiteError = true;
+
+    await documentController.protectedPost(uploadArgs('PROJECT',
+      { mimetype: 'application/pdf', originalname: 'report.pdf', size: 3, buffer: Buffer.from('abc') }), res);
+
+    expect(res.status.args).to.deep.equal([[400]]);
+    expect(MinioController.deleteObject.called, 'stored file deleted').to.be.false;
+  });
+
+  it('still answers with the save error when the file cleanup also fails, and leaves no rejection unhandled', async () => {
+    saveError = new Error('save failed');
+    MinioController.deleteObject.rejects(new Error('minio down'));
+    const unhandled = [];
+    const onUnhandled = reason => unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+
+    try {
+      await documentController.protectedPost(uploadArgs('PROJECT',
+        { mimetype: 'application/pdf', originalname: 'report.pdf', size: 3, buffer: Buffer.from('abc') }), res);
+      await new Promise(resolve => setImmediate(resolve));
+    } finally {
+      process.removeListener('unhandledRejection', onUnhandled);
+    }
+
+    expect(res.status.args).to.deep.equal([[400]]);
+    expect(res.json.firstCall.args[0]).to.equal(saveError);
+    expect(unhandled).to.be.empty;
+  });
+
+  it('removes the temp file under uploads/ when the object storage write fails', async () => {
+    MinioController.putDocument.rejects(new Error('minio down'));
+
+    await documentController.protectedPost(uploadArgs('PROJECT',
+      { mimetype: 'application/pdf', originalname: 'report.pdf', size: 3, buffer: Buffer.from('abc') }), res);
+
+    expect(res.status.args).to.deep.equal([[400]]);
+    expect(fs.unlinkSync.args).to.deep.equal([[fs.writeFileSync.firstCall.args[0]]]);
+  });
+
+  const badIds = {
+    'a project sent as an object': { project: { $ne: null } },
+    'a 12-character project id': { project: 'abcdefghijkl' },
+    'a comment id that is not hex': { _comment: 'zzzzzzzzzzzzzzzzzzzzzzzz' },
+    'a milestone sent as an object': { milestone: { _bsontype: 'ObjectId' } },
+    'a type id with extra characters': { type: `${PROJECT_ID}0` },
+    'the string "null" as the project': { project: 'null' },
+    'the string "null" as the comment id': { _comment: 'null' }
+  };
+
+  Object.entries(badIds).forEach(([label, overrides]) => {
+    it(`refuses ${label} before writing anything`, async () => {
+      await documentController.protectedPost(uploadArgs('PROJECT',
+        { mimetype: 'application/pdf', originalname: 'report.pdf', size: 3, buffer: Buffer.from('abc') }, overrides), res);
+
+      expect(res.status.args).to.deep.equal([[400]]);
+      expect(fs.writeFileSync.called, 'temp file written').to.be.false;
+      expect(MinioController.putDocument.called, 'object storage written').to.be.false;
+    });
+  });
+
+  it('accepts the string "null" the admin form sends for an empty milestone', async () => {
+    await documentController.protectedPost(uploadArgs('PROJECT',
+      { mimetype: 'application/pdf', originalname: 'report.pdf', size: 3, buffer: Buffer.from('abc') }, { milestone: 'null' }), res);
+
+    expect(res.status.args).to.deep.equal([[200]]);
+    expect(stored.milestone).to.be.null;
   });
 });

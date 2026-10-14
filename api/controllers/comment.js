@@ -4,7 +4,6 @@ var Actions = require('../helpers/actions');
 var Utils = require('../helpers/utils');
 const demiPush = require('../helpers/demiPush');
 const parentRead = require('../helpers/parentRead');
-const { DateTime } = require('luxon');
 const { COMMENT_FIELDS: ALLOWED_FIELDS, COMMENT_PUBLIC_FIELDS: PUBLIC_FIELDS, PUBLIC_ROLES } = require('../helpers/constants');
 
 // A comment's own read[] stays Published when staff unpublish its period or project, so the
@@ -381,70 +380,6 @@ async function getNextCommentIdCount(period) {
   var periodUpdated = await CommentPeriod.findOneAndUpdate({ _id: period }, { $inc: { commentIdCount: 1 } }, { returnDocument: 'after' });
   return periodUpdated.commentIdCount;
 }
-
-//  Create a new Comment
-exports.unProtectedPost = async function (args, res) {
-  try {
-    const obj = args.swagger.params.comment.value;
-    defaultLog.info('Incoming new comment for period: %s', obj.period);
-    if (args.swagger.params.period && args.swagger.params.period.value && !mongoose.Types.ObjectId.isValid(args.swagger.params.period.value)) {
-      return Actions.sendResponse(res, 400, { });
-    }
-    const Comment = mongoose.model('Comment');
-
-    // Ensure the comment is received before the end date of the period.
-    const commentPeriodModel = mongoose.model('CommentPeriod');
-    const period = await commentPeriodModel.findOne({ _id: new mongoose.Types.ObjectId(obj.period) });
-
-    defaultLog.info('Period: %s', period && period._id);
-
-    if (DateTime.now() > DateTime.fromJSDate(new Date(period.dateCompleted))) {
-      // Past the specified time
-      const endDate = DateTime.fromJSDate(new Date(period.dateCompleted)).toFormat('MMM dd, yyyy h:mm a');
-      defaultLog.info('Comment was not received before completed date:', endDate);
-      return Actions.sendResponse(res,
-        400, {
-          code: '400',
-          message: 'Comment recieved after date completed'
-        }
-      );
-    }
-
-    // get the next commentID for this period
-    const commentIdCount = await getNextCommentIdCount(new mongoose.Types.ObjectId(obj.period));
-
-    defaultLog.info('Next comment id: %d', commentIdCount);
-
-    let cmt = new Comment();
-    cmt._schemaName = 'Comment';
-    cmt.eaoStatus = 'Pending';
-    cmt.author = obj.author;
-    cmt.comment = obj.comment;
-    cmt.dateAdded = new Date();
-    cmt.dateUpdated = new Date();
-    cmt.isAnonymous = obj.isAnonymous;
-    cmt.location = obj.location;
-    cmt.period = new mongoose.Types.ObjectId(obj.period);
-    cmt.commentId = commentIdCount;
-    cmt.documents = [];
-    cmt.datePosted = undefined;
-    cmt.submittedCAC = obj.submittedCAC;
-
-    cmt.read = ['staff', 'sysadmin'];
-    cmt.write = ['staff', 'sysadmin'];
-    cmt.delete = ['staff', 'sysadmin'];
-
-    defaultLog.debug('About to save comment for period: %s', obj.period);
-
-    const c = await cmt.save();
-    Utils.recordAction('Post', 'Comment', 'public', c._id);
-    defaultLog.info('Saved new comment object: %s', c._id);
-    return Actions.sendMirrored(res, 200, c, demiPush.comment(c));
-  } catch (e) {
-    defaultLog.error(`Error: ${e.message}`);
-    return Actions.sendResponse(res, 400, e);
-  }
-};
 
 // Update an existing Comment
 exports.protectedPut = async function (args, res) {
