@@ -186,5 +186,59 @@ describe('CAC Controller', () => {
       expect(res.status.calledWith(400)).to.be.true;
       expect(defaultLog.error.called).to.be.true;
     });
+
+    it('logs the member id, never the submitted address', async () => {
+      cacUserModel.findOne.resolves({ _id: VALID_MEMBER_ID, email: 'test@example.com' });
+      projectModel.updateOne.resolves({ modifiedCount: 1 });
+      await cac.publicCACRemoveMember(makeArgs(), res);
+      expect(JSON.stringify(defaultLog.info.args)).to.not.include('test@example.com');
+    });
+
+    it('logs a miss without the submitted address', async () => {
+      cacUserModel.findOne.resolves(null);
+      await cac.publicCACRemoveMember(makeArgs(), res);
+      expect(JSON.stringify(defaultLog.info.args)).to.not.include('test@example.com');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Both routes are anonymous: a body field shaped as a query operator must not reach CACUser.
+  describe('anonymous input that could steer the member query', () => {
+    const handlers = {
+      publicCACSignUp: cac.publicCACSignUp,
+      publicCACRemoveMember: cac.publicCACRemoveMember
+    };
+    const badInput = {
+      'an operator object as email': { cac: { value: { email: { $ne: '' } } } },
+      'a regex object as email': { cac: { value: { email: { $regex: '.*' } } } },
+      'an array as email': { cac: { value: { email: ['test@example.com'] } } },
+      'an email that is not an address': { cac: { value: { email: 'not-an-address' } } },
+      'an email over 254 characters': { cac: { value: { email: `${'a'.repeat(250)}@example.com` } } },
+      'no email': { cac: { value: {} } },
+      'a 12-character project id': { projId: { value: 'abcdefghijkl' } }
+    };
+
+    Object.entries(handlers).forEach(([name, handler]) => {
+      Object.entries(badInput).forEach(([label, overrides]) => {
+        it(`${name} refuses ${label} with 400 before any query`, async () => {
+          await handler(makeArgs(overrides), res);
+
+          expect(res.status.args).to.deep.equal([[400]]);
+          expect(cacUserModel.findOne.called, 'CACUser queried').to.be.false;
+          expect(cacUserModel.deleteOne.called, 'CACUser deleted').to.be.false;
+        });
+      });
+
+      it(`${name} looks the member up by the trimmed address string`, async () => {
+        cacUserModel.findOne.resolves({ _id: VALID_MEMBER_ID, email: 'test@example.com' });
+        projectModel.findOneAndUpdate.resolves(null);
+        projectModel.updateOne.resolves({ modifiedCount: 1 });
+
+        await handler(makeArgs({ cac: { value: { email: '  test@example.com ' } } }), res);
+
+        expect(res.status.args).to.deep.equal([[200]]);
+        expect(cacUserModel.findOne.firstCall.args[0].email).to.equal('test@example.com');
+      });
+    });
   });
 });

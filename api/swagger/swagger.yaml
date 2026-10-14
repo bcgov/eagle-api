@@ -4020,44 +4020,6 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-    post:
-      tags:
-        - document
-      summary: "Create a new document from public"
-      operationId: unProtectedPost
-      description: "Create a new document object from public."
-      consumes:
-        - multipart/form-data
-      parameters:
-        - name: upfile
-          in: formData
-          description: "The file to upload."
-          required: true
-          type: file
-        - name: project
-          in: formData
-          description: "The project to bind this document to."
-          required: false
-          type: string
-        - name: _comment
-          in: formData
-          description: "The comment to bind this document to."
-          required: false
-          type: string
-        - name: displayName
-          in: formData
-          description: "The displayName of the file."
-          required: false
-          type: string
-      responses:
-        "200":
-          description: "Success"
-          schema:
-            $ref: "#/definitions/DocObject"
-        "403":
-          description: "Access Denied"
-          schema:
-            $ref: "#/definitions/Error"
     get:
       tags:
         - document
@@ -5286,27 +5248,6 @@ paths:
       summary: "Pre-flight request"
       operationId: protectedOptions
       description: "Options on comment Route"
-      responses:
-        "200":
-          description: "Success"
-          schema:
-            $ref: "#/definitions/CommentObject"
-        "403":
-          description: "Access Denied"
-          schema:
-            $ref: "#/definitions/Error"
-    post:
-      tags:
-        - comment
-      summary: "Create a new comment"
-      operationId: unProtectedPost
-      description: "Create a new comment object."
-      parameters:
-        - name: comment
-          in: body
-          required: true
-          schema:
-            $ref: "#/definitions/CommentObject"
       responses:
         "200":
           description: "Success"

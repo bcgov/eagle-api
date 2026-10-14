@@ -78,7 +78,7 @@ describe('DEMI push awaited before the reply', () => {
       ['document POST', 'document', 'documents', 'Document', () => documentController.protectedPost(docArgs(), res), () => {}, savedBody],
       ['document publish', 'document', 'documents', 'Document', () => documentController.protectedPublish(docArgs(), res), () => {}, savedBody],
       ['project PUT', 'project', 'projects', 'Project', () => projectController.protectedPut(projArgs(), res), () => {}, savedBody],
-      ['public comment POST', 'comment', 'comments', 'Comment', () => commentController.unProtectedPost(commentArgs(), res), () => {}, savedBody],
+      ['comment POST', 'comment', 'comments', 'Comment', () => commentController.protectedPost(commentArgs(), res), () => {}, savedBody],
       ['commentperiod PUT', 'commentPeriod', 'commentperiods', 'CommentPeriod', () => commentPeriodController.protectedPut(cpArgs(), res), () => {},
         () => ({ ...writeResult })],
       ['project DELETE', 'project', 'projects', 'Project', () => projectController.protectedDelete(projArgs(), res),
@@ -124,7 +124,7 @@ describe('DEMI push awaited before the reply', () => {
     // A failed push must not lead to a second insert: the record and its stored file exist once.
     [
       ['document POST', 'document', 'documents', 'Document', () => documentController.protectedPost(docArgs(), res)],
-      ['public comment POST', 'comment', 'comments', 'Comment', () => commentController.unProtectedPost(commentArgs(), res)]
+      ['comment POST', 'comment', 'comments', 'Comment', () => commentController.protectedPost(commentArgs(), res)]
     ].forEach(([label, kind, route, modelName, run]) => {
       it(`${label} saves once and only flags the row when the push fails`, async () => {
         const save = sinon.spy(models[modelName].prototype, 'save');

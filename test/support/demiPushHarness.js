@@ -94,10 +94,10 @@ function stubModel(modelName, saved) {
   const M = function (init) { Object.assign(this, init || {}); this.legislationYearList = this.legislationYearList || []; };
   M.modelName = modelName;
   M.prototype.save = () => Promise.resolve(saved());
-  // dateCompleted keeps comment.unProtectedPost inside the period; read[] is what publish toggles.
+  // read[] is what publish toggles.
   // project.protectedPublish only switches to a year the project lists and has a named block for.
   const stored = () => new M({
-    _id: OID, project: OID, read: [], dateCompleted: new Date(Date.now() + 86400000),
+    _id: OID, project: OID, read: [],
     legislation_2002: { name: 'X', phaseHistory: '' }, currentLegislationYear: 'legislation_2002', legislationYearList: [2002]
   });
   // recentActivity.protectedPut reads the stored row with .lean() before validating the merge
