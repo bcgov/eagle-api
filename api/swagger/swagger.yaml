@@ -474,6 +474,25 @@ definitions:
       - 'read'
       - 'write'
       - 'delete'
+  PublicCommentFields:
+    type: string
+    description: "Optional fields to return on the public routes: no staff review fields."
+    enum: &publicCommentFields
+      - 'author'
+      - 'comment'
+      - 'commentId'
+      - 'dateAdded'
+      - 'datePosted'
+      - 'dateUpdated'
+      - 'isAnonymous'
+      - 'location'
+      - 'period'
+      - 'proponentStatus'
+      - 'publishedNotes'
+      - 'valuedComponents'
+      - 'read'
+      - 'write'
+      - 'delete'
   CommentSortByFields:
     type: string
     description: "Optional fields to sort by (prefixed with + or - for order)"
@@ -5310,7 +5329,7 @@ paths:
           collectionFormat: pipes
           items:
             type: string
-            enum: *commentFields
+            enum: *publicCommentFields
       responses:
         "200":
           description: "Success"
@@ -5351,7 +5370,7 @@ paths:
           collectionFormat: pipes
           items:
             type: string
-            enum: *commentFields
+            enum: *publicCommentFields
         - in: query
           name: pageNum
           type: number
@@ -5422,12 +5441,14 @@ paths:
           collectionFormat: pipes
           items:
             type: string
-            enum: *commentFields
+            enum: *publicCommentFields
       responses:
         "200":
-          description: "Success"
+          description: "An array holding the one comment, empty when no public comment has this id"
           schema:
-            $ref: "#/definitions/CommentObject"
+            type: array
+            items:
+              $ref: "#/definitions/CommentObject"
         "403":
           description: "Access Denied"
           schema:

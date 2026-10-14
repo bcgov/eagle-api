@@ -358,7 +358,7 @@ const executeQuery = async function (args, res) {
     if (dataset === constants.COMMENT) {
       // Filter
       collectionData[0].searchResults.forEach(function (item) {
-        if (item.isAnonymous === true) {
+        if (item.isAnonymous !== false) {
           delete item.author;
         }
       });
@@ -383,7 +383,7 @@ const executeQuery = async function (args, res) {
     if (schemaNameVal === constants.COMMENT) {
       // Filter
       data.forEach(function (item) {
-        if (item.isAnonymous === true) {
+        if (item.isAnonymous !== false) {
           delete item.author;
         }
       });

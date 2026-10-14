@@ -216,6 +216,25 @@ describe('Search Controller', () => {
     });
   });
 
+  describe('Comment item search', () => {
+    it('hides the author unless the comment is marked not anonymous; the field defaults to anonymous', async () => {
+      modelStub.aggregate.returns({ allowDiskUse: () => Promise.resolve([
+        { _id: 'a', author: 'Jane' },
+        { _id: 'b', author: 'Sam', isAnonymous: true },
+        { _id: 'c', author: 'Lee', isAnonymous: false }
+      ]) });
+
+      await searchController.publicGet(makeArgs({
+        dataset: { value: 'Item' },
+        _schemaName: { value: 'Comment' },
+        _id: { value: '507f1f77bcf86cd799439011' }
+      }), res);
+
+      expect(res.status.firstCall.args[0]).to.equal(200);
+      expect(res.json.firstCall.args[0].map(row => row.author)).to.deep.equal([undefined, undefined, 'Lee']);
+    });
+  });
+
   describe('Item Aggregator Search', () => {
     it('returns item when dataset is ITEM', async () => {
       const args = makeArgs({
