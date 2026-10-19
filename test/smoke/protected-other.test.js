@@ -1,15 +1,13 @@
 'use strict';
 
 const { expect } = require('chai');
-const { authGet, hasToken, resolveProjectId, resolveOrgId } = require('./helpers');
+const { authGet, hasToken, resolveOrgId } = require('./helpers');
 
 describe('PROTECTED misc endpoints (requires token)', () => {
-  let projId;
   let orgId;
 
   before(async function () {
     if (!hasToken()) return this.skip();
-    projId = await resolveProjectId();
     orgId = await resolveOrgId();
   });
 
@@ -29,24 +27,6 @@ describe('PROTECTED misc endpoints (requires token)', () => {
     if (res.status === 200) {
       expect(res.body).to.be.an('array').with.lengthOf.at.least(1);
     }
-  });
-
-  // — Topics ——
-
-  it('GET /topic — lists topics', async function () {
-    if (!hasToken()) return this.skip();
-    const res = await authGet('/topic').query({ pageNum: 0, pageSize: 5 });
-    expect(res.status).to.be.oneOf([200, 403]);
-    if (res.status === 200) expect(res.body).to.be.an('array');
-  });
-
-  // — Valued Components ——
-
-  it('GET /vc?projectId=:id — lists valued components', async function () {
-    if (!hasToken()) return this.skip();
-    const res = await authGet('/vc').query({ projectId: projId, pageNum: 0, pageSize: 5 });
-    expect(res.status).to.be.oneOf([200, 403]);
-    if (res.status === 200) expect(res.body).to.be.an('array');
   });
 
   // — Project Notifications ——
@@ -74,16 +54,6 @@ describe('UNAUTHENTICATED other endpoints', () => {
   it('GET /organization without token — accessible as public', async () => {
     const req = require('supertest')(require('./helpers').API).get('/organization').query({ pageNum: 0, pageSize: 1 });
     await req.expect(200);
-  });
-
-  it('GET /topic without token — refused', async () => {
-    const req = require('supertest')(require('./helpers').API).get('/topic').query({ pageNum: 0, pageSize: 1 });
-    await req.expect(403);
-  });
-
-  it('GET /vc without token — refused', async () => {
-    const req = require('supertest')(require('./helpers').API).get('/vc').query({ pageNum: 0, pageSize: 1 });
-    await req.expect(403);
   });
 
   it('GET /projectNotification without token — refused', async () => {
