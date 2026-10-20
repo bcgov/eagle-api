@@ -1,16 +1,6 @@
 /**
- * Recent activity visibility against a real MongoDB.
- *
- * An activity's own `read[]` says nothing about its project, so an active row under an unpublished
- * project used to be served to anonymous callers by /api/public/recentActivity and
- * /api/search?dataset=RecentActivity. These specs drive the real controllers so the assertions are
- * about what a caller gets back, not about pipeline shape.
- *
- * Needs a MongoDB the aggregation framework actually runs on, so it is not part of `npm test`.
- * CI runs it in its own step against a service container.
- *
- *   npm run db:up
- *   npm run test:db
+ * An active recent-activity row under an unpublished project is never served to anonymous callers.
+ * Needs real MongoDB, so not in `npm test`: `npm run db:up && npm run test:db` (MONGODB_TEST_URI).
  */
 
 'use strict';

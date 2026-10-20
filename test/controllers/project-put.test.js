@@ -318,7 +318,7 @@ describe('Project protectedPut', () => {
 
   describe('when the project moves under the Building Canada Act between the read and the write', () => {
     beforeEach(() => {
-      // The stored project no longer matches the write filter.
+      // Stored project fails the write filter.
       projectModel.findOneAndUpdate.resolves(null);
       projectModel.exists = sinon.stub().resolves({ _id: PROJ_ID });
     });

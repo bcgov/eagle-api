@@ -1,7 +1,6 @@
 /**
- * Routes retired because nothing calls them. Drives requests through the real swagger and router:
- * a request to a retired path must answer 404 without reaching a controller, the database or
- * object storage.
+ * Retired routes must not reach a controller, the database or object storage.
+ * Requests go through the real swagger and router.
  */
 const { expect } = require('chai');
 const sinon = require('sinon');
