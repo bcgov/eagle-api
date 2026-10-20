@@ -85,7 +85,7 @@ describe('anonymous read allow-list', () => {
     });
 
     it('refuses an unannotated one with 403', () => {
-      const target = protectedOps.find(o => o.apiPath === '/vc' && o.method === 'get');
+      const target = protectedOps.find(o => o.apiPath === '/projectNotification' && o.method === 'get');
       const { passed, status } = run(target);
       expect(passed).to.be.false;
       expect(status).to.equal(403);

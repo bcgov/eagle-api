@@ -7,7 +7,6 @@
  * Sysadmin may read any job regardless of owner; others only their own.
  *
  * Flow:
- *   GET    /api/jobs                 – sysadmin: all jobs; others: own jobs only
  *   GET    /api/jobs/:jobId          – owner or sysadmin
  *   GET    /api/jobs/:jobId/download – owner or sysadmin
  */
@@ -74,35 +73,6 @@ function userId(authPayload) {
 }
 
 // ── Endpoints ────────────────────────────────────────────────────────────────
-
-/**
- * GET /api/jobs
- *
- * Returns the 20 most recent jobs for the authenticated user.
- */
-exports.listJobs = async function (args, res) {
-  const authPayload = args.swagger.params.auth_payload;
-
-  // Sysadmin sees ALL jobs; everyone else sees only their own.
-  const isSysadmin = hasSysadmin(authPayload);
-  const requestedBy = userId(authPayload);
-  const filter = isSysadmin ? {} : { 'data.requestedBy': requestedBy };
-
-  try {
-    const agenda = getAgenda();
-    const jobs = await agenda.jobs(
-      filter,
-      { _id: -1 },
-      20,
-      0
-    );
-
-    return res.json(jobs.map(formatJob));
-  } catch (err) {
-    defaultLog.error(`[job] listJobs error: ${err.message}`);
-    return res.status(500).json({ message: 'Failed to list jobs.' });
-  }
-};
 
 /**
  * GET /api/jobs/:jobId

@@ -163,7 +163,7 @@ describe('Auth Helper Functions', () => {
       };
 
       it('refuses a GET on a route that does not declare anonymous read', (done) => {
-        noBearer('/vc', 'get', {});
+        noBearer('/projectNotification', 'get', {});
         auth.verifyToken(mockReq, {}, '', () => {
           expect(resStatus.calledWith(403)).to.be.true;
           expect(mockReq.swagger.params.auth_payload).to.be.undefined;

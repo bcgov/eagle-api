@@ -18,9 +18,7 @@ const YAML = require('js-yaml');
 const createRouter = require('../../api/middleware/swagger-router');
 
 const CLOSED = [
-  '/vc',
-  '/topic',
-  '/jobs',
+  '/jobs/000000000000000000000000',
   '/projectNotification',
   '/comment',
   '/organization/000000000000000000000000'
