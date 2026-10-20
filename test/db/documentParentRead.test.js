@@ -1,20 +1,6 @@
 /**
- * Document visibility against a real MongoDB.
- *
- * A document's own `read[]` says nothing about its parent, so a published document under an
- * unpublished project or notification used to be served to anonymous callers by
- * /api/search?dataset=Document, /api/public/document, /api/document and the download, fetch and
- * open routes. These specs drive the real controllers so the assertions are about what a caller
- * gets back, not about pipeline shape.
- *
- * Needs a MongoDB the aggregation framework actually runs on, so it is not part of `npm test`.
- * CI runs it in its own step against a service container.
- *
- *   npm run db:up
- *   npm run test:db
- *
- * `db:up` publishes docker-compose.yml's MongoDB on 27017, which is what this defaults to.
- * Point it elsewhere with MONGODB_TEST_URI.
+ * A published document under an unpublished project or notification is never served anonymously.
+ * Needs real MongoDB, so not in `npm test`: `npm run db:up && npm run test:db` (MONGODB_TEST_URI).
  */
 
 'use strict';

@@ -5,11 +5,8 @@ const Actions = require('../helpers/actions');
 const { safeEqual } = require('../helpers/auth');
 
 /**
- * Access curtain for non-production environments. Replaces the nginx basic auth that used to sit
- * in front of dev/test. The password is only ever compared here, so it never ships in the bundle.
- *
- * UNAUTHENTICATED — the swagger path carries no `security` block, and the global /api rate limiter
- * in app.js is what bounds guessing.
+ * Unauthenticated (no swagger `security` block); the global /api rate limiter in app.js bounds
+ * guessing. The password is compared only here, so it never ships in the bundle.
  */
 exports.publicPost = async function (req, res) {
   const expected = process.env.ACCESS_GATE_PASSWORD;

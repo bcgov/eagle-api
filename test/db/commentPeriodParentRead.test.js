@@ -1,19 +1,6 @@
 /**
- * Comment period visibility against a real MongoDB.
- *
- * A comment period's own `read[]` says nothing about its parent, so a published period under an
- * unpublished project used to be served to anonymous callers by /api/search?dataset=CommentPeriod,
- * /api/public/commentperiod and /api/commentperiod. These specs drive the real controllers so the
- * assertions are about what a caller gets back, not about pipeline shape.
- *
- * Needs a MongoDB the aggregation framework actually runs on, so it is not part of `npm test`.
- * CI runs it in its own step against a service container.
- *
- *   npm run db:up
- *   npm run test:db
- *
- * `db:up` publishes docker-compose.yml's MongoDB on 27017, which is what this defaults to.
- * Point it elsewhere with MONGODB_TEST_URI.
+ * A published comment period under an unpublished project is never served to anonymous callers.
+ * Needs real MongoDB, so not in `npm test`: `npm run db:up && npm run test:db` (MONGODB_TEST_URI).
  */
 
 'use strict';

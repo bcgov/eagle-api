@@ -1,7 +1,6 @@
 /**
- * The public site no longer takes comments or attachments, so POST /public/comment and
- * POST /public/document are gone. Drives requests through the real swagger and router: a POST to
- * either path must not reach a controller, the database or object storage.
+ * POST /public/comment and POST /public/document must not reach a controller, the database or
+ * object storage. Requests go through the real swagger and router.
  */
 const { expect } = require('chai');
 const sinon = require('sinon');

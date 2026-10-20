@@ -1,9 +1,6 @@
 /**
- * Unit Tests for Config Controller
- *
- * GET /api/config is unauthenticated and world-readable, so the tests that matter are the ones
- * about what it refuses to serve, and about falsy values surviving — SEARCH_API_PATH: '' is the
- * documented kill switch back to eagle-api, and a truthy filter would silently drop it.
+ * GET /api/config is world-readable: these tests cover what it refuses to serve, and falsy values
+ * surviving (SEARCH_API_PATH: '' is a kill switch; a truthy filter would silently drop it).
  */
 
 const { expect } = require('chai');
@@ -113,9 +110,8 @@ describe('Config Controller', () => {
   });
 
   it('serves the three penguin tracking keys nowhere, even when the stored document carries them', async () => {
-    // penguin-analytics was uninstalled on 2026-09-07 and these keys dropped from the model.
-    // 20260907000000-drop-penguin-config unsets them, but an environment that has not run it yet
-    // must not have them served back to browsers.
+    // Dropped penguin keys must never reach browsers, even on an environment where the migration
+    // that unsets them has not run yet.
     stubConfigModel({
       _schemaName: 'Config',
       ENVIRONMENT: 'test',
@@ -133,9 +129,8 @@ describe('Config Controller', () => {
   });
 
   it('serves ANALYTICS_API_URL as an empty string when the document has no such field', async () => {
-    // The frontends merge this payload over env.js with a shallow spread and env.js bakes
-    // '/analytics'. An absent key leaves the retired penguin client switched on in the browser,
-    // so '' has to be present, not merely unset.
+    // Frontends shallow-merge this over env.js, which bakes '/analytics': an absent key leaves the
+    // retired penguin client on in the browser, so '' must be present, not merely unset.
     stubHydratedConfig({ _schemaName: 'Config', ENVIRONMENT: 'test' });
     const res = fakeRes();
 
