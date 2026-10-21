@@ -163,13 +163,13 @@ describe('Config Controller', () => {
     stubConfigModel({
       _schemaName: 'Config',
       ENVIRONMENT: 'test',
-      CENTRE_API_URL: 'https://centre-test.example.gov.bc.ca/api'
+      CENTRE_API_URL: 'https://centre-test.example.gov.bc.ca'
     });
     const res = fakeRes();
 
     await configController.publicGet({}, res);
 
-    expect(res.body).to.have.property('CENTRE_API_URL', 'https://centre-test.example.gov.bc.ca/api');
+    expect(res.body).to.have.property('CENTRE_API_URL', 'https://centre-test.example.gov.bc.ca');
   });
 
   it('defaults CENTRE_API_URL to an empty string when the row has no opinion on it', async () => {
