@@ -45,6 +45,8 @@ module.exports = require('../models')('Config', {
 
   // Base URL of the eagle-analytics ingest gateway for browsers. Empty keeps the client off.
   EAGLE_ANALYTICS_URL         : { type: String, default: '' },
+  // EPIC.centre API base; eagle-admin posts the user's last access there. Empty keeps the call off.
+  CENTRE_API_URL              : { type: String, default: '' },
   // The exception to the secret rule above: an Application Insights ingestion connection string is
   // public by design (it ships in the SPA bundle), and junk telemetry is capped by the daily limit.
   APPINSIGHTS_CONNECTION_STRING: { type: String, default: '' },
