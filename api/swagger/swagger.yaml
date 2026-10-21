@@ -118,6 +118,10 @@ definitions:
         type: string
         description: "Base URL of the eagle-analytics ingest gateway for browser clients. Empty turns the client off."
         example: "https://demi-apim-test.azure-api.net/analytics"
+      CENTRE_API_URL:
+        type: string
+        description: "Base URL of the EPIC.centre API, where eagle-admin records the signed-in user's last access. Empty turns the call off."
+        example: "https://centre-api-c8b80a-test.apps.gold.devops.gov.bc.ca"
       APPINSIGHTS_CONNECTION_STRING:
         type: string
         description: "Application Insights ingestion connection string for the browser SDK. Empty turns browser telemetry off."

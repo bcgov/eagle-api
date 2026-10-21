@@ -159,6 +159,28 @@ describe('Config Controller', () => {
     expect(res.body).to.have.property('EAGLE_ANALYTICS_URL', '');
   });
 
+  it('serves CENTRE_API_URL', async () => {
+    stubConfigModel({
+      _schemaName: 'Config',
+      ENVIRONMENT: 'test',
+      CENTRE_API_URL: 'https://centre-test.example.gov.bc.ca/api'
+    });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.have.property('CENTRE_API_URL', 'https://centre-test.example.gov.bc.ca/api');
+  });
+
+  it('defaults CENTRE_API_URL to an empty string when the row has no opinion on it', async () => {
+    stubHydratedConfig({ _schemaName: 'Config', ENVIRONMENT: 'test' });
+    const res = fakeRes();
+
+    await configController.publicGet({}, res);
+
+    expect(res.body).to.have.property('CENTRE_API_URL', '');
+  });
+
   it('serves no key outside the public allowlist', async () => {
     stubConfigModel({
       _schemaName: 'Config',
