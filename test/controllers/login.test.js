@@ -13,6 +13,7 @@ const createRouter = require('../../api/middleware/swagger-router');
 
 describe('POST /api/login/token through the real router', () => {
   let app;
+  let findOne;
 
   before(() => {
     const spec = YAML.load(fs.readFileSync(path.join(__dirname, '../../api/swagger/swagger.yaml'), 'utf8'));
@@ -24,7 +25,7 @@ describe('POST /api/login/token through the real router', () => {
   beforeEach(() => {
     const alice = { _id: 'u1', username: 'alice', password: 'right-pass', roles: ['staff'] };
     auth.setPassword(alice);
-    const findOne = sinon.stub().resolves(null);
+    findOne = sinon.stub().resolves(null);
     findOne.withArgs({ username: 'alice' }).resolves(alice);
     sinon.stub(mongoose, 'model').callThrough().withArgs('User').returns({ findOne });
   });
@@ -40,17 +41,19 @@ describe('POST /api/login/token through the real router', () => {
     expect(claims.realm_access.roles).to.deep.equal(['staff']);
   });
 
-  it('answers 400 with no token for a wrong password', async () => {
-    const res = await request(app).post('/api/login/token').send({ username: 'alice', password: 'wrong-pass' });
-
-    expect(res.status).to.equal(400);
-    expect(res.body).to.not.have.property('accessToken');
-  });
-
   it('answers 400 saying the username or password is wrong', async () => {
     const res = await request(app).post('/api/login/token').send({ username: 'alice', password: 'wrong-pass' });
 
     expect(res.status).to.equal(400);
     expect(res.body).to.deep.equal({ message: 'Invalid username or password' });
+  });
+
+  it('answers 400 without the database error text when the user lookup fails', async () => {
+    findOne.withArgs({ username: 'alice' }).rejects(new Error('connect ECONNREFUSED 10.0.0.5:27017'));
+
+    const res = await request(app).post('/api/login/token').send({ username: 'alice', password: 'right-pass' });
+
+    expect(res.status).to.equal(400);
+    expect(res.body).to.deep.equal({ message: 'Login failed' });
   });
 });

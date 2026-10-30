@@ -12,7 +12,7 @@ exports.loginPost = function(args, res) {
     if (err || !user) {
       defaultLog.error(`err:: ${err ? err.message : info.message}`);
       defaultLog.info('user:', user);
-      res.status(400).send(err ? { message: err.message } : info);
+      res.status(400).send(err ? { message: 'Login failed' } : info);
     } else {
       defaultLog.info('Logged in:', user._id);
       // Remove sensitive data before login
