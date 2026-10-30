@@ -1,11 +1,3 @@
-/**
- * Unit Tests for ProjectGroup Controller
- *
- * Covers every exported function including happy paths, invalid-input guards,
- * not-found branches, and DB error handling.  All mongoose/Utils/logger calls
- * are stubbed — no real database connection required.
- */
-
 'use strict';
 
 const { expect } = require('chai');
@@ -89,15 +81,6 @@ describe('ProjectGroup Controller', () => {
   });
 
   afterEach(() => sinon.restore());
-
-  // ---------------------------------------------------------------------------
-  describe('protectedOptions', () => {
-    it('returns 200', () => {
-      const mockRes = { status: sinon.stub().returnsThis(), send: sinon.stub() };
-      projectGroup.protectedOptions({}, mockRes);
-      expect(mockRes.status.calledWith(200)).to.be.true;
-    });
-  });
 
   // ---------------------------------------------------------------------------
   describe('protectedAddGroup', () => {

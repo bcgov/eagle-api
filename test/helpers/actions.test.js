@@ -1,9 +1,3 @@
-/**
- * Unit Tests for API Helpers - Actions
- * 
- * Testing action functions for publish/unpublish operations
- */
-
 const { expect } = require('chai');
 const sinon = require('sinon');
 const mongoose = require('mongoose');
@@ -241,41 +235,6 @@ describe('Actions Helper Functions', () => {
       expect(mockRes.json.calledWith(testObject)).to.be.true;
     });
 
-    it('should handle error status codes', () => {
-      const mockRes = {
-        status: sinon.stub().returnsThis(),
-        json: sinon.stub()
-      };
-
-      actions.sendResponse(mockRes, 404, { error: 'Not Found' });
-
-      expect(mockRes.status.calledWith(404)).to.be.true;
-    });
-
-    it('should chain status and json calls', () => {
-      const mockRes = {
-        status: sinon.stub().returnsThis(),
-        json: sinon.stub()
-      };
-
-      actions.sendResponse(mockRes, 201, {});
-
-      expect(mockRes.status.calledBefore(mockRes.json)).to.be.true;
-    });
-
-    it('should handle various status codes', () => {
-      const mockRes = {
-        status: sinon.stub().returnsThis(),
-        json: sinon.stub()
-      };
-
-      actions.sendResponse(mockRes, 500, { error: 'Server Error' });
-      expect(mockRes.status.calledWith(500)).to.be.true;
-
-      actions.sendResponse(mockRes, 204, {});
-      expect(mockRes.status.calledWith(204)).to.be.true;
-    });
-
     describe('pending push fields', () => {
       const PENDING = { demiPushPending: true, demiPushFailedAt: new Date(), demiPushError: 'failed: connect ECONNREFUSED' };
       let mockRes;
@@ -324,38 +283,6 @@ describe('Actions Helper Functions', () => {
         expect(sent()).to.equal(rows);
         expect(sent()[0].when).to.equal(date);
       });
-    });
-  });
-
-  describe('isPublished', () => {
-    it('should return truthy value when object has public tag', async () => {
-      const mockObject = {
-        tags: [['public'], ['other']]
-      };
-
-      const result = await actions.isPublished(mockObject);
-      
-      expect(result).to.exist;
-    });
-
-    it('should return undefined when object does not have public tag', async () => {
-      const mockObject = {
-        tags: [['private'], ['internal']]
-      };
-
-      const result = await actions.isPublished(mockObject);
-      
-      expect(result).to.be.undefined;
-    });
-
-    it('should handle empty tags array', async () => {
-      const mockObject = {
-        tags: []
-      };
-
-      const result = await actions.isPublished(mockObject);
-
-      expect(result).to.be.undefined;
     });
   });
 

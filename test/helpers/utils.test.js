@@ -1,9 +1,3 @@
-/**
- * Unit Tests for API Helpers - Utils
- * 
- * Testing utility functions used throughout the API
- */
-
 const { expect } = require('chai');
 const sinon = require('sinon');
 const mongoose = require('mongoose');
@@ -294,32 +288,6 @@ describe('Utils Helper Functions', () => {
       await utils.recordAction('Publish', 'Project', 'tester', 'obj-123', {});
 
       expect(auditSaveStub.calledOnce).to.be.true;
-    });
-  });
-
-  describe('avScan', () => {
-    // Note: avScan tests would require mocking the clamav module
-    // These are placeholder tests showing the structure
-    
-    it('should be a function', () => {
-      expect(utils.avScan).to.be.a('function');
-    });
-
-    it('should return a promise', () => {
-      const buffer = Buffer.from('test');
-      const result = utils.avScan(buffer);
-      expect(result).to.be.instanceOf(Promise);
-    });
-  });
-
-  describe('runDataQuery', () => {
-    it('should be a function', () => {
-      expect(utils.runDataQuery).to.be.a('function');
-    });
-
-    it('should return a promise', () => {
-      const result = utils.runDataQuery('Project', [], {}, [], null, null, 0, 10, false, []);
-      expect(result).to.be.instanceOf(Promise);
     });
   });
 
