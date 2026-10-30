@@ -8,11 +8,11 @@ exports.loginPost = function(args, res) {
   var username = args.body.username;
   var password = args.body.password;
 
-  auth.checkAuthentication(username, password, function (err, user) {
+  auth.checkAuthentication(username, password, function (err, user, info) {
     if (err || !user) {
-      defaultLog.error(`err:: ${err.message}`);
+      defaultLog.error(`err:: ${err ? err.message : info.message}`);
       defaultLog.info('user:', user);
-      res.status(400).send(err);
+      res.status(400).send(err ? { message: err.message } : info);
     } else {
       defaultLog.info('Logged in:', user._id);
       // Remove sensitive data before login
