@@ -1,9 +1,3 @@
-/**
- * Unit Tests for Search Controller
- *
- * ponytail: Fully mocked unit tests for Search controller to check logic, validation, pagination, and sorting.
- */
-
 'use strict';
 
 const { expect } = require('chai');
@@ -95,14 +89,6 @@ describe('Search Controller', () => {
   });
 
   afterEach(() => sinon.restore());
-
-  describe('protectedOptions', () => {
-    it('returns 200', () => {
-      searchController.protectedOptions({}, res);
-      expect(res.status.calledWith(200)).to.be.true;
-      expect(res.send.calledOnce).to.be.true;
-    });
-  });
 
   describe('executeQuery Errors & Validation', () => {
     it('rejects invalid project ObjectId format', async () => {

@@ -232,7 +232,12 @@ var authenticate = function (user, password) {
   return user.password === hashPassword(user, password);
 };
 
+const INVALID_LOGIN = 'Invalid username or password';
+
 exports.checkAuthentication = function (username, password, cb) {
+  if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
+    return cb(null, false, { message: INVALID_LOGIN });
+  }
   var User = require('mongoose').model('User');
 
   // Look this user up in the db and hash their password to see if it's correct.
@@ -242,9 +247,7 @@ exports.checkAuthentication = function (username, password, cb) {
   .then(user => {
     if (!user || !authenticate(user, password)) {
       defaultLog.debug('Invalid username or password for: %s', username);
-      return cb(null, false, {
-        message: 'Invalid username or password'
-      });
+      return cb(null, false, { message: INVALID_LOGIN });
     }
     return cb(null, user);
   })

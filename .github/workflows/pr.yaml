@@ -24,7 +24,9 @@ jobs:
 
   test:
     name: Test
-    runs-on: ubuntu-latest
+    # ubuntu-latest kernel 7.0 trips the mongo:8.0 start check;
+    # back to ubuntu-latest once mongo:8.0.37 is on Docker Hub.
+    runs-on: ubuntu-22.04
     timeout-minutes: 10
     services:
       # test:db drives the real aggregation pipeline, so it needs a MongoDB of the same major

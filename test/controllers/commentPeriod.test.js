@@ -1,9 +1,3 @@
-/**
- * Unit Tests for CommentPeriod Controller
- * 
- * ponytail: Minimal stubbed unit tests for CommentPeriod controller to verify request logic and regression safety.
- */
-
 'use strict';
 
 const { expect } = require('chai');
@@ -87,14 +81,6 @@ describe('CommentPeriod Controller', () => {
   });
 
   afterEach(() => sinon.restore());
-
-  describe('protectedOptions', () => {
-    it('returns 200', () => {
-      commentPeriod.protectedOptions({}, res);
-      expect(res.status.calledWith(200)).to.be.true;
-      expect(res.send.calledOnce).to.be.true;
-    });
-  });
 
   describe('publicGet', () => {
     it('queries public data successfully', async () => {

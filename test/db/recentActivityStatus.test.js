@@ -1,12 +1,5 @@
-/**
- * Update (RecentActivity) status visibility against a real MongoDB.
- *
- * Public readers see an Update only when it is published and its publishDate has passed. Rows the
- * backfill has not reached yet carry no status and still go by `active`.
- *
- *   npm run db:up
- *   npm run test:db
- */
+// Public readers see an Update only when it is published and its publishDate has passed. Rows the
+// backfill has not reached yet carry no status and still go by `active`.
 
 'use strict';
 
@@ -291,6 +284,21 @@ describe('Update status visibility (requires MongoDB)', function () {
     const feed = capture();
     await recentActivityController.publicGet({ swagger: { params: {} } }, feed.res);
     expect(idsIn(feed.body.data)).to.not.include(String(PUBLISHED));
+  });
+
+  it('DELETE answers 404 for a project id and leaves the project public', async () => {
+    sinon.stub(demiPush, 'recentActivity').resolves(true);
+    const { res, body } = capture();
+    await recentActivityController.protectedDelete({
+      swagger: {
+        operation: { 'x-security-scopes': ['sysadmin'] },
+        params: { recentActivityId: { value: String(PUBLIC_PROJECT) }, auth_payload: { preferred_username: 'staff' } }
+      }
+    }, res);
+
+    expect(body.code).to.equal(404);
+    const stored = await mongoose.connection.collection('epic').findOne({ _id: PUBLIC_PROJECT });
+    expect(stored.read).to.include('public');
   });
 });
 

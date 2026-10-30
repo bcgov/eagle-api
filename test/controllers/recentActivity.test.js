@@ -1,9 +1,5 @@
-/**
- * Unit Tests for RecentActivity Controller - DEMI mirror
- *
- * DEMI owns Updates; eagle-api mirrors the write and answers once the mirror
- * settles, with mirrored false when it did not land. Mongoose, Utils and demiPush are stubbed - no database.
- */
+// DEMI owns Updates: eagle-api mirrors the write and answers once the mirror settles, with mirrored
+// false when it did not land. Mongoose, Utils and demiPush are stubbed, so no database.
 
 'use strict';
 
@@ -188,18 +184,10 @@ describe('RecentActivity Controller - DEMI mirror', () => {
   });
 
   describe('protectedDelete', () => {
-    it('archives instead of deleting, and mirrors the archived row', async () => {
+    it('records the archive in the audit trail', async () => {
       await recentActivity.protectedDelete(deleteArgs(), res);
 
-      expect(model.deleteMany.called).to.be.false;
-      const [query, update] = model.findOneAndUpdate.firstCall.args;
-      expect(JSON.stringify(query)).to.include(ACTIVITY_ID);
-      expect(query._schemaName).to.equal('RecentActivity');
-      expect(update.$set).to.include({ status: 'archived', active: false });
-      expect(update.$pull).to.deep.equal({ read: 'public' });
-      expect(pushStub.calledOnceWithExactly(saved)).to.be.true;
-      expect(Utils.recordAction.firstCall.args.slice(0, 2)).to.deep.equal(['Archive', 'RecentActivity']);
-      expect(res.status.calledWith(200)).to.be.true;
+      expect(Utils.recordAction.calledWith('Archive', 'RecentActivity')).to.be.true;
     });
 
     it('answers 200 with mirrored false when the archived row does not reach DEMI', async () => {

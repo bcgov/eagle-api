@@ -1,11 +1,3 @@
-/**
- * Unit Tests for CAC (Community Advisory Committee) Controller
- *
- * Covers every exported function including happy paths, invalid-input guards,
- * not-found branches, and DB error handling.  All mongoose/Utils/Email/logger
- * calls are stubbed — no real database connection required.
- */
-
 'use strict';
 
 const { expect } = require('chai');
@@ -88,15 +80,6 @@ describe('CAC Controller', () => {
   });
 
   afterEach(() => sinon.restore());
-
-  // ---------------------------------------------------------------------------
-  describe('protectedOptions', () => {
-    it('returns 200', () => {
-      const mockRes = { status: sinon.stub().returnsThis(), send: sinon.stub() };
-      cac.protectedOptions({}, mockRes);
-      expect(mockRes.status.calledWith(200)).to.be.true;
-    });
-  });
 
   // ---------------------------------------------------------------------------
   describe('publicCACSignUp', () => {

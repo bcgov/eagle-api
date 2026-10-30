@@ -1,11 +1,3 @@
-# =============================================================================
-# Deploy to Test
-# =============================================================================
-# Manually triggered workflow to deploy a version to test environment.
-# Requires semantic version tag (v1.2.3).
-# Creates Git tag and GitHub Release if this is a new version.
-# =============================================================================
-
 name: Deploy to Test
 
 on:

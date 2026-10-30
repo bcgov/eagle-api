@@ -49,15 +49,36 @@ describe('Config Controller', () => {
 
   afterEach(() => sinon.restore());
 
-  it('serves the stored configuration', async () => {
-    stubConfigModel({ _schemaName: 'Config', ENVIRONMENT: 'test', BANNER_COLOUR: 'orange' });
+  // Every allowlisted key, each with a value the row could hold.
+  const PUBLIC_VALUES = {
+    ENVIRONMENT: 'test',
+    BANNER_COLOUR: 'orange',
+    LOG_LEVEL: 'debug',
+    API_PATH: '/api',
+    SEARCH_API_PATH: '/demi-search',
+    DEMI_PROJECTS_PATH: '/demi-projects',
+    ADMIN_PATH: '/admin/',
+    CONTENT_SEARCH: true,
+    KEYCLOAK_URL: 'https://test.loginproxy.gov.bc.ca/auth',
+    KEYCLOAK_REALM: 'eao-epic',
+    KEYCLOAK_ENABLED: true,
+    EAGLE_ANALYTICS_URL: 'https://demi-apim-test.azure-api.net/analytics',
+    CENTRE_API_URL: 'https://centre-test.example.gov.bc.ca',
+    APPINSIGHTS_CONNECTION_STRING: 'InstrumentationKey=00000000-0000-0000-0000-000000000000',
+    SURVEY_URL: 'https://survey.example.gov.bc.ca',
+    SHOW_SURVEY_BANNER: true,
+    ACCESS_GATE: true,
+    EXTENDED_PROJECT_PAGES: { '5f4c7d1e2b3a4c5d6e7f8091': 'harbour-crossing' }
+  };
+
+  it('serves every allowlisted key as the row stores it, plus the retired ANALYTICS_API_URL as empty', async () => {
+    stubConfigModel(Object.assign({ _schemaName: 'Config' }, PUBLIC_VALUES));
     const res = fakeRes();
 
     await configController.publicGet({}, res);
 
     expect(res.statusCode).to.equal(200);
-    expect(res.body.ENVIRONMENT).to.equal('test');
-    expect(res.body.BANNER_COLOUR).to.equal('orange');
+    expect(res.body).to.deep.include(Object.assign({}, PUBLIC_VALUES, { ANALYTICS_API_URL: '' }));
   });
 
   it('preserves falsy values instead of dropping them', async () => {
@@ -78,15 +99,6 @@ describe('Config Controller', () => {
     expect(res.body).to.have.property('SURVEY_URL', null);
   });
 
-  it('serves DEMI_PROJECTS_PATH when the row sets it', async () => {
-    stubConfigModel({ _schemaName: 'Config', ENVIRONMENT: 'test', DEMI_PROJECTS_PATH: '/demi-projects' });
-    const res = fakeRes();
-
-    await configController.publicGet({}, res);
-
-    expect(res.body).to.have.property('DEMI_PROJECTS_PATH', '/demi-projects');
-  });
-
   it('defaults DEMI_PROJECTS_PATH to an empty string when the row has no opinion on it', async () => {
     stubHydratedConfig({ _schemaName: 'Config', ENVIRONMENT: 'test' });
     const res = fakeRes();
@@ -94,19 +106,6 @@ describe('Config Controller', () => {
     await configController.publicGet({}, res);
 
     expect(res.body).to.have.property('DEMI_PROJECTS_PATH', '');
-  });
-
-  it('serves EAGLE_ANALYTICS_URL', async () => {
-    stubConfigModel({
-      _schemaName: 'Config',
-      ENVIRONMENT: 'test',
-      EAGLE_ANALYTICS_URL: 'https://demi-apim-test.azure-api.net/analytics'
-    });
-    const res = fakeRes();
-
-    await configController.publicGet({}, res);
-
-    expect(res.body).to.have.property('EAGLE_ANALYTICS_URL', 'https://demi-apim-test.azure-api.net/analytics');
   });
 
   it('serves the three penguin tracking keys nowhere, even when the stored document carries them', async () => {
@@ -159,19 +158,6 @@ describe('Config Controller', () => {
     expect(res.body).to.have.property('EAGLE_ANALYTICS_URL', '');
   });
 
-  it('serves CENTRE_API_URL', async () => {
-    stubConfigModel({
-      _schemaName: 'Config',
-      ENVIRONMENT: 'test',
-      CENTRE_API_URL: 'https://centre-test.example.gov.bc.ca'
-    });
-    const res = fakeRes();
-
-    await configController.publicGet({}, res);
-
-    expect(res.body).to.have.property('CENTRE_API_URL', 'https://centre-test.example.gov.bc.ca');
-  });
-
   it('defaults CENTRE_API_URL to an empty string when the row has no opinion on it', async () => {
     stubHydratedConfig({ _schemaName: 'Config', ENVIRONMENT: 'test' });
     const res = fakeRes();
@@ -216,28 +202,6 @@ describe('Config Controller', () => {
     expect(res.body).to.have.property('ACCESS_GATE', false);
   });
 
-  it('serves ACCESS_GATE when the row sets it true', async () => {
-    stubConfigModel({ _schemaName: 'Config', ENVIRONMENT: 'test', ACCESS_GATE: true });
-    const res = fakeRes();
-
-    await configController.publicGet({}, res);
-
-    expect(res.body).to.have.property('ACCESS_GATE', true);
-  });
-
-  it('serves APPINSIGHTS_CONNECTION_STRING when the row sets it', async () => {
-    stubConfigModel({
-      _schemaName: 'Config',
-      ENVIRONMENT: 'test',
-      APPINSIGHTS_CONNECTION_STRING: 'InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://example.in.applicationinsights.azure.com/'
-    });
-    const res = fakeRes();
-
-    await configController.publicGet({}, res);
-
-    expect(res.body.APPINSIGHTS_CONNECTION_STRING).to.contain('IngestionEndpoint=');
-  });
-
   it('serves an empty APPINSIGHTS_CONNECTION_STRING when the row has no opinion on it', async () => {
     // Empty is the off switch: the SPAs skip loading the browser SDK, so the default must reach
     // the payload as '' rather than going missing.
@@ -247,15 +211,6 @@ describe('Config Controller', () => {
     await configController.publicGet({}, res);
 
     expect(res.body).to.have.property('APPINSIGHTS_CONNECTION_STRING', '');
-  });
-
-  it('serves CONTENT_SEARCH when the row sets it true', async () => {
-    stubConfigModel({ _schemaName: 'Config', ENVIRONMENT: 'test', CONTENT_SEARCH: true });
-    const res = fakeRes();
-
-    await configController.publicGet({}, res);
-
-    expect(res.body).to.have.property('CONTENT_SEARCH', true);
   });
 
   it('does not gain CONTENT_SEARCH when the row has no opinion on it', async () => {

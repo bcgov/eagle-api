@@ -1,11 +1,3 @@
-# =============================================================================
-# Deploy to Dev
-# =============================================================================
-# Triggered on push to develop branch.
-# Builds Docker image, scans for vulnerabilities, pushes to OpenShift registry,
-# and deploys with Helm.
-# =============================================================================
-
 name: Deploy to Dev
 
 on:

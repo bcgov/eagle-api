@@ -61,9 +61,6 @@ const searchArgs = () => ({
   }
 });
 
-/** publicDownload and protectedDownload do not return their promise chain, so drain the queue. */
-const settle = async () => { for (let i = 0; i < 10; i++) await new Promise(r => setImmediate(r)); };
-
 /** The single row the handler under test handed to the analytics buffer. */
 const auditRow = () => {
   expect(analytics.auditEvent.callCount, 'expected exactly one audit row').to.equal(1);
@@ -213,8 +210,7 @@ describe('Analytics call sites', () => {
     });
 
     it('document.publicDownload tracks Document Downloaded with no user', async () => {
-      documentController.publicDownload(docArgs(), res);
-      await settle();
+      await documentController.publicDownload(docArgs(), res);
 
       expect(analytics.trackEvent.calledOnce).to.be.true;
       const [eventType, properties, options] = analytics.trackEvent.firstCall.args;
@@ -224,8 +220,7 @@ describe('Analytics call sites', () => {
     });
 
     it('document.protectedDownload tracks Document Downloaded against the staff subject', async () => {
-      documentController.protectedDownload(docArgs(), res);
-      await settle();
+      await documentController.protectedDownload(docArgs(), res);
 
       expect(analytics.trackEvent.calledOnce).to.be.true;
       const [eventType, , options] = analytics.trackEvent.firstCall.args;

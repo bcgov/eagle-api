@@ -1,9 +1,3 @@
-/**
- * Unit Tests for Aggregators
- * 
- * Testing MongoDB aggregation pipeline builders
- */
-
 const { expect } = require('chai');
 const sinon = require('sinon');
 const mongoose = require('mongoose');
@@ -66,18 +60,20 @@ describe('Document Aggregator', () => {
       expect(result[0].$match.$text.$caseSensitive).to.be.false;
     });
 
-    it('should include deleted filter', async () => {
+    it('leaves out deleted documents', async () => {
       const result = await documentAggregator.createMatchAggr('Document', null, null, false, null, null, null, ['public']);
-      
-      expect(result[0].$match).to.have.property('$or');
+
+      expect(result[0].$match.$or).to.deep.equal([{ isDeleted: { $exists: false } }, { isDeleted: false }]);
     });
 
-    it('should handle categorized=true', async () => {
+    it('keeps only categorized documents that are not deleted when categorized is true', async () => {
       const result = await documentAggregator.createMatchAggr('Document', null, null, false, null, null, true, ['public']);
-      
-      expect(result[0].$match).to.have.property('type');
-      expect(result[0].$match).to.have.property('milestone');
-      expect(result[0].$match).to.have.property('documentAuthorType');
+
+      expect(result[0].$match).to.deep.include({
+        type: { $nin: [null, ''] },
+        milestone: { $nin: [null, ''] },
+        documentAuthorType: { $nin: [null, ''] }
+      });
     });
 
     it('keeps Update images when a signed-in caller filters on documentSource, even one with no roles', async () => {
@@ -301,48 +297,6 @@ describe('Project Aggregator', () => {
   });
 
   describe('createProjectAggr', () => {
-    it('should create project aggregation for default legislation', () => {
-      const result = projectAggregator.createProjectAggr('default');
-      
-      expect(result).to.be.an('array');
-    });
-
-    it('should create project aggregation for 1996 legislation', () => {
-      const result = projectAggregator.createProjectAggr('1996');
-      
-      expect(result).to.be.an('array');
-    });
-
-    it('should create project aggregation for 2002 legislation', () => {
-      const result = projectAggregator.createProjectAggr('2002');
-      
-      expect(result).to.be.an('array');
-    });
-
-    it('should create project aggregation for 2018 legislation', () => {
-      const result = projectAggregator.createProjectAggr('2018');
-      
-      expect(result).to.be.an('array');
-    });
-
-    it('should handle all legislation', () => {
-      const result = projectAggregator.createProjectAggr('all');
-      
-      expect(result).to.be.an('array');
-    });
-
-    it('should handle undefined legislation', () => {
-      const result = projectAggregator.createProjectAggr();
-      
-      expect(result).to.be.an('array');
-    });
-
-    it('should handle empty string legislation', () => {
-      const result = projectAggregator.createProjectAggr('');
-
-      expect(result).to.be.an('array');
-    });
-
     const joinedFields = (pipeline) => pipeline.filter(stage => stage.$lookup).map(stage => stage.$lookup.localField);
 
     it('joins the 2025 block, not the default one, for legislation 2025', () => {
