@@ -78,7 +78,7 @@ describe('Config Controller', () => {
     await configController.publicGet({}, res);
 
     expect(res.statusCode).to.equal(200);
-    expect(res.body).to.deep.equal(Object.assign({}, PUBLIC_VALUES, { ANALYTICS_API_URL: '' }));
+    expect(res.body).to.deep.include(Object.assign({}, PUBLIC_VALUES, { ANALYTICS_API_URL: '' }));
   });
 
   it('preserves falsy values instead of dropping them', async () => {

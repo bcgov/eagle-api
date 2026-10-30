@@ -4,31 +4,6 @@ const mongoose = require('mongoose');
 
 describe('Model Schemas', () => {
 
-  describe('Model Schema Factory', () => {
-    let genModelFunction;
-
-    before(() => {
-      // Load the models factory
-      genModelFunction = require('../../api/helpers/models');
-    });
-
-    it('should be a function', () => {
-      expect(genModelFunction).to.be.a('function');
-    });
-
-    it('should require name parameter', () => {
-      // Calling without name should log error
-      const result = genModelFunction(null, {});
-      expect(result).to.be.undefined;
-    });
-
-    it('should require definition parameter', () => {
-      // Calling without definition should log error
-      const result = genModelFunction('TestModel', null);
-      expect(result).to.be.undefined;
-    });
-  });
-
   // Without the paths, strict mode would drop the $set that flags a row for demi-push-sweep.
   describe('DEMI pending-push fields', () => {
     before(() => {

@@ -13,9 +13,11 @@ describe('document.featureDocument limit of five featured documents per project'
   let res;
 
   function withFeaturedCount(count) {
+    const countDocuments = sinon.stub().resolves(count);
     sinon.stub(mongoose, 'model').callsFake(name => (name === 'Project'
       ? { findById: sinon.stub().resolves({ _id: PROJ_ID }) }
-      : { findById: sinon.stub().resolves(document), countDocuments: sinon.stub().resolves(count) }));
+      : { findById: sinon.stub().resolves(document), countDocuments }));
+    return countDocuments;
   }
 
   const args = () => ({ swagger: { params: { docId: { value: DOC_ID }, auth_payload: { realm_access: { roles: ['staff'] } } } } });
@@ -47,5 +49,13 @@ describe('document.featureDocument limit of five featured documents per project'
     expect(res.json.firstCall.args[0]).to.include({ message: 'Feature document limit reached', limit: 5 });
     expect(document.save.called).to.be.false;
     expect(document.isFeatured).to.be.false;
+  });
+
+  it('counts only featured documents of the same project toward the limit', async () => {
+    const countDocuments = withFeaturedCount(0);
+
+    await documentController.featureDocument(args(), res);
+
+    expect(countDocuments.firstCall.args[0]).to.deep.equal({ project: PROJ_ID, isFeatured: true });
   });
 });

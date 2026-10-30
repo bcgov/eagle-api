@@ -60,18 +60,21 @@ describe('Document Aggregator', () => {
       expect(result[0].$match.$text.$caseSensitive).to.be.false;
     });
 
-    it('should include deleted filter', async () => {
+    it('leaves out deleted documents', async () => {
       const result = await documentAggregator.createMatchAggr('Document', null, null, false, null, null, null, ['public']);
-      
-      expect(result[0].$match).to.have.property('$or');
+
+      expect(result[0].$match.$or).to.deep.equal([{ isDeleted: { $exists: false } }, { isDeleted: false }]);
     });
 
-    it('should handle categorized=true', async () => {
+    it('keeps only categorized documents that are not deleted when categorized is true', async () => {
       const result = await documentAggregator.createMatchAggr('Document', null, null, false, null, null, true, ['public']);
-      
-      expect(result[0].$match).to.have.property('type');
-      expect(result[0].$match).to.have.property('milestone');
-      expect(result[0].$match).to.have.property('documentAuthorType');
+
+      expect(result[0].$match).to.deep.include({
+        type: { $nin: [null, ''] },
+        milestone: { $nin: [null, ''] },
+        documentAuthorType: { $nin: [null, ''] },
+        $or: [{ isDeleted: { $exists: false } }, { isDeleted: false }]
+      });
     });
 
     it('keeps Update images when a signed-in caller filters on documentSource, even one with no roles', async () => {
