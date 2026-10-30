@@ -1,9 +1,3 @@
-/**
- * Unit Tests for Comment Controller
- *
- * ponytail: Fully mocked unit tests for Comment controller verifying status updates, post limits, and export streaming.
- */
-
 'use strict';
 
 const { expect } = require('chai');
@@ -405,13 +399,14 @@ describe('Comment Controller', () => {
   });
 
   describe('protectedPost', () => {
-    it('creates comment and increments ID via CommentPeriod', async () => {
+    it('saves a Pending comment readable by staff only, numbered from the period counter', async () => {
       const args = makeArgs();
       cpModel.findOneAndUpdate.resolves({ commentIdCount: 5 });
 
       function MockComment(obj) {
         Object.assign(this, obj);
-        this.save = sinon.stub().resolves({ _id: VALID_COMM_ID });
+        this._id = VALID_COMM_ID;
+        this.save = sinon.stub().callsFake(() => Promise.resolve(this));
       }
       mongoose.model.restore();
       sinon.stub(mongoose, 'model').callsFake(name => {
@@ -421,30 +416,50 @@ describe('Comment Controller', () => {
       });
 
       await commentController.protectedPost(args, res);
-      expect(cpModel.findOneAndUpdate.calledOnce).to.be.true;
+
       expect(res.status.calledWith(200)).to.be.true;
+      const saved = res.json.firstCall.args[0];
+      expect(saved.commentId).to.equal(5);
+      expect(saved.eaoStatus).to.equal('Pending');
+      expect(saved.read).to.deep.equal(['staff', 'sysadmin']);
     });
   });
 
   describe('protectedPut', () => {
-    it('updates comment values', async () => {
-      const args = makeArgs();
-      commentModel.updateOne.resolves({ nModified: 1 });
+    it('writes the edited fields and the read list of the new status with $set', async () => {
+      const args = makeArgs({ comment: { value: { eaoStatus: 'Published', eaoNotes: 'ok' } } });
+      commentModel.updateOne.resolves({ matchedCount: 1 });
 
       await commentController.protectedPut(args, res);
-      expect(commentModel.updateOne.calledOnce).to.be.true;
-      expect(res.status.calledWith(200)).to.be.true;
+
+      const [filter, update] = commentModel.updateOne.firstCall.args;
+      expect(filter).to.deep.equal({ _id: VALID_COMM_ID });
+      expect(Object.keys(update)).to.deep.equal(['$set']);
+      expect(update.$set).to.include({ eaoStatus: 'Published', eaoNotes: 'ok' });
+      expect(update.$set.read).to.deep.equal(['public', 'staff', 'sysadmin']);
     });
   });
 
   describe('protectedStatus', () => {
-    it('updates comment status permissions', async () => {
-      const args = makeArgs();
-      commentModel.updateOne.resolves({ nModified: 1 });
+    [
+      ['Published', 'Published', ['public', 'staff', 'sysadmin']],
+      ['Pending', 'Pending', ['staff', 'sysadmin']],
+      ['Deferred', 'Deferred', ['staff', 'sysadmin']],
+      ['Rejected', 'Rejected', ['staff', 'sysadmin']],
+      ['Reset', 'Pending', ['staff', 'sysadmin']]
+    ].forEach(([status, stored, read]) => {
+      it(`${status} writes eaoStatus ${stored} and read ${read.join(', ')} with $set`, async () => {
+        commentModel.updateOne.resolves({ matchedCount: 1 });
 
-      await commentController.protectedStatus(args, res);
-      expect(commentModel.updateOne.calledOnce).to.be.true;
-      expect(res.status.calledWith(200)).to.be.true;
+        await commentController.protectedStatus(makeArgs({ status: { value: { status } } }), res);
+
+        const [filter, update] = commentModel.updateOne.firstCall.args;
+        expect(filter).to.deep.equal({ _id: VALID_COMM_ID });
+        expect(Object.keys(update)).to.deep.equal(['$set']);
+        expect(update.$set.eaoStatus).to.equal(stored);
+        expect(update.$set.read).to.deep.equal(read);
+        expect(update.$set.updatedBy).to.equal('testuser');
+      });
     });
   });
 

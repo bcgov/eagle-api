@@ -1,9 +1,3 @@
-/**
- * Unit Tests for API Helpers - DEMI Push
- *
- * Testing the dark outbound mirror to demi-api
- */
-
 const { expect } = require('chai');
 const sinon = require('sinon');
 const mongoose = require('mongoose');
@@ -129,35 +123,17 @@ describe('DemiPush Helper', () => {
   });
 
   describe('dark by default', () => {
-    it('should not call fetch when DEMI_API_BASE is unset', async () => {
-      delete process.env.DEMI_API_BASE;
-      // Nothing to send is not a failure: a caller that counts results must not see this as one.
-      expect(await demiPush.project({ _id: 'p1', name: 'Test' })).to.be.true;
-      expect(fetchStub.called).to.be.false;
-    });
-
-    it('should not call fetch for documents when DEMI_API_BASE is unset', async () => {
-      delete process.env.DEMI_API_BASE;
-      expect(await demiPush.document({ _id: 'd1' })).to.be.true;
-      expect(fetchStub.called).to.be.false;
-    });
-
-    it('should not call fetch for the config when DEMI_API_BASE is unset', async () => {
-      delete process.env.DEMI_API_BASE;
-      expect(await demiPush.config({ ENVIRONMENT: 'test' })).to.be.true;
-      expect(fetchStub.called).to.be.false;
-    });
-
-    it('should not call fetch for Updates when DEMI_API_BASE is unset', async () => {
-      delete process.env.DEMI_API_BASE;
-      expect(await demiPush.recentActivity({ _id: 'u1' })).to.be.true;
-      expect(fetchStub.called).to.be.false;
-    });
-
-    MIRRORED.forEach(([kind]) => {
-      it(`should not call fetch for ${kind} when DEMI_API_BASE is unset`, async () => {
+    // Nothing to send is not a failure: a caller that counts results must not see this as one.
+    [
+      ['project', { _id: 'p1', name: 'Test' }],
+      ['document', { _id: 'd1' }],
+      ['config', { ENVIRONMENT: 'test' }],
+      ['recentActivity', { _id: 'u1' }],
+      ...MIRRORED.map(([kind]) => [kind, { _id: 'x1' }])
+    ].forEach(([kind, doc]) => {
+      it(`should not call fetch for ${kind} when DEMI_API_BASE is unset, and report it landed`, async () => {
         delete process.env.DEMI_API_BASE;
-        await demiPush[kind]({ _id: 'x1' });
+        expect(await demiPush[kind](doc)).to.be.true;
         expect(fetchStub.called).to.be.false;
       });
     });

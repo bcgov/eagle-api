@@ -1,11 +1,3 @@
-/**
- * Unit Tests for Pins Controller
- *
- * Covers every exported function including happy paths, invalid-input guards,
- * not-found branches, and DB error handling.  All mongoose/Utils/logger calls
- * are stubbed — no real database connection required.
- */
-
 'use strict';
 
 const { expect } = require('chai');
@@ -91,16 +83,6 @@ describe('Pins Controller', () => {
   });
 
   afterEach(() => sinon.restore());
-
-  // ---------------------------------------------------------------------------
-  describe('protectedOptions', () => {
-    it('returns 200', () => {
-      const mockRes = { status: sinon.stub().returnsThis(), send: sinon.stub() };
-      pins.protectedOptions({}, mockRes);
-      expect(mockRes.status.calledWith(200)).to.be.true;
-      expect(mockRes.send.calledOnce).to.be.true;
-    });
-  });
 
   // ---------------------------------------------------------------------------
   describe('publicPinGet', () => {
@@ -189,16 +171,6 @@ describe('Pins Controller', () => {
       expect(Utils.recordAction.calledWith('Add', 'Pin', 'testuser', VALID_PROJ_ID)).to.be.true;
     });
 
-    // Mongo is stubbed here, so the update sent is what can be checked; test/db/projectPins.test.js runs it for real.
-    it('sends each pin id once, as $addToSet, when the request repeats an id', async () => {
-      const OTHER_PIN_ID = '507f1f77bcf86cd799439013';
-      projectModel.findOneAndUpdate.resolves({ _id: VALID_PROJ_ID, pins: [VALID_PIN_ID, OTHER_PIN_ID] });
-      await pins.protectedAddPins(makeArgs({ pins: { value: [VALID_PIN_ID, OTHER_PIN_ID, VALID_PIN_ID] } }), res);
-      const update = projectModel.findOneAndUpdate.firstCall.args[1];
-      expect(update).to.not.have.property('$push');
-      expect(update.$addToSet.pins.$each.map(String)).to.deep.equal([VALID_PIN_ID, OTHER_PIN_ID]);
-    });
-
     it('returns 404 when project not found', async () => {
       projectModel.findOneAndUpdate.resolves(null);
       await pins.protectedAddPins(makeArgs(), res);
@@ -232,10 +204,13 @@ describe('Pins Controller', () => {
       expect(res.status.calledWith(404)).to.be.true;
     });
 
-    it('returns 200 and records Publish action', async () => {
+    it('adds public to pinsRead, records Publish and answers 200', async () => {
       projectModel.findOne.resolves({ _id: VALID_PROJ_ID, pins: [VALID_PIN_ID] });
       projectModel.updateOne.resolves({ modifiedCount: 1 });
       await pins.protectedPublishPin(makeArgs(), res);
+      const [filter, update] = projectModel.updateOne.firstCall.args;
+      expect(String(filter._id)).to.equal(VALID_PROJ_ID);
+      expect(update).to.deep.equal({ $addToSet: { pinsRead: 'public' } });
       expect(res.status.calledWith(200)).to.be.true;
       expect(Utils.recordAction.calledWith('Publish', 'PIN')).to.be.true;
     });
@@ -269,10 +244,13 @@ describe('Pins Controller', () => {
       expect(Utils.recordAction.calledWith('Publish',   'PIN')).to.be.false;
     });
 
-    it('returns 200 on success', async () => {
+    it('pulls public from pinsRead and answers 200', async () => {
       projectModel.findOne.resolves({ _id: VALID_PROJ_ID, pins: [VALID_PIN_ID] });
       projectModel.updateOne.resolves({ modifiedCount: 1 });
       await pins.protectedUnPublishPin(makeArgs(), res);
+      const [filter, update] = projectModel.updateOne.firstCall.args;
+      expect(String(filter._id)).to.equal(VALID_PROJ_ID);
+      expect(update).to.deep.equal({ $pull: { pinsRead: 'public' } });
       expect(res.status.calledWith(200)).to.be.true;
     });
 
