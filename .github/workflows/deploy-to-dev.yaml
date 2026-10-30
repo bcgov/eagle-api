@@ -1,11 +1,3 @@
-# =============================================================================
-# Deploy to Dev
-# =============================================================================
-# Triggered on push to develop branch.
-# Builds Docker image, scans for vulnerabilities, pushes to OpenShift registry,
-# and deploys with Helm.
-# =============================================================================
-
 name: Deploy to Dev
 
 on:
@@ -223,5 +215,6 @@ jobs:
         env:
           SMOKE_TEST_URL: https://eagle-dev.apps.silver.devops.gov.bc.ca
           SMOKE_API_KEY: ${{ secrets.SMOKE_API_KEY }}
+          SMOKE_TEST_TOKEN: ${{ secrets.SMOKE_TEST_TOKEN }}
           NODE_TLS_REJECT_UNAUTHORIZED: '0'
 
