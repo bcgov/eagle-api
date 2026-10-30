@@ -1,9 +1,5 @@
-/**
- * Unit Tests for RecentActivity Controller - DEMI mirror
- *
- * DEMI owns Updates; eagle-api mirrors the write and answers once the mirror
- * settles, with mirrored false when it did not land. Mongoose, Utils and demiPush are stubbed - no database.
- */
+// DEMI owns Updates: eagle-api mirrors the write and answers once the mirror settles, with mirrored
+// false when it did not land. Mongoose, Utils and demiPush are stubbed, so no database.
 
 'use strict';
 

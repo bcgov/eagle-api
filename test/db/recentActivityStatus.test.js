@@ -1,12 +1,5 @@
-/**
- * Update (RecentActivity) status visibility against a real MongoDB.
- *
- * Public readers see an Update only when it is published and its publishDate has passed. Rows the
- * backfill has not reached yet carry no status and still go by `active`.
- *
- *   npm run db:up
- *   npm run test:db
- */
+// Public readers see an Update only when it is published and its publishDate has passed. Rows the
+// backfill has not reached yet carry no status and still go by `active`.
 
 'use strict';
 

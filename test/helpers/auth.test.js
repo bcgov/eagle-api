@@ -69,8 +69,6 @@ describe('Auth Helper Functions', () => {
     });
   });
 
-  // checkAuthentication requires database access and is better tested in integration tests
-
   describe('Token Security', () => {
     it('should verify tokens with correct secret and reject with wrong secret', () => {
       const user = { _id: 'user123', username: 'testuser' };
