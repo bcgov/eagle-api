@@ -232,7 +232,6 @@ jobs:
         env:
           SMOKE_TEST_URL: https://eagle-test.apps.silver.devops.gov.bc.ca
           SMOKE_API_KEY: ${{ secrets.SMOKE_API_KEY }}
-          SMOKE_TEST_TOKEN: ${{ secrets.SMOKE_TEST_TOKEN }}
           NODE_TLS_REJECT_UNAUTHORIZED: '0'
 
 
