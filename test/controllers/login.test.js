@@ -55,6 +55,13 @@ describe('POST /api/login/token through the real router', () => {
     expect(res.body).to.deep.equal({ message: 'Invalid username or password' });
   });
 
+  it('answers 400 for a username sent as a query operator', async () => {
+    const res = await request(app).post('/api/login/token').send({ username: { $gt: '' }, password: 'x' });
+
+    expect(res.status).to.equal(400);
+    expect(res.body).to.deep.equal({ message: 'Invalid username or password' });
+  });
+
   it('answers 400 without the database error text when the user lookup fails', async () => {
     findOne.withArgs({ username: 'alice' }).rejects(new Error('connect ECONNREFUSED 10.0.0.5:27017'));
 

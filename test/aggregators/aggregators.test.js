@@ -72,8 +72,7 @@ describe('Document Aggregator', () => {
       expect(result[0].$match).to.deep.include({
         type: { $nin: [null, ''] },
         milestone: { $nin: [null, ''] },
-        documentAuthorType: { $nin: [null, ''] },
-        $or: [{ isDeleted: { $exists: false } }, { isDeleted: false }]
+        documentAuthorType: { $nin: [null, ''] }
       });
     });
 
