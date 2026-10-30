@@ -6,13 +6,13 @@ Simple test suite for the Eagle API.
 
 ```bash
 # Run all tests
-npm test
+yarn test
 
 # Watch mode (re-run on file changes)
-npm run test:watch
+yarn test:watch
 
-# Tests that need a real MongoDB (aggregation behaviour). Not part of `npm test`.
-npm run db:up && npm run test:db
+# Tests that need a real MongoDB (aggregation behaviour). Not part of `yarn test`.
+yarn db:up && yarn test:db
 ```
 
 `db:up` publishes the docker-compose.yml MongoDB on 27017 as a single-member replica set, so
@@ -29,41 +29,22 @@ CI runs `test:db` as its own step against a MongoDB service container.
 
 ## Writing Tests
 
-### Basic Example
+Add a test only when breaking the behaviour turns no existing test red. Break the code, run `yarn test`, then restore it.
+
+A test calls production code and asserts what a caller sees:
 
 ```javascript
 const { expect } = require('chai');
+const { legislationKey } = require('../../api/helpers/constants');
 
-describe('Feature Name', () => {
-  it('should do something specific', () => {
-    const result = 1 + 1;
-    expect(result).to.equal(2);
+describe('legislationKey', () => {
+  it('maps a year to its project block key', () => {
+    expect(legislationKey(2018)).to.equal('legislation_2018');
   });
 });
 ```
 
-### Testing Async Code
-
-```javascript
-it('should handle promises', async () => {
-  const result = await Promise.resolve(42);
-  expect(result).to.equal(42);
-});
-```
-
-### Using Sinon for Mocking
-
-```javascript
-const sinon = require('sinon');
-
-it('should call dependency', () => {
-  const mockFn = sinon.stub().returns('mocked');
-  const result = mockFn();
-  
-  expect(mockFn.calledOnce).to.be.true;
-  expect(result).to.equal('mocked');
-});
-```
+For a route, drive the real router over HTTP with `supertest`, as `test/helpers/anonymousRouting.test.js` does. Stub only what leaves the process: MongoDB, MinIO, DEMI and other HTTP services.
 
 ## Resources
 
