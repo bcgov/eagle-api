@@ -125,25 +125,31 @@ describe('Search Controller', () => {
   });
 
   describe('executeQuery Pagination Limits', () => {
-    it('enforces maximum pageSize of 100 for unauthenticated public documents', async () => {
+    // The page size reaches Mongo only as the $limit of the search results facet.
+    const pageLimit = () => modelStub.aggregate.firstCall.args[0]
+      .find(stage => stage.$facet).$facet.searchResults
+      .find(stage => stage.$limit).$limit;
+
+    it('caps an unauthenticated Document search at 100 rows', async () => {
       const args = makeArgs({
         dataset: { value: 'Document' },
         pageSize: { value: 2000 },
         auth_payload: { realm_access: { roles: ['public'] } }
       });
       await searchController.publicGet(args, res);
-      // Min of 2000 and 100 is 100
-      expect(modelStub.aggregate.calledOnce).to.be.true;
+
+      expect(pageLimit()).to.equal(100);
     });
 
-    it('enforces normal maximum pageSize for authenticated staff', async () => {
+    it('caps an authenticated staff Document search at 1000 rows', async () => {
       const args = makeArgs({
         dataset: { value: 'Document' },
         pageSize: { value: 2000 },
         auth_payload: { realm_access: { roles: ['staff'] } }
       });
       await searchController.publicGet(args, res);
-      expect(modelStub.aggregate.calledOnce).to.be.true;
+
+      expect(pageLimit()).to.equal(1000);
     });
   });
 
