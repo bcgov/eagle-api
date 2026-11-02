@@ -8,6 +8,8 @@ const Actions    = require('../../api/helpers/actions');
 const defaultLog = require('winston').loggers.get('default');
 
 const commentPeriod = require('../../api/controllers/commentperiod');
+const CommentPeriodModel = require('../../api/helpers/models/commentperiod');
+const { itHonoursCreateId } = require('../support/createIdHarness');
 
 describe('CommentPeriod Controller', () => {
   const VALID_CP_ID   = '507f1f77bcf86cd799439011';
@@ -148,6 +150,16 @@ describe('CommentPeriod Controller', () => {
       expect(res.status.calledWith(200)).to.be.true;
       expect(instantiatedObj.isPublished).to.be.true;
       expect(instantiatedObj.read).to.include('public');
+    });
+
+    describe('with a caller-supplied _id', () => {
+      beforeEach(() => mongoose.model.restore());
+
+      itHonoursCreateId(CommentPeriodModel, async _id => {
+        const period = { project: VALID_PROJ_ID, milestone: VALID_MILE_ID, isPublished: true, _id };
+        await commentPeriod.protectedPost(makeArgs({ period: { value: period } }), res);
+        return res.status.lastCall.args[0];
+      });
     });
   });
 

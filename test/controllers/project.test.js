@@ -1,13 +1,15 @@
 const { expect } = require('chai');
 const sinon = require('sinon');
 const mongoose = require('mongoose');
+const { itHonoursCreateId } = require('../support/createIdHarness');
 
 describe('Project legislation years on create and publish', () => {
   const Actions = require('../../api/helpers/actions');
   const Utils = require('../../api/helpers/utils');
   const demiPush = require('../../api/helpers/demiPush');
   const projectController = require('../../api/controllers/project');
-  require('../../api/helpers/models/project');
+  const ProjectModel = require('../../api/helpers/models/project');
+  const Organization = require('../../api/helpers/models/organization');
 
   const PROJ_ID = '5f4c7d1e2b3a4c5d6e7f8191';
   const ORG_ID = '5f4c7d1e2b3a4c5d6e7f8192';
@@ -178,6 +180,25 @@ describe('Project legislation years on create and publish', () => {
 
       expect(code).to.equal(400);
       expect(Project.prototype.save.called).to.be.false;
+    });
+
+    describe('with a caller-supplied _id', () => {
+      let sendResponse;
+
+      beforeEach(() => {
+        demiPush.project.restore();
+        // The push looks up the proponent's name.
+        sinon.stub(Organization, 'find').returns({ lean: () => Promise.resolve([]) });
+        sendResponse = sinon.stub(Actions, 'sendResponse');
+      });
+
+      itHonoursCreateId(ProjectModel, async _id => {
+        const args = postArgs(2025);
+        args.swagger.params.project.value._id = _id;
+        const answered = new Promise(resolve => sendResponse.callsFake((r, code) => resolve(code)));
+        await projectController.protectedPost(args, {});
+        return answered;
+      });
     });
   });
 

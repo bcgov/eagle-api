@@ -77,11 +77,7 @@ exports.sanitizeFields = function (fields, allowedList) {
   return fields.filter(f => allowedList.includes(f));
 };
 
-/**
- * Extract and validate a Mongoose ObjectId from a swagger param.
- * Returns a mongoose.Types.ObjectId or null.
- * Throws { status: 400 } when the value is present but invalid.
- */
+// ObjectId from a swagger param, or null when it is empty; throws { status: 400 } when invalid.
 exports.getValidObjectId = function (param) {
   const val = param && param.value;
   if (!val) return null;
@@ -99,6 +95,28 @@ exports.getValidObjectId = function (param) {
  */
 exports.isObjectIdString = function (value) {
   return typeof value === 'string' && /^[0-9a-f]{24}$/i.test(value);
+};
+
+exports.INVALID_CREATE_ID = '_id must be a 24-character lowercase hex string';
+exports.CREATE_ID_TAKEN = 'A record with this _id already exists';
+
+// DEMI mints the Eagle id before it creates and compares the echo exactly, so uppercase is refused.
+// Null, empty or absent keeps the generated id; false means nothing was set.
+exports.applyCreateId = function (doc, value) {
+  if (value === undefined || value === null || value === '') {
+    return true;
+  }
+  if (!exports.isObjectIdString(value) || value !== value.toLowerCase()) {
+    defaultLog.info(`[createId] ${doc.constructor.modelName} create refused, _id ${String(JSON.stringify(value)).slice(0, 64)}`);
+    return false;
+  }
+  doc._id = new mongoose.Types.ObjectId(value);
+  return true;
+};
+
+// Mongo's duplicate key error on `_id`: on a create, the sent id is already taken.
+exports.isDuplicateKey = function (err) {
+  return !!err && err.code === 11000 && !!err.keyPattern && !!err.keyPattern._id;
 };
 
 exports.getBasePath = function (protocol, host) {
@@ -157,14 +175,8 @@ exports.getSkipLimitParameters = function (pageSize, pageNum) {
   return params;
 };
 
-/**
- * `args` is what separates a staff write from a read: pass the handler's args and the action also
- * reaches the analytics audit trail, with the actor read off the Keycloak token. Read paths never
- * pass it, so they stay out of that trail.
- *
- * `projectId` is for a target that belongs to a project, so dashboards can group by it. A Project
- * target does not pass one — its objId already is the project.
- */
+// Staff writes pass `args` so the action reaches the audit trail, actor off the Keycloak token; reads
+// never do. `projectId` groups a project's children; a Project passes none, its objId is the project.
 exports.recordAction = async function (action, meta, payload, objId = null, args = null, projectId = null){
   // Call sites spell the same verb 'Put' and 'put', which split every report bucket that groups on
   // action. Lowercased here, once, so both sinks agree and the readers can match one casing.
@@ -414,9 +426,7 @@ exports.runDataQuery = async function (modelType, role, query, fields, sortWarmU
 
       sort ? { $project: projection } : null, // Reset the projection just in case the sortWarmUp changed it.
 
-      // Do this only if they ask for it.
-      // $facet runs count and pagination in parallel without materializing the
-      // full result set into memory (replaces the old $group+$push+$slice pattern).
+      // $facet runs count and pagination together without holding the full result set in memory.
       count && {
         $facet: {
           total_items: [{ $count: 'total_items' }],

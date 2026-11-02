@@ -6,6 +6,7 @@ const sinon = require('sinon');
  */
 
 const OID = '5f4c7d1e2b3a4c5d6e7f8091';
+const DEMI_ON = { DEMI_API_BASE: 'https://demi.test', DEMI_APIM_KEY: 'test-key', DEMI_PUSH_OPT_IN_KINDS: undefined };
 const p = value => ({ value });
 const auth = { preferred_username: 'tester', realm_access: { roles: ['sysadmin'] } };
 const upfile = { size: 10, mimetype: 'application/pdf', buffer: Buffer.from('x'), originalname: 'a.pdf' };
@@ -136,6 +137,6 @@ function setEnv(vars) {
 }
 
 module.exports = {
-  OID, p, auth, upfile, stubModel, setEnv,
+  OID, DEMI_ON, p, auth, upfile, stubModel, setEnv,
   docArgs, projArgs, pinArgs, raArgs, cpArgs, commentArgs, orgArgs, pnArgs, userArgs, groupArgs
 };

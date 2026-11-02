@@ -18,7 +18,7 @@ const Utils = require('../../api/helpers/utils');
 const organizationController = require('../../api/controllers/organization');
 const searchController = require('../../api/controllers/search');
 const { sweep } = require('../../api/helpers/demiPushSweep');
-const { setEnv } = require('../support/demiPushHarness');
+const { DEMI_ON, setEnv } = require('../support/demiPushHarness');
 const { TEST_URI, id, PUBLIC_READ, PUBLIC_PROJECT, PARENT_FIXTURES, capture, searchArgs, idsIn } = require('./parentReadFixtures');
 
 const DOC = id('58990017d334ee001d60fd01');
@@ -41,7 +41,7 @@ describe('DEMI pending-push fields (MongoDB)', () => {
   });
 
   beforeEach(async () => {
-    restoreEnv = setEnv({ DEMI_API_BASE: 'https://demi.test', DEMI_APIM_KEY: 'test-key', DEMI_PUSH_OPT_IN_KINDS: undefined });
+    restoreEnv = setEnv(DEMI_ON);
     await epic().deleteMany({});
     await audit().deleteMany({});
     await epic().insertOne({ _id: DOC, _schemaName: 'Document', displayName: 'a.pdf', _updatedBy: 'staff-user' });
