@@ -24,7 +24,8 @@
     "fast-xml-parser": "^5.10.1",
     "ip-address": "^10.2.0",
     "js-yaml": "^5.2.2",
-    "proxy-addr": "^2.0.8"
+    "proxy-addr": "^2.0.8",
+    "decode-uri-component": "^0.5.1"
   },
   "main": "app",
   "typings": "app",
@@ -59,7 +60,7 @@
     "minio": "~7.0.8",
     "mongodb": "^7.0.0",
     "mongoose": "^9.7.2",
-    "multer": "^2.3.0",
+    "multer": "^2.5.0",
     "pdf-lib": "^1.17.1",
     "qs": "^6.16.0",
     "sharp": "~0.35.5",
