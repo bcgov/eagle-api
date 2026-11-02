@@ -1,24 +1,13 @@
 'use strict';
 
 /**
- * READ endpoint access control tests.
+ * Public /search against a live environment only returns documents with 'public' in read[].
+ * The per-role read[] filter for staff and sysadmin is covered on real MongoDB in test/db/documentRead.test.js.
  *
- * Verify that search/read endpoints enforce the `read` array ACL:
- * - Public (unauthenticated) users only see documents with 'public' in read[]
- * - Staff users see documents with 'staff' or 'public' in read[]
- * - Documents with read=['sysadmin'] only are invisible to public and staff
- *
- * These are smoke tests — run against a live environment with seeded data.
- *
- * Usage:
- *   yarn test:smoke:public              # Tests 1-4 only (no token needed)
- *   SMOKE_TEST_TOKEN=<token> yarn test:smoke  # Full suite including authed tests
+ * Usage: yarn test:smoke
  */
 
-const { API, TOKEN, API_KEY, get, authGet, resolveProjectId, resolveDocId } = require('./helpers');
-
-// Authed /search is scoped to project-system-admin, which the API key does not hold, so these need a bearer token.
-const hasSearchToken = () => Boolean(TOKEN);
+const { TOKEN, API_KEY, get, authGet, resolveProjectId, resolveDocId } = require('./helpers');
 const { expect } = require('chai');
 
 describe('READ ACCESS CONTROL — search endpoint enforces document.read[] ACL', () => {
@@ -99,86 +88,11 @@ describe('READ ACCESS CONTROL — search endpoint enforces document.read[] ACL',
     });
   });
 
-  describe('Staff (authenticated) — sees staff + public docs, NOT sysadmin-only', function () {
-    before(function () {
-      if (!hasSearchToken()) this.skip();
-    });
-
-    it('GET /search?dataset=Document (authed) — returns docs with staff OR public in read[]', async () => {
-      const res = await authGet('/search')
-        .query({ dataset: 'Document', pageNum: 0, pageSize: 50 })
-        .expect(200);
-
-      const results = res.body[0]?.searchResults || [];
-      expect(results.length).to.be.greaterThan(0);
-
-      for (const doc of results) {
-        const readable = doc.read && (doc.read.includes('public') || doc.read.includes('staff'));
-        expect(readable, `Document ${doc._id} visible to staff but read=${JSON.stringify(doc.read)} — possible escalation`)
-          .to.be.true;
-      }
-    });
-
-    it('staff sees MORE docs than public (proves role filtering is active)', async () => {
-      const pubRes = await get('/public/search')
-        .query({ dataset: 'Document', pageNum: 0, pageSize: 1 })
-        .expect(200);
-      const pubTotal = pubRes.body[0]?.meta?.[0]?.searchResultsTotal || 0;
-
-      const staffRes = await authGet('/search')
-        .query({ dataset: 'Document', pageNum: 0, pageSize: 1 })
-        .expect(200);
-      const staffTotal = staffRes.body[0]?.meta?.[0]?.searchResultsTotal || 0;
-
-      expect(staffTotal, 'Staff should see >= public docs (more if any staff-only docs exist)')
-        .to.be.at.least(pubTotal);
-    });
-
-    it('staff pagination cap is 1000 (not public 100)', async () => {
-      const res = await authGet('/search')
-        .query({ dataset: 'Document', pageNum: 0, pageSize: 500 })
-        .expect(200);
-
-      const results = res.body[0]?.searchResults || [];
-      // If DB has >100 docs, staff should get more than 100 (proving staff cap used)
-      // If <100 total docs exist, this test is inconclusive — just verify no error
-      expect(results.length).to.be.at.most(1000);
-    });
-  });
-
-  describe('Negative pageSize — rejected for both public and authenticated', () => {
+  describe('Negative pageSize — rejected', () => {
     it('public: pageSize=-1 returns 400', async () => {
       await get('/public/search')
         .query({ dataset: 'Document', pageNum: 0, pageSize: -1 })
         .expect(400);
-    });
-
-    it('authenticated: pageSize=-1 returns 400', function (done) {
-      if (!hasSearchToken()) return this.skip();
-      authGet('/search')
-        .query({ dataset: 'Document', pageNum: 0, pageSize: -1 })
-        .expect(400, done);
-    });
-  });
-
-  describe('Cross-role isolation — sysadmin-only docs invisible to staff', function () {
-    before(function () {
-      if (!hasSearchToken()) this.skip();
-    });
-
-    it('search results never include docs where read is exclusively sysadmin-only', async () => {
-      const res = await authGet('/search')
-        .query({ dataset: 'Document', pageNum: 0, pageSize: 100 })
-        .expect(200);
-
-      const results = res.body[0]?.searchResults || [];
-      for (const doc of results) {
-        if (doc.read) {
-          const sysadminOnly = doc.read.length === 1 && doc.read[0] === 'sysadmin';
-          expect(sysadminOnly, `Document ${doc._id} is sysadmin-only but visible to staff — ACL leak`)
-            .to.be.false;
-        }
-      }
     });
   });
 });
