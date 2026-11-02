@@ -111,6 +111,9 @@ exports.protectedPost = async function (args, res) {
     write: ['staff', 'sysadmin'],
     delete: ['staff', 'sysadmin']
   });
+  if (!Utils.applyCreateId(organization, obj._id)) {
+    return Actions.sendResponse(res, 400, { message: Utils.INVALID_CREATE_ID });
+  }
 
   try {
     var org = await organization.save();
@@ -118,6 +121,10 @@ exports.protectedPost = async function (args, res) {
     defaultLog.info('Saved new organization object:', org);
     return Actions.sendMirrored(res, 200, org, demiPush.organization(org));
   } catch (e) {
+    if (Utils.isDuplicateKey(e)) {
+      defaultLog.info(`Organization create refused, _id ${organization._id} already exists`);
+      return Actions.sendResponse(res, 409, { message: Utils.CREATE_ID_TAKEN });
+    }
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }

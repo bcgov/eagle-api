@@ -24,7 +24,7 @@ const userController = require('../../api/controllers/user');
 const projectGroupController = require('../../api/controllers/projectGroup');
 
 const {
-  OID, stubModel, setEnv,
+  OID, DEMI_ON, stubModel, setEnv,
   docArgs, projArgs, pinArgs, raArgs, cpArgs, commentArgs, orgArgs, pnArgs, userArgs, groupArgs
 } = require('../support/demiPushHarness');
 
@@ -333,7 +333,7 @@ describe('DEMI push call sites', () => {
       let restoreEnv;
 
       beforeEach(() => {
-        restoreEnv = setEnv({ DEMI_API_BASE: 'https://demi.test', DEMI_APIM_KEY: 'test-key', DEMI_PUSH_OPT_IN_KINDS: undefined });
+        restoreEnv = setEnv(DEMI_ON);
         demiPush.group.restore();
         demiPush.usersOfOrganization.restore();
         sinon.stub(global, 'fetch').resolves({ ok: true, status: 200 });

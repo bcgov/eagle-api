@@ -296,6 +296,9 @@ exports.protectedPost = async function (args, res) {
   if (commentPeriod.isPublished) {
     commentPeriod.read.push('public');
   }
+  if (!Utils.applyCreateId(commentPeriod, obj._id)) {
+    return Actions.sendResponse(res, 400, { message: Utils.INVALID_CREATE_ID });
+  }
 
   try {
     var cp = await commentPeriod.save();
@@ -303,6 +306,10 @@ exports.protectedPost = async function (args, res) {
     defaultLog.info('Saved new comment period object:', cp);
     return Actions.sendMirrored(res, 200, cp, demiPush.commentPeriod(cp));
   } catch (e) {
+    if (Utils.isDuplicateKey(e)) {
+      defaultLog.info(`CommentPeriod create refused, _id ${commentPeriod._id} already exists`);
+      return Actions.sendResponse(res, 409, { message: Utils.CREATE_ID_TAKEN });
+    }
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }

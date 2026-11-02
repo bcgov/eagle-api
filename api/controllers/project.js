@@ -424,6 +424,10 @@ exports.protectedPost = async function (args, res) {
     return Actions.sendResponse(res, 400, 'Error loading project data');
   }
 
+  if (!Utils.applyCreateId(project, obj._id)) {
+    return Actions.sendResponse(res, 400, { message: Utils.INVALID_CREATE_ID });
+  }
+
   //Need to add this logic to the put because we will only hit a post on a net new project
   project.currentLegislationYear = blockKey;
   project.legislationYearList.push(projectLegislationYear);
@@ -476,6 +480,10 @@ exports.protectedPost = async function (args, res) {
       return Actions.sendMirrored(res, 200, theProject, demiPush.project(theProject));
     })
     .catch(function (err) {
+      if (Utils.isDuplicateKey(err)) {
+        defaultLog.info(`Project create refused, _id ${project._id} already exists`);
+        return Actions.sendResponse(res, 409, { message: Utils.CREATE_ID_TAKEN });
+      }
       defaultLog.error('Error saving project:', err);
       return Actions.sendResponse(res, 400, err);
     });

@@ -20,10 +20,9 @@ const commentPeriodController = require('../../api/controllers/commentperiod');
 const userController = require('../../api/controllers/user');
 const pinsController = require('../../api/controllers/pins');
 const {
-  OID, stubModel, setEnv, docArgs, projArgs, pinArgs, cpArgs, commentArgs, userArgs
+  OID, DEMI_ON, stubModel, setEnv, docArgs, projArgs, pinArgs, cpArgs, commentArgs, userArgs
 } = require('../support/demiPushHarness');
 
-const DEMI_ON = { DEMI_API_BASE: 'https://demi.test', DEMI_APIM_KEY: 'test-key', DEMI_PUSH_OPT_IN_KINDS: undefined };
 const DEMI_OFF = { DEMI_API_BASE: undefined, DEMI_APIM_KEY: undefined, DEMI_PUSH_OPT_IN_KINDS: undefined };
 // The reason awaitMirror gives a push that resolved false with no refusal code.
 const NOT_MIRRORED_REASON = 'not mirrored (see push-dropped line)';

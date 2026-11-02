@@ -101,6 +101,28 @@ exports.isObjectIdString = function (value) {
   return typeof value === 'string' && /^[0-9a-f]{24}$/i.test(value);
 };
 
+exports.INVALID_CREATE_ID = '_id must be a 24-character lowercase hex string';
+exports.CREATE_ID_TAKEN = 'A record with this _id already exists';
+
+// DEMI mints the Eagle id before it creates and compares the echo exactly, so uppercase is refused.
+// Null, empty or absent keeps the generated id; false means nothing was set.
+exports.applyCreateId = function (doc, value) {
+  if (value === undefined || value === null || value === '') {
+    return true;
+  }
+  if (!exports.isObjectIdString(value) || value !== value.toLowerCase()) {
+    defaultLog.info(`[createId] ${doc.constructor.modelName} create refused, _id ${String(JSON.stringify(value)).slice(0, 64)}`);
+    return false;
+  }
+  doc._id = new mongoose.Types.ObjectId(value);
+  return true;
+};
+
+// Mongo's duplicate key error on `_id`: on a create, the sent id is already taken.
+exports.isDuplicateKey = function (err) {
+  return !!err && err.code === 11000 && !!err.keyPattern && !!err.keyPattern._id;
+};
+
 exports.getBasePath = function (protocol, host) {
   return protocol + '://' + host;
 };
