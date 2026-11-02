@@ -477,17 +477,19 @@ exports.protectedOpen = function (args, res) {
 // The admin upload form sends the string "null" for these when they are empty.
 const NULLABLE_ID_FIELDS = ['milestone', 'type', 'documentAuthorType', 'projectPhase'];
 
+// The id sent for a ref field, or null when none was sent.
+function optionalId(name, value) {
+  return !value || (value === 'null' && NULLABLE_ID_FIELDS.includes(name)) ? null : value;
+}
+
 exports.protectedPost = async function (args, res) {
   defaultLog.info('Creating new protected document object');
   var project = args.swagger.params.project.value;
   var _comment = args.swagger.params._comment.value;
 
   const badId = ['project', '_comment', ...NULLABLE_ID_FIELDS].find(name => {
-    const value = args.swagger.params[name] && args.swagger.params[name].value;
-    if (!value || (value === 'null' && NULLABLE_ID_FIELDS.includes(name))) {
-      return false;
-    }
-    return !Utils.isObjectIdString(value);
+    const value = optionalId(name, args.swagger.params[name] && args.swagger.params[name].value);
+    return value && !Utils.isObjectIdString(value);
   });
   if (badId) {
     defaultLog.warn('Protected file upload rejected: %s is not an id', badId);
@@ -617,6 +619,103 @@ exports.protectedPost = async function (args, res) {
     defaultLog.error(`Error in protectedPost: ${e.message}`);
     delete e['path'];
     return Actions.sendResponse(res, 400, e);
+  }
+};
+
+const STORED_REQUIRED_TEXT = ['internalURL', 'documentFileName', 'internalExt'];
+const STORED_COPIED_FIELDS = ['displayName', 'description', 'documentAuthor', 'datePosted', 'dateUploaded', 'sortOrder'];
+const STAT_MISSING_CODES = ['NotFound', 'NoSuchKey'];
+
+// The object already sits in the bucket under DEMI's key, so nothing is uploaded or removed here.
+exports.protectedPostStored = async function (args, res) {
+  const body = args.swagger.params.document.value || {};
+  const refuse = (code, reason, extra) => {
+    defaultLog.warn('Stored document create refused (%d): %s', code, reason);
+    return Actions.sendResponse(res, code, { message: reason, ...extra });
+  };
+
+  const Document = mongoose.model('Document');
+  const doc = new Document();
+  if (!body._id || !Utils.applyCreateId(doc, body._id)) {
+    return refuse(400, Utils.INVALID_CREATE_ID);
+  }
+  if (!Utils.isObjectIdString(body.project)) {
+    return refuse(400, 'project is not an id');
+  }
+  const missing = STORED_REQUIRED_TEXT.find(name => typeof body[name] !== 'string' || !body[name].trim());
+  if (missing) {
+    return refuse(400, `${missing} is required`);
+  }
+  const badId = ['_comment', ...NULLABLE_ID_FIELDS].find(name => optionalId(name, body[name]) && !Utils.isObjectIdString(body[name]));
+  if (badId) {
+    return refuse(400, `${badId} is not an id`);
+  }
+
+  try {
+    if (!await mongoose.model('Project').exists({ _id: body.project, _schemaName: 'Project' })) {
+      return refuse(400, `project ${body.project} does not exist`);
+    }
+    // The collation lets the query use idx_document_by_project; object keys are case-sensitive,
+    // so the match on internalURL is made exact here.
+    const sameKey = await Document.find({ _schemaName: 'Document', project: body.project, internalURL: body.internalURL })
+      .collation({ locale: 'en', strength: 2 }).select('internalURL').lean();
+    const existing = sameKey.find(row => row.internalURL === body.internalURL);
+    if (existing) {
+      return refuse(409, `a document already points at ${body.internalURL}`, { _id: String(existing._id) });
+    }
+
+    let stat;
+    try {
+      stat = await MinioController.statObject(MinioController.BUCKETS.DOCUMENTS_BUCKET, body.internalURL);
+    } catch (statError) {
+      if (!STAT_MISSING_CODES.includes(statError && statError.code)) {
+        defaultLog.warn('Stored document %s: stat of %s failed: %s', body._id, body.internalURL, statError && statError.message);
+        return Actions.sendResponse(res, 503, { message: 'Document storage could not be reached.' });
+      }
+    }
+    // The mock MinIO resolves undefined where the real one rejects.
+    if (!stat) {
+      return refuse(400, `object ${body.internalURL} is not in the bucket`);
+    }
+
+    doc.project = new mongoose.Types.ObjectId(body.project);
+    ['_comment', ...NULLABLE_ID_FIELDS].forEach(name => {
+      const value = optionalId(name, body[name]);
+      doc[name] = value ? new mongoose.Types.ObjectId(value) : null;
+    });
+    STORED_COPIED_FIELDS.forEach(name => {
+      if (body[name] !== undefined && body[name] !== null) {
+        doc[name] = body[name];
+      }
+    });
+    doc.legislation = body.legislation !== undefined && body.legislation !== null ? parseInt(body.legislation, 10) : null;
+    doc._addedBy = args.swagger.params.auth_payload.preferred_username;
+    doc._createdDate = new Date();
+    doc.read = ['sysadmin', 'staff'];
+    doc.write = ['sysadmin', 'staff'];
+    doc.delete = ['sysadmin', 'staff'];
+    doc.eaoStatus = null;
+    doc.documentFileName = body.documentFileName;
+    doc.internalURL = body.internalURL;
+    doc.internalExt = body.internalExt;
+    doc.internalSize = stat.size;
+    doc.internalMime = (stat.metaData && stat.metaData['content-type']) || '';
+    doc.passedAVCheck = body.passedAVCheck === true || body.passedAVCheck === 'true';
+
+    const d = await doc.save();
+    defaultLog.info('Saved stored document object:', d._id);
+    Utils.recordAction('Post', 'Document', args.swagger.params.auth_payload.preferred_username, d._id, args, d.project);
+    return Actions.sendMirrored(res, 200, d, demiPush.document(d));
+  } catch (e) {
+    if (Utils.isDuplicateKey(e)) {
+      defaultLog.info(`Stored document create refused, _id ${doc._id} already exists`);
+      return Actions.sendResponse(res, 409, { message: Utils.CREATE_ID_TAKEN });
+    }
+    if (e instanceof mongoose.Error.ValidationError || e instanceof mongoose.Error.CastError) {
+      return refuse(400, e.message);
+    }
+    defaultLog.error(`Error in protectedPostStored: ${e.message}`);
+    return Actions.sendResponse(res, 500, { message: 'The document could not be saved.' });
   }
 };
 

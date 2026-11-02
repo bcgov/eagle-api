@@ -1,13 +1,5 @@
-/**
- * The refusals over real HTTP: the actual swagger, the actual router, the actual middleware chain.
- *
- * test/helpers/anonymousRead.test.js checks the declarations and calls the security middleware
- * directly. This drives requests through Express, so a change in how the router assembles its
- * middleware — order, or a stage that swallows the refusal — is caught too.
- *
- * Refusals only. A route that is allowed through reaches its controller and queries MongoDB, which
- * these tests have no connection to; the allow side is covered by the declaration test.
- */
+// Refusals over real HTTP through the real router, so middleware order is caught; anonymousRead.test.js
+// covers the declarations. Refusals only: an allowed route would query MongoDB, which is not connected.
 const { expect } = require('chai');
 const express = require('express');
 const fs = require('fs');
@@ -44,6 +36,12 @@ describe('anonymous routing through the real router', () => {
 
   it('refuses a write without a token', async () => {
     const res = await request(app).post('/api/project').send({});
+    expect(res.status).to.equal(403);
+  });
+
+  // A 404 here means the path, operationId and controller export do not match.
+  it('refuses POST /document/stored without a token', async () => {
+    const res = await request(app).post('/api/document/stored').send({});
     expect(res.status).to.equal(403);
   });
 });
