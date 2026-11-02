@@ -46,4 +46,10 @@ describe('anonymous routing through the real router', () => {
     const res = await request(app).post('/api/project').send({});
     expect(res.status).to.equal(403);
   });
+
+  // A 404 here means the path, operationId and controller export do not match.
+  it('refuses POST /document/stored without a token', async () => {
+    const res = await request(app).post('/api/document/stored').send({});
+    expect(res.status).to.equal(403);
+  });
 });

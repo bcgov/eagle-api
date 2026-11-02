@@ -409,6 +409,58 @@ definitions:
         type: string
         example: "A cool document"
         ## TODO: Add more fields here.
+  StoredDocObject:
+    type: object
+    required:
+      - _id
+      - project
+      - internalURL
+      - documentFileName
+      - internalExt
+    properties:
+      _id:
+        type: string
+        description: "24-character lowercase hex id for the new record"
+        example: "5f4c7d1e2b3a4c5d6e7f81a1"
+      project:
+        type: string
+        description: "Id of an existing project"
+      internalURL:
+        type: string
+        description: "Object key in the documents bucket; the object must already exist"
+      documentFileName:
+        type: string
+      internalExt:
+        type: string
+        description: "File extension, lowercase, no dot"
+      passedAVCheck:
+        type: boolean
+      _comment:
+        type: string
+      milestone:
+        type: string
+      type:
+        type: string
+      documentAuthorType:
+        type: string
+      projectPhase:
+        type: string
+      displayName:
+        type: string
+      description:
+        type: string
+      documentAuthor:
+        type: string
+      datePosted:
+        type: string
+        format: date-time
+      dateUploaded:
+        type: string
+        format: date-time
+      legislation:
+        type: integer
+      sortOrder:
+        type: integer
   DocumentFields:
     type: string
     description: "Optional fields to return."
@@ -3384,6 +3436,42 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+  /document/stored:
+    x-swagger-router-controller: document
+    post:
+      tags:
+        - document
+      summary: "Register a document already in the bucket"
+      operationId: protectedPostStored
+      description: "Create a document record for an object that already exists in the documents bucket, under the caller's _id. internalSize and internalMime come from the stored object. The record is staff-only. Nothing is uploaded or deleted. Under the mock storage service every request answers 400, because the mock stat finds no object."
+      security:
+        - Bearer: []
+      x-security-scopes:
+        - staff
+        - sysadmin
+      parameters:
+        - name: document
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/StoredDocObject"
+      responses:
+        "200":
+          description: "Success"
+          schema:
+            $ref: "#/definitions/DocObject"
+        "400":
+          description: "Bad or missing _id or required field, unknown project, or the object is not in the bucket; nothing is saved"
+        "403":
+          description: "Access Denied"
+          schema:
+            $ref: "#/definitions/Error"
+        "409":
+          description: "A record with this _id, or a document of this project pointing at this internalURL, already exists; nothing is saved"
+        "500":
+          description: "The record could not be saved"
+        "503":
+          description: "The documents bucket could not be reached; nothing is saved"
   /document/{docId}:
     x-swagger-router-controller: document
     options:
