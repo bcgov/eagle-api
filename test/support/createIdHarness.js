@@ -78,4 +78,4 @@ function itHonoursCreateId(Model, post, created = 200) {
   });
 }
 
-module.exports = { itHonoursCreateId };
+module.exports = { itHonoursCreateId, duplicateKey, SENT_ID };

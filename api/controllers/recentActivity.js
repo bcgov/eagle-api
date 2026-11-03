@@ -172,7 +172,7 @@ exports.protectedPost = async function (args, res) {
   const pushes = [];
   if (obj.status === 'published') {
     try {
-      publishedImages = await updateImages.publishFor(obj, username, pushes);
+      publishedImages = await updateImages.publishFor(recentActivity, username, pushes);
     } catch {
       return Actions.sendResponse(res, 500, { message: IMAGE_PUBLISH_FAILED });
     }

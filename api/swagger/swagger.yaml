@@ -5007,7 +5007,7 @@ paths:
         - comment
       summary: "Create a new comment"
       operationId: protectedPost
-      description: "Create a new comment object. _id is optional: a 24-character lowercase hex string becomes the new record's id; missing, null or empty gets a generated id. Any other _id answers 400, and an _id already in use answers 409; nothing is saved. commentId is optional: a positive integer is kept as the comment's number and the period's counter rises to it if lower; missing or null takes the next number from the period's counter. Any other commentId answers 400."
+      description: "Create a new comment object. _id is optional: a 24-character lowercase hex string becomes the new record's id; missing, null or empty gets a generated id. Any other _id answers 400, and an _id already in use answers 409; nothing is saved. commentId is optional: an integer from 1 to 1000000000 is kept as the comment's number and the period's counter rises to it if lower; missing or null takes the next number from the period's counter. Any other commentId answers 400, and a commentId already used in the period answers 409. A 409 on a create without commentId may still have moved the period's counter. period must be the id of an existing comment period, else 400."
       security:
         - Bearer: []
       x-security-scopes:
@@ -5025,13 +5025,13 @@ paths:
           schema:
             $ref: "#/definitions/CommentObject"
         "400":
-          description: "_id is not a 24-character lowercase hex string, commentId is not a positive integer, or the record failed validation"
+          description: "_id is not a 24-character lowercase hex string, commentId is not an integer from 1 to 1000000000, a valuedComponents or documents entry is not a valid id, period matches no comment period, or the record failed validation"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
         "409":
-          description: "A record with this _id already exists"
+          description: "A record with this _id already exists, or the commentId is already used in the period. Without a sent commentId the period's counter may have moved."
 
   /comment/export/{periodId}:
     x-swagger-router-controller: comment

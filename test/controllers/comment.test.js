@@ -402,21 +402,27 @@ describe('Comment Controller', () => {
   });
 
   describe('protectedPost', () => {
-    it('saves a Pending comment readable by staff only, numbered from the period counter', async () => {
-      const args = makeArgs();
-      cpModel.findOneAndUpdate.resolves({ commentIdCount: 5 });
+    let saves;
 
+    beforeEach(() => {
+      saves = 0;
       function MockComment(obj) {
         Object.assign(this, obj);
         this._id = VALID_COMM_ID;
-        this.save = sinon.stub().callsFake(() => Promise.resolve(this));
+        this.save = sinon.stub().callsFake(() => { saves++; return Promise.resolve(this); });
       }
+      MockComment.exists = sinon.stub().returns({ collation: () => Promise.resolve(null) });
       mongoose.model.restore();
       sinon.stub(mongoose, 'model').callsFake(name => {
         if (name === 'Comment') return MockComment;
         if (name === 'CommentPeriod') return cpModel;
         return {};
       });
+    });
+
+    it('saves a Pending comment readable by staff only, numbered from the period counter', async () => {
+      const args = makeArgs();
+      cpModel.findOneAndUpdate.resolves({ commentIdCount: 5 });
 
       await commentController.protectedPost(args, res);
 
@@ -427,15 +433,40 @@ describe('Comment Controller', () => {
       expect(saved.read).to.deep.equal(['staff', 'sysadmin']);
     });
 
-    [0, -1, 1.5, '7'].forEach(commentId => {
-      it(`answers 400 and leaves the period counter alone for commentId ${JSON.stringify(commentId)}`, async () => {
+    [
+      ['commentId 0', { commentId: 0 }],
+      ['commentId -1', { commentId: -1 }],
+      ['commentId 1.5', { commentId: 1.5 }],
+      ['commentId "7"', { commentId: '7' }],
+      ['commentId over 1e9', { commentId: 1e9 + 1 }],
+      ['commentId past the safe integers', { commentId: 2 ** 53 }],
+      ['_id "abc"', { _id: 'abc' }],
+      ['a bad valued component id', { valuedComponents: ['abc'] }],
+      ['a bad document id', { documents: ['abc'] }],
+      ['no period', { period: null }]
+    ].forEach(([label, fields]) => {
+      it(`answers 400 once, before the period counter moves, for ${label}`, async () => {
         const args = makeArgs();
-        args.swagger.params.comment.value.commentId = commentId;
+        Object.assign(args.swagger.params.comment.value, fields);
 
         await commentController.protectedPost(args, res);
 
         expect(res.status.calledOnceWithExactly(400)).to.be.true;
         expect(cpModel.findOneAndUpdate.called).to.be.false;
+        expect(saves).to.equal(0);
+      });
+    });
+
+    [undefined, 42].forEach(commentId => {
+      it(`answers 400 and saves nothing when no period has the id, commentId ${commentId}`, async () => {
+        const args = makeArgs();
+        args.swagger.params.comment.value.commentId = commentId;
+        cpModel.findOneAndUpdate.resolves(null);
+
+        await commentController.protectedPost(args, res);
+
+        expect(res.status.calledOnceWithExactly(400)).to.be.true;
+        expect(saves).to.equal(0);
       });
     });
 

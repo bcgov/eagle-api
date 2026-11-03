@@ -12,7 +12,7 @@ const defaultLog = require('winston').loggers.get('default');
 
 const recentActivity = require('../../api/controllers/recentActivity');
 const RecentActivityModel = require('../../api/helpers/models/recentActivity');
-const { itHonoursCreateId } = require('../support/createIdHarness');
+const { itHonoursCreateId, duplicateKey, SENT_ID } = require('../support/createIdHarness');
 
 describe('RecentActivity Controller - DEMI mirror', () => {
   const ACTIVITY_ID = '507f1f77bcf86cd799439044';
@@ -709,6 +709,29 @@ describe('RecentActivity Controller - DEMI mirror', () => {
       expect(res.status.calledWith(400)).to.be.true;
       expect(isPublic(image)).to.be.false;
       expect(image.eaoStatus).to.be.null;
+    });
+
+    it('POST with a bad _id answers 400 and publishes no image', async () => {
+      const image = uploaded(UPLOAD);
+      documents.push(image);
+
+      await recentActivity.protectedPost(postArgs(true, { _id: 'abc', images: [{ document: UPLOAD, alt: 'Site' }] }), res);
+
+      expect(res.status.calledOnceWithExactly(400)).to.be.true;
+      expect(isPublic(image)).to.be.false;
+      expect(docPush.called).to.be.false;
+    });
+
+    it('POST with an _id already in use answers 409 and takes the published image back', async () => {
+      const image = uploaded(UPLOAD);
+      documents.push(image);
+      saveResult = () => Promise.reject(duplicateKey('_id', SENT_ID));
+
+      await recentActivity.protectedPost(postArgs(true, { _id: SENT_ID, images: [{ document: UPLOAD, alt: 'Site' }] }), res);
+
+      expect(res.status.calledOnceWithExactly(409)).to.be.true;
+      expect(isPublic(image)).to.be.false;
+      expect(pushStub.called).to.be.false;
     });
 
     it('PUT takes back a published image when the Update write throws', async () => {
