@@ -8,9 +8,15 @@ services:
     environment:
       # No auth — matches local dev defaults (MONGODB_USERNAME/PASSWORD empty in .env)
       MONGO_INITDB_DATABASE: epic
-    # --replSet rs0 enables the oplog required for Change Streams (eagle-search sync).
-    # Run rs.initiate() once after first start: docker compose exec mongodb mongosh --eval "rs.initiate()"
+    # --replSet rs0 enables the oplog required for Change Streams. The healthcheck initiates the
+    # set on first start; the member must be localhost:27017 so the API on the host can reach it.
     command: ["--replSet", "rs0"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "try { rs.status() } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }) } quit(db.hello().isWritablePrimary ? 0 : 1)"]
+      interval: 5s
+      timeout: 10s
+      start_period: 10s
+      retries: 20
 
 volumes:
   mongodb-data:

@@ -5,7 +5,9 @@
  *
  * 1. Seeds migrate-mongo's `changelog` from the legacy db-migrate `migrations`
  *    collection (idempotent — skips if changelog already has entries).
- * 2. Runs all pending migrations via migrate-mongo's programmatic API.
+ * 2. On a fresh database (no changelog, no legacy collection, empty `epic`), marks the pre-2026
+ *    migrations applied and creates the text index they would have built (see baselineFreshDb).
+ * 3. Runs all pending migrations via migrate-mongo's programmatic API.
  *
  * Note: migrate-mongo v14 is ESM-only. Its CJS shim is a broken Proxy, so we
  * must use dynamic import() to load it correctly.
@@ -13,7 +15,10 @@
 
 'use strict';
 
+const fs = require('fs');
+
 const CHANGELOG_COLLECTION = 'changelog';
+const BASELINE_BEFORE = '20260101000000';
 
 const { buildMongoUri } = require('./config/mongo_uri');
 
@@ -53,6 +58,35 @@ async function seedChangelog(db) {
   console.log(`Seeded ${docs.length} entries into changelog from legacy migrations collection.`);
 }
 
+// Pre-2026 migrations reshape data that a fresh database does not hold, and many call driver APIs
+// that no longer exist, so they cannot run on an empty local DB.
+async function baselineFreshDb(db, fileNames) {
+  const changelogCount = await db.collection(CHANGELOG_COLLECTION).countDocuments();
+  if (changelogCount > 0) {
+    console.log(`baseline skipped: changelog has ${changelogCount} rows`);
+    return;
+  }
+  if (await db.collection('migrations').countDocuments() > 0) {
+    console.log('baseline skipped: legacy migrations collection has rows');
+    return;
+  }
+  if (await db.collection('epic').countDocuments({}, { limit: 1 }) > 0) {
+    console.log('baseline skipped: epic has docs');
+    return;
+  }
+
+  // Index before changelog rows: a failure here leaves the changelog empty, so the next run retries.
+  await db.collection('epic').createIndex({ '$**': 'text' }, { name: 'localBaselineText' });
+
+  const appliedAt = new Date();
+  const rows = fileNames
+    .filter(name => /^\d{14}-.+\.js$/.test(name) && name.slice(0, 14) < BASELINE_BEFORE)
+    .sort()
+    .map(fileName => ({ fileName, appliedAt }));
+  await db.collection(CHANGELOG_COLLECTION).insertMany(rows);
+  console.log(`baseline: marked ${rows.length} pre-2026 migrations applied`);
+}
+
 async function run() {
   const { database, config, up } = await import('migrate-mongo');
   config.set(migrateMongoConfig);
@@ -60,6 +94,7 @@ async function run() {
 
   try {
     await seedChangelog(db);
+    await baselineFreshDb(db, fs.readdirSync(migrateMongoConfig.migrationsDir));
     const migrated = await up(db, client);
     migrated.forEach(name => console.log('MIGRATED UP:', name));
     if (migrated.length === 0) {
@@ -70,7 +105,11 @@ async function run() {
   }
 }
 
-run().catch(err => {
-  console.error('Migration failed:', err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  run().catch(err => {
+    console.error('Migration failed:', err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { baselineFreshDb };
