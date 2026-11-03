@@ -142,6 +142,7 @@ exports.protectedPost = async function (args, res) {
   defaultLog.info('Incoming new object:', obj);
 
   var RecentActivity = mongoose.model('RecentActivity');
+  const sentId = obj._id;
   delete obj._id;
   // Set once by the send, never by a client.
   delete obj.notifiedAt;
@@ -161,6 +162,11 @@ exports.protectedPost = async function (args, res) {
     return Actions.sendResponse(res, 400, e);
   }
 
+  var recentActivity = new RecentActivity(obj);
+  if (!Utils.applyCreateId(recentActivity, sentId)) {
+    return Actions.sendResponse(res, 400, { message: Utils.INVALID_CREATE_ID });
+  }
+
   const username = args.swagger.params.auth_payload.preferred_username;
   let publishedImages = [];
   const pushes = [];
@@ -171,8 +177,6 @@ exports.protectedPost = async function (args, res) {
       return Actions.sendResponse(res, 500, { message: IMAGE_PUBLISH_FAILED });
     }
   }
-
-  var recentActivity = new RecentActivity(obj);
 
   recentActivity.pinned = false;
 
@@ -192,8 +196,12 @@ exports.protectedPost = async function (args, res) {
     }
     defaultLog.info('Saved new RecentActivity object:', rec);
   } catch (e) {
-    defaultLog.error(`Error: ${e.message}`);
     await updateImages.revert(publishedImages, username);
+    if (Utils.isDuplicateKey(e)) {
+      defaultLog.info(`RecentActivity create refused, _id ${recentActivity._id} already exists`);
+      return Actions.sendResponse(res, 409, { message: Utils.CREATE_ID_TAKEN });
+    }
+    defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
   return Actions.sendMirrored(res, 200, rec, pushes);

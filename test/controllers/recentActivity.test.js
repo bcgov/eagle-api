@@ -11,6 +11,8 @@ const demiPush   = require('../../api/helpers/demiPush');
 const defaultLog = require('winston').loggers.get('default');
 
 const recentActivity = require('../../api/controllers/recentActivity');
+const RecentActivityModel = require('../../api/helpers/models/recentActivity');
+const { itHonoursCreateId } = require('../support/createIdHarness');
 
 describe('RecentActivity Controller - DEMI mirror', () => {
   const ACTIVITY_ID = '507f1f77bcf86cd799439044';
@@ -154,6 +156,18 @@ describe('RecentActivity Controller - DEMI mirror', () => {
 
       expect(pushStub.called).to.be.false;
       expect(res.status.calledWith(400)).to.be.true;
+    });
+
+    describe('with a caller-supplied _id', () => {
+      beforeEach(() => {
+        mongoose.model.restore();
+        pushStub.restore();
+      });
+
+      itHonoursCreateId(RecentActivityModel, async _id => {
+        await recentActivity.protectedPost(postArgs(false, { _id }), res);
+        return res.status.lastCall.args[0];
+      });
     });
   });
 

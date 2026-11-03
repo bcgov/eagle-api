@@ -9,7 +9,7 @@ const duplicateKey = (key, value) => Object.assign(
 
 // The `_id` cases a create handler owes DEMI, against a real model whose save keeps `_id` unique as
 // Mongo does. `post(_id)` sends one create and resolves the status; a caller's own stubs are replaced.
-function itHonoursCreateId(Model, post) {
+function itHonoursCreateId(Model, post, created = 200) {
   let sandbox, rows, fetch, restoreEnv, nextSaveError;
   const pushedDoc = () => JSON.parse(fetch.firstCall.args[1].body).doc;
 
@@ -40,7 +40,7 @@ function itHonoursCreateId(Model, post) {
   });
 
   it('creates the row under a sent 24-hex _id and pushes that id to DEMI', async () => {
-    expect(await post(SENT_ID)).to.equal(200);
+    expect(await post(SENT_ID)).to.equal(created);
     expect([...rows.keys()]).to.deep.equal([SENT_ID]);
     expect(pushedDoc()._id).to.equal(SENT_ID);
   });
@@ -55,7 +55,7 @@ function itHonoursCreateId(Model, post) {
 
   [null, ''].forEach(value => {
     it(`generates the id when _id is ${JSON.stringify(value)}`, async () => {
-      expect(await post(value)).to.equal(200);
+      expect(await post(value)).to.equal(created);
       const [id] = rows.keys();
       expect(id).to.match(/^[0-9a-f]{24}$/);
       expect(pushedDoc()._id).to.equal(id);

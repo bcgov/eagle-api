@@ -482,6 +482,12 @@ definitions:
   CommentId:
     type: object
     properties:
+      _id:
+        type: string
+        example: "54759eb3c090d83494e2d804"
+      commentId:
+        type: integer
+        example: 42
       comment:
         type: string
         example: "A cool user"
@@ -734,6 +740,9 @@ definitions:
   ProjectNotificationId:
     type: object
     properties:
+      _id:
+        type: string
+        example: "54759eb3c090d83494e2d804"
       comment:
         type: string
         example: "A cool project notification"
@@ -3027,6 +3036,7 @@ paths:
           schema:
             type: string
 
+### RecentActivity Routes
   /public/recentActivity:
     x-swagger-router-controller: recentActivity
     options:
@@ -3036,7 +3046,6 @@ paths:
       operationId: protectedOptions
       description: "Options on RecentActivity Route"
       responses:
-### RecentActivity Routes
         "200":
           description: "Success"
           schema:
@@ -3083,7 +3092,7 @@ paths:
         - recentActivity
       summary: "Create a new recentActivity"
       operationId: protectedPost
-      description: "Create a new recentActivity object. 400 when a field check fails, including a non-public featured image, image or attachment on publish; images uploaded from the Update form (documentSource 'UPDATE') are published with the Update instead. 500 when publishing those images fails; the Update is not saved."
+      description: "Create a new recentActivity object. 400 when a field check fails, including a non-public featured image, image or attachment on publish; images uploaded from the Update form (documentSource 'UPDATE') are published with the Update instead. 500 when publishing those images fails; the Update is not saved. _id is optional: a 24-character lowercase hex string becomes the new record's id; missing, null or empty gets a generated id. Any other _id answers 400, and an _id already in use answers 409; nothing is saved."
       security:
         - Bearer: []
       x-security-scopes:
@@ -3100,10 +3109,14 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/RecentActivityObject"
+        "400":
+          description: "A field check failed, or _id is not a 24-character lowercase hex string"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+        "409":
+          description: "A record with this _id already exists"
   /recentActivity/{recentActivityId}:
     x-swagger-router-controller: recentActivity
     options:
@@ -4744,7 +4757,7 @@ paths:
         - projectNotification
       summary: "Create a new project notification"
       operationId: protectedPost
-      description: "Create a new project notification object."
+      description: "Create a new project notification object. _id is optional: a 24-character lowercase hex string becomes the new record's id; missing, null or empty gets a generated id. Any other _id answers 400, and an _id already in use answers 409; nothing is saved."
       security:
         - Bearer: []
       x-security-scopes:
@@ -4766,10 +4779,14 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/ProjectNotificationObject"
+        "400":
+          description: "_id is not a 24-character lowercase hex string, or the record failed validation"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+        "409":
+          description: "A record with this _id already exists"
   /projectNotification/{projectNotificationId}:
     x-swagger-router-controller: projectNotification
     options:
@@ -4990,7 +5007,7 @@ paths:
         - comment
       summary: "Create a new comment"
       operationId: protectedPost
-      description: "Create a new comment object."
+      description: "Create a new comment object. _id is optional: a 24-character lowercase hex string becomes the new record's id; missing, null or empty gets a generated id. Any other _id answers 400, and an _id already in use answers 409; nothing is saved. commentId is optional: a positive integer is kept as the comment's number and the period's counter rises to it if lower; missing or null takes the next number from the period's counter. Any other commentId answers 400."
       security:
         - Bearer: []
       x-security-scopes:
@@ -5007,10 +5024,14 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/CommentObject"
+        "400":
+          description: "_id is not a 24-character lowercase hex string, commentId is not a positive integer, or the record failed validation"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+        "409":
+          description: "A record with this _id already exists"
 
   /comment/export/{periodId}:
     x-swagger-router-controller: comment

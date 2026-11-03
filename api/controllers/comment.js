@@ -12,6 +12,7 @@ const publicPeriodGate = async () => parentRead.readablePeriodMatch(await parent
 
 // Sorting on a field the reply hides would leak its order, so the public sorts on these only.
 const PUBLIC_SORT_FIELDS = ['commentId', 'dateAdded'];
+const INVALID_COMMENT_ID = 'commentId must be a positive integer';
 
 // Hiding an anonymous author needs isAnonymous: read it with author, drop it when the caller did not ask.
 const publicCommentQuery = fields => {
@@ -336,10 +337,18 @@ exports.protectedPost = async function (args, res) {
     docs.push(new mongoose.Types.ObjectId(doc));
   });
 
-  // get the next commentID for this period
-  var commentIdCount = await getNextCommentIdCount(new mongoose.Types.ObjectId(obj.period));
+  const sentCommentId = obj.commentId;
+  if (sentCommentId !== undefined && sentCommentId !== null && !(Number.isInteger(sentCommentId) && sentCommentId > 0)) {
+    return Actions.sendResponse(res, 400, { message: INVALID_COMMENT_ID });
+  }
 
-  var comment = new Comment();
+  let comment = new Comment();
+  if (!Utils.applyCreateId(comment, obj._id)) {
+    return Actions.sendResponse(res, 400, { message: Utils.INVALID_CREATE_ID });
+  }
+
+  var commentIdCount = await getNextCommentIdCount(new mongoose.Types.ObjectId(obj.period), sentCommentId);
+
   comment._schemaName = 'Comment';
   comment.author = obj.author;
   comment.comment = obj.comment;
@@ -370,15 +379,21 @@ exports.protectedPost = async function (args, res) {
     defaultLog.info('Saved new comment object: %s', c._id);
     return Actions.sendMirrored(res, 200, c, demiPush.comment(c));
   } catch (e) {
+    if (Utils.isDuplicateKey(e)) {
+      defaultLog.info(`Comment create refused, _id ${comment._id} already exists`);
+      return Actions.sendResponse(res, 409, { message: Utils.CREATE_ID_TAKEN });
+    }
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
 
-async function getNextCommentIdCount(period) {
-  var CommentPeriod = mongoose.model('CommentPeriod');
-  var periodUpdated = await CommentPeriod.findOneAndUpdate({ _id: period }, { $inc: { commentIdCount: 1 } }, { returnDocument: 'after' });
-  return periodUpdated.commentIdCount;
+// A sent commentId is kept and the period counter only rises to it, so the next unnumbered comment follows it.
+async function getNextCommentIdCount(period, sentCommentId) {
+  const CommentPeriod = mongoose.model('CommentPeriod');
+  const update = sentCommentId ? { $max: { commentIdCount: sentCommentId } } : { $inc: { commentIdCount: 1 } };
+  const periodUpdated = await CommentPeriod.findOneAndUpdate({ _id: period }, update, { returnDocument: 'after' });
+  return sentCommentId || periodUpdated.commentIdCount;
 }
 
 // Update an existing Comment

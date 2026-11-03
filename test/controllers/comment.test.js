@@ -10,6 +10,9 @@ const Actions    = require('../../api/helpers/actions');
 const defaultLog = require('winston').loggers.get('default');
 
 const commentController = require('../../api/controllers/comment');
+const CommentModel = require('../../api/helpers/models/comment');
+const CommentPeriodModel = require('../../api/helpers/models/commentperiod');
+const { itHonoursCreateId } = require('../support/createIdHarness');
 
 describe('Comment Controller', () => {
   const VALID_CP_ID   = '507f1f77bcf86cd799439011';
@@ -422,6 +425,32 @@ describe('Comment Controller', () => {
       expect(saved.commentId).to.equal(5);
       expect(saved.eaoStatus).to.equal('Pending');
       expect(saved.read).to.deep.equal(['staff', 'sysadmin']);
+    });
+
+    [0, -1, 1.5, '7'].forEach(commentId => {
+      it(`answers 400 and leaves the period counter alone for commentId ${JSON.stringify(commentId)}`, async () => {
+        const args = makeArgs();
+        args.swagger.params.comment.value.commentId = commentId;
+
+        await commentController.protectedPost(args, res);
+
+        expect(res.status.calledOnceWithExactly(400)).to.be.true;
+        expect(cpModel.findOneAndUpdate.called).to.be.false;
+      });
+    });
+
+    describe('with a caller-supplied _id', () => {
+      beforeEach(() => {
+        mongoose.model.restore();
+        sinon.stub(CommentPeriodModel, 'findOneAndUpdate').resolves({ commentIdCount: 5 });
+      });
+
+      itHonoursCreateId(CommentModel, async _id => {
+        const args = makeArgs();
+        args.swagger.params.comment.value._id = _id;
+        await commentController.protectedPost(args, res);
+        return res.status.lastCall.args[0];
+      });
     });
   });
 
