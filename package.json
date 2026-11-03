@@ -32,7 +32,7 @@
   "scripts": {
     "start": "node app",
     "start-watch": "node --watch app.js",
-    "db:up": "docker compose up -d",
+    "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f mongodb",
     "db:restore": "docker compose exec -T mongodb mongorestore --archive --drop --db=epic",

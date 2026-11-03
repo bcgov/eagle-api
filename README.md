@@ -34,25 +34,23 @@ These projects comprise EAO EPIC:
 
 ## Quick Start
 
-**Requirements**: Node 24.x, Yarn 4.x, Docker
+**Requirements**: Node 24.15+, Yarn 4.12 through Corepack (`corepack enable`), Docker
 
 ```bash
 # 1. Install dependencies
+corepack enable
 yarn install
 
 # 2. Configure environment
 cp .env.example .env
 
-# 3. Start MongoDB
+# 3. Start MongoDB (waits until the replica set is ready)
 yarn db:up
 
-# 4. First time only: initialise MongoDB replica set (required for Change Streams)
-docker compose exec mongodb mongosh --eval "rs.initiate()"
+# 4. Set up an empty database
+API_HOSTNAME=eagle-dev.apps.silver.devops.gov.bc.ca yarn migrate
 
-# 5. First time only: restore data
-yarn db:restore < epic-prod-dump.archive
-
-# 6. Start the API
+# 5. Start the API
 yarn start
 ```
 
@@ -62,6 +60,32 @@ Swagger UI at `http://localhost:3000/api/docs/`
 For watch mode (auto-restart on changes): `yarn start-watch`
 
 To stop all services: `yarn db:down`
+
+On an empty database, `yarn migrate` marks the pre-2026 migrations as applied, creates the text
+index search needs, and runs the 2026 migrations. Those seed the Config document that
+`/api/config` serves and a few `List` entries. The database holds no projects, documents or
+users.
+
+`API_HOSTNAME` picks the environment the Config document copies. The dev host gives dev values.
+
+If `yarn start` fails with `ENOTFOUND` and a container id, your volume holds a replica set that
+`rs.initiate()` created without a host. Fix it once:
+
+```bash
+docker compose exec mongodb mongosh --eval "c=rs.conf();c.members[0].host='localhost:27017';rs.reconfig(c,{force:true})"
+```
+
+### Local token
+
+With `KEYCLOAK_ENABLED=false` the API accepts tokens signed with `SECRET` from `.env`. Mint a
+sysadmin token and call a protected route:
+
+```bash
+export TOKEN=$(node -e "process.loadEnvFile(); console.log(require('./api/helpers/auth').issueToken({ username: 'local-dev', _id: '000000000000000000000001' }, 'local', ['sysadmin']))")
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3000/api/comment
+```
+
+The call returns `[]` on an empty database. Without the header it returns 403.
 
 ## Testing
 
@@ -84,17 +108,13 @@ For deployment procedures, Helm charts, and CI/CD workflows, see the [Deployment
 
 ## Database
 
-One can run the EPIC applications on two kinds of data; generated and backed-up-from-live.
+Local development runs on the empty database that `yarn migrate` sets up.
 
-Generated data will typically be cleaner as it is generated against the latest mongoose models.  Generated data also does not require transferring PI to dev machines.  Live production dumps should only be used in situations where a particular bug cannot be replicated locally, and after replicating, the data generators and unit tests should be updated to include that edge case.
-
-#### Generate data
-
-Described in [generate README](generate.md)
+Production dumps hold personal information: comment authors and locations, CAC member names and
+emails, and user contact details (`api/helpers/models/comment.js`, `cacUser.js`, `user.js`). They are not
+for laptops.
 
 #### Restoring from a live backup
-
-Acquire a dump of the database from one of the live environments.
 
 To restore a dump into your local MongoDB:
 
@@ -141,10 +161,6 @@ One-off data scripts live in `scripts/` and are described in the same file, incl
 `scripts/dedupe-project-pins.js` removes repeated ids from project `pins` and re-pushes each
 fixed project to DEMI.
 
-## Developing
-
-See [Code Reuse Strategy](https://github.com/bcgov/eagle-dev-guides/dev_guides/code_reuse_strategy.md)
-
 ## Environment Variables
 
 See `.env.example` for all available environment variables with descriptions and local defaults.
@@ -153,9 +169,6 @@ Key variables for local development:
 - `KEYCLOAK_ENABLED=false` — disables Keycloak, uses local JWT with `SECRET`
 - `MONGODB_SERVICE_HOST=localhost` — MongoDB host (default: localhost)
 - `MONGODB_DATABASE=epic` — database name
-
-Full reference: [Configuration Management](https://github.com/bcgov/eagle-dev-guides/wiki/Configuration-Management) wiki.
-
 ## Database Operations
 
 ### Enable MET Comment Periods for Project
