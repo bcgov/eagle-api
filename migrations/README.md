@@ -28,7 +28,7 @@ first query fails. Other overrides: `MONGODB_SERVICE_HOST`, `MONGODB_PORT`, `MON
 Against a local docker-compose Mongo, which runs with no auth, you skip the exports. You still
 need `API_HOSTNAME`: `yarn db:up`, then `API_HOSTNAME=eagle-dev.apps.silver.devops.gov.bc.ca yarn migrate`.
 
-On a fresh database (empty `changelog`, no legacy `migrations` collection, no documents in `epic`),
+On a fresh database (empty `changelog` after the legacy seed, no documents in `epic`),
 `run_migration.js` marks every migration dated before 2026 as applied and creates the
 `localBaselineText` text index. Only the 2026 migrations run. A deployed database has a full
 `changelog`, so it never takes this path.

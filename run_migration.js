@@ -1,17 +1,7 @@
 #!/usr/bin/env node
 
-/**
- * Migration runner — called by Helm pre-upgrade hook or `oc exec`.
- *
- * 1. Seeds migrate-mongo's `changelog` from the legacy db-migrate `migrations`
- *    collection (idempotent — skips if changelog already has entries).
- * 2. On a fresh database (no changelog, no legacy collection, empty `epic`), marks the pre-2026
- *    migrations applied and creates the text index they would have built (see baselineFreshDb).
- * 3. Runs all pending migrations via migrate-mongo's programmatic API.
- *
- * Note: migrate-mongo v14 is ESM-only. Its CJS shim is a broken Proxy, so we
- * must use dynamic import() to load it correctly.
- */
+// Run by the Helm pre-upgrade hook and `oc exec`. migrate-mongo v14 is ESM-only and its CJS shim
+// is a broken Proxy, so run() loads it with dynamic import().
 
 'use strict';
 
@@ -58,16 +48,12 @@ async function seedChangelog(db) {
   console.log(`Seeded ${docs.length} entries into changelog from legacy migrations collection.`);
 }
 
-// Pre-2026 migrations reshape data that a fresh database does not hold, and many call driver APIs
-// that no longer exist, so they cannot run on an empty local DB.
+// Pre-2026 migrations reshape data a fresh database lacks, and many call driver APIs the installed
+// driver lacks, so a fresh DB marks them applied instead of running them.
 async function baselineFreshDb(db, fileNames) {
   const changelogCount = await db.collection(CHANGELOG_COLLECTION).countDocuments();
   if (changelogCount > 0) {
     console.log(`baseline skipped: changelog has ${changelogCount} rows`);
-    return;
-  }
-  if (await db.collection('migrations').countDocuments() > 0) {
-    console.log('baseline skipped: legacy migrations collection has rows');
     return;
   }
   if (await db.collection('epic').countDocuments({}, { limit: 1 }) > 0) {
