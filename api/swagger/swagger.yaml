@@ -1814,51 +1814,6 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-    # get:
-    #   tags:
-    #     - project
-    #   summary: "Get groups on a project"
-    #   operationId: protectedProjectGet
-    #   description: "Authenticated access to retreiving groups on a project."
-    #   security:
-    #     - Bearer: []
-    #   x-security-scopes:
-    #     - staff
-    #     - sysadmin
-    #     - project-system-admin
-    #   parameters:
-    #     - name: projId
-    #       in: path
-    #       description: "ID of project to get"
-    #       required: true
-    #       type: string
-    #     - in: query
-    #       name: sortBy
-    #       description: "Fields to sort by."
-    #       required: false
-    #       type: array
-    #       items:
-    #         type: string
-    #         enum: *searchSortByFields
-    #     - in: query
-    #       name: pageNum
-    #       type: number
-    #       required: false
-    #       description: "Page number."
-    #     - in: query
-    #       name: pageSize
-    #       type: number
-    #       required: false
-    #       description: "Number of results per page (if 'pageNum' is specified)."
-    #   responses:
-    #     "200":
-    #       description: "Success"
-    #       schema:
-    #         $ref: "#/definitions/ProjObject"
-    #     "403":
-    #       description: "Access Denied"
-    #       schema:
-    #         $ref: "#/definitions/Error"
     post:
       tags:
         - project
@@ -3001,7 +2956,6 @@ paths:
           schema:
             $ref: "#/definitions/Error"
 
-### RecentActivity Routes
   # No `security` block, and that is what makes this public — see
   # api/middleware/swagger-security.js. Adding one would break every frontend's boot.
   /config:
@@ -3082,6 +3036,7 @@ paths:
       operationId: protectedOptions
       description: "Options on RecentActivity Route"
       responses:
+### RecentActivity Routes
         "200":
           description: "Success"
           schema:
@@ -6305,8 +6260,7 @@ paths:
             $ref: "#/definitions/Error"
 
   # ── Async Jobs ──────────────────────────────────────────────────────────────
-  # Read-only API over background jobs already queued.
-  # Currently supports: project-doc-export
+  # Read-only API over queued background jobs; supports project-doc-export.
   /jobs/{jobId}:
     x-swagger-router-controller: job
     options:

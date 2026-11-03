@@ -23,10 +23,7 @@ exports.publicGet = async function (args, res) {
     // once here rather than per row; a failure throws instead of dropping the gate.
     const unreadableParents = await parentRead.unreadableParentIds(constants.PUBLIC_ROLES);
 
-    // Build a focused pipeline that sorts and limits BEFORE running $lookups.
-    // The old approach ran 3 $lookups on all 2,462 active items and then
-    // discarded all but 4.  Moving $sort+$limit up front means the $lookups
-    // only process 4 documents — cutting response time from ~1.7 s to ~300 ms.
+    // $sort + $limit before the $lookups, so they run on 4 rows, not every active one.
     var projection = {
       _id: 1, _schemaName: 1, dateUpdated: 1, dateAdded: 1, pinned: 1,
       documentUrl: 1, contentUrl: 1, type: 1, notificationName: 1,
@@ -41,9 +38,8 @@ exports.publicGet = async function (args, res) {
     function buildPipeline(pinnedValue) {
       return [
         { $match: { _schemaName: 'RecentActivity', active: true, pinned: pinnedValue, ...updateRules.publicVisibleMatch(now) } },
-        // An activity's own read[] says nothing about its project, so an active row under an
-        // unpublished project would otherwise reach the public. Ahead of the $limit so a hidden
-        // row does not eat one of the four slots.
+        // An Update's read[] ignores its project, so drop rows under unreadable projects here,
+        // ahead of the $limit, so a hidden row takes none of the four slots.
         ...parentRead.parentReadMatch(unreadableParents),
         { $sort: { publishDate: -1, dateAdded: -1 } },
         { $limit: 4 },
@@ -90,9 +86,7 @@ exports.publicGet = async function (args, res) {
     // Fill up to 4 items: pinned first, then unpinned as needed.
     const data = [...pinned, ...unpinned.slice(0, Math.max(0, 4 - pinned.length))];
 
-    // Nullify empty project objects — occurs when the recentActivity references an
-    // orphaned project ID; the lookup finds nothing, but the aggregation pipeline
-    // still produces {} instead of null.
+    // An orphaned project id looks up to {}, not null.
     data.forEach(item => {
       if (item.project && typeof item.project === 'object' && !Array.isArray(item.project) && !item.project._id) {
         item.project = null;
@@ -115,7 +109,7 @@ exports.protectedDelete = async function (args, res) {
   const RecentActivity = mongoose.model('RecentActivity');
   const query = Utils.buildQuery('_id', args.swagger.params.recentActivityId.value, { _schemaName: 'RecentActivity' });
 
-  // Archive, never delete: a published Update keeps its public URL answerable ("no longer available").
+  // Archive, never delete: a published Update's public URL keeps answering with an unavailable page.
   let rec;
   const pushes = [];
   try {
