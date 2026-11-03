@@ -108,10 +108,11 @@ function stubModel(modelName, saved) {
     return query;
   });
   M.findById = sinon.stub().callsFake(() => Promise.resolve(stored()));
-  // organization.protectedPut calls .exec() on the query; pins awaits it directly
+  // organization.protectedPut calls .exec() on the query, comment POST .collation(); pins awaits it directly
   M.findOneAndUpdate = sinon.stub().callsFake(() => {
     const query = Promise.resolve(saved());
     query.exec = () => Promise.resolve(saved());
+    query.collation = () => query;
     return query;
   });
   M.findOneAndDelete = sinon.stub().callsFake(() => Promise.resolve(stored()));

@@ -402,7 +402,8 @@ exports.protectedPost = async function (args, res) {
 async function getNextCommentIdCount(period, sentCommentId) {
   const CommentPeriod = mongoose.model('CommentPeriod');
   const update = sentCommentId ? { $max: { commentIdCount: sentCommentId } } : { $inc: { commentIdCount: 1 } };
-  const periodUpdated = await CommentPeriod.findOneAndUpdate({ _id: period }, update, { returnDocument: 'after' });
+  const periodUpdated = await CommentPeriod.findOneAndUpdate({ _id: period, _schemaName: 'CommentPeriod' }, update, { returnDocument: 'after' })
+    .collation({ locale: 'en', strength: 2 });
   if (!periodUpdated) {
     return null;
   }

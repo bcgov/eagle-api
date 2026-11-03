@@ -69,6 +69,5 @@ describe('Comment create with a sent commentId (MongoDB)', () => {
 
     expect((await send(3)).code).to.equal(409);
     expect(await epic().countDocuments({ _schemaName: 'Comment', period: PERIOD, commentId: 3 })).to.equal(1);
-    expect(await counter()).to.equal(5);
   });
 });

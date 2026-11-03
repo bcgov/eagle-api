@@ -23,6 +23,7 @@ describe('Comment Controller', () => {
   let res;
   let commentModel;
   let cpModel;
+  let periodRow;
   let docModel;
   let projModel;
 
@@ -96,8 +97,10 @@ describe('Comment Controller', () => {
       save: sinon.stub()
     };
 
+    // The comment counter update chains .collation(); periodRow is what it finds.
+    periodRow = { commentIdCount: 5 };
     cpModel = {
-      findOneAndUpdate: sinon.stub(),
+      findOneAndUpdate: sinon.stub().callsFake(() => ({ collation: () => Promise.resolve(periodRow) })),
       findOne: sinon.stub()
     };
 
@@ -358,7 +361,6 @@ describe('Comment Controller', () => {
 
     beforeEach(() => {
       sinon.stub(defaultLog, 'debug');
-      cpModel.findOneAndUpdate.resolves({ commentIdCount: 15 });
     });
 
     it('logs a staff-entered comment without its body', async () => {
@@ -421,16 +423,20 @@ describe('Comment Controller', () => {
     });
 
     it('saves a Pending comment readable by staff only, numbered from the period counter', async () => {
-      const args = makeArgs();
-      cpModel.findOneAndUpdate.resolves({ commentIdCount: 5 });
-
-      await commentController.protectedPost(args, res);
+      await commentController.protectedPost(makeArgs(), res);
 
       expect(res.status.calledWith(200)).to.be.true;
       const saved = res.json.firstCall.args[0];
       expect(saved.commentId).to.equal(5);
       expect(saved.eaoStatus).to.equal('Pending');
       expect(saved.read).to.deep.equal(['staff', 'sysadmin']);
+    });
+
+    // Every model shares one collection, so a Project or Document id must not take the counter.
+    it('moves the counter on a comment period row only', async () => {
+      await commentController.protectedPost(makeArgs(), res);
+
+      expect(cpModel.findOneAndUpdate.firstCall.args[0]).to.include({ _schemaName: 'CommentPeriod' });
     });
 
     [
@@ -461,7 +467,7 @@ describe('Comment Controller', () => {
       it(`answers 400 and saves nothing when no period has the id, commentId ${commentId}`, async () => {
         const args = makeArgs();
         args.swagger.params.comment.value.commentId = commentId;
-        cpModel.findOneAndUpdate.resolves(null);
+        periodRow = null;
 
         await commentController.protectedPost(args, res);
 
@@ -473,7 +479,7 @@ describe('Comment Controller', () => {
     describe('with a caller-supplied _id', () => {
       beforeEach(() => {
         mongoose.model.restore();
-        sinon.stub(CommentPeriodModel, 'findOneAndUpdate').resolves({ commentIdCount: 5 });
+        sinon.stub(CommentPeriodModel, 'findOneAndUpdate').returns({ collation: () => Promise.resolve({ commentIdCount: 5 }) });
       });
 
       itHonoursCreateId(CommentModel, async _id => {
