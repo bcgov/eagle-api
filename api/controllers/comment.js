@@ -12,6 +12,10 @@ const publicPeriodGate = async () => parentRead.readablePeriodMatch(await parent
 
 // Sorting on a field the reply hides would leak its order, so the public sorts on these only.
 const PUBLIC_SORT_FIELDS = ['commentId', 'dateAdded'];
+const MAX_COMMENT_ID = 1e9;
+const INVALID_COMMENT_ID = `commentId must be an integer from 1 to ${MAX_COMMENT_ID}`;
+const COMMENT_ID_TAKEN = 'A comment with this commentId already exists in the period';
+const PERIOD_NOT_FOUND = 'period must be the id of an existing comment period';
 
 // Hiding an anonymous author needs isAnonymous: read it with author, drop it when the caller did not ask.
 const publicCommentQuery = fields => {
@@ -320,26 +324,40 @@ exports.protectedPost = async function (args, res) {
 
   var Comment = mongoose.model('Comment');
 
-  var vcs = [];
-  (obj.valuedComponents || []).forEach(function (vc) {
-    if (!mongoose.Types.ObjectId.isValid(vc)) {
-      return Actions.sendResponse(res, 400, { });
-    }
-    vcs.push(new mongoose.Types.ObjectId(vc));
-  });
+  const vcIds = obj.valuedComponents || [];
+  const docIds = obj.documents || [];
+  if ([...vcIds, ...docIds].some(id => !mongoose.Types.ObjectId.isValid(id))) {
+    return Actions.sendResponse(res, 400, { });
+  }
+  const vcs = vcIds.map(id => new mongoose.Types.ObjectId(id));
+  const docs = docIds.map(id => new mongoose.Types.ObjectId(id));
 
-  var docs = [];
-  (obj.documents || []).forEach(function (doc) {
-    if (!mongoose.Types.ObjectId.isValid(doc)) {
-      return Actions.sendResponse(res, 400, { });
-    }
-    docs.push(new mongoose.Types.ObjectId(doc));
-  });
+  if (!Utils.isObjectIdString(obj.period)) {
+    return Actions.sendResponse(res, 400, { message: PERIOD_NOT_FOUND });
+  }
+  const period = new mongoose.Types.ObjectId(obj.period);
 
-  // get the next commentID for this period
-  var commentIdCount = await getNextCommentIdCount(new mongoose.Types.ObjectId(obj.period));
+  const sentCommentId = obj.commentId;
+  const hasSentCommentId = sentCommentId !== undefined && sentCommentId !== null;
+  if (hasSentCommentId && !(Number.isSafeInteger(sentCommentId) && sentCommentId > 0 && sentCommentId <= MAX_COMMENT_ID)) {
+    return Actions.sendResponse(res, 400, { message: INVALID_COMMENT_ID });
+  }
 
-  var comment = new Comment();
+  let comment = new Comment();
+  if (!Utils.applyCreateId(comment, obj._id)) {
+    return Actions.sendResponse(res, 400, { message: Utils.INVALID_CREATE_ID });
+  }
+
+  if (hasSentCommentId && await Comment.exists({ _schemaName: 'Comment', period, commentId: sentCommentId }).collation({ locale: 'en', strength: 2 })) {
+    defaultLog.info(`Comment create refused, commentId ${sentCommentId} already used in period ${period}`);
+    return Actions.sendResponse(res, 409, { message: COMMENT_ID_TAKEN });
+  }
+
+  const commentIdCount = await getNextCommentIdCount(period, sentCommentId);
+  if (commentIdCount === null) {
+    return Actions.sendResponse(res, 400, { message: PERIOD_NOT_FOUND });
+  }
+
   comment._schemaName = 'Comment';
   comment.author = obj.author;
   comment.comment = obj.comment;
@@ -350,7 +368,7 @@ exports.protectedPost = async function (args, res) {
   comment.eaoStatus = obj.eaoStatus;
   comment.isAnonymous = obj.isAnonymous;
   comment.location = obj.location;
-  comment.period = new mongoose.Types.ObjectId(obj.period);
+  comment.period = period;
   comment.proponentNotes = obj.proponentNotes;
   comment.proponentStatus = obj.proponentStatus;
   comment.publishedNotes = obj.publishedNotes;
@@ -370,15 +388,26 @@ exports.protectedPost = async function (args, res) {
     defaultLog.info('Saved new comment object: %s', c._id);
     return Actions.sendMirrored(res, 200, c, demiPush.comment(c));
   } catch (e) {
+    if (Utils.isDuplicateKey(e)) {
+      defaultLog.info(`Comment create refused, _id ${comment._id} already exists`);
+      return Actions.sendResponse(res, 409, { message: Utils.CREATE_ID_TAKEN });
+    }
     defaultLog.error(`Error: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
 };
 
-async function getNextCommentIdCount(period) {
-  var CommentPeriod = mongoose.model('CommentPeriod');
-  var periodUpdated = await CommentPeriod.findOneAndUpdate({ _id: period }, { $inc: { commentIdCount: 1 } }, { returnDocument: 'after' });
-  return periodUpdated.commentIdCount;
+// A sent commentId is kept and the period counter only rises to it, so the next unnumbered comment follows it.
+// Null when no period has that id.
+async function getNextCommentIdCount(period, sentCommentId) {
+  const CommentPeriod = mongoose.model('CommentPeriod');
+  const update = sentCommentId ? { $max: { commentIdCount: sentCommentId } } : { $inc: { commentIdCount: 1 } };
+  const periodUpdated = await CommentPeriod.findOneAndUpdate({ _id: period, _schemaName: 'CommentPeriod' }, update, { returnDocument: 'after' })
+    .collation({ locale: 'en', strength: 2 });
+  if (!periodUpdated) {
+    return null;
+  }
+  return sentCommentId || periodUpdated.commentIdCount;
 }
 
 // Update an existing Comment

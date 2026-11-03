@@ -10,6 +10,9 @@ const Actions    = require('../../api/helpers/actions');
 const defaultLog = require('winston').loggers.get('default');
 
 const commentController = require('../../api/controllers/comment');
+const CommentModel = require('../../api/helpers/models/comment');
+const CommentPeriodModel = require('../../api/helpers/models/commentperiod');
+const { itHonoursCreateId } = require('../support/createIdHarness');
 
 describe('Comment Controller', () => {
   const VALID_CP_ID   = '507f1f77bcf86cd799439011';
@@ -20,6 +23,7 @@ describe('Comment Controller', () => {
   let res;
   let commentModel;
   let cpModel;
+  let periodRow;
   let docModel;
   let projModel;
 
@@ -93,8 +97,10 @@ describe('Comment Controller', () => {
       save: sinon.stub()
     };
 
+    // The comment counter update chains .collation(); periodRow is what it finds.
+    periodRow = { commentIdCount: 5 };
     cpModel = {
-      findOneAndUpdate: sinon.stub(),
+      findOneAndUpdate: sinon.stub().callsFake(() => ({ collation: () => Promise.resolve(periodRow) })),
       findOne: sinon.stub()
     };
 
@@ -355,7 +361,6 @@ describe('Comment Controller', () => {
 
     beforeEach(() => {
       sinon.stub(defaultLog, 'debug');
-      cpModel.findOneAndUpdate.resolves({ commentIdCount: 15 });
     });
 
     it('logs a staff-entered comment without its body', async () => {
@@ -399,29 +404,90 @@ describe('Comment Controller', () => {
   });
 
   describe('protectedPost', () => {
-    it('saves a Pending comment readable by staff only, numbered from the period counter', async () => {
-      const args = makeArgs();
-      cpModel.findOneAndUpdate.resolves({ commentIdCount: 5 });
+    let saves;
 
+    beforeEach(() => {
+      saves = 0;
       function MockComment(obj) {
         Object.assign(this, obj);
         this._id = VALID_COMM_ID;
-        this.save = sinon.stub().callsFake(() => Promise.resolve(this));
+        this.save = sinon.stub().callsFake(() => { saves++; return Promise.resolve(this); });
       }
+      MockComment.exists = sinon.stub().returns({ collation: () => Promise.resolve(null) });
       mongoose.model.restore();
       sinon.stub(mongoose, 'model').callsFake(name => {
         if (name === 'Comment') return MockComment;
         if (name === 'CommentPeriod') return cpModel;
         return {};
       });
+    });
 
-      await commentController.protectedPost(args, res);
+    it('saves a Pending comment readable by staff only, numbered from the period counter', async () => {
+      await commentController.protectedPost(makeArgs(), res);
 
       expect(res.status.calledWith(200)).to.be.true;
       const saved = res.json.firstCall.args[0];
       expect(saved.commentId).to.equal(5);
       expect(saved.eaoStatus).to.equal('Pending');
       expect(saved.read).to.deep.equal(['staff', 'sysadmin']);
+    });
+
+    // Every model shares one collection, so a Project or Document id must not take the counter.
+    it('moves the counter on a comment period row only', async () => {
+      await commentController.protectedPost(makeArgs(), res);
+
+      expect(cpModel.findOneAndUpdate.firstCall.args[0]).to.include({ _schemaName: 'CommentPeriod' });
+    });
+
+    [
+      ['commentId 0', { commentId: 0 }],
+      ['commentId -1', { commentId: -1 }],
+      ['commentId 1.5', { commentId: 1.5 }],
+      ['commentId "7"', { commentId: '7' }],
+      ['commentId over 1e9', { commentId: 1e9 + 1 }],
+      ['commentId past the safe integers', { commentId: 2 ** 53 }],
+      ['_id "abc"', { _id: 'abc' }],
+      ['a bad valued component id', { valuedComponents: ['abc'] }],
+      ['a bad document id', { documents: ['abc'] }],
+      ['no period', { period: null }]
+    ].forEach(([label, fields]) => {
+      it(`answers 400 once, before the period counter moves, for ${label}`, async () => {
+        const args = makeArgs();
+        Object.assign(args.swagger.params.comment.value, fields);
+
+        await commentController.protectedPost(args, res);
+
+        expect(res.status.calledOnceWithExactly(400)).to.be.true;
+        expect(cpModel.findOneAndUpdate.called).to.be.false;
+        expect(saves).to.equal(0);
+      });
+    });
+
+    [undefined, 42].forEach(commentId => {
+      it(`answers 400 and saves nothing when no period has the id, commentId ${commentId}`, async () => {
+        const args = makeArgs();
+        args.swagger.params.comment.value.commentId = commentId;
+        periodRow = null;
+
+        await commentController.protectedPost(args, res);
+
+        expect(res.status.calledOnceWithExactly(400)).to.be.true;
+        expect(saves).to.equal(0);
+      });
+    });
+
+    describe('with a caller-supplied _id', () => {
+      beforeEach(() => {
+        mongoose.model.restore();
+        sinon.stub(CommentPeriodModel, 'findOneAndUpdate').returns({ collation: () => Promise.resolve({ commentIdCount: 5 }) });
+      });
+
+      itHonoursCreateId(CommentModel, async _id => {
+        const args = makeArgs();
+        args.swagger.params.comment.value._id = _id;
+        await commentController.protectedPost(args, res);
+        return res.status.lastCall.args[0];
+      });
     });
   });
 

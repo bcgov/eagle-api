@@ -482,6 +482,14 @@ definitions:
   CommentId:
     type: object
     properties:
+      _id:
+        type: string
+        example: "54759eb3c090d83494e2d804"
+      commentId:
+        type: integer
+        minimum: 1
+        maximum: 1000000000
+        example: 42
       comment:
         type: string
         example: "A cool user"
@@ -734,6 +742,9 @@ definitions:
   ProjectNotificationId:
     type: object
     properties:
+      _id:
+        type: string
+        example: "54759eb3c090d83494e2d804"
       comment:
         type: string
         example: "A cool project notification"
@@ -1814,51 +1825,6 @@ paths:
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
-    # get:
-    #   tags:
-    #     - project
-    #   summary: "Get groups on a project"
-    #   operationId: protectedProjectGet
-    #   description: "Authenticated access to retreiving groups on a project."
-    #   security:
-    #     - Bearer: []
-    #   x-security-scopes:
-    #     - staff
-    #     - sysadmin
-    #     - project-system-admin
-    #   parameters:
-    #     - name: projId
-    #       in: path
-    #       description: "ID of project to get"
-    #       required: true
-    #       type: string
-    #     - in: query
-    #       name: sortBy
-    #       description: "Fields to sort by."
-    #       required: false
-    #       type: array
-    #       items:
-    #         type: string
-    #         enum: *searchSortByFields
-    #     - in: query
-    #       name: pageNum
-    #       type: number
-    #       required: false
-    #       description: "Page number."
-    #     - in: query
-    #       name: pageSize
-    #       type: number
-    #       required: false
-    #       description: "Number of results per page (if 'pageNum' is specified)."
-    #   responses:
-    #     "200":
-    #       description: "Success"
-    #       schema:
-    #         $ref: "#/definitions/ProjObject"
-    #     "403":
-    #       description: "Access Denied"
-    #       schema:
-    #         $ref: "#/definitions/Error"
     post:
       tags:
         - project
@@ -3001,7 +2967,6 @@ paths:
           schema:
             $ref: "#/definitions/Error"
 
-### RecentActivity Routes
   # No `security` block, and that is what makes this public — see
   # api/middleware/swagger-security.js. Adding one would break every frontend's boot.
   /config:
@@ -3073,6 +3038,7 @@ paths:
           schema:
             type: string
 
+### RecentActivity Routes
   /public/recentActivity:
     x-swagger-router-controller: recentActivity
     options:
@@ -3128,7 +3094,7 @@ paths:
         - recentActivity
       summary: "Create a new recentActivity"
       operationId: protectedPost
-      description: "Create a new recentActivity object. 400 when a field check fails, including a non-public featured image, image or attachment on publish; images uploaded from the Update form (documentSource 'UPDATE') are published with the Update instead. 500 when publishing those images fails; the Update is not saved."
+      description: "Create a new recentActivity object. 400 when a field check fails, including a non-public featured image, image or attachment on publish; images uploaded from the Update form (documentSource 'UPDATE') are published with the Update instead. 500 when publishing those images fails; the Update is not saved. _id is optional: a 24-character lowercase hex string becomes the new record's id; missing, null or empty gets a generated id. Any other _id answers 400, and an _id already in use answers 409; nothing is saved."
       security:
         - Bearer: []
       x-security-scopes:
@@ -3145,10 +3111,14 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/RecentActivityObject"
+        "400":
+          description: "A field check failed, or _id is not a 24-character lowercase hex string"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+        "409":
+          description: "A record with this _id already exists"
   /recentActivity/{recentActivityId}:
     x-swagger-router-controller: recentActivity
     options:
@@ -4789,7 +4759,7 @@ paths:
         - projectNotification
       summary: "Create a new project notification"
       operationId: protectedPost
-      description: "Create a new project notification object."
+      description: "Create a new project notification object. _id is optional: a 24-character lowercase hex string becomes the new record's id; missing, null or empty gets a generated id. Any other _id answers 400, and an _id already in use answers 409; nothing is saved."
       security:
         - Bearer: []
       x-security-scopes:
@@ -4811,10 +4781,14 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/ProjectNotificationObject"
+        "400":
+          description: "_id is not a 24-character lowercase hex string, or the record failed validation"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+        "409":
+          description: "A record with this _id already exists"
   /projectNotification/{projectNotificationId}:
     x-swagger-router-controller: projectNotification
     options:
@@ -5035,7 +5009,7 @@ paths:
         - comment
       summary: "Create a new comment"
       operationId: protectedPost
-      description: "Create a new comment object."
+      description: "Create a new comment object. _id is optional: a 24-character lowercase hex string becomes the new record's id; missing, null or empty gets a generated id. Any other _id answers 400, and an _id already in use answers 409; nothing is saved. commentId is optional: an integer from 1 to 1000000000 is kept as the comment's number and the period's counter rises to it if lower; missing or null takes the next number from the period's counter. Any other commentId answers 400, and a commentId already used in the period answers 409. A 409 on a duplicate _id, or a 400 from save validation, may still have moved the period's counter. period must be the id of an existing comment period, else 400."
       security:
         - Bearer: []
       x-security-scopes:
@@ -5052,10 +5026,14 @@ paths:
           description: "Success"
           schema:
             $ref: "#/definitions/CommentObject"
+        "400":
+          description: "_id is not a 24-character lowercase hex string, commentId is not an integer from 1 to 1000000000, a valuedComponents or documents entry is not a valid id, period matches no comment period, or the record failed validation"
         "403":
           description: "Access Denied"
           schema:
             $ref: "#/definitions/Error"
+        "409":
+          description: "A record with this _id already exists, or the commentId is already used in the period. A 409 on a duplicate _id, or a 400 from save validation, may still have moved the period's counter."
 
   /comment/export/{periodId}:
     x-swagger-router-controller: comment
@@ -6305,8 +6283,7 @@ paths:
             $ref: "#/definitions/Error"
 
   # ── Async Jobs ──────────────────────────────────────────────────────────────
-  # Read-only API over background jobs already queued.
-  # Currently supports: project-doc-export
+  # Read-only API over queued background jobs; supports project-doc-export.
   /jobs/{jobId}:
     x-swagger-router-controller: job
     options:

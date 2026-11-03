@@ -74,12 +74,16 @@ exports.protectedPost = async function (args, res) {
   defaultLog.info('Incoming new project notification object:', requestData);
 
   const ProjectNotification = mongoose.model('ProjectNotification');
+  const { _id: sentId, ...fields } = requestData;
   const projectNotification = new ProjectNotification({
-    ...requestData,
+    ...fields,
     read: constants.SECURE_ROLES,
     write: constants.SECURE_ROLES,
     delete: constants.SECURE_ROLES
   });
+  if (!Utils.applyCreateId(projectNotification, sentId)) {
+    return Actions.sendResponse(res, 400, { message: Utils.INVALID_CREATE_ID });
+  }
 
   if (args.swagger.params.publish && args.swagger.params.publish.value) {
     projectNotification.read.push('public');
@@ -92,6 +96,10 @@ exports.protectedPost = async function (args, res) {
     defaultLog.info('Saved new project notification object:', saveProjectNotification);
     return Actions.sendMirrored(res, 201, saveProjectNotification, demiPush.projectNotification(saveProjectNotification));
   } catch (e) {
+    if (Utils.isDuplicateKey(e)) {
+      defaultLog.info(`ProjectNotification create refused, _id ${projectNotification._id} already exists`);
+      return Actions.sendResponse(res, 409, { message: Utils.CREATE_ID_TAKEN });
+    }
     defaultLog.error(`Error:: ${e.message}`);
     return Actions.sendResponse(res, 400, e);
   }
