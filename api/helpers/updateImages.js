@@ -53,9 +53,8 @@ const unPublish = (doc, username, pushes) => documentPublish.unPublish(doc, user
 exports.revert = (docs, username) => exports.release(docs.map(doc => doc._id), '(not saved)', username);
 
 /**
- * Publishes the Update's own uploaded images (same project) that are still private. Call before
- * saving the Update, so it is never live with a private image. On failure, reverts what it
- * published and throws. DEMI pushes go onto `pushes` when given.
+ * Publishes the Update's still-private uploaded images in its project; call before the save so it
+ * is never live with a private image. On failure reverts and throws. DEMI pushes go onto `pushes`.
  */
 exports.publishFor = async (update, username, pushes = null) => {
   const ids = updateRules.imageDocumentIds(update);
@@ -67,10 +66,10 @@ exports.publishFor = async (update, username, pushes = null) => {
   try {
     for (const doc of docs) {
       published.push(await documentPublish.publish(doc, username, null, pushes));
-      defaultLog.info(`Published Update image ${doc._id} for Update ${update._id || '(new)'}`);
+      defaultLog.info(`Published Update image ${doc._id} for Update ${update._id}`);
     }
   } catch (e) {
-    defaultLog.error(`Publishing images for Update ${update._id || '(new)'} failed: ${e.message}`);
+    defaultLog.error(`Publishing images for Update ${update._id} failed: ${e.message}`);
     await exports.revert(published, username);
     throw e;
   }
