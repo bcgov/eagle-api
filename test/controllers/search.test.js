@@ -125,19 +125,46 @@ describe('Search Controller', () => {
   });
 
   describe('executeQuery Pagination Limits', () => {
-    // The page size reaches Mongo only as the $limit of the search results facet.
-    const pageLimit = () => modelStub.aggregate.firstCall.args[0]
+    // The page size and order reach Mongo only as the $limit and $sort of the search results facet.
+    const pageStage = (key) => modelStub.aggregate.firstCall.args[0]
       .find(stage => stage.$facet).$facet.searchResults
-      .find(stage => stage.$limit).$limit;
+      .find(stage => stage[key])[key];
+    const pageLimit = () => pageStage('$limit');
+    const unsortedDocumentArgs = (pageSize, roles) => makeArgs({
+      keywords: { value: undefined },
+      sortBy: { value: undefined },
+      pageSize: { value: pageSize },
+      auth_payload: { realm_access: { roles } }
+    });
 
-    it('caps an unauthenticated Document search at 100 rows', async () => {
-      const args = makeArgs({
-        dataset: { value: 'Document' },
-        pageSize: { value: 2000 },
+    it('gives an unsorted public Document search asking past the cap the newest 100 rows', async () => {
+      await searchController.publicGet(unsortedDocumentArgs(9007199254740991, ['public']), res);
+
+      expect(pageStage('$sort')).to.deep.equal({ _id: -1 });
+      expect(pageLimit()).to.equal(100);
+    });
+
+    it('keeps _id ascending for an unsorted public Document search paging at the cap', async () => {
+      await searchController.publicGet(unsortedDocumentArgs(100, ['public']), res);
+
+      expect(pageStage('$sort')).to.deep.equal({ _id: 1 });
+    });
+
+    it('keeps _id ascending for an unsorted staff Document search asking past the cap', async () => {
+      await searchController.protectedGet(unsortedDocumentArgs(2000, ['staff']), res);
+
+      expect(pageStage('$sort')).to.deep.equal({ _id: 1 });
+    });
+
+    it('keeps the requested sort for a sorted public Document search asking past the cap', async () => {
+      await searchController.publicGet(makeArgs({
+        keywords: { value: undefined },
+        sortBy: { value: ['-datePosted'] },
+        pageSize: { value: 9007199254740991 },
         auth_payload: { realm_access: { roles: ['public'] } }
-      });
-      await searchController.publicGet(args, res);
+      }), res);
 
+      expect(pageStage('$sort')).to.deep.equal({ datePosted: -1, _id: 1 });
       expect(pageLimit()).to.equal(100);
     });
 

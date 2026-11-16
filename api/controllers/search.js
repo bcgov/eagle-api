@@ -146,9 +146,7 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
   // Combine all the aggregations.
   let aggregation;
 
-  // Performance optimization for RecentActivity with populate:
-  // Paginate before $lookup so we only join 'pageSize' documents (e.g. 10)
-  // instead of the entire matched set, unless the sort needs a joined project field.
+  // Cut the page before $lookup so only pageSize rows are joined, unless the sort needs a joined project field.
   if (schemaName === constants.RECENT_ACTIVITY && populate && schemaAggregation && schemaAggregation.length > 0) {
     const sorting = Boolean(sortField && sortDirection);
     // With no sortBy, _id alone keeps pages stable.
@@ -170,11 +168,8 @@ const searchCollection = async function (roles, keywords, schemaName, pageNum, p
       }
     ];
   } else if (schemaName === constants.PROJECT && (!projectLegislation || projectLegislation === 'default') && schemaAggregation && schemaAggregation.length > 1) {
-    // Performance optimization for Project with default legislation:
-    // schemaAggregation[0] is $addFields (setProjectDefault - picks correct legislation year).
-    // schemaAggregation[1..] are 5×$lookup/$unwind + $addFields + $replaceRoot.
-    // Run setProjectDefault first so we can sort by default.fieldName,
-    // then paginate BEFORE expensive lookups unless the sort needs a joined field.
+    // Run setProjectDefault first so the sort can use default.<field>, then cut the page
+    // before the lookups unless the sort needs a joined field.
     const preSortStage = schemaAggregation[0]; // $addFields { default: ... }
     const postPaginationStages = schemaAggregation.slice(1); // lookups + replaceRoot
 
@@ -315,6 +310,14 @@ const executeQuery = async function (args, res) {
 
   if (sortField === '') {
     sortField = sortBy[0];
+  }
+
+  // Unsorted readers asking for more than the public Document cap never page, so give them the
+  // newest rows; at or under the cap, paging readers keep _id ascending.
+  if (!isAuthenticated && dataset === constants.DOCUMENT && sortBy.length === 0 && rawPageSize > pageSize) {
+    sortField = '_id';
+    sortDirection = -1;
+    sortingValue._id = -1;
   }
 
   if (dataset === constants.RECENT_ACTIVITY && updateRules.isPublicCaller(roles)) {
