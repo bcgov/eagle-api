@@ -156,14 +156,15 @@ describe('Search Controller', () => {
       expect(pageStage('$sort')).to.deep.equal({ _id: 1 });
     });
 
-    it('caps an unauthenticated Document search at 100 rows', async () => {
-      const args = makeArgs({
-        dataset: { value: 'Document' },
-        pageSize: { value: 2000 },
+    it('keeps the requested sort for a sorted public Document search asking past the cap', async () => {
+      await searchController.publicGet(makeArgs({
+        keywords: { value: undefined },
+        sortBy: { value: ['-datePosted'] },
+        pageSize: { value: 9007199254740991 },
         auth_payload: { realm_access: { roles: ['public'] } }
-      });
-      await searchController.publicGet(args, res);
+      }), res);
 
+      expect(pageStage('$sort')).to.deep.equal({ datePosted: -1, _id: 1 });
       expect(pageLimit()).to.equal(100);
     });
 
