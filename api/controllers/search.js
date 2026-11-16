@@ -312,6 +312,14 @@ const executeQuery = async function (args, res) {
     sortField = sortBy[0];
   }
 
+  // Unsorted readers asking for more than the public Document cap never page, so give them the
+  // newest rows; at or under the cap, paging readers keep _id ascending.
+  if (!isAuthenticated && dataset === constants.DOCUMENT && sortBy.length === 0 && rawPageSize > pageSize) {
+    sortField = '_id';
+    sortDirection = -1;
+    sortingValue._id = -1;
+  }
+
   if (dataset === constants.RECENT_ACTIVITY && updateRules.isPublicCaller(roles)) {
     const hidden = updateRules.hiddenKeys([and, or].flatMap(filter => Object.keys(qs.parse(filter || ''))).concat(Object.keys(sortingValue)));
     if (hidden.length) {
